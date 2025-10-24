@@ -1,5 +1,13 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import {
+  apiLimiter,
+  authLimiter,
+  exportLimiter,
+  notificationTestLimiter,
+  syncLimiter,
+  createUpdateLimiter
+} from '../middleware/rateLimiter';
 import * as authController from '../controllers/authController';
 import * as userController from '../controllers/userController';
 import * as calendarsController from '../controllers/calendarsController';
@@ -7,15 +15,20 @@ import * as eventsController from '../controllers/calendarController';
 import * as mealsController from '../controllers/mealController';
 import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
+import * as reportsController from '../controllers/reportsController';
+import * as notificationsController from '../controllers/notificationsController';
+import * as googleCalendarController from '../controllers/googleCalendarController';
+import * as appleCalendarController from '../controllers/appleCalendarController';
 
 const router = Router();
 
 // ========== AUTH ROUTES (PUBLIC) ==========
-router.post('/auth/register', authController.register);
-router.post('/auth/login', authController.login);
+router.post('/auth/register', authLimiter, authController.register);
+router.post('/auth/login', authLimiter, authController.login);
 
 // All routes below require authentication
 router.use(authenticateToken);
+router.use(apiLimiter); // Apply general rate limiting to all authenticated routes
 
 // ========== AUTH ROUTES (PROTECTED) ==========
 router.get('/auth/me', authController.getCurrentUser);
@@ -61,12 +74,38 @@ router.delete('/vitals/:id', vitalsController.deleteVital);
 
 // ========== MEDICATIONS ROUTES ==========
 router.get('/medications', medicationsController.getMedications);
-router.post('/medications', medicationsController.addMedication);
+router.post('/medications', createUpdateLimiter, medicationsController.addMedication);
 router.get('/medications/schedule', medicationsController.getSchedule);
 router.get('/medications/:id', medicationsController.getMedication);
-router.put('/medications/:id', medicationsController.updateMedication);
+router.put('/medications/:id', createUpdateLimiter, medicationsController.updateMedication);
 router.delete('/medications/:id', medicationsController.deleteMedication);
 router.patch('/medications/:id/toggle-active', medicationsController.toggleActive);
 router.post('/medications/:id/log-dose', medicationsController.logDose);
+
+// ========== REPORTS ROUTES ==========
+router.get('/reports/health-summary', reportsController.getHealthSummary);
+router.get('/reports/compliance', reportsController.getComplianceAnalytics);
+router.get('/reports/export/pdf', exportLimiter, reportsController.exportPDF);
+router.get('/reports/export/csv', exportLimiter, reportsController.exportCSV);
+
+// ========== NOTIFICATIONS ROUTES ==========
+router.post('/notifications/test', notificationTestLimiter, notificationsController.testNotification);
+router.get('/notifications/preferences', notificationsController.getNotificationPreferences);
+router.put('/notifications/preferences', notificationsController.updateNotificationPreferences);
+
+// ========== GOOGLE CALENDAR INTEGRATION ROUTES ==========
+router.get('/integrations/google/auth', googleCalendarController.initiateGoogleAuth);
+router.get('/integrations/google/oauth/callback', googleCalendarController.handleGoogleCallback);
+router.post('/integrations/google/sync', syncLimiter, googleCalendarController.syncFromGoogle);
+router.post('/integrations/google/export', syncLimiter, googleCalendarController.exportToGoogle);
+router.delete('/integrations/google/disconnect', googleCalendarController.disconnectGoogle);
+router.get('/integrations/google/status', googleCalendarController.getGoogleStatus);
+
+// ========== APPLE CALENDAR INTEGRATION ROUTES ==========
+router.get('/integrations/apple/export', exportLimiter, appleCalendarController.exportToAppleCalendar);
+router.post('/integrations/apple/import', syncLimiter, appleCalendarController.importFromAppleCalendar);
+router.get('/integrations/apple/subscribe', appleCalendarController.getSubscriptionUrl);
+router.get('/integrations/apple/feed/:token', appleCalendarController.getCalendarFeed);
+router.get('/integrations/apple/status', appleCalendarController.getAppleStatus);
 
 export default router;

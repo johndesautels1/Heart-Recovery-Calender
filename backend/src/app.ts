@@ -7,6 +7,7 @@ import apiRoutes from './routes/index';
 import authRoutes from './routes/auth';
 import { metricsMiddleware } from './middleware/metrics';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { initializeScheduler } from './services/notificationScheduler';
 
 dotenv.config();
 
@@ -30,6 +31,10 @@ app.use(errorHandler);
 
 sequelize.authenticate().then(() => {
   logger.info('Database connected');
+
+  // Initialize notification scheduler after database connection
+  initializeScheduler();
+  logger.info('Notification scheduler initialized');
 }).catch(err => {
   logger.error('Database connection error', err);
 });
