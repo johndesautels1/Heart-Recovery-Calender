@@ -4,6 +4,7 @@ import sequelize from './index';
 interface UserAttributes {
   id: number;
   email: string;
+  password?: string;
   name: string;
   phoneNumber?: string;
   emergencyContact?: string;
@@ -20,6 +21,7 @@ interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
   public email!: string;
+  public password?: string;
   public name!: string;
   public phoneNumber?: string;
   public emergencyContact?: string;
@@ -29,6 +31,13 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public timezone?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+
+  // Helper method to exclude password from JSON responses
+  toJSON() {
+    const values = Object.assign({}, this.get());
+    delete values.password;
+    return values;
+  }
 
   static initialize() {
     User.init(
@@ -45,6 +54,10 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
           validate: {
             isEmail: true,
           },
+        },
+        password: {
+          type: DataTypes.STRING(255),
+          allowNull: true, // Optional for OAuth users
         },
         name: {
           type: DataTypes.STRING(255),
