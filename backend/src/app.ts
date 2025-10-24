@@ -6,6 +6,7 @@ import logger from './utils/logger';
 import apiRoutes from './routes/index';
 import authRoutes from './routes/auth';
 import { metricsMiddleware } from './middleware/metrics';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use((_req, _res, next) => {
-  logger.info(`Request: ${_req.method} ${_req.url}`);
+  logger.info('Request: ' + _req.method + ' ' + _req.url);
   next();
 });
 
@@ -22,6 +23,10 @@ app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 
 app.get('/metrics', metricsMiddleware);
+
+// Error handling - must be after all routes
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 sequelize.authenticate().then(() => {
   logger.info('Database connected');
