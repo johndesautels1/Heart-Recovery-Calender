@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "heartbeat-calendar.fullname" . }}-frontend
+  labels:
+    app: {{ include "heartbeat-calendar.name" . }}
+    component: frontend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "heartbeat-calendar.name" . }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: {{ include "heartbeat-calendar.name" . }}
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}"
+        imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.frontend.port }}
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://{{ include "heartbeat-calendar.fullname" . }}-backend:{{ .Values.service.backend.port }}/api"
+        resources:
+          {{- toYaml .Values.resources.frontend | nindent 12 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.service.frontend.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.service.frontend.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 5

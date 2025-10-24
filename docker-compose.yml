@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: heartbeat-postgres
+    environment:
+      POSTGRES_USER: heartbeat
+      POSTGRES_PASSWORD: heartbeat123
+      POSTGRES_DB: heartbeat_calendar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - heartbeat-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: heartbeat-backend
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: heartbeat_calendar
+      DB_USER: heartbeat
+      DB_PASS: heartbeat123
+      JWT_SECRET: local-development-secret-change-in-production
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - heartbeat-network
+    volumes:
+      - ./backend/src:/app/src
+      - backend_node_modules:/app/node_modules
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: heartbeat-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - heartbeat-network
+    volumes:
+      - ./frontend/src:/app/src
+      - frontend_node_modules:/app/node_modules
+
+  example-app:
+    build:
+      context: ./ui/example-app
+      dockerfile: Dockerfile
+    container_name: heartbeat-example
+    ports:
+      - "3001:3001"
+    depends_on:
+      - frontend
+    networks:
+      - heartbeat-network
+    volumes:
+      - ./ui/example-app/src:/app/src
+      - example_node_modules:/app/node_modules
+
+networks:
+  heartbeat-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  backend_node_modules:
+  frontend_node_modules:
+  example_node_modules:

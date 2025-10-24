@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "heartbeat-calendar.fullname" . }}-backend
+  labels:
+    app: {{ include "heartbeat-calendar.name" . }}
+    component: backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "heartbeat-calendar.name" . }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: {{ include "heartbeat-calendar.name" . }}
+        component: backend
+    spec:
+      containers:
+      - name: backend
+        image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
+        imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.backend.port }}
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.env.NODE_ENV }}
+        - name: PORT
+          value: "{{ .Values.service.backend.port }}"
+        - name: DB_HOST
+          value: {{ .Values.env.DB_HOST }}
+        - name: DB_PORT
+          value: "{{ .Values.env.DB_PORT }}"
+        - name: DB_NAME
+          value: {{ .Values.env.DB_NAME }}
+        - name: DB_USER
+          value: {{ .Values.env.DB_USER }}
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "heartbeat-calendar.fullname" . }}-secrets
+              key: db-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "heartbeat-calendar.fullname" . }}-secrets
+              key: jwt-secret
+        resources:
+          {{- toYaml .Values.resources.backend | nindent 12 }}
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: {{ .Values.service.backend.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/ready
+            port: {{ .Values.service.backend.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
