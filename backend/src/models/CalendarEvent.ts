@@ -14,6 +14,7 @@ interface CalendarEventAttributes {
   reminderMinutes?: number;
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
+  sleepHours?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -33,6 +34,7 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
   public reminderMinutes?: number;
   public status!: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   public notes?: string;
+  public sleepHours?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -92,6 +94,11 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
         notes: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        sleepHours: {
+          type: DataTypes.DECIMAL(3, 1),
+          allowNull: true,
+          comment: 'Hours of restful sleep the night before this date',
         },
       },
       {

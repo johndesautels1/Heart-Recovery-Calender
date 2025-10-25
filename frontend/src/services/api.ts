@@ -174,10 +174,10 @@ class ApiService {
   }
 
   // ==================== MEAL ENDPOINTS ====================
-  async getMeals(startDate?: string, endDate?: string): Promise<MealEntry[]> {
+  async getMeals(filters?: { startDate?: string; endDate?: string }): Promise<MealEntry[]> {
     const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
 
     const response = await this.api.get<ApiResponse<MealEntry[]>>(`meals?${params.toString()}`);
     return response.data.data;
@@ -203,10 +203,10 @@ class ApiService {
   }
 
   // ==================== VITALS ENDPOINTS ====================
-  async getVitals(startDate?: string, endDate?: string): Promise<VitalsSample[]> {
+  async getVitals(filters?: { startDate?: string; endDate?: string }): Promise<VitalsSample[]> {
     const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
 
     const response = await this.api.get<ApiResponse<VitalsSample[]>>(`vitals?${params.toString()}`);
     return response.data.data;

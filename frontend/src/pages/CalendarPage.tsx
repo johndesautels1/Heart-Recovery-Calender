@@ -4,12 +4,12 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput } from '../types';
+import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -23,6 +23,7 @@ const eventSchema = z.object({
   description: z.string().optional(),
   reminderMinutes: z.number().optional(),
   notes: z.string().optional(),
+  sleepHours: z.number().optional(),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -31,10 +32,12 @@ export function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDateMeals, setSelectedDateMeals] = useState<MealEntry[]>([]);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [sleepHours, setSleepHours] = useState<string>('');
 
   const {
     register,
@@ -96,10 +99,21 @@ export function CalendarPage() {
     setIsEventModalOpen(true);
   };
 
-  const handleEventClick = (arg: any) => {
+  const handleEventClick = async (arg: any) => {
     const event = events.find(e => e.id === parseInt(arg.event.id));
     if (event) {
       setSelectedEvent(event);
+      setSleepHours(event.sleepHours?.toString() || '');
+
+      // Load meals for this event's date
+      const eventDate = new Date(event.startTime).toISOString().split('T')[0];
+      try {
+        const meals = await api.getMeals({ startDate: eventDate, endDate: eventDate });
+        setSelectedDateMeals(meals);
+      } catch (error) {
+        console.error('Failed to load meals:', error);
+        setSelectedDateMeals([]);
+      }
     }
   };
 
@@ -166,6 +180,21 @@ export function CalendarPage() {
     } catch (error) {
       console.error('Failed to update event status:', error);
       toast.error('Failed to update event status');
+    }
+  };
+
+  const handleUpdateSleepHours = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      const hours = sleepHours ? parseFloat(sleepHours) : undefined;
+      const updated = await api.updateEvent(selectedEvent.id, { sleepHours: hours });
+      setEvents(events.map(e => e.id === updated.id ? updated : e));
+      setSelectedEvent(updated);
+      toast.success('Sleep hours updated successfully');
+    } catch (error) {
+      console.error('Failed to update sleep hours:', error);
+      toast.error('Failed to update sleep hours');
     }
   };
 
@@ -351,16 +380,20 @@ export function CalendarPage() {
       {/* Event Details Modal */}
       <Modal
         isOpen={!!selectedEvent}
-        onClose={() => setSelectedEvent(null)}
+        onClose={() => {
+          setSelectedEvent(null);
+          setSelectedDateMeals([]);
+          setSleepHours('');
+        }}
         title="Event Details"
-        size="md"
+        size="lg"
       >
         {selectedEvent && (
           <div className="space-y-4">
             <div>
               <h3 className="font-medium text-gray-800">{selectedEvent.title}</h3>
               <p className="text-sm text-gray-600 mt-1">
-                {format(new Date(selectedEvent.startTime), 'PPP p')} - 
+                {format(new Date(selectedEvent.startTime), 'PPP p')} -
                 {format(new Date(selectedEvent.endTime), 'p')}
               </p>
             </div>
@@ -383,6 +416,83 @@ export function CalendarPage() {
               <div>
                 <p className="font-medium text-gray-700 mb-1">Notes:</p>
                 <p className="text-gray-600">{selectedEvent.notes}</p>
+              </div>
+            )}
+
+            {/* Sleep Hours Section */}
+            <div className="bg-indigo-50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Moon className="h-5 w-5 text-indigo-600" />
+                <p className="font-medium text-gray-700">Hours of Restful Sleep</p>
+              </div>
+              <p className="text-xs text-gray-500 mb-2">Sleep from the night before this date</p>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  value={sleepHours}
+                  onChange={(e) => setSleepHours(e.target.value)}
+                  placeholder="Enter hours (e.g., 7.5)"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleUpdateSleepHours}
+                  disabled={isLoading}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+
+            {/* Meals Section */}
+            {selectedDateMeals.length > 0 && (
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <UtensilsCrossed className="h-5 w-5 text-green-600" />
+                  <p className="font-medium text-gray-700">Meals for This Day</p>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {selectedDateMeals.map((meal) => (
+                    <div
+                      key={meal.id}
+                      className="bg-white rounded-lg border border-gray-200 p-3"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-800 capitalize">
+                              {meal.mealType}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(meal.timestamp).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{meal.foodItems}</p>
+                          <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
+                            {meal.calories && <span>{meal.calories} cal</span>}
+                            {meal.protein && <span>{meal.protein}g protein</span>}
+                            {meal.sodium && <span>{meal.sodium}mg sodium</span>}
+                          </div>
+                        </div>
+                        {meal.withinSpec !== null && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            meal.withinSpec
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {meal.withinSpec ? '✓' : '⚠'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

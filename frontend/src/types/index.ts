@@ -44,6 +44,7 @@ export interface CalendarEvent {
   reminderMinutes: number;
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
+  sleepHours?: number;
   createdAt: string;
   updatedAt: string;
   calendar?: Calendar;  // Optional joined data
@@ -146,6 +147,7 @@ export interface CreateEventInput {
   recurrenceRule?: string;
   reminderMinutes?: number;
   notes?: string;
+  sleepHours?: number;
 }
 
 export interface CreateMealInput {
