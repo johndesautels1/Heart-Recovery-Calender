@@ -8,6 +8,7 @@ import * as mealsController from '../controllers/mealController';
 import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
 import * as therapyGoalsController from '../controllers/therapyGoalsController';
+import * as alertsController from '../controllers/alertsController';
 
 const router = Router();
 
@@ -77,5 +78,16 @@ router.get('/therapy-goals/:id', therapyGoalsController.getTherapyGoal);
 router.put('/therapy-goals/:id', therapyGoalsController.updateTherapyGoal);
 router.delete('/therapy-goals/:id', therapyGoalsController.deleteTherapyGoal);
 router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
+
+// ========== ALERTS ROUTES ==========
+router.get('/alerts', alertsController.getAlerts);
+router.post('/alerts', alertsController.createAlert);
+router.get('/alerts/stats', alertsController.getAlertStats);
+router.get('/alerts/:id', alertsController.getAlert);
+router.put('/alerts/:id', alertsController.updateAlert);
+router.delete('/alerts/:id', alertsController.deleteAlert);
+router.put('/alerts/:id/resolve', alertsController.resolveAlert);
+router.put('/alerts/:id/unresolve', alertsController.unresolveAlert);
+router.put('/alerts/:id/mark-notified', alertsController.markNotified);
 
 export default router;
