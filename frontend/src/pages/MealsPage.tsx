@@ -165,7 +165,7 @@ export function MealsPage() {
       {/* Filters */}
       <GlassCard>
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-gray-700 font-semibold">
+          <div className="flex items-center gap-2 font-bold" style={{ color: '#ffffff' }}>
             <Filter className="h-5 w-5" />
             <span>Filter Foods</span>
           </div>
