@@ -157,36 +157,36 @@ export function MedicationsPage() {
     <GlassCard className="relative">
       {!medication.isActive && (
         <div className="absolute top-3 right-3">
-          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+          <span className="px-2 py-1 text-xs font-bold bg-gray-100 text-gray-600 rounded-full">
             Inactive
           </span>
         </div>
       )}
-      
+
       <div className="space-y-3">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">{medication.name}</h3>
-            <p className="text-purple-600 font-medium">{medication.dosage}</p>
+            <h3 className="text-lg font-bold" style={{ color: '#ffffff' }}>{medication.name}</h3>
+            <p className="font-bold" style={{ color: '#ffffff' }}>{medication.dosage}</p>
           </div>
           <Pill className="h-8 w-8 text-purple-500" />
         </div>
 
         <div className="space-y-2 text-sm">
-          <div className="flex items-center text-gray-600">
+          <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>
             <Clock className="h-4 w-4 mr-2" />
             {medication.frequency}
             {medication.timeOfDay && ` • ${medication.timeOfDay}`}
           </div>
 
           {medication.prescribedBy && (
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>
               <User className="h-4 w-4 mr-2" />
               Dr. {medication.prescribedBy}
             </div>
           )}
 
-          <div className="flex items-center text-gray-600">
+          <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>
             <Calendar className="h-4 w-4 mr-2" />
             Started {format(new Date(medication.startDate), 'MMM d, yyyy')}
             {medication.endDate && (
@@ -196,12 +196,12 @@ export function MedicationsPage() {
 
           <div className="flex items-center">
             {medication.reminderEnabled ? (
-              <div className="flex items-center text-green-600">
+              <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>
                 <Bell className="h-4 w-4 mr-2" />
                 Reminders enabled
               </div>
             ) : (
-              <div className="flex items-center text-gray-400">
+              <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>
                 <BellOff className="h-4 w-4 mr-2" />
                 Reminders disabled
               </div>
@@ -211,8 +211,8 @@ export function MedicationsPage() {
 
         {medication.instructions && (
           <div className="pt-2 border-t border-gray-200">
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Instructions:</span> {medication.instructions}
+            <p className="text-xs font-bold" style={{ color: '#ffffff' }}>
+              <span className="font-bold">Instructions:</span> {medication.instructions}
             </p>
           </div>
         )}
@@ -220,8 +220,8 @@ export function MedicationsPage() {
         {medication.sideEffects && (
           <div className="flex items-start space-x-2">
             <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Side effects:</span> {medication.sideEffects}
+            <p className="text-xs font-bold" style={{ color: '#ffffff' }}>
+              <span className="font-bold">Side effects:</span> {medication.sideEffects}
             </p>
           </div>
         )}
@@ -258,7 +258,7 @@ export function MedicationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Medications</h1>
+        <h1 className="text-3xl font-bold" style={{ color: '#ffffff' }}>Medications</h1>
         <Button onClick={() => {
           reset({
             reminderEnabled: true,
@@ -277,8 +277,8 @@ export function MedicationsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Medications</p>
-              <p className="text-3xl font-bold text-gray-800">{medications.length}</p>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>Total Medications</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>{medications.length}</p>
             </div>
             <Pill className="h-8 w-8 text-purple-500" />
           </div>
@@ -287,8 +287,8 @@ export function MedicationsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Active</p>
-              <p className="text-3xl font-bold text-green-600">{activeMeds.length}</p>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>Active</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>{activeMeds.length}</p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-500" />
           </div>
@@ -297,8 +297,8 @@ export function MedicationsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">With Reminders</p>
-              <p className="text-3xl font-bold text-blue-600">
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>With Reminders</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>
                 {medications.filter(m => m.reminderEnabled).length}
               </p>
             </div>
@@ -311,31 +311,34 @@ export function MedicationsPage() {
       <div className="flex space-x-2">
         <button
           onClick={() => setViewMode('active')}
-          className={`px-4 py-2 rounded-lg transition-all ${
-            viewMode === 'active' 
-              ? 'bg-purple-500 text-white' 
-              : 'glass-button text-gray-700'
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            viewMode === 'active'
+              ? 'bg-purple-500'
+              : 'glass-button'
           }`}
+          style={{ color: '#ffffff' }}
         >
           Active ({activeMeds.length})
         </button>
         <button
           onClick={() => setViewMode('inactive')}
-          className={`px-4 py-2 rounded-lg transition-all ${
-            viewMode === 'inactive' 
-              ? 'bg-gray-500 text-white' 
-              : 'glass-button text-gray-700'
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            viewMode === 'inactive'
+              ? 'bg-gray-500'
+              : 'glass-button'
           }`}
+          style={{ color: '#ffffff' }}
         >
           Inactive ({inactiveMeds.length})
         </button>
         <button
           onClick={() => setViewMode('all')}
-          className={`px-4 py-2 rounded-lg transition-all ${
-            viewMode === 'all' 
-              ? 'bg-blue-500 text-white' 
-              : 'glass-button text-gray-700'
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            viewMode === 'all'
+              ? 'bg-blue-500'
+              : 'glass-button'
           }`}
+          style={{ color: '#ffffff' }}
         >
           All ({medications.length})
         </button>
@@ -352,9 +355,9 @@ export function MedicationsPage() {
         <GlassCard>
           <div className="text-center py-12">
             <Pill className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">
-              {viewMode === 'active' 
-                ? 'No active medications' 
+            <p className="font-bold" style={{ color: '#ffffff' }}>
+              {viewMode === 'active'
+                ? 'No active medications'
                 : viewMode === 'inactive'
                 ? 'No inactive medications'
                 : 'No medications added yet'}
