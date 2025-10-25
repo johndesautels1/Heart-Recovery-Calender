@@ -19,7 +19,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-bold text-blue-900 mb-1">
+          <label className="block text-sm font-bold mb-1" style={{ color: 'var(--accent)' }}>
             {label}
           </label>
         )}
@@ -42,10 +42,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {hint && !error && (
-          <p className="mt-1 text-sm font-semibold text-gray-700">{hint}</p>
+          <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--muted)' }}>
+            {hint}
+          </p>
         )}
         {error && (
-          <p className="mt-1 text-sm font-bold text-red-700">{error}</p>
+          <p className="mt-1 text-sm font-bold" style={{ color: 'var(--bad)' }}>
+            {error}
+          </p>
         )}
       </div>
     );

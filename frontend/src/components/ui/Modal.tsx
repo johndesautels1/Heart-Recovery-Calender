@@ -62,14 +62,30 @@ export function Modal({
                 {(title || showCloseButton) && (
                   <div className="flex items-center justify-between mb-4">
                     {title && (
-                      <Dialog.Title as="h3" className="text-xl font-semibold text-gray-900">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-xl font-bold"
+                        style={{ color: 'var(--ink)' }}
+                      >
                         {title}
                       </Dialog.Title>
                     )}
                     {showCloseButton && (
                       <button
                         onClick={onClose}
-                        className="ml-auto p-2 rounded-lg hover:bg-gray-200/50 transition-colors text-blue-900 hover:text-orange-600 font-bold"
+                        className="ml-auto p-2 rounded-lg transition-all duration-300 hover:scale-110 font-bold"
+                        style={{
+                          color: 'var(--accent)',
+                          backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--cyan)';
+                          e.currentTarget.style.backgroundColor = 'rgba(6, 182, 212, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--accent)';
+                          e.currentTarget.style.backgroundColor = 'rgba(96, 165, 250, 0.1)';
+                        }}
                       >
                         <X className="h-6 w-6" />
                       </button>

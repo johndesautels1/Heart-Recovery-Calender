@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
   Calendar,
   Home,
   Activity,
@@ -13,16 +13,44 @@ import {
   Menu,
   X,
   Stethoscope,
-  FileText
+  FileText,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import clsx from 'clsx';
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  // Load theme preference from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      setIsDarkMode(false);
+      document.body.classList.add('light-mode');
+    } else {
+      setIsDarkMode(true);
+      document.body.classList.remove('light-mode');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDarkMode = !isDarkMode;
+    setIsDarkMode(newIsDarkMode);
+
+    if (newIsDarkMode) {
+      document.body.classList.remove('light-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.add('light-mode');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -67,9 +95,12 @@ export function Navbar() {
                   className={clsx(
                     'flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200',
                     isActive(item.path)
-                      ? 'bg-white/30 text-blue-600 font-medium'
-                      : 'hover:bg-white/20 text-gray-700'
+                      ? 'bg-white/30 font-medium'
+                      : 'hover:bg-white/20'
                   )}
+                  style={{
+                    color: isActive(item.path) ? 'var(--accent)' : 'var(--ink)'
+                  }}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
@@ -80,6 +111,19 @@ export function Navbar() {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
+              style={{
+                color: 'var(--accent)',
+                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+              }}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
             <Link
               to="/profile"
               className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
@@ -120,15 +164,32 @@ export function Navbar() {
                   className={clsx(
                     'flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200',
                     isActive(item.path)
-                      ? 'bg-white/30 text-blue-600 font-medium'
-                      : 'hover:bg-white/20 text-gray-700'
+                      ? 'bg-white/30 font-medium'
+                      : 'hover:bg-white/20'
                   )}
+                  style={{
+                    color: isActive(item.path) ? 'var(--accent)' : 'var(--ink)'
+                  }}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
+
+            {/* Theme Toggle for Mobile */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200"
+              style={{
+                color: 'var(--accent)',
+                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+              }}
+            >
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+
             <Link
               to="/profile"
               onClick={() => setIsMobileMenuOpen(false)}
