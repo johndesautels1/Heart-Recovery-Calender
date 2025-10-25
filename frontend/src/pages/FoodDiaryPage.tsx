@@ -271,21 +271,22 @@ export function FoodDiaryPage() {
       {showCopyDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Copy Meals to Another Day</h2>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: '#ff9500' }}>Copy Meals to Another Day</h2>
 
-            <p className="text-gray-600 mb-4">
+            <p className="font-semibold mb-4" style={{ color: '#1a1a1a' }}>
               This will copy all {meals.length} meal(s) from {formatDate(selectedDate)} to the selected date.
             </p>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
                 Select Target Date
               </label>
               <input
                 type="date"
                 value={copyToDate}
                 onChange={(e) => setCopyToDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+                style={{ color: '#1a1a1a' }}
               />
             </div>
 
@@ -295,14 +296,16 @@ export function FoodDiaryPage() {
                   setShowCopyDialog(false);
                   setCopyToDate('');
                 }}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-3 border border-gray-300 font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                style={{ color: '#dc2626' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleCopyToDay}
                 disabled={!copyToDate || loading}
-                className="flex-1 px-4 py-3 bg-cobalt-500 text-white font-medium rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-cobalt-500 font-bold rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: '#ffffff' }}
               >
                 {loading ? 'Copying...' : 'Copy Meals'}
               </button>
