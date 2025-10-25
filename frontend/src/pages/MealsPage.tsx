@@ -125,8 +125,8 @@ export function MealsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Food Database</h1>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold" style={{ color: '#fbbf24' }}>Food Database</h1>
+        <div className="flex items-center gap-2 text-sm font-bold" style={{ color: '#22c55e' }}>
           <Heart className="h-4 w-4 text-red-500" />
           <span>Heart-Healthy Food Guide</span>
         </div>

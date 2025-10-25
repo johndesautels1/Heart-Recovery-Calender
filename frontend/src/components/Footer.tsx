@@ -29,21 +29,27 @@ export function Footer() {
         {/* Links */}
         <div className="flex flex-wrap justify-center gap-4 mb-6 text-sm">
           <a
-            href="/privacy"
+            href="https://heartbeat-claude-code.vercel.app/disclosures.html#privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
           >
             Privacy Policy
           </a>
           <span className="text-gray-600">|</span>
           <a
-            href="/terms"
+            href="https://heartbeat-claude-code.vercel.app/disclosures.html#terms-of-service"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
           >
             Terms of Service
           </a>
           <span className="text-gray-600">|</span>
           <a
-            href="/support"
+            href="https://heartbeat-claude-code.vercel.app/disclosures.html#contact"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
           >
             Contact Support
