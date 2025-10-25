@@ -113,10 +113,10 @@ export function FoodDiaryPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>Food Diary</h1>
+        <h1 className="text-3xl font-bold" style={{ color: '#ff9500' }}>Food Diary</h1>
         <div className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-cobalt-600" />
-          <span className="text-sm font-semibold" style={{ color: 'var(--ink-gold)' }}>Daily Meal Tracker</span>
+          <CalendarIcon className="h-5 w-5" style={{ color: '#ff9500' }} />
+          <span className="text-sm font-bold" style={{ color: '#ff9500' }}>Daily Meal Tracker</span>
         </div>
       </div>
 
@@ -125,26 +125,27 @@ export function FoodDiaryPage() {
         <div className="flex items-center justify-between">
           <button
             onClick={handlePreviousDay}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
           >
-            <ChevronLeft className="h-6 w-6 text-gray-600" />
+            <ChevronLeft className="h-6 w-6" style={{ color: '#ff9500', strokeWidth: 3 }} />
           </button>
 
           <div className="flex-1 text-center">
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--ink-bright)' }}>{formatDate(selectedDate)}</h2>
+            <h2 className="text-2xl font-bold" style={{ color: '#ff9500' }}>{formatDate(selectedDate)}</h2>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none"
+              className="mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+              style={{ color: '#ff9500' }}
             />
           </div>
 
           <button
             onClick={handleNextDay}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
           >
-            <ChevronRight className="h-6 w-6 text-gray-600" />
+            <ChevronRight className="h-6 w-6" style={{ color: '#ff9500', strokeWidth: 3 }} />
           </button>
         </div>
       </GlassCard>
