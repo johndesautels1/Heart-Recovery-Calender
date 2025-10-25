@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../components/ui';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Copy, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Copy, Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { MealEntry } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
@@ -13,6 +13,7 @@ export function FoodDiaryPage() {
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [copyToDate, setCopyToDate] = useState('');
   const [currentMealType, setCurrentMealType] = useState<string>('breakfast');
+  const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
 
   // Form state for adding meals
   const [newMeal, setNewMeal] = useState({
@@ -145,6 +146,98 @@ export function FoodDiaryPage() {
     }
   };
 
+  const handleEditClick = (meal: MealEntry) => {
+    // Populate form with meal data
+    const time = new Date(meal.timestamp).toTimeString().slice(0, 5);
+    const foodName = meal.foodItems.replace(' ⚠️', '');
+    const isUnhealthy = meal.foodItems.includes('⚠️');
+
+    setNewMeal({
+      foodItems: foodName,
+      time,
+      calories: meal.calories?.toString() || '',
+      sodium: meal.sodium?.toString() || '',
+      protein: meal.protein?.toString() || '',
+      carbs: meal.carbohydrates?.toString() || '',
+      fat: meal.totalFat?.toString() || '',
+      fiber: meal.fiber?.toString() || '',
+      notes: meal.notes || '',
+      isUnhealthy,
+    });
+
+    setEditingMeal(meal);
+    setCurrentMealType(meal.mealType);
+    setShowAddDialog(true);
+  };
+
+  const handleUpdateMeal = async () => {
+    if (!editingMeal || !newMeal.foodItems.trim()) {
+      alert('Please enter a food item name');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const timestamp = `${selectedDate}T${newMeal.time}:00`;
+
+      await api.updateMeal(editingMeal.id, {
+        timestamp,
+        mealType: currentMealType,
+        foodItems: newMeal.foodItems + (newMeal.isUnhealthy ? ' ⚠️' : ''),
+        calories: newMeal.calories ? Number(newMeal.calories) : undefined,
+        sodium: newMeal.sodium ? Number(newMeal.sodium) : undefined,
+        protein: newMeal.protein ? Number(newMeal.protein) : undefined,
+        carbohydrates: newMeal.carbs ? Number(newMeal.carbs) : undefined,
+        totalFat: newMeal.fat ? Number(newMeal.fat) : undefined,
+        fiber: newMeal.fiber ? Number(newMeal.fiber) : undefined,
+        notes: newMeal.notes || undefined,
+      });
+
+      // Reset form
+      setNewMeal({
+        foodItems: '',
+        time: new Date().toTimeString().slice(0, 5),
+        calories: '',
+        sodium: '',
+        protein: '',
+        carbs: '',
+        fat: '',
+        fiber: '',
+        notes: '',
+        isUnhealthy: false,
+      });
+
+      setEditingMeal(null);
+      setShowAddDialog(false);
+      loadMeals(); // Refresh the meal list
+      alert('Meal updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating meal:', error);
+      alert('Failed to update meal: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteMeal = async (mealId: number) => {
+    if (!confirm('Are you sure you want to delete this meal entry?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.deleteMeal(mealId);
+      loadMeals(); // Refresh the meal list
+      alert('Meal deleted successfully!');
+    } catch (error: any) {
+      console.error('Error deleting meal:', error);
+      alert('Failed to delete meal: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getMealsByType = (mealType: string) => {
     return meals.filter(m => m.mealType.toLowerCase() === mealType.toLowerCase());
   };
@@ -254,6 +347,7 @@ export function FoodDiaryPage() {
               </h3>
               <button
                 onClick={() => {
+                  setEditingMeal(null);
                   setCurrentMealType(section.type);
                   setShowAddDialog(true);
                 }}
@@ -302,15 +396,31 @@ export function FoodDiaryPage() {
                             })}
                           </div>
                         </div>
-                        {meal.withinSpec !== null && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            meal.withinSpec
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {meal.withinSpec ? '✓ Within Goals' : '⚠ Over Limit'}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {meal.withinSpec !== null && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              meal.withinSpec
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {meal.withinSpec ? '✓ Within Goals' : '⚠ Over Limit'}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleEditClick(meal)}
+                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Edit meal"
+                          >
+                            <Edit className="h-4 w-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMeal(meal.id)}
+                            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Delete meal"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-gray-600 mt-2">
@@ -397,12 +507,12 @@ export function FoodDiaryPage() {
         </div>
       )}
 
-      {/* Add Meal Dialog */}
+      {/* Add/Edit Meal Dialog */}
       {showAddDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
             <h2 className="text-2xl font-bold mb-4" style={{ color: '#ff9500' }}>
-              Add {currentMealType.charAt(0).toUpperCase() + currentMealType.slice(1)}
+              {editingMeal ? 'Edit' : 'Add'} {currentMealType.charAt(0).toUpperCase() + currentMealType.slice(1)}
             </h2>
 
             <div className="space-y-4">
@@ -557,6 +667,7 @@ export function FoodDiaryPage() {
               <button
                 onClick={() => {
                   setShowAddDialog(false);
+                  setEditingMeal(null);
                   setNewMeal({
                     foodItems: '',
                     time: new Date().toTimeString().slice(0, 5),
@@ -576,12 +687,12 @@ export function FoodDiaryPage() {
                 Cancel
               </button>
               <button
-                onClick={handleAddMeal}
+                onClick={editingMeal ? handleUpdateMeal : handleAddMeal}
                 disabled={!newMeal.foodItems.trim() || loading}
                 className="flex-1 px-4 py-3 bg-cobalt-500 font-bold rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ color: '#22c55e' }}
               >
-                {loading ? 'Adding...' : 'Add Meal'}
+                {loading ? (editingMeal ? 'Updating...' : 'Adding...') : (editingMeal ? 'Update Meal' : 'Add Meal')}
               </button>
             </div>
           </div>
