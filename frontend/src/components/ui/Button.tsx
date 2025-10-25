@@ -28,11 +28,11 @@ export function Button({
   };
 
   const variantClasses = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700',
-    secondary: 'bg-gray-500 text-white hover:bg-gray-600 active:bg-gray-700',
-    danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
-    success: 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700',
-    glass: 'glass-button text-gray-700 hover:text-gray-900',
+    primary: 'bg-blue-600 text-white font-bold hover:bg-blue-700 active:bg-blue-800',
+    secondary: 'bg-gray-600 text-white font-bold hover:bg-gray-700 active:bg-gray-800',
+    danger: 'bg-red-600 text-white font-bold hover:bg-red-700 active:bg-red-800',
+    success: 'bg-green-600 text-white font-bold hover:bg-green-700 active:bg-green-800',
+    glass: 'glass-button text-blue-900 font-bold hover:text-blue-950 hover:bg-white/40',
   };
 
   return (

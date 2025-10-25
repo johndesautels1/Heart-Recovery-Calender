@@ -57,7 +57,7 @@
   }
 
   .glass-input {
-    @apply w-full px-4 py-2 rounded-lg outline-none transition-all duration-300;
+    @apply w-full px-4 py-2 rounded-lg outline-none transition-all duration-300 text-gray-900 font-semibold placeholder:text-gray-600 placeholder:font-normal;
     background: rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -65,9 +65,10 @@
   }
 
   .glass-input:focus {
-    background: rgba(255, 255, 255, 0.4);
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    @apply text-blue-900;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgb(37, 99, 235);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
 
   /* Calendar event colors */

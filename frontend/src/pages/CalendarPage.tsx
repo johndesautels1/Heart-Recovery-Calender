@@ -38,6 +38,9 @@ export function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
+  const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
 
   const {
     register,
@@ -63,13 +66,21 @@ export function CalendarPage() {
   const loadCalendarsAndEvents = async () => {
     try {
       setIsLoading(true);
-      const [calendarsData, eventsData] = await Promise.all([
+
+      // Get date range for current month +/- 1 month for better coverage
+      const now = new Date();
+      const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
+
+      const [calendarsData, eventsData, mealsData] = await Promise.all([
         api.getCalendars(),
         api.getEvents(),
+        api.getMeals({ startDate, endDate }),
       ]);
-      
+
       setCalendars(calendarsData);
       setEvents(eventsData);
+      setAllMeals(mealsData);
 
       // Create default calendar if none exists
       if (calendarsData.length === 0) {
@@ -88,15 +99,32 @@ export function CalendarPage() {
     }
   };
 
-  const handleDateClick = (arg: any) => {
-    reset({
-      startTime: arg.dateStr + 'T09:00',
-      endTime: arg.dateStr + 'T10:00',
-      calendarId: calendars[0]?.id,
-      reminderMinutes: 30,
+  const handleDateClick = async (arg: any) => {
+    const clickedDate = arg.dateStr;
+    setSelectedDate(clickedDate);
+
+    // Load meals for this date
+    const dateMeals = allMeals.filter(meal => {
+      const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
+      return mealDate === clickedDate;
     });
-    setEditingEvent(null);
-    setIsEventModalOpen(true);
+
+    setSelectedDateMeals(dateMeals);
+
+    // If there are meals for this date, show them
+    if (dateMeals.length > 0) {
+      setShowDateDetailsModal(true);
+    } else {
+      // No meals, create a new event
+      reset({
+        startTime: arg.dateStr + 'T09:00',
+        endTime: arg.dateStr + 'T10:00',
+        calendarId: calendars[0]?.id,
+        reminderMinutes: 30,
+      });
+      setEditingEvent(null);
+      setIsEventModalOpen(true);
+    }
   };
 
   const handleEventClick = async (arg: any) => {
@@ -210,22 +238,47 @@ export function CalendarPage() {
     }
   };
 
-  const calendarEvents = events.map(event => {
-    const calendar = calendars.find(c => c.id === event.calendarId);
-    return {
-      id: event.id.toString(),
-      title: event.title,
-      start: event.startTime,
-      end: event.endTime,
-      allDay: event.isAllDay,
-      backgroundColor: calendar?.color || '#607d8b',
-      borderColor: calendar?.color || '#607d8b',
+  // Create calendar events from both regular events and meals
+  const calendarEvents = [
+    ...events.map(event => {
+      const calendar = calendars.find(c => c.id === event.calendarId);
+      return {
+        id: event.id.toString(),
+        title: event.title,
+        start: event.startTime,
+        end: event.endTime,
+        allDay: event.isAllDay,
+        backgroundColor: calendar?.color || '#607d8b',
+        borderColor: calendar?.color || '#607d8b',
+        extendedProps: {
+          ...event,
+          calendarType: calendar?.type,
+          isMealEvent: false,
+        },
+      };
+    }),
+    // Add meal indicators to calendar
+    ...Object.entries(
+      allMeals.reduce((acc, meal) => {
+        const date = new Date(meal.timestamp).toISOString().split('T')[0];
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(meal);
+        return acc;
+      }, {} as Record<string, MealEntry[]>)
+    ).map(([date, meals]) => ({
+      id: `meal-${date}`,
+      title: `🍽️ ${meals.length} meal${meals.length > 1 ? 's' : ''}`,
+      start: date,
+      allDay: true,
+      backgroundColor: '#ff9800',
+      borderColor: '#f57c00',
+      display: 'background',
       extendedProps: {
-        ...event,
-        calendarType: calendar?.type,
+        isMealEvent: true,
+        meals,
       },
-    };
-  });
+    }))
+  ];
 
   return (
     <div className="space-y-6">
@@ -618,6 +671,80 @@ export function CalendarPage() {
             <Plus className="h-5 w-5 mr-2" />
             Add Calendar
           </Button>
+        </div>
+      </Modal>
+
+      {/* Date Details Modal (for dates with meals but no events) */}
+      <Modal
+        isOpen={showDateDetailsModal}
+        onClose={() => {
+          setShowDateDetailsModal(false);
+          setSelectedDateMeals([]);
+          setSelectedDate(null);
+        }}
+        title={selectedDate ? `Meals for ${format(new Date(selectedDate), 'PPP')}` : 'Date Details'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedDateMeals.length > 0 && (
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <UtensilsCrossed className="h-5 w-5 text-green-600" />
+                <p className="font-bold text-gray-900">Meals for This Day</p>
+              </div>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {selectedDateMeals.map((meal) => (
+                  <div
+                    key={meal.id}
+                    className="bg-white rounded-lg border-2 border-gray-300 p-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-bold text-blue-900 capitalize">
+                            {meal.mealType}
+                          </span>
+                          <span className="text-xs font-semibold text-gray-700">
+                            {new Date(meal.timestamp).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 mt-1">{meal.foodItems}</p>
+                        <div className="flex items-center space-x-3 mt-1 text-xs font-semibold text-gray-600">
+                          {meal.calories && <span>{meal.calories} cal</span>}
+                          {meal.protein && <span>{meal.protein}g protein</span>}
+                          {meal.sodium && <span>{meal.sodium}mg sodium</span>}
+                        </div>
+                      </div>
+                      {meal.withinSpec !== null && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          meal.withinSpec
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {meal.withinSpec ? '✓' : '⚠'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4 border-t">
+            <Button
+              onClick={() => {
+                setShowDateDetailsModal(false);
+                setSelectedDateMeals([]);
+                setSelectedDate(null);
+              }}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

@@ -19,7 +19,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-bold text-blue-900 mb-1">
             {label}
           </label>
         )}
@@ -32,20 +32,20 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           )}
           {...props}
         >
-          <option value="" disabled>
+          <option value="" disabled className="text-gray-600">
             {placeholder}
           </option>
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="text-gray-900 font-semibold bg-white">
               {option.label}
             </option>
           ))}
         </select>
         {hint && !error && (
-          <p className="mt-1 text-sm text-gray-600">{hint}</p>
+          <p className="mt-1 text-sm font-semibold text-gray-700">{hint}</p>
         )}
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p className="mt-1 text-sm font-bold text-red-700">{error}</p>
         )}
       </div>
     );
