@@ -16,6 +16,7 @@ import {
   FoodDiaryPage,
   AnalyticsPage,
   ProfilePage,
+  PatientsPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/food-diary" element={<FoodDiaryPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/patients" element={<PatientsPage />} />
               </Route>
 
               {/* Default redirect */}
