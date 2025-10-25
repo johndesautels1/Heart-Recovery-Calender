@@ -274,7 +274,7 @@ export function MealsPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-800">
+              <h2 className="text-xl font-bold" style={{ color: '#22c55e' }}>
                 Found {foodItems.length} food{foodItems.length !== 1 ? 's' : ''}
               </h2>
             </div>
