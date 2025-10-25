@@ -258,7 +258,8 @@ export function FoodDiaryPage() {
         <GlassCard>
           <button
             onClick={() => setShowCopyDialog(true)}
-            className="w-full px-6 py-4 bg-gradient-to-r from-cobalt-500 to-sky-500 text-white font-bold rounded-lg hover:from-cobalt-600 hover:to-sky-600 transition-all flex items-center justify-center gap-2 shadow-lg"
+            className="w-full px-6 py-4 bg-gradient-to-r from-cobalt-500 to-sky-500 font-bold rounded-lg hover:from-cobalt-600 hover:to-sky-600 transition-all flex items-center justify-center gap-2 shadow-lg"
+            style={{ color: '#0052cc' }}
           >
             <Copy className="h-5 w-5" />
             Copy This Day's Meals to Another Date
