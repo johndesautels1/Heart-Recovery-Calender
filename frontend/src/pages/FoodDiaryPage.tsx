@@ -113,10 +113,10 @@ export function FoodDiaryPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Food Diary</h1>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>Food Diary</h1>
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-cobalt-600" />
-          <span className="text-sm text-gray-600">Daily Meal Tracker</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--ink-gold)' }}>Daily Meal Tracker</span>
         </div>
       </div>
 
@@ -131,7 +131,7 @@ export function FoodDiaryPage() {
           </button>
 
           <div className="flex-1 text-center">
-            <h2 className="text-2xl font-semibold text-gray-800">{formatDate(selectedDate)}</h2>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--ink-bright)' }}>{formatDate(selectedDate)}</h2>
             <input
               type="date"
               value={selectedDate}
@@ -151,27 +151,27 @@ export function FoodDiaryPage() {
 
       {/* Daily Totals */}
       <GlassCard>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Totals</h3>
+        <h3 className="text-lg font-bold text-bright mb-4" style={{ color: 'var(--ink-bright)' }}>Daily Totals</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-cobalt-600">{totals.calories}</div>
-            <div className="text-sm text-gray-600">Calories</div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Calories</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{totals.protein}g</div>
-            <div className="text-sm text-gray-600">Protein</div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Protein</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{totals.carbs}g</div>
-            <div className="text-sm text-gray-600">Carbs</div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Carbs</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">{totals.fat}g</div>
-            <div className="text-sm text-gray-600">Fat</div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Fat</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">{totals.sodium}mg</div>
-            <div className="text-sm text-gray-600">Sodium</div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Sodium</div>
           </div>
         </div>
       </GlassCard>
@@ -183,13 +183,13 @@ export function FoodDiaryPage() {
         return (
           <GlassCard key={section.type}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
                 <span className="mr-2">{section.icon}</span>
                 {section.label}
               </h3>
               <button
                 onClick={() => setShowAddDialog(true)}
-                className="px-4 py-2 bg-cobalt-500 text-white rounded-lg hover:bg-cobalt-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-cobalt-500 text-white font-bold rounded-lg hover:bg-cobalt-600 transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Add
@@ -257,7 +257,7 @@ export function FoodDiaryPage() {
         <GlassCard>
           <button
             onClick={() => setShowCopyDialog(true)}
-            className="w-full px-6 py-4 bg-gradient-to-r from-cobalt-500 to-sky-500 text-white font-semibold rounded-lg hover:from-cobalt-600 hover:to-sky-600 transition-all flex items-center justify-center gap-2 shadow-lg"
+            className="w-full px-6 py-4 bg-gradient-to-r from-cobalt-500 to-sky-500 text-white font-bold rounded-lg hover:from-cobalt-600 hover:to-sky-600 transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <Copy className="h-5 w-5" />
             Copy This Day's Meals to Another Date
