@@ -106,7 +106,8 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+                style={{ color: '#000000' }}
                 required
               />
             </div>
@@ -118,7 +119,8 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
                 type="time"
                 value={selectedTime}
                 onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+                style={{ color: '#000000' }}
                 required
               />
             </div>
