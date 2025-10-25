@@ -15,6 +15,7 @@ import Activity from './Activity';
 import FoodCategory from './FoodCategory';
 import FoodItem from './FoodItem';
 import MealItemEntry from './MealItemEntry';
+import MedicationLog from './MedicationLog';
 
 // Create models object
 const models = {
@@ -24,6 +25,7 @@ const models = {
   MealEntry,
   VitalsSample,
   Medication,
+  MedicationLog,
   TherapyGoal,
   Alert,
   PhysicalTherapyPhase,

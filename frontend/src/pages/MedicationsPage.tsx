@@ -88,27 +88,37 @@ export function MedicationsPage() {
   const onSubmit = async (data: MedicationFormData) => {
     try {
       setIsLoading(true);
-      
+
+      console.log('Form data being submitted:', data);
+
       if (editingMed) {
         const updated = await api.updateMedication(editingMed.id, data);
         setMedications(medications.map(m => m.id === updated.id ? updated : m));
         toast.success('Medication updated successfully');
       } else {
-        const newMed = await api.createMedication({
+        const newMedData = {
           ...data,
           isActive: true,
-        } as CreateMedicationInput);
+        } as CreateMedicationInput;
+
+        console.log('Creating medication with data:', newMedData);
+
+        const newMed = await api.createMedication(newMedData);
         setMedications([...medications, newMed]);
         toast.success('Medication added successfully');
       }
-      
+
       loadMedications();
       setIsModalOpen(false);
       reset();
       setEditingMed(null);
-    } catch (error) {
+      setMedicationName('');
+      setSelectedMedicationInfo(null);
+    } catch (error: any) {
       console.error('Failed to save medication:', error);
-      toast.error('Failed to save medication');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      toast.error(error.response?.data?.error || 'Failed to save medication');
     } finally {
       setIsLoading(false);
     }
@@ -515,7 +525,7 @@ export function MedicationsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold" style={{ color: '#ffffff' }}>
               Instructions (optional)
             </label>
             <textarea
@@ -527,7 +537,7 @@ export function MedicationsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold" style={{ color: '#ffffff' }}>
               Side Effects to Watch (optional)
             </label>
             <textarea
@@ -545,7 +555,7 @@ export function MedicationsPage() {
               className="rounded border-gray-300"
               {...register('reminderEnabled')}
             />
-            <label htmlFor="reminderEnabled" className="text-sm text-gray-700">
+            <label htmlFor="reminderEnabled" className="text-sm font-bold" style={{ color: '#ffffff' }}>
               Enable reminders for this medication
             </label>
           </div>

@@ -9,9 +9,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry } from '../types';
+import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication } from '../types';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, addDays, parseISO } from 'date-fns';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -41,6 +41,8 @@ export function CalendarPage() {
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
 
   const {
     register,
@@ -72,15 +74,32 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
-      const [calendarsData, eventsData, mealsData] = await Promise.all([
+      const [calendarsData, eventsData, mealsData, medicationsData] = await Promise.all([
         api.getCalendars(),
         api.getEvents(),
         api.getMeals({ startDate, endDate }),
+        api.getMedications(),
       ]);
 
       setCalendars(calendarsData);
       setEvents(eventsData);
       setAllMeals(mealsData);
+      setMedications(medicationsData);
+
+      // Load medication logs for the date range
+      try {
+        const response = await fetch(`/api/medications/logs?startDate=${startDate}&endDate=${endDate}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (response.ok) {
+          const logsData = await response.json();
+          setMedicationLogs(logsData.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load medication logs:', error);
+      }
 
       // Create default calendar if none exists
       if (calendarsData.length === 0) {
@@ -128,6 +147,65 @@ export function CalendarPage() {
   };
 
   const handleEventClick = async (arg: any) => {
+    // Check if it's a medication event
+    if (arg.event.extendedProps.isMedicationEvent) {
+      const { medication, status, scheduledTime, log } = arg.event.extendedProps;
+
+      // Show dialog to mark as taken/missed
+      const action = confirm(
+        `${medication.name} (${medication.dosage})\nScheduled: ${format(new Date(scheduledTime), 'PPP p')}\n\nClick OK to mark as TAKEN, or Cancel to mark as MISSED.`
+      );
+
+      try {
+        const newStatus = action ? 'taken' : 'missed';
+
+        if (log) {
+          // Update existing log
+          await fetch(`/api/medications/logs/${log.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({
+              status: newStatus,
+              takenTime: action ? new Date().toISOString() : null,
+            }),
+          });
+        } else {
+          // Create new log
+          await fetch(`/api/medications/${medication.id}/log-dose`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({
+              scheduledTime,
+              status: newStatus,
+              takenTime: action ? new Date().toISOString() : null,
+            }),
+          });
+        }
+
+        toast.success(`Medication marked as ${newStatus}`);
+
+        // Reload data
+        await loadCalendarsAndEvents();
+
+        // Send alert email if missed and reminders enabled
+        if (!action && medication.reminderEnabled) {
+          toast.error('⚠️ CRITICAL: Medication dose missed! Alert sent.');
+        }
+      } catch (error) {
+        console.error('Failed to log medication:', error);
+        toast.error('Failed to log medication');
+      }
+
+      return;
+    }
+
+    // Handle regular events
     const event = events.find(e => e.id === parseInt(arg.event.id));
     if (event) {
       setSelectedEvent(event);
@@ -238,6 +316,88 @@ export function CalendarPage() {
     }
   };
 
+  // Generate medication events for the calendar
+  const generateMedicationEvents = () => {
+    const medEvents: any[] = [];
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+
+    medications.filter(med => med.isActive).forEach(med => {
+      const startDate = parseISO(med.startDate);
+      const endDate = med.endDate ? parseISO(med.endDate) : monthEnd;
+
+      // Determine dose times based on frequency
+      const getTimes = (freq: string) => {
+        if (freq.toLowerCase().includes('once')) return ['09:00'];
+        if (freq.toLowerCase().includes('twice') || freq.includes('2')) return ['09:00', '21:00'];
+        if (freq.toLowerCase().includes('three') || freq.includes('3')) return ['09:00', '14:00', '21:00'];
+        if (freq.toLowerCase().includes('four') || freq.includes('4')) return ['09:00', '13:00', '17:00', '21:00'];
+        return ['09:00'];
+      };
+
+      const times = getTimes(med.frequency);
+
+      // Generate events for each day in range
+      let currentDate = new Date(Math.max(startDate.getTime(), monthStart.getTime()));
+      const endLoop = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
+
+      while (currentDate <= endLoop) {
+        times.forEach(time => {
+          const eventDateTime = new Date(currentDate);
+          const [hours, minutes] = time.split(':');
+          eventDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+          // Check if there's a log for this medication at this time
+          const log = medicationLogs.find(l =>
+            l.medicationId === med.id &&
+            new Date(l.scheduledTime).toDateString() === currentDate.toDateString()
+          );
+
+          const status = log?.status || 'scheduled';
+          const isPast = eventDateTime < now;
+
+          // Color coding based on status
+          let backgroundColor, textColor, title;
+          if (status === 'taken') {
+            backgroundColor = '#10b981'; // green
+            textColor = '#ffffff';
+            title = `✓ ${med.name}`;
+          } else if (status === 'missed' || (isPast && status === 'scheduled')) {
+            backgroundColor = '#dc2626'; // red
+            textColor = '#ffffff';
+            title = `⚠ ${med.name} - MISSED`;
+          } else {
+            backgroundColor = '#fefce8'; // light yellow
+            textColor = '#1e40af'; // cobalt blue
+            title = `💊 ${med.name}`;
+          }
+
+          medEvents.push({
+            id: `med-${med.id}-${currentDate.toISOString()}-${time}`,
+            title,
+            start: eventDateTime.toISOString(),
+            backgroundColor,
+            borderColor: status === 'missed' || (isPast && status === 'scheduled') ? '#991b1b' : backgroundColor,
+            textColor,
+            classNames: ['font-bold', 'cursor-pointer'],
+            extendedProps: {
+              isMedicationEvent: true,
+              medication: med,
+              log,
+              status,
+              scheduledTime: eventDateTime.toISOString(),
+            },
+          });
+        });
+
+        currentDate = addDays(currentDate, 1);
+      }
+    });
+
+    return medEvents;
+  };
+
   // Create calendar events from both regular events and meals
   const calendarEvents = [
     ...events.map(event => {
@@ -270,8 +430,10 @@ export function CalendarPage() {
       title: `🍽️ ${meals.length} meal${meals.length > 1 ? 's' : ''}`,
       start: date,
       allDay: true,
-      backgroundColor: '#ff9800',
-      borderColor: '#f57c00',
+      backgroundColor: '#fefce8',
+      borderColor: '#fef08a',
+      textColor: '#1e40af',
+      classNames: ['font-bold'],
       display: 'background',
       extendedProps: {
         isMealEvent: true,
@@ -302,7 +464,9 @@ export function CalendarPage() {
         isUnhealthyWarning: true,
         count,
       },
-    }))
+    })),
+    // Add medication events
+    ...generateMedicationEvents()
   ];
 
   return (

@@ -10,10 +10,12 @@ interface MedicationAttributes {
   prescribedBy?: string;
   startDate: Date;
   endDate?: Date;
+  timeOfDay?: string;
   purpose?: string;
   sideEffects?: string;
   instructions?: string;
   isActive: boolean;
+  reminderEnabled?: boolean;
   refillDate?: Date;
   remainingRefills?: number;
   pharmacy?: string;
@@ -34,10 +36,12 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
   public prescribedBy?: string;
   public startDate!: Date;
   public endDate?: Date;
+  public timeOfDay?: string;
   public purpose?: string;
   public sideEffects?: string;
   public instructions?: string;
   public isActive!: boolean;
+  public reminderEnabled?: boolean;
   public refillDate?: Date;
   public remainingRefills?: number;
   public pharmacy?: string;
@@ -88,6 +92,11 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
           type: DataTypes.DATE,
           allowNull: true,
         },
+        timeOfDay: {
+          type: DataTypes.STRING(100),
+          allowNull: true,
+          comment: 'When to take the medication',
+        },
         purpose: {
           type: DataTypes.TEXT,
           allowNull: true,
@@ -105,6 +114,10 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
         isActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: true,
+        },
+        reminderEnabled: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
         },
         refillDate: {
           type: DataTypes.DATE,
@@ -138,6 +151,7 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
 
   static associate(models: any) {
     Medication.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    Medication.hasMany(models.MedicationLog, { foreignKey: 'medicationId', as: 'logs' });
   }
 }
 

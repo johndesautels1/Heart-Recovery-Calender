@@ -67,11 +67,13 @@ router.delete('/vitals/:id', vitalsController.deleteVital);
 router.get('/medications', medicationsController.getMedications);
 router.post('/medications', medicationsController.addMedication);
 router.get('/medications/schedule', medicationsController.getSchedule);
+router.get('/medications/logs', medicationsController.getMedicationLogs);
 router.get('/medications/:id', medicationsController.getMedication);
 router.put('/medications/:id', medicationsController.updateMedication);
 router.delete('/medications/:id', medicationsController.deleteMedication);
 router.patch('/medications/:id/toggle-active', medicationsController.toggleActive);
 router.post('/medications/:id/log-dose', medicationsController.logDose);
+router.put('/medications/logs/:logId', medicationsController.updateMedicationLog);
 
 // ========== THERAPY GOALS ROUTES ==========
 router.get('/therapy-goals', therapyGoalsController.getTherapyGoals);
