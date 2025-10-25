@@ -77,7 +77,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
           {/* Food Item Info */}
           <div className="bg-gradient-to-br from-cobalt-50 to-sky-50 rounded-lg p-4 border border-cobalt-200">
             <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold text-lg text-gray-800">{foodItem.name}</h3>
+              <h3 className="font-semibold text-lg" style={{ color: '#fbbf24' }}>{foodItem.name}</h3>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthRatingColor(
                   foodItem.healthRating
@@ -87,9 +87,9 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
               </span>
             </div>
             {foodItem.servingSize && (
-              <p className="text-sm text-gray-600">Serving: {foodItem.servingSize}</p>
+              <p className="text-sm font-bold" style={{ color: '#fbbf24' }}>Serving: {foodItem.servingSize}</p>
             )}
-            <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-gray-600">
+            <div className="grid grid-cols-3 gap-2 mt-3 text-xs font-bold" style={{ color: '#fbbf24' }}>
               {foodItem.calories !== undefined && <div>Cal: {foodItem.calories}</div>}
               {foodItem.protein !== undefined && <div>Protein: {foodItem.protein}g</div>}
               {foodItem.sodium !== undefined && <div>Sodium: {foodItem.sodium}mg</div>}
@@ -99,7 +99,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
                 Date
               </label>
               <input
@@ -111,7 +111,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
                 Time
               </label>
               <input
@@ -126,7 +126,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
 
           {/* Meal Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
               Meal Type
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -155,7 +155,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
 
           {/* Portion Size */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
               Portion Size
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -184,7 +184,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
 
           {/* Quantity */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
               Quantity (servings)
             </label>
             <input
@@ -200,7 +200,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-2" style={{ color: '#fbbf24' }}>
               Notes (optional)
             </label>
             <textarea
