@@ -9,6 +9,8 @@ import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
 import * as therapyGoalsController from '../controllers/therapyGoalsController';
 import * as alertsController from '../controllers/alertsController';
+import * as foodCategoriesController from '../controllers/foodCategoriesController';
+import * as foodItemsController from '../controllers/foodItemsController';
 
 const router = Router();
 
@@ -89,5 +91,23 @@ router.delete('/alerts/:id', alertsController.deleteAlert);
 router.put('/alerts/:id/resolve', alertsController.resolveAlert);
 router.put('/alerts/:id/unresolve', alertsController.unresolveAlert);
 router.put('/alerts/:id/mark-notified', alertsController.markNotified);
+
+// ========== FOOD CATEGORIES ROUTES ==========
+router.get('/food-categories', foodCategoriesController.getFoodCategories);
+router.post('/food-categories', foodCategoriesController.createFoodCategory);
+router.get('/food-categories/:id', foodCategoriesController.getFoodCategoryById);
+router.put('/food-categories/:id', foodCategoriesController.updateFoodCategory);
+router.delete('/food-categories/:id', foodCategoriesController.deleteFoodCategory);
+
+// ========== FOOD ITEMS ROUTES ==========
+router.get('/food-items', foodItemsController.getFoodItems);
+router.post('/food-items', foodItemsController.createFoodItem);
+router.get('/food-items/search', foodItemsController.searchFoodItems);
+router.get('/food-items/stats', foodItemsController.getFoodStats);
+router.get('/food-items/category/:categoryId', foodItemsController.getFoodItemsByCategory);
+router.get('/food-items/rating/:rating', foodItemsController.getFoodItemsByHealthRating);
+router.get('/food-items/:id', foodItemsController.getFoodItemById);
+router.put('/food-items/:id', foodItemsController.updateFoodItem);
+router.delete('/food-items/:id', foodItemsController.deleteFoodItem);
 
 export default router;
