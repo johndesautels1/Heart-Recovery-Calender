@@ -211,7 +211,8 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-cobalt-500 text-white font-medium rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg"
+              className="flex-1 px-4 py-3 bg-cobalt-500 font-bold rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg"
+              style={{ color: '#ff9500' }}
             >
               Add to Meal
             </button>
