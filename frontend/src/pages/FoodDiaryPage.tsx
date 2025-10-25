@@ -12,6 +12,21 @@ export function FoodDiaryPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [copyToDate, setCopyToDate] = useState('');
+  const [currentMealType, setCurrentMealType] = useState<string>('breakfast');
+
+  // Form state for adding meals
+  const [newMeal, setNewMeal] = useState({
+    foodItems: '',
+    time: new Date().toTimeString().slice(0, 5),
+    calories: '',
+    sodium: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    fiber: '',
+    notes: '',
+    isUnhealthy: false,
+  });
 
   useEffect(() => {
     loadMeals();
@@ -76,6 +91,55 @@ export function FoodDiaryPage() {
     } catch (error: any) {
       console.error('Error copying meals:', error);
       alert('Failed to copy meals: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMeal = async () => {
+    if (!newMeal.foodItems.trim()) {
+      alert('Please enter a food item name');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const timestamp = `${selectedDate}T${newMeal.time}:00`;
+
+      await api.createMeal({
+        timestamp,
+        mealType: currentMealType,
+        foodItems: newMeal.foodItems + (newMeal.isUnhealthy ? ' ⚠️' : ''),
+        calories: newMeal.calories ? Number(newMeal.calories) : undefined,
+        sodium: newMeal.sodium ? Number(newMeal.sodium) : undefined,
+        protein: newMeal.protein ? Number(newMeal.protein) : undefined,
+        carbohydrates: newMeal.carbs ? Number(newMeal.carbs) : undefined,
+        totalFat: newMeal.fat ? Number(newMeal.fat) : undefined,
+        fiber: newMeal.fiber ? Number(newMeal.fiber) : undefined,
+        notes: newMeal.notes || undefined,
+      });
+
+      // Reset form
+      setNewMeal({
+        foodItems: '',
+        time: new Date().toTimeString().slice(0, 5),
+        calories: '',
+        sodium: '',
+        protein: '',
+        carbs: '',
+        fat: '',
+        fiber: '',
+        notes: '',
+        isUnhealthy: false,
+      });
+
+      setShowAddDialog(false);
+      loadMeals(); // Refresh the meal list
+      alert('Meal added successfully!');
+    } catch (error: any) {
+      console.error('Error adding meal:', error);
+      alert('Failed to add meal: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -189,7 +253,10 @@ export function FoodDiaryPage() {
                 {section.label}
               </h3>
               <button
-                onClick={() => setShowAddDialog(true)}
+                onClick={() => {
+                  setCurrentMealType(section.type);
+                  setShowAddDialog(true);
+                }}
                 className="px-4 py-2 bg-cobalt-500 text-white font-bold rounded-lg hover:bg-cobalt-600 transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
@@ -205,48 +272,64 @@ export function FoodDiaryPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {sectionMeals.map((meal) => (
-                  <div
-                    key={meal.id}
-                    className="bg-white rounded-lg border border-gray-200 p-4"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-800">{meal.foodItems}</div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(meal.timestamp).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
+                {sectionMeals.map((meal) => {
+                  const isUnhealthy = meal.foodItems.includes('⚠️');
+                  return (
+                    <div
+                      key={meal.id}
+                      className={`bg-white rounded-lg border-2 p-4 ${
+                        isUnhealthy ? 'border-red-500' : 'border-gray-200'
+                      }`}
+                    >
+                      {/* Red Warning Banner for Unhealthy Foods */}
+                      {isUnhealthy && (
+                        <div className="mb-3 p-2 bg-red-600 rounded-lg flex items-center gap-2">
+                          <span className="text-white font-bold text-sm">
+                            🚨 UNHEALTHY FOOD - HEART PATIENT SHOULD AVOID
+                          </span>
                         </div>
+                      )}
+
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className={`font-bold ${isUnhealthy ? 'text-red-700' : 'text-gray-800'}`}>
+                            {meal.foodItems}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(meal.timestamp).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                        {meal.withinSpec !== null && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            meal.withinSpec
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {meal.withinSpec ? '✓ Within Goals' : '⚠ Over Limit'}
+                          </span>
+                        )}
                       </div>
-                      {meal.withinSpec !== null && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          meal.withinSpec
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {meal.withinSpec ? '✓ Within Goals' : '⚠ Over Limit'}
-                        </span>
+
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-gray-600 mt-2">
+                        {meal.calories !== null && <div>Cal: {meal.calories}</div>}
+                        {meal.protein !== null && <div>Protein: {meal.protein}g</div>}
+                        {meal.carbohydrates !== null && <div>Carbs: {meal.carbohydrates}g</div>}
+                        {meal.totalFat !== null && <div>Fat: {meal.totalFat}g</div>}
+                        {meal.sodium !== null && <div>Sodium: {meal.sodium}mg</div>}
+                        {meal.fiber !== null && <div>Fiber: {meal.fiber}g</div>}
+                      </div>
+
+                      {meal.notes && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-sm text-gray-600 italic">{meal.notes}</p>
+                        </div>
                       )}
                     </div>
-
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-gray-600 mt-2">
-                      {meal.calories !== null && <div>Cal: {meal.calories}</div>}
-                      {meal.protein !== null && <div>Protein: {meal.protein}g</div>}
-                      {meal.carbohydrates !== null && <div>Carbs: {meal.carbohydrates}g</div>}
-                      {meal.totalFat !== null && <div>Fat: {meal.totalFat}g</div>}
-                      {meal.sodium !== null && <div>Sodium: {meal.sodium}mg</div>}
-                      {meal.fiber !== null && <div>Fiber: {meal.fiber}g</div>}
-                    </div>
-
-                    {meal.notes && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-sm text-gray-600 italic">{meal.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </GlassCard>
@@ -318,16 +401,189 @@ export function FoodDiaryPage() {
       {showAddDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Add Meal</h2>
-            <p className="text-gray-600">
-              Go to the <a href="/meals" className="text-cobalt-600 hover:underline">Food Database</a> to select and add foods to this day.
-            </p>
-            <button
-              onClick={() => setShowAddDialog(false)}
-              className="mt-4 w-full px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Close
-            </button>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: '#ff9500' }}>
+              Add {currentMealType.charAt(0).toUpperCase() + currentMealType.slice(1)}
+            </h2>
+
+            <div className="space-y-4">
+              {/* Food Item Name */}
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
+                  Food Item(s) *
+                </label>
+                <input
+                  type="text"
+                  value={newMeal.foodItems}
+                  onChange={(e) => setNewMeal({ ...newMeal, foodItems: e.target.value })}
+                  placeholder="e.g., Grilled Chicken Breast, Brown Rice, Steamed Broccoli"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-semibold"
+                  style={{ color: '#1a1a1a' }}
+                />
+              </div>
+
+              {/* Time */}
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={newMeal.time}
+                  onChange={(e) => setNewMeal({ ...newMeal, time: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+                  style={{ color: '#1a1a1a' }}
+                />
+              </div>
+
+              {/* Unhealthy Food Checkbox */}
+              <div className="flex items-center gap-3 p-3 bg-red-50 border-2 border-red-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="unhealthy"
+                  checked={newMeal.isUnhealthy}
+                  onChange={(e) => setNewMeal({ ...newMeal, isUnhealthy: e.target.checked })}
+                  className="w-5 h-5 text-red-600 focus:ring-red-500"
+                />
+                <label htmlFor="unhealthy" className="font-bold text-red-700 cursor-pointer">
+                  ⚠️ This is an unhealthy food (heart patient should avoid)
+                </label>
+              </div>
+
+              {/* Nutrition Info Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Calories
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.calories}
+                    onChange={(e) => setNewMeal({ ...newMeal, calories: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Sodium (mg)
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.sodium}
+                    onChange={(e) => setNewMeal({ ...newMeal, sodium: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.protein}
+                    onChange={(e) => setNewMeal({ ...newMeal, protein: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.carbs}
+                    onChange={(e) => setNewMeal({ ...newMeal, carbs: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.fat}
+                    onChange={(e) => setNewMeal({ ...newMeal, fat: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{ color: '#1a1a1a' }}>
+                    Fiber (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newMeal.fiber}
+                    onChange={(e) => setNewMeal({ ...newMeal, fiber: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 outline-none"
+                    style={{ color: '#1a1a1a' }}
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={newMeal.notes}
+                  onChange={(e) => setNewMeal({ ...newMeal, notes: e.target.value })}
+                  placeholder="Add any additional notes..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none"
+                  style={{ color: '#1a1a1a' }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddDialog(false);
+                  setNewMeal({
+                    foodItems: '',
+                    time: new Date().toTimeString().slice(0, 5),
+                    calories: '',
+                    sodium: '',
+                    protein: '',
+                    carbs: '',
+                    fat: '',
+                    fiber: '',
+                    notes: '',
+                    isUnhealthy: false,
+                  });
+                }}
+                className="flex-1 px-4 py-3 border border-gray-300 font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                style={{ color: '#dc2626' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMeal}
+                disabled={!newMeal.foodItems.trim() || loading}
+                className="flex-1 px-4 py-3 bg-cobalt-500 font-bold rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: '#22c55e' }}
+              >
+                {loading ? 'Adding...' : 'Add Meal'}
+              </button>
+            </div>
           </div>
         </div>
       )}
