@@ -36,8 +36,8 @@ passport.use(new AppleStrategy({
 }));
 
 passport.serializeUser((user: any, done) => done(null, user.id));
-passport.deserializeUser(async (id, done) => {
-  const user = await User.findByPk(id);
+passport.deserializeUser(async (id: string | number, done) => {
+  const user = await User.findByPk(id as number);
   done(null, user);
 });
 

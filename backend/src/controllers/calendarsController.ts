@@ -5,9 +5,13 @@ import CalendarEvent from '../models/CalendarEvent';
 // GET /api/calendars - Get all calendars for user
 export const getCalendars = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || req.query.userId;
+    const userId = req.user?.id;
 
-    const calendars = await Calendar.findAll({ 
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const calendars = await Calendar.findAll({
       where: { userId },
       order: [['name', 'ASC']]
     });

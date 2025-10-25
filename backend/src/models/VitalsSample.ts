@@ -106,6 +106,7 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.FLOAT,
           allowNull: true,
           comment: 'HRV in milliseconds',
+          field: 'hrVariability',
         },
         weight: {
           type: DataTypes.FLOAT,
@@ -135,16 +136,19 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'Total cholesterol in mg/dL',
+          field: 'cholesterol',
         },
         cholesterolLDL: {
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'LDL cholesterol in mg/dL',
+          field: 'ldl',
         },
         cholesterolHDL: {
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'HDL cholesterol in mg/dL',
+          field: 'hdl',
         },
         triglycerides: {
           type: DataTypes.INTEGER,

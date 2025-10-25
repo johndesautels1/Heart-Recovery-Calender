@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 import sequelize from './models';
 import logger from './utils/logger';
 import apiRoutes from './routes/index';
-import authRoutes from './routes/auth';
+// import authRoutes from './routes/auth';
 import { metricsMiddleware } from './middleware/metrics';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { initializeScheduler } from './services/notificationScheduler';
+// import { initializeScheduler } from './services/notificationScheduler';
 
 dotenv.config();
 
@@ -21,7 +21,6 @@ app.use((_req, _res, next) => {
 });
 
 app.use('/api', apiRoutes);
-app.use('/api/auth', authRoutes);
 
 app.get('/metrics', metricsMiddleware);
 
@@ -33,8 +32,8 @@ sequelize.authenticate().then(() => {
   logger.info('Database connected');
 
   // Initialize notification scheduler after database connection
-  initializeScheduler();
-  logger.info('Notification scheduler initialized');
+  // initializeScheduler();
+  // logger.info('Notification scheduler initialized');
 }).catch(err => {
   logger.error('Database connection error', err);
 });

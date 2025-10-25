@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import { authAPI } from '../services/api';
 
 interface User {
   id: number;
@@ -29,7 +30,7 @@ interface AuthState {
   clearError: () => void;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -48,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
           // Fetch user data
-          const response = await axios.get(`${API_BASE_URL}/auth/me`);
+          const response = await authAPI.getMe();
 
           set({
             token,
@@ -87,7 +88,7 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         try {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await axios.get(`${API_BASE_URL}/auth/me`);
+          const response = await authAPI.getMe();
 
           set({
             token,

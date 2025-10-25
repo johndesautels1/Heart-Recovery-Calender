@@ -25,11 +25,6 @@ export const getEvents = async (req: Request, res: Response) => {
 
     const events = await CalendarEvent.findAll({
       where,
-      include: [{
-        model: Calendar,
-        as: 'calendar',
-        attributes: ['name', 'type', 'color']
-      }],
       order: [['startTime', 'ASC']]
     });
 
@@ -56,12 +51,7 @@ export const getEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const event = await CalendarEvent.findByPk(id, {
-      include: [{
-        model: Calendar,
-        as: 'calendar'
-      }]
-    });
+    const event = await CalendarEvent.findByPk(id);
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });

@@ -91,7 +91,6 @@ export default function CalendarView() {
   const { data: calendars } = useQuery({
     queryKey: ['calendars'],
     queryFn: () => calendarAPI.getCalendars(),
-    enabled: !!user?.id,
   });
 
   // Fetch events
@@ -102,7 +101,6 @@ export default function CalendarView() {
         start: moment(date).startOf('month').subtract(7, 'days').toISOString(),
         end: moment(date).endOf('month').add(7, 'days').toISOString(),
       }),
-    enabled: !!user?.id,
   });
 
   // Create event mutation

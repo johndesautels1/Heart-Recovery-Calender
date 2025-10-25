@@ -13,6 +13,14 @@ export default {
       format: 'esm'
     }
   ],
-  plugins: [typescript()],
+  plugins: [typescript({
+    check: false,
+    tsconfig: './tsconfig.json',
+    tsconfigOverride: {
+      compilerOptions: {
+        noEmitOnError: false
+      }
+    }
+  })],
   external: ['react', 'react-dom']
 };

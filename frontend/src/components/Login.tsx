@@ -78,14 +78,41 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleDemoLogin = async () => {
     setLoading(true);
-    authAPI.googleAuth();
+    try {
+      // Register a demo user
+      const response = await authAPI.login('demo@heartrecovery.com', 'Demo123!').catch(async () => {
+        // If login fails, register the user first
+        const registerResponse = await fetch('http://localhost:4000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'demo@heartrecovery.com',
+            password: 'Demo123!',
+            name: 'Demo User'
+          })
+        });
+        const data = await registerResponse.json();
+        return { data };
+      });
+
+      await login(response.data.token);
+      setMessage({ type: 'success', text: 'Welcome to Heart Recovery Calendar!' });
+    } catch (err: any) {
+      console.error('Demo login error:', err);
+      setMessage({ type: 'error', text: 'Demo login failed. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    handleDemoLogin();
   };
 
   const handleAppleLogin = () => {
-    setLoading(true);
-    authAPI.appleAuth();
+    handleDemoLogin();
   };
 
   if (loading) {
@@ -231,8 +258,26 @@ export default function Login() {
 
                 <Divider sx={{ my: 3 }}>OR</Divider>
 
-                <Alert severity="info" icon={<CheckCircle />}>
-                  For demo purposes, click either sign-in button to access the application
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="large"
+                  onClick={handleDemoLogin}
+                  sx={{
+                    py: 1.5,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                      borderColor: 'primary.dark',
+                      bgcolor: 'rgba(211, 47, 47, 0.04)',
+                    },
+                  }}
+                >
+                  Demo Login (No Account Required)
+                </Button>
+
+                <Alert severity="info" icon={<CheckCircle />} sx={{ mt: 2 }}>
+                  Click any button above for instant demo access
                 </Alert>
 
                 <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid #eee' }}>

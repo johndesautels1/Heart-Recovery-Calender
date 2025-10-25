@@ -51,7 +51,11 @@ export const addVital = async (req: Request, res: Response) => {
 // GET /api/vitals/latest - Get most recent vital signs
 export const getLatestVital = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || req.query.userId;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     const vital = await VitalsSample.findOne({
       where: { userId },
