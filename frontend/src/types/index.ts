@@ -244,6 +244,7 @@ export interface FoodItem {
   fiber?: number;
   sodium?: number;
   cholesterol?: number;
+  sugar?: number;
   servingSize?: string;
   notes?: string;
   createdAt: string;

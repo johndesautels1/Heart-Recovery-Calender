@@ -13,6 +13,7 @@ interface FoodItemAttributes {
   fiber?: number;
   sodium?: number;
   cholesterol?: number;
+  sugar?: number;
   servingSize?: string;
   notes?: string;
   createdAt?: Date;
@@ -33,6 +34,7 @@ class FoodItem extends Model<FoodItemAttributes, FoodItemCreationAttributes> imp
   public fiber?: number;
   public sodium?: number;
   public cholesterol?: number;
+  public sugar?: number;
   public servingSize?: string;
   public notes?: string;
   public readonly createdAt!: Date;
@@ -98,6 +100,11 @@ class FoodItem extends Model<FoodItemAttributes, FoodItemCreationAttributes> imp
           type: DataTypes.DECIMAL(10, 2),
           allowNull: true,
           comment: 'Cholesterol in milligrams',
+        },
+        sugar: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          comment: 'Sugar in grams',
         },
         servingSize: {
           type: DataTypes.STRING(100),
