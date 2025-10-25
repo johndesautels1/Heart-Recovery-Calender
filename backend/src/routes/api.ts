@@ -11,6 +11,7 @@ import * as therapyGoalsController from '../controllers/therapyGoalsController';
 import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
+import * as patientsController from '../controllers/patientsController';
 
 const router = Router();
 
@@ -111,5 +112,14 @@ router.get('/food-items/rating/:rating', foodItemsController.getFoodItemsByHealt
 router.get('/food-items/:id', foodItemsController.getFoodItemById);
 router.put('/food-items/:id', foodItemsController.updateFoodItem);
 router.delete('/food-items/:id', foodItemsController.deleteFoodItem);
+
+// ========== PATIENTS ROUTES ==========
+router.get('/patients', patientsController.getPatients);
+router.post('/patients', patientsController.addPatient);
+router.get('/patients/:id', patientsController.getPatient);
+router.put('/patients/:id', patientsController.updatePatient);
+router.delete('/patients/:id', patientsController.deletePatient);
+router.patch('/patients/:id/toggle-active', patientsController.toggleActive);
+router.get('/patients/:id/post-op-week', patientsController.getPostOpWeek);
 
 export default router;

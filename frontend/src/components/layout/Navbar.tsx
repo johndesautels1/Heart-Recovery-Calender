@@ -15,9 +15,11 @@ import {
   Stethoscope,
   FileText,
   Moon,
-  Sun
+  Sun,
+  UserCircle2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useView } from '../../contexts/ViewContext';
 import clsx from 'clsx';
 
 export function Navbar() {
@@ -26,6 +28,7 @@ export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { viewMode, setViewMode, isTherapistView } = useView();
 
   // Load theme preference from localStorage on mount
   useEffect(() => {
@@ -50,6 +53,11 @@ export function Navbar() {
       document.body.classList.add('light-mode');
       localStorage.setItem('theme', 'light');
     }
+  };
+
+  const toggleView = () => {
+    const newViewMode = viewMode === 'patient' ? 'therapist' : 'patient';
+    setViewMode(newViewMode);
   };
 
   const handleLogout = () => {
@@ -124,6 +132,34 @@ export function Navbar() {
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
+            {/* View Toggle - Only show for therapists */}
+            {user?.role === 'therapist' && (
+              <button
+                onClick={toggleView}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105 font-medium"
+                style={{
+                  color: isTherapistView ? '#10b981' : '#60a5fa',
+                  backgroundColor: isTherapistView ? 'rgba(16, 185, 129, 0.1)' : 'rgba(96, 165, 250, 0.1)',
+                  borderWidth: '2px',
+                  borderStyle: 'solid',
+                  borderColor: isTherapistView ? '#10b981' : '#60a5fa',
+                }}
+                title={isTherapistView ? 'Switch to Patient View' : 'Switch to Therapist View'}
+              >
+                {isTherapistView ? (
+                  <>
+                    <Stethoscope className="h-5 w-5" />
+                    <span className="text-sm">Therapist View</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCircle2 className="h-5 w-5" />
+                    <span className="text-sm">Patient View</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <Link
               to="/profile"
               className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
@@ -189,6 +225,33 @@ export function Navbar() {
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
+
+            {/* View Toggle for Mobile - Only show for therapists */}
+            {user?.role === 'therapist' && (
+              <button
+                onClick={toggleView}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium"
+                style={{
+                  color: isTherapistView ? '#10b981' : '#60a5fa',
+                  backgroundColor: isTherapistView ? 'rgba(16, 185, 129, 0.1)' : 'rgba(96, 165, 250, 0.1)',
+                  borderWidth: '2px',
+                  borderStyle: 'solid',
+                  borderColor: isTherapistView ? '#10b981' : '#60a5fa',
+                }}
+              >
+                {isTherapistView ? (
+                  <>
+                    <Stethoscope className="h-5 w-5" />
+                    <span>Therapist View</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCircle2 className="h-5 w-5" />
+                    <span>Patient View</span>
+                  </>
+                )}
+              </button>
+            )}
 
             <Link
               to="/profile"

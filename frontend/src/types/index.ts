@@ -279,3 +279,37 @@ export interface FoodStats {
     itemCount: number;
   }>;
 }
+
+// Patient management (therapist view)
+export interface Patient {
+  id: number;
+  therapistId: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  zoomHandle?: string;
+  surgeryDate?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePatientInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  zoomHandle?: string;
+  surgeryDate?: string;
+  notes?: string;
+  isActive?: boolean;
+}
+
+export interface PostOpWeekResponse {
+  postOpWeek: number | null;
+  daysSinceSurgery: number | null;
+  surgeryDate?: string;
+  isPreSurgery: boolean;
+}

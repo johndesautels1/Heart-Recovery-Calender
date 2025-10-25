@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
+import { ViewProvider } from './contexts/ViewContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import {
@@ -30,35 +31,37 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+        <ViewProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Protected routes */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/vitals" element={<VitalsPage />} />
-              <Route path="/medications" element={<MedicationsPage />} />
-              <Route path="/meals" element={<MealsPage />} />
-              <Route path="/food-diary" element={<FoodDiaryPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-            </Route>
+              {/* Protected routes */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/vitals" element={<VitalsPage />} />
+                <Route path="/medications" element={<MedicationsPage />} />
+                <Route path="/meals" element={<MealsPage />} />
+                <Route path="/food-diary" element={<FoodDiaryPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Route>
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Router>
+              {/* Default redirect */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Router>
+        </ViewProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

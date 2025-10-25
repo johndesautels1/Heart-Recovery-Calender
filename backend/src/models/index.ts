@@ -16,6 +16,7 @@ import FoodCategory from './FoodCategory';
 import FoodItem from './FoodItem';
 import MealItemEntry from './MealItemEntry';
 import MedicationLog from './MedicationLog';
+import Patient from './Patient';
 
 // Create models object
 const models = {
@@ -34,6 +35,7 @@ const models = {
   FoodCategory,
   FoodItem,
   MealItemEntry,
+  Patient,
 };
 
 // Call associate methods for all models
