@@ -7,6 +7,7 @@ import * as eventsController from '../controllers/calendarController';
 import * as mealsController from '../controllers/mealController';
 import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
+import * as therapyGoalsController from '../controllers/therapyGoalsController';
 
 const router = Router();
 
@@ -68,5 +69,13 @@ router.put('/medications/:id', medicationsController.updateMedication);
 router.delete('/medications/:id', medicationsController.deleteMedication);
 router.patch('/medications/:id/toggle-active', medicationsController.toggleActive);
 router.post('/medications/:id/log-dose', medicationsController.logDose);
+
+// ========== THERAPY GOALS ROUTES ==========
+router.get('/therapy-goals', therapyGoalsController.getTherapyGoals);
+router.post('/therapy-goals', therapyGoalsController.createTherapyGoal);
+router.get('/therapy-goals/:id', therapyGoalsController.getTherapyGoal);
+router.put('/therapy-goals/:id', therapyGoalsController.updateTherapyGoal);
+router.delete('/therapy-goals/:id', therapyGoalsController.deleteTherapyGoal);
+router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
 
 export default router;
