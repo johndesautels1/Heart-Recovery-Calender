@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { 
-  Pill, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Clock, 
+import {
+  Pill,
+  Plus,
+  Edit,
+  Trash2,
+  Clock,
   Calendar,
   User,
   AlertCircle,
@@ -20,6 +20,9 @@ import api from '../services/api';
 import { Medication, CreateMedicationInput } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { MedicationAutocomplete } from '../components/MedicationAutocomplete';
+import { SideEffectWarnings } from '../components/SideEffectWarnings';
+import { type MedicationInfo, STANDARD_FREQUENCIES, STANDARD_TIMES_OF_DAY } from '../data/medicationDatabase';
 
 const medicationSchema = z.object({
   name: z.string().min(1, 'Medication name is required'),
@@ -44,6 +47,10 @@ export function MedicationsPage() {
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('active');
+
+  // Autocomplete state
+  const [medicationName, setMedicationName] = useState('');
+  const [selectedMedicationInfo, setSelectedMedicationInfo] = useState<MedicationInfo | null>(null);
 
   const {
     register,
@@ -388,25 +395,62 @@ export function MedicationsPage() {
           setIsModalOpen(false);
           reset();
           setEditingMed(null);
+          setMedicationName('');
+          setSelectedMedicationInfo(null);
         }}
         title={editingMed ? 'Edit Medication' : 'Add Medication'}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Medication Name"
-              placeholder="e.g., Aspirin"
-              error={errors.name?.message}
-              {...register('name')}
-            />
+          {/* Medication Name Autocomplete */}
+          <MedicationAutocomplete
+            value={medicationName}
+            onChange={(value) => {
+              setMedicationName(value);
+              setValue('name', value);
+            }}
+            onMedicationSelect={(medInfo) => {
+              setSelectedMedicationInfo(medInfo);
+            }}
+            error={errors.name?.message}
+          />
 
-            <Input
-              label="Dosage"
-              placeholder="e.g., 81mg"
-              error={errors.dosage?.message}
-              {...register('dosage')}
-            />
+          {/* Side Effect Warnings - Show after medication is selected */}
+          {selectedMedicationInfo && (
+            <SideEffectWarnings medication={selectedMedicationInfo} />
+          )}
+
+          {/* Dosage Selection - Dynamic based on selected medication */}
+          <div>
+            <label className="block text-sm font-bold mb-2" style={{ color: '#ffffff' }}>
+              Dosage *
+            </label>
+            {selectedMedicationInfo && selectedMedicationInfo.commonDosages.length > 0 ? (
+              <select
+                {...register('dosage')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold bg-white"
+                style={{ color: '#000000' }}
+              >
+                <option value="">Select dosage...</option>
+                {selectedMedicationInfo.commonDosages.map((dosage) => (
+                  <option key={dosage} value={dosage}>
+                    {dosage}
+                  </option>
+                ))}
+                <option value="custom">Custom dosage...</option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                {...register('dosage')}
+                placeholder="e.g., 81mg"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cobalt-500 focus:border-cobalt-500 outline-none font-bold"
+                style={{ color: '#000000' }}
+              />
+            )}
+            {errors.dosage?.message && (
+              <p className="mt-1 text-sm text-red-600 font-bold">{errors.dosage.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
