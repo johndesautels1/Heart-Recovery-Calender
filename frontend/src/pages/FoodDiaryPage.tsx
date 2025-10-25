@@ -305,7 +305,7 @@ export function FoodDiaryPage() {
                 onClick={handleCopyToDay}
                 disabled={!copyToDate || loading}
                 className="flex-1 px-4 py-3 bg-cobalt-500 font-bold rounded-lg hover:bg-cobalt-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ color: '#ffffff' }}
+                style={{ color: '#fde68a' }}
               >
                 {loading ? 'Copying...' : 'Copy Meals'}
               </button>
