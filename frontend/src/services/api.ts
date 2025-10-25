@@ -1,110 +1,340 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance } from 'axios';
+import {
+  User,
+  AuthResponse,
+  Calendar,
+  CalendarEvent,
+  MealEntry,
+  VitalsSample,
+  Medication,
+  ApiResponse,
+  CreateCalendarInput,
+  CreateEventInput,
+  CreateMealInput,
+  CreateVitalsInput,
+  CreateMedicationInput,
+} from '../types';
 
-const API_BASE_URL = 'http://localhost:4000/api';
+class ApiService {
+  private api: AxiosInstance;
+  private token: string | null = null;
 
-// Create axios instance
-const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+  constructor() {
+    const baseURL = 'http://localhost:4000/api';
+    console.log('🔧 API BaseURL:', baseURL);
+    this.api = axios.create({
+      baseURL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-// Request interceptor to add token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Load token from localStorage on initialization
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      this.setToken(savedToken);
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+
+    // Request interceptor to add token
+    this.api.interceptors.request.use(
+      (config) => {
+        if (this.token) {
+          config.headers.Authorization = `Bearer ${this.token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Response interceptor to handle errors
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          // Clear token and redirect to login
+          this.clearToken();
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+    );
   }
-);
 
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+  setToken(token: string) {
+    this.token = token;
+    localStorage.setItem('token', token);
   }
-);
 
-// Calendar API
-export const calendarAPI = {
-  getCalendars: () => api.get('/calendars').then(res => res.data),
-  createCalendar: (data: any) => api.post('/calendars', data).then(res => res.data),
-  updateCalendar: (id: number, data: any) => api.put(`/calendars/${id}`, data).then(res => res.data),
-  deleteCalendar: (id: number) => api.delete(`/calendars/${id}`).then(res => res.data),
-};
+  clearToken() {
+    this.token = null;
+    localStorage.removeItem('token');
+  }
 
-// Events API
-export const eventsAPI = {
-  getEvents: (params?: { calendarId?: number; start?: string; end?: string }) =>
-    api.get('/events', { params }).then(res => res.data),
-  createEvent: (data: any) => api.post('/events', data).then(res => res.data),
-  updateEvent: (id: number, data: any) => api.put(`/events/${id}`, data).then(res => res.data),
-  deleteEvent: (id: number) => api.delete(`/events/${id}`).then(res => res.data),
-};
+  getToken() {
+    return this.token;
+  }
 
-// Meals API
-export const mealsAPI = {
-  getMeals: (params?: { userId?: number; date?: string }) =>
-    api.get('/meals', { params }).then(res => res.data),
-  addMeal: (data: any) => api.post('/meals', data).then(res => res.data),
-  updateMeal: (id: number, data: any) => api.put(`/meals/${id}`, data).then(res => res.data),
-  deleteMeal: (id: number) => api.delete(`/meals/${id}`).then(res => res.data),
-  getCompliance: (userId: number, date: string) =>
-    api.get(`/meals/compliance`, { params: { userId, date } }).then(res => res.data),
-};
+  // ==================== AUTH ENDPOINTS ====================
+  async login(email: string, password: string): Promise<AuthResponse> {
+    console.log('🔐 Attempting login to: auth/login');
+    const response = await this.api.post<AuthResponse>('auth/login', { email, password });
+    this.setToken(response.data.token);
+    return response.data;
+  }
 
-// Vitals API
-export const vitalsAPI = {
-  getVitals: (params?: { userId?: number; start?: string; end?: string }) =>
-    api.get('/vitals', { params }).then(res => res.data),
-  addVital: (data: any) => api.post('/vitals', data).then(res => res.data),
-  updateVital: (id: number, data: any) => api.put(`/vitals/${id}`, data).then(res => res.data),
-  deleteVital: (id: number) => api.delete(`/vitals/${id}`).then(res => res.data),
-  getLatest: (userId: number) => api.get(`/vitals/latest`, { params: { userId } }).then(res => res.data),
-};
+  async register(email: string, password: string, name: string): Promise<AuthResponse> {
+    const response = await this.api.post<AuthResponse>('auth/register', { email, password, name });
+    this.setToken(response.data.token);
+    return response.data;
+  }
 
-// Medications API
-export const medicationsAPI = {
-  getMedications: (params?: { userId?: number; active?: boolean }) =>
-    api.get('/medications', { params }).then(res => res.data),
-  addMedication: (data: any) => api.post('/medications', data).then(res => res.data),
-  updateMedication: (id: number, data: any) => api.put(`/medications/${id}`, data).then(res => res.data),
-  deleteMedication: (id: number) => api.delete(`/medications/${id}`).then(res => res.data),
-  toggleActive: (id: number) => api.patch(`/medications/${id}/toggle`).then(res => res.data),
-};
+  async getMe(): Promise<User> {
+    const response = await this.api.get<User>('auth/me');
+    return response.data;
+  }
 
-// Auth API
-export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post('auth/login', { email, password }).then(res => res.data),
-  logout: () => api.post('auth/logout').then(res => res.data),
-  getMe: () => api.get('auth/me').then(res => res.data),
-  updateProfile: (data: any) => api.put('auth/profile', data).then(res => res.data),
-  googleAuth: () => window.location.href = `${API_BASE_URL}/auth/google`,
-  appleAuth: () => window.location.href = `${API_BASE_URL}/auth/apple`,
-};
+  async updateProfile(data: Partial<User>): Promise<User> {
+    const response = await this.api.put<User>('auth/profile', data);
+    return response.data;
+  }
 
-// Reports API
-export const reportsAPI = {
-  getHealthSummary: (userId: number, start: string, end: string) =>
-    api.get('/reports/health-summary', { params: { userId, start, end } }).then(res => res.data),
-  getComplianceReport: (userId: number, period: string) =>
-    api.get('/reports/compliance', { params: { userId, period } }).then(res => res.data),
-  exportData: (userId: number, format: 'pdf' | 'csv') =>
-    api.get('/reports/export', { params: { userId, format }, responseType: 'blob' }).then(res => res.data),
-};
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    const response = await this.api.put<{ message: string }>('auth/password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  }
 
+  logout() {
+    this.clearToken();
+  }
+
+  // ==================== CALENDAR ENDPOINTS ====================
+  async getCalendars(): Promise<Calendar[]> {
+    const response = await this.api.get<ApiResponse<Calendar[]>>('calendars');
+    return response.data.data;
+  }
+
+  async getCalendar(id: number): Promise<Calendar> {
+    const response = await this.api.get<Calendar>(`calendars/${id}`);
+    return response.data;
+  }
+
+  async createCalendar(data: CreateCalendarInput): Promise<Calendar> {
+    const response = await this.api.post<Calendar>('calendars', data);
+    return response.data;
+  }
+
+  async updateCalendar(id: number, data: Partial<CreateCalendarInput>): Promise<Calendar> {
+    const response = await this.api.put<Calendar>(`calendars/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCalendar(id: number): Promise<void> {
+    await this.api.delete(`calendars/${id}`);
+  }
+
+  // ==================== CALENDAR EVENT ENDPOINTS ====================
+  async getEvents(calendarId?: number, startDate?: string, endDate?: string): Promise<CalendarEvent[]> {
+    const params = new URLSearchParams();
+    if (calendarId) params.append('calendarId', calendarId.toString());
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await this.api.get<ApiResponse<CalendarEvent[]>>(`events?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getEvent(id: number): Promise<CalendarEvent> {
+    const response = await this.api.get<CalendarEvent>(`events/${id}`);
+    return response.data;
+  }
+
+  async createEvent(data: CreateEventInput): Promise<CalendarEvent> {
+    const response = await this.api.post<CalendarEvent>('events', data);
+    return response.data;
+  }
+
+  async updateEvent(id: number, data: Partial<CreateEventInput>): Promise<CalendarEvent> {
+    const response = await this.api.put<CalendarEvent>(`events/${id}`, data);
+    return response.data;
+  }
+
+  async deleteEvent(id: number): Promise<void> {
+    await this.api.delete(`events/${id}`);
+  }
+
+  async updateEventStatus(id: number, status: CalendarEvent['status']): Promise<CalendarEvent> {
+    const response = await this.api.put<CalendarEvent>(`events/${id}/status`, { status });
+    return response.data;
+  }
+
+  // ==================== MEAL ENDPOINTS ====================
+  async getMeals(startDate?: string, endDate?: string): Promise<MealEntry[]> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await this.api.get<ApiResponse<MealEntry[]>>(`meals?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getMeal(id: number): Promise<MealEntry> {
+    const response = await this.api.get<MealEntry>(`meals/${id}`);
+    return response.data;
+  }
+
+  async createMeal(data: CreateMealInput): Promise<MealEntry> {
+    const response = await this.api.post<MealEntry>('meals', data);
+    return response.data;
+  }
+
+  async updateMeal(id: number, data: Partial<CreateMealInput>): Promise<MealEntry> {
+    const response = await this.api.put<MealEntry>(`meals/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMeal(id: number): Promise<void> {
+    await this.api.delete(`meals/${id}`);
+  }
+
+  // ==================== VITALS ENDPOINTS ====================
+  async getVitals(startDate?: string, endDate?: string): Promise<VitalsSample[]> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await this.api.get<ApiResponse<VitalsSample[]>>(`vitals?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getVital(id: number): Promise<VitalsSample> {
+    const response = await this.api.get<VitalsSample>(`vitals/${id}`);
+    return response.data;
+  }
+
+  async createVital(data: CreateVitalsInput): Promise<VitalsSample> {
+    const response = await this.api.post<VitalsSample>('vitals', data);
+    return response.data;
+  }
+
+  async updateVital(id: number, data: Partial<CreateVitalsInput>): Promise<VitalsSample> {
+    const response = await this.api.put<VitalsSample>(`vitals/${id}`, data);
+    return response.data;
+  }
+
+  async deleteVital(id: number): Promise<void> {
+    await this.api.delete(`vitals/${id}`);
+  }
+
+  async getLatestVital(): Promise<VitalsSample | null> {
+    const response = await this.api.get<VitalsSample>('/vitals/latest');
+    return response.data;
+  }
+
+  // ==================== MEDICATION ENDPOINTS ====================
+  async getMedications(activeOnly: boolean = false): Promise<Medication[]> {
+    const params = new URLSearchParams();
+    if (activeOnly) params.append('active', 'true');
+
+    const response = await this.api.get<ApiResponse<Medication[]>>(`medications?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getMedication(id: number): Promise<Medication> {
+    const response = await this.api.get<Medication>(`medications/${id}`);
+    return response.data;
+  }
+
+  async createMedication(data: CreateMedicationInput): Promise<Medication> {
+    const response = await this.api.post<Medication>('medications', data);
+    return response.data;
+  }
+
+  async updateMedication(id: number, data: Partial<CreateMedicationInput>): Promise<Medication> {
+    const response = await this.api.put<Medication>(`medications/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMedication(id: number): Promise<void> {
+    await this.api.delete(`medications/${id}`);
+  }
+
+  async toggleMedicationActive(id: number): Promise<Medication> {
+    const response = await this.api.put<Medication>(`medications/${id}/toggle-active`);
+    return response.data;
+  }
+
+  // ==================== ANALYTICS ENDPOINTS ====================
+  async getComplianceData(startDate: string, endDate: string) {
+    const params = new URLSearchParams({ startDate, endDate });
+    const response = await this.api.get(`analytics/compliance?${params.toString()}`);
+    return response.data;
+  }
+
+  async getVitalsTrends(startDate: string, endDate: string, metric: string) {
+    const params = new URLSearchParams({ startDate, endDate, metric });
+    const response = await this.api.get(`analytics/vitals-trends?${params.toString()}`);
+    return response.data;
+  }
+
+  async exportReport(startDate: string, endDate: string, format: 'pdf' | 'csv' = 'pdf') {
+    const params = new URLSearchParams({ startDate, endDate, format });
+    const response = await this.api.get(`analytics/export?${params.toString()}`, {
+      responseType: 'blob',
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `health-report-${startDate}-to-${endDate}.${format}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  // ==================== THERAPIST ENDPOINTS (Future) ====================
+  async getPatients(): Promise<User[]> {
+    const response = await this.api.get<ApiResponse<User[]>>('/therapist/patients');
+    return response.data.data;
+  }
+
+  async getPatientData(patientId: number, dataType: string, startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await this.api.get(`therapist/patients/${patientId}/${dataType}?${params.toString()}`);
+    return response.data;
+  }
+
+  async createPatientEvent(patientId: number, data: CreateEventInput): Promise<CalendarEvent> {
+    const response = await this.api.post<CalendarEvent>(`therapist/patients/${patientId}/events`, data);
+    return response.data;
+  }
+
+  // ==================== FOOD DATABASE ENDPOINTS (Future) ====================
+  async searchFoods(query: string): Promise<any[]> {
+    const response = await this.api.get(`foods/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  }
+
+  async getFavoriteFoods(): Promise<any[]> {
+    const response = await this.api.get('/foods/favorites');
+    return response.data;
+  }
+
+  async addFavoriteFood(foodId: number): Promise<void> {
+    await this.api.post(`foods/favorites/${foodId}`);
+  }
+
+  async removeFavoriteFood(foodId: number): Promise<void> {
+    await this.api.delete(`foods/favorites/${foodId}`);
+  }
+}
+
+// Export singleton instance
+export const api = new ApiService();
 export default api;

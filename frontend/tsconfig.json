@@ -1,15 +1,7 @@
 {
-  "compilerOptions": {
-    "target": "ES2017",
-    "module": "ESNext",
-    "jsx": "react-jsx",
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "noEmitOnError": false
-  },
-  "include": ["src"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

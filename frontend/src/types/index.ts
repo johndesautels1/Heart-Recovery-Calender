@@ -1,23 +1,57 @@
-// Type definitions for Heart Recovery Calendar
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  phoneNumber?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  doctorName?: string;
+  doctorPhone?: string;
+  timezone: string;
+  role?: 'patient' | 'therapist' | 'admin';
+  createdAt: string;
+  updatedAt: string;
+}
 
-export type CalendarEvent = {
-  id: string;
-  calendarId: string;
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface Calendar {
+  id: number;
+  userId: number;
+  name: string;
+  type: 'medications' | 'appointments' | 'exercise' | 'vitals' | 'diet' | 'general';
+  color?: string;
+  isSharedWithDoctor: boolean;
+  isActive: boolean;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: number;
+  calendarId: number;
   title: string;
+  description?: string;
   startTime: string;
   endTime: string;
-  status: 'confirmed' | 'requested' | 'to-request' | 'urgent';
-  colorTag?: string;
-  description?: string;
+  isAllDay: boolean;
   location?: string;
   recurrenceRule?: string;
-  reminderMinutes?: number;
+  reminderMinutes: number;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
-};
+  createdAt: string;
+  updatedAt: string;
+  calendar?: Calendar;  // Optional joined data
+}
 
-export type MealEntry = {
-  id: string;
-  userId: string;
+export interface MealEntry {
+  id: number;
+  userId: number;
   timestamp: string;
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   foodItems: string;
@@ -32,12 +66,106 @@ export type MealEntry = {
   carbohydrates?: number;
   withinSpec: boolean;
   notes?: string;
-};
+  createdAt: string;
+  updatedAt: string;
+}
 
-export type VitalSign = {
-  id: string;
-  userId: string;
+export interface VitalsSample {
+  id: number;
+  userId: number;
   timestamp: string;
+  bloodPressureSystolic?: number;
+  bloodPressureDiastolic?: number;
+  heartRate?: number;
+  heartRateVariability?: number;  // API returns this name
+  weight?: number;
+  temperature?: number;
+  oxygenSaturation?: number;
+  bloodSugar?: number;
+  cholesterolTotal?: number;      // API returns this name
+  cholesterolLDL?: number;        // API returns this name
+  cholesterolHDL?: number;        // API returns this name
+  triglycerides?: number;
+  respiratoryRate?: number;
+  notes?: string;
+  symptoms?: string;
+  medicationsTaken: boolean;
+  source: 'manual' | 'device' | 'import';
+  deviceId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Medication {
+  id: number;
+  userId: number;
+  name: string;
+  dosage: string;
+  frequency: string;
+  prescribedBy?: string;
+  startDate: string;
+  endDate?: string;
+  timeOfDay?: string;
+  instructions?: string;
+  sideEffects?: string;
+  isActive: boolean;
+  reminderEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// API Response wrapper types
+export interface ApiResponse<T> {
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// Form types for creating/updating entities
+export interface CreateCalendarInput {
+  name: string;
+  type: Calendar['type'];
+  color?: string;
+  description?: string;
+  isSharedWithDoctor?: boolean;
+}
+
+export interface CreateEventInput {
+  calendarId: number;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  isAllDay?: boolean;
+  location?: string;
+  recurrenceRule?: string;
+  reminderMinutes?: number;
+  notes?: string;
+}
+
+export interface CreateMealInput {
+  timestamp?: string;
+  mealType: MealEntry['mealType'];
+  foodItems: string;
+  calories?: number;
+  sodium?: number;
+  cholesterol?: number;
+  saturatedFat?: number;
+  totalFat?: number;
+  fiber?: number;
+  sugar?: number;
+  protein?: number;
+  carbohydrates?: number;
+  notes?: string;
+}
+
+export interface CreateVitalsInput {
+  timestamp?: string;
   bloodPressureSystolic?: number;
   bloodPressureDiastolic?: number;
   heartRate?: number;
@@ -46,89 +174,46 @@ export type VitalSign = {
   temperature?: number;
   oxygenSaturation?: number;
   bloodSugar?: number;
+  cholesterolTotal?: number;
+  cholesterolLDL?: number;
+  cholesterolHDL?: number;
+  triglycerides?: number;
   respiratoryRate?: number;
   notes?: string;
   symptoms?: string;
-  medicationsTaken: boolean;
-  source: 'manual' | 'device' | 'import';
-};
+  medicationsTaken?: boolean;
+  source?: VitalsSample['source'];
+  deviceId?: string;
+}
 
-export type Medication = {
-  id: string;
-  userId: string;
+export interface CreateMedicationInput {
   name: string;
   dosage: string;
   frequency: string;
   prescribedBy?: string;
   startDate: string;
   endDate?: string;
-  purpose?: string;
-  sideEffects?: string;
+  timeOfDay?: string;
   instructions?: string;
-  isActive: boolean;
-  refillDate?: string;
-  remainingRefills?: number;
-  pharmacy?: string;
-  pharmacyPhone?: string;
-  notes?: string;
-};
+  sideEffects?: string;
+  isActive?: boolean;
+  reminderEnabled?: boolean;
+}
 
-export type User = {
-  id: string;
-  email: string;
-  name: string;
-  phoneNumber?: string;
-  emergencyContact?: string;
-  emergencyPhone?: string;
-  doctorName?: string;
-  doctorPhone?: string;
-  timezone?: string;
-};
+// Dietary compliance limits
+export const DIETARY_LIMITS = {
+  calories: 2000,
+  sodium: 2300,
+  cholesterol: 300,
+  saturatedFat: 20,
+} as const;
 
-export type Calendar = {
-  id: string;
-  userId: string;
-  name: string;
-  type: 'medications' | 'appointments' | 'exercise' | 'vitals' | 'diet' | 'symptoms' | 'general';
-  color: string;
-  isSharedWithDoctor: boolean;
-  isActive: boolean;
-  description?: string;
-};
-
-export type ComplianceReport = {
-  date: string;
-  meals: { compliant: number; total: number; percentage: number };
-  medications: { taken: number; scheduled: number; percentage: number };
-  exercise: { completed: number; planned: number; minutes: number };
-  vitals: {
-    bloodPressure: { readings: number; inRange: number };
-    heartRate: { readings: number; inRange: number };
-  };
-  overallScore: number;
-};
-
-export type NotificationType =
-  | 'medication_reminder'
-  | 'vitals_alert'
-  | 'appointment_reminder'
-  | 'exercise_reminder'
-  | 'emergency_alert'
-  | 'compliance_report';
-
-export type NotificationPreferences = {
-  channels: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
-  };
-  quietHours: {
-    start: string;
-    end: string;
-  };
-  medicationReminders: {
-    enabled: boolean;
-    advanceMinutes: number;
-  };
-  emergencyOverrideQuietHours: boolean;
-};
+// Calendar type colors
+export const CALENDAR_COLORS = {
+  medications: '#9c27b0',
+  appointments: '#2196f3',
+  exercise: '#4caf50',
+  vitals: '#f44336',
+  diet: '#ff9800',
+  general: '#607d8b',
+} as const;
