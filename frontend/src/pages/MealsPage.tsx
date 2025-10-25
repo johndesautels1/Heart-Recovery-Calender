@@ -313,6 +313,7 @@ export function MealsPage() {
                     {item.carbs !== undefined && <div>Carbs: {item.carbs}g</div>}
                     {item.fat !== undefined && <div>Fat: {item.fat}g</div>}
                     {item.fiber !== undefined && <div>Fiber: {item.fiber}g</div>}
+                    {item.sugar !== undefined && <div>Sugar: {item.sugar}g</div>}
                     {item.sodium !== undefined && <div>Sodium: {item.sodium}mg</div>}
                   </div>
 

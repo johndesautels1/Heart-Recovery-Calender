@@ -92,6 +92,7 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
             <div className="grid grid-cols-3 gap-2 mt-3 text-xs font-bold" style={{ color: '#fbbf24' }}>
               {foodItem.calories !== undefined && <div>Cal: {foodItem.calories}</div>}
               {foodItem.protein !== undefined && <div>Protein: {foodItem.protein}g</div>}
+              {foodItem.sugar !== undefined && <div>Sugar: {foodItem.sugar}g</div>}
               {foodItem.sodium !== undefined && <div>Sodium: {foodItem.sodium}mg</div>}
             </div>
           </div>
