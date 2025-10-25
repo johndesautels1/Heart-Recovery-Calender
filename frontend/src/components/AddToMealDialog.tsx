@@ -135,11 +135,17 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
                   key={type}
                   type="button"
                   onClick={() => setMealType(type)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all capitalize ${
+                  className={`px-4 py-2 rounded-lg font-bold transition-all capitalize ${
                     mealType === type
-                      ? 'bg-cobalt-500 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'shadow-lg'
+                      : 'bg-gray-700 hover:bg-gray-600'
                   }`}
+                  style={mealType === type ? {
+                    background: 'linear-gradient(135deg, #ff9500, #fbbf24)',
+                    color: '#ffffff'
+                  } : {
+                    color: '#ffffff'
+                  }}
                 >
                   {type}
                 </button>
@@ -158,11 +164,17 @@ export function AddToMealDialog({ foodItem, onClose, onAdd }: AddToMealDialogPro
                   key={size}
                   type="button"
                   onClick={() => setPortionSize(size)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all capitalize ${
+                  className={`px-4 py-2 rounded-lg font-bold transition-all capitalize ${
                     portionSize === size
-                      ? 'bg-cobalt-500 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'shadow-lg'
+                      : 'bg-gray-700 hover:bg-gray-600'
                   }`}
+                  style={portionSize === size ? {
+                    background: 'linear-gradient(135deg, #ff9500, #fbbf24)',
+                    color: '#ffffff'
+                  } : {
+                    color: '#ffffff'
+                  }}
                 >
                   {size}
                 </button>
