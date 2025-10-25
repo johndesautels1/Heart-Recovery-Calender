@@ -277,6 +277,31 @@ export function CalendarPage() {
         isMealEvent: true,
         meals,
       },
+    })),
+    // Add red warning markers for days with unhealthy foods
+    ...Object.entries(
+      allMeals.reduce((acc, meal) => {
+        const date = new Date(meal.timestamp).toISOString().split('T')[0];
+        const isUnhealthy = meal.foodItems.includes('⚠️');
+        if (isUnhealthy) {
+          if (!acc[date]) acc[date] = 0;
+          acc[date]++;
+        }
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([date, count]) => ({
+      id: `unhealthy-${date}`,
+      title: `🚨 ${count} UNHEALTHY FOOD${count > 1 ? 'S' : ''}`,
+      start: date,
+      allDay: true,
+      backgroundColor: '#dc2626',
+      borderColor: '#991b1b',
+      textColor: '#ffffff',
+      classNames: ['font-bold', 'text-white'],
+      extendedProps: {
+        isUnhealthyWarning: true,
+        count,
+      },
     }))
   ];
 
