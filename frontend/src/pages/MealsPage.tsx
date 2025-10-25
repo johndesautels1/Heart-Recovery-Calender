@@ -138,25 +138,25 @@ export function MealsPage() {
           <GlassCard>
             <div className="text-center">
               <div className="text-3xl font-bold text-cobalt-600">{stats.totalItems}</div>
-              <div className="text-sm text-gray-600 mt-1">Total Foods</div>
+              <div className="text-sm font-bold mt-1" style={{ color: '#fbbf24' }}>Total Foods</div>
             </div>
           </GlassCard>
           <GlassCard>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600">{stats.healthRatingBreakdown.green}</div>
-              <div className="text-sm text-gray-600 mt-1">Heart-Healthy</div>
+              <div className="text-sm font-bold mt-1" style={{ color: '#fbbf24' }}>Heart-Healthy</div>
             </div>
           </GlassCard>
           <GlassCard>
             <div className="text-center">
               <div className="text-3xl font-bold text-yellow-600">{stats.healthRatingBreakdown.yellow}</div>
-              <div className="text-sm text-gray-600 mt-1">Moderation</div>
+              <div className="text-sm font-bold mt-1" style={{ color: '#fbbf24' }}>Moderation</div>
             </div>
           </GlassCard>
           <GlassCard>
             <div className="text-center">
               <div className="text-3xl font-bold text-red-600">{stats.healthRatingBreakdown.red}</div>
-              <div className="text-sm text-gray-600 mt-1">Limit/Avoid</div>
+              <div className="text-sm font-bold mt-1" style={{ color: '#fbbf24' }}>Limit/Avoid</div>
             </div>
           </GlassCard>
         </div>
