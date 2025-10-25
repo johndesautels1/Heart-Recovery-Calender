@@ -13,6 +13,9 @@ import {
   CreateMealInput,
   CreateVitalsInput,
   CreateMedicationInput,
+  FoodCategory,
+  FoodItem,
+  FoodStats,
 } from '../types';
 
 class ApiService {
@@ -315,23 +318,64 @@ class ApiService {
     return response.data;
   }
 
-  // ==================== FOOD DATABASE ENDPOINTS (Future) ====================
-  async searchFoods(query: string): Promise<any[]> {
-    const response = await this.api.get(`foods/search?q=${encodeURIComponent(query)}`);
+  // ==================== FOOD DATABASE ENDPOINTS ====================
+  async getFoodCategories(): Promise<FoodCategory[]> {
+    const response = await this.api.get<FoodCategory[]>('food-categories');
     return response.data;
   }
 
-  async getFavoriteFoods(): Promise<any[]> {
-    const response = await this.api.get('/foods/favorites');
+  async getFoodCategory(id: number): Promise<FoodCategory> {
+    const response = await this.api.get<FoodCategory>(`food-categories/${id}`);
     return response.data;
   }
 
-  async addFavoriteFood(foodId: number): Promise<void> {
-    await this.api.post(`foods/favorites/${foodId}`);
+  async getFoodItems(params?: {
+    categoryId?: number;
+    healthRating?: 'green' | 'yellow' | 'red';
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ total: number; items: FoodItem[]; limit: number | null; offset: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.categoryId) queryParams.append('categoryId', params.categoryId.toString());
+    if (params?.healthRating) queryParams.append('healthRating', params.healthRating);
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+
+    const response = await this.api.get<{ total: number; items: FoodItem[]; limit: number | null; offset: number }>(
+      `food-items?${queryParams.toString()}`
+    );
+    return response.data;
   }
 
-  async removeFavoriteFood(foodId: number): Promise<void> {
-    await this.api.delete(`foods/favorites/${foodId}`);
+  async searchFoodItems(query: string, categoryId?: number, healthRating?: string): Promise<FoodItem[]> {
+    const params = new URLSearchParams({ q: query });
+    if (categoryId) params.append('categoryId', categoryId.toString());
+    if (healthRating) params.append('healthRating', healthRating);
+
+    const response = await this.api.get<FoodItem[]>(`food-items/search?${params.toString()}`);
+    return response.data;
+  }
+
+  async getFoodItemsByCategory(categoryId: number): Promise<FoodItem[]> {
+    const response = await this.api.get<FoodItem[]>(`food-items/category/${categoryId}`);
+    return response.data;
+  }
+
+  async getFoodItemsByHealthRating(rating: 'green' | 'yellow' | 'red'): Promise<FoodItem[]> {
+    const response = await this.api.get<FoodItem[]>(`food-items/rating/${rating}`);
+    return response.data;
+  }
+
+  async getFoodStats(): Promise<FoodStats> {
+    const response = await this.api.get<FoodStats>('food-items/stats');
+    return response.data;
+  }
+
+  async getFoodItem(id: number): Promise<FoodItem> {
+    const response = await this.api.get<FoodItem>(`food-items/${id}`);
+    return response.data;
   }
 }
 

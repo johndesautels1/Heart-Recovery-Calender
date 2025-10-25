@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import FoodItem from '../models/FoodItem';
-import FoodCategory from '../models/FoodCategory';
+import { models } from '../models';
+
+const { FoodItem, FoodCategory } = models;
 
 /**
  * Get all food items with optional filters
@@ -28,13 +29,14 @@ export const getFoodItems = async (req: Request, res: Response) => {
 
     const queryOptions: any = {
       where,
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-          attributes: ['id', 'name', 'icon'],
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//           attributes: ['id', 'name', 'icon'],
+//         },
+//       ],
       order: [['name', 'ASC']],
     };
 
@@ -69,13 +71,14 @@ export const getFoodItemsByCategory = async (req: Request, res: Response) => {
 
     const items = await FoodItem.findAll({
       where: { categoryId },
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-          attributes: ['id', 'name', 'icon'],
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//           attributes: ['id', 'name', 'icon'],
+//         },
+//       ],
       order: [['name', 'ASC']],
     });
 
@@ -99,13 +102,14 @@ export const getFoodItemsByHealthRating = async (req: Request, res: Response) =>
 
     const items = await FoodItem.findAll({
       where: { healthRating: rating },
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-          attributes: ['id', 'name', 'icon'],
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//           attributes: ['id', 'name', 'icon'],
+//         },
+//       ],
       order: [['name', 'ASC']],
     });
 
@@ -143,13 +147,14 @@ export const searchFoodItems = async (req: Request, res: Response) => {
 
     const items = await FoodItem.findAll({
       where,
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-          attributes: ['id', 'name', 'icon'],
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//           attributes: ['id', 'name', 'icon'],
+//         },
+//       ],
       order: [['name', 'ASC']],
       limit: 50,
     });
@@ -169,12 +174,13 @@ export const getFoodItemById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const item = await FoodItem.findByPk(id, {
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//         },
+//       ],
     });
 
     if (!item) {
@@ -234,12 +240,13 @@ export const createFoodItem = async (req: Request, res: Response) => {
     });
 
     const itemWithCategory = await FoodItem.findByPk(item.id, {
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//         },
+//       ],
     });
 
     res.status(201).json(itemWithCategory);
@@ -274,12 +281,13 @@ export const updateFoodItem = async (req: Request, res: Response) => {
     await item.update(updateData);
 
     const updatedItem = await FoodItem.findByPk(id, {
-      include: [
-        {
-          model: FoodCategory,
-          as: 'category',
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodCategory,
+//           as: 'category',
+//         },
+//       ],
     });
 
     res.json(updatedItem);
@@ -328,13 +336,14 @@ export const getFoodStats = async (req: Request, res: Response) => {
         'name',
         'icon',
       ],
-      include: [
-        {
-          model: FoodItem,
-          as: 'foodItems',
-          attributes: [],
-        },
-      ],
+      // TEMPORARY: Removed due to association errors
+//       // include: [
+//         {
+//           model: FoodItem,
+//           as: 'foodItems',
+//           attributes: [],
+//         },
+//       ],
     });
 
     const categoryCounts = await Promise.all(

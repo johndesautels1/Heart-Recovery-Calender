@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import sequelize from './models';
+import sequelize, { models } from './models';
 import logger from './utils/logger';
 import apiRoutes from './routes/index';
 // import authRoutes from './routes/auth';
@@ -30,6 +30,7 @@ app.use(errorHandler);
 
 sequelize.authenticate().then(() => {
   logger.info('Database connected');
+  logger.info(`Models loaded: ${Object.keys(models).length} models`);
 
   // Initialize notification scheduler after database connection
   // initializeScheduler();

@@ -12,6 +12,7 @@ import {
   VitalsPage,
   MedicationsPage,
   MealsPage,
+  FoodDiaryPage,
   AnalyticsPage,
   ProfilePage,
 } from './pages';
@@ -48,6 +49,7 @@ function App() {
               <Route path="/vitals" element={<VitalsPage />} />
               <Route path="/medications" element={<MedicationsPage />} />
               <Route path="/meals" element={<MealsPage />} />
+              <Route path="/food-diary" element={<FoodDiaryPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>

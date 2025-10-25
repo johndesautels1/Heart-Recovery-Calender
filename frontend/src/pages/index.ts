@@ -5,5 +5,6 @@ export { CalendarPage } from './CalendarPage';
 export { VitalsPage } from './VitalsPage';
 export { MedicationsPage } from './MedicationsPage';
 export { MealsPage } from './MealsPage';
+export { FoodDiaryPage } from './FoodDiaryPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ProfilePage } from './ProfilePage';

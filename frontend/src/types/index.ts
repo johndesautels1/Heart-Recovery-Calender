@@ -217,3 +217,62 @@ export const CALENDAR_COLORS = {
   diet: '#ff9800',
   general: '#607d8b',
 } as const;
+
+// Food database types
+export interface FoodCategory {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  foodItems?: FoodItem[];
+}
+
+export interface FoodItem {
+  id: number;
+  categoryId: number;
+  name: string;
+  healthRating: 'green' | 'yellow' | 'red';
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  sodium?: number;
+  cholesterol?: number;
+  servingSize?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  category?: FoodCategory;
+}
+
+export interface MealItemEntry {
+  id: number;
+  mealEntryId: number;
+  foodItemId: number;
+  portionSize: 'small' | 'medium' | 'large';
+  quantity: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  foodItem?: FoodItem;
+}
+
+export interface FoodStats {
+  totalItems: number;
+  totalCategories: number;
+  healthRatingBreakdown: {
+    green: number;
+    yellow: number;
+    red: number;
+  };
+  itemsByCategory: Array<{
+    categoryId: number;
+    categoryName: string;
+    icon?: string;
+    itemCount: number;
+  }>;
+}

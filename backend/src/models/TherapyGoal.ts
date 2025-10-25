@@ -1,5 +1,5 @@
 import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from './index';
+import sequelize from './database';
 
 interface TherapyGoalAttributes {
   id: number;

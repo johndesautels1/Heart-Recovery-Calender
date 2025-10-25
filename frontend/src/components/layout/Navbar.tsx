@@ -35,6 +35,7 @@ export function Navbar() {
     { path: '/vitals', label: 'Vitals', icon: Activity },
     { path: '/medications', label: 'Medications', icon: Pill },
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
+    { path: '/food-diary', label: 'Food Diary', icon: FileText },
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 

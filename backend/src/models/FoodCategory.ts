@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from './index';
+import sequelize from './database';
 
 interface FoodCategoryAttributes {
   id: number;
@@ -61,10 +61,14 @@ class FoodCategory extends Model<FoodCategoryAttributes, FoodCategoryCreationAtt
   }
 
   static associate(models: any) {
+    console.log('[FoodCategory.associate] Called with models:', Object.keys(models));
+    console.log('[FoodCategory.associate] models.FoodItem exists?', !!models.FoodItem);
+    console.log('[FoodCategory.associate] Setting up hasMany with FoodItem');
     FoodCategory.hasMany(models.FoodItem, {
       foreignKey: 'categoryId',
       as: 'foodItems',
     });
+    console.log('[FoodCategory.associate] hasMany setup complete');
   }
 }
 

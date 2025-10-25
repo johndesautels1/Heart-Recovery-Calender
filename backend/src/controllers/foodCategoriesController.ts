@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import FoodCategory from '../models/FoodCategory';
-import FoodItem from '../models/FoodItem';
+import { models } from '../models';
+
+const { FoodCategory, FoodItem } = models;
 
 /**
  * Get all food categories
@@ -9,13 +10,14 @@ export const getFoodCategories = async (req: Request, res: Response) => {
   try {
     const categories = await FoodCategory.findAll({
       order: [['sortOrder', 'ASC']],
-      include: [
-        {
-          model: FoodItem,
-          as: 'foodItems',
-          attributes: ['id', 'name', 'healthRating'],
-        },
-      ],
+      // TEMPORARY: Removed include due to Sequelize association errors
+      // include: [
+      //   {
+      //     model: FoodItem,
+      //     as: 'foodItems',
+      //     attributes: ['id', 'name', 'healthRating'],
+      //   },
+      // ],
     });
 
     res.json(categories);
