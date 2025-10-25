@@ -1,15 +1,17 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { Footer } from '../Footer';
 import { Toaster } from 'react-hot-toast';
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8">
         <Outlet />
       </main>
+      <Footer />
       <Toaster
         position="top-right"
         toastOptions={{
