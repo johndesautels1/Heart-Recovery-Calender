@@ -4,18 +4,20 @@
 
 @layer base {
   :root {
-    /* Dark Mode (Default) - Matching cardiac-recovery-pro */
+    /* Dark Mode (Default) - High contrast colors for dark background */
     --bg: #0a0e1a;
     --card: #111827;
     --card-light: #1a2332;
-    --ink: #e5e7eb;
-    --muted: #9ca3af;
+    --ink: #ffffff;              /* Bright white for maximum contrast */
+    --ink-bright: #fef3c7;       /* Light gold for emphasis */
+    --ink-gold: #fde68a;         /* Bright gold for highlights */
+    --muted: #d1d5db;            /* Lighter muted for better readability */
     --accent: #60a5fa;
-    --good: #22c55e;
-    --warn: #f59e0b;
-    --bad: #ef4444;
-    --purple: #a78bfa;
-    --cyan: #06b6d4;
+    --good: #4ade80;             /* Brighter green */
+    --warn: #fbbf24;             /* Brighter yellow/orange */
+    --bad: #f87171;              /* Brighter red */
+    --purple: #c4b5fd;           /* Lighter purple */
+    --cyan: #22d3ee;             /* Brighter cyan */
   }
 
   /* Light Mode */
@@ -195,6 +197,23 @@
 }
 
 @layer utilities {
+  /* High-contrast text colors for dark mode */
+  .text-primary {
+    color: var(--ink);
+  }
+
+  .text-gold {
+    color: var(--ink-gold);
+  }
+
+  .text-bright {
+    color: var(--ink-bright);
+  }
+
+  .text-contrast-muted {
+    color: var(--muted);
+  }
+
   .text-gradient {
     @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
   }
