@@ -1048,14 +1048,14 @@ See browser console for full configuration details.
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Status:</span>
               <span
-                className={`px-2 py-1 text-xs rounded-full ${
+                className={`px-2 py-1 text-xs font-bold rounded-full ${
                   selectedEvent.status === 'completed'
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-green-600 text-white'
                     : selectedEvent.status === 'missed'
-                    ? 'bg-red-100 text-red-700'
+                    ? 'bg-red-600 text-white'
                     : selectedEvent.status === 'cancelled'
-                    ? 'bg-gray-100 text-gray-700'
-                    : 'bg-blue-100 text-blue-700'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-blue-600 text-white'
                 }`}
               >
                 {selectedEvent.status}
