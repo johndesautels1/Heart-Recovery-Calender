@@ -419,8 +419,11 @@ export function ExercisesPage() {
         patientCalendar = await createResponse.json();
       }
 
-      // Create event on patient's calendar with invitation
-      const eventData = {
+      // Create events on BOTH calendars
+      const patientName = patients.find(p => p.id === parseInt(schedulePatientId))?.name || 'Patient';
+
+      // Event for patient's calendar (with invitation)
+      const patientEventData = {
         calendarId: patientCalendar.id,
         title: schedulingExercise.name,
         description: schedulingExercise.description || '',
@@ -431,16 +434,39 @@ export function ExercisesPage() {
         invitationStatus: 'pending',
       };
 
-      await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(eventData),
-      });
+      // Event for therapist's calendar (for tracking)
+      const therapistEventData = {
+        calendarId: therapistCalendar.id,
+        title: `${schedulingExercise.name} - ${patientName}`,
+        description: `Exercise scheduled for ${patientName}\n\n${schedulingExercise.description || ''}`,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        exerciseId: schedulingExercise.id,
+        patientId: parseInt(schedulePatientId),
+        status: 'scheduled',
+      };
 
-      toast.success(`Exercise "${schedulingExercise.name}" scheduled for patient`);
+      // Create both events
+      await Promise.all([
+        fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(patientEventData),
+        }),
+        fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(therapistEventData),
+        }),
+      ]);
+
+      toast.success(`Exercise "${schedulingExercise.name}" scheduled for ${patientName}`);
       setIsScheduleModalOpen(false);
       setSchedulingExercise(null);
     } catch (error) {
