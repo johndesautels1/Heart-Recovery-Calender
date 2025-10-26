@@ -951,7 +951,7 @@ See browser console for full configuration details.
           <div className="space-y-4">
             <div>
               <h3 className="font-medium text-green-500">{selectedEvent.title}</h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-white font-bold mt-1 bg-gray-800 px-3 py-2 rounded-lg">
                 {format(new Date(selectedEvent.startTime), 'PPP p')} -
                 {format(new Date(selectedEvent.endTime), 'p')}
               </p>

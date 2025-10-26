@@ -169,7 +169,7 @@ class ApiService {
   }
 
   async updateEventStatus(id: number, status: CalendarEvent['status']): Promise<CalendarEvent> {
-    const response = await this.api.put<CalendarEvent>(`events/${id}/status`, { status });
+    const response = await this.api.patch<CalendarEvent>(`events/${id}/status`, { status });
     return response.data;
   }
 
