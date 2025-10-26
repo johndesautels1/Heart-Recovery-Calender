@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   Dumbbell,
@@ -17,7 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   Calendar,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -109,6 +111,7 @@ export function ExercisesPage() {
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   const { isTherapistView } = useView();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExerciseInput>();
 
@@ -474,7 +477,23 @@ export function ExercisesPage() {
         }),
       ]);
 
-      toast.success(`Exercise "${schedulingExercise.name}" scheduled for ${patientName}`);
+      toast.success(
+        (t) => (
+          <div className="flex flex-col space-y-2">
+            <span>Exercise "{schedulingExercise.name}" scheduled for {patientName}</span>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate('/calendar');
+              }}
+              className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+            >
+              View in Calendar →
+            </button>
+          </div>
+        ),
+        { duration: 6000 }
+      );
       setIsScheduleModalOpen(false);
       setSchedulingExercise(null);
     } catch (error) {
@@ -713,6 +732,13 @@ export function ExercisesPage() {
                     title="View exercise details"
                   >
                     <Info className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  </button>
+                  <button
+                    onClick={() => navigate('/calendar')}
+                    className="p-2 rounded-lg hover:bg-purple-500/20 transition-colors"
+                    title="Go to calendar"
+                  >
+                    <ExternalLink className="h-4 w-4" style={{ color: '#a855f7' }} />
                   </button>
                   <button
                     onClick={() => handleScheduleExercise(exercise)}
