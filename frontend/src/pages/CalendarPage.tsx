@@ -959,32 +959,33 @@ See browser console for full configuration details.
 
             {selectedEvent.location && (
               <div className="flex items-start space-x-2">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <p className="text-gray-700">{selectedEvent.location}</p>
+                <MapPin className="h-5 w-5 text-orange-500 mt-0.5" />
+                <p className="text-orange-600 font-medium">{selectedEvent.location}</p>
               </div>
             )}
 
+            {/* Description - Bright Sunshine Yellow/Orange with high contrast */}
             {selectedEvent.description && (
-              <div>
-                <p className="font-medium text-gray-700 mb-1">Description:</p>
-                <p className="text-gray-600">{selectedEvent.description}</p>
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-4 border-2 border-orange-300">
+                <p className="font-bold text-orange-800 mb-2 text-lg">Description:</p>
+                <p className="text-orange-900 font-semibold text-base leading-relaxed">{selectedEvent.description}</p>
               </div>
             )}
 
             {selectedEvent.notes && (
-              <div>
-                <p className="font-medium text-gray-700 mb-1">Notes:</p>
-                <p className="text-gray-600">{selectedEvent.notes}</p>
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-4 border-2 border-orange-300">
+                <p className="font-bold text-orange-800 mb-2 text-lg">Notes:</p>
+                <p className="text-orange-900 font-semibold text-base leading-relaxed">{selectedEvent.notes}</p>
               </div>
             )}
 
-            {/* Sleep Hours Section */}
-            <div className="bg-indigo-50 rounded-lg p-4">
+            {/* Sleep Hours Section - Moved AFTER description, with cobalt blue text */}
+            <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300 mt-6">
               <div className="flex items-center space-x-2 mb-2">
-                <Moon className="h-5 w-5 text-indigo-600" />
-                <p className="font-medium text-gray-700">Hours of Restful Sleep</p>
+                <Moon className="h-6 w-6 text-blue-700" />
+                <p className="font-bold text-blue-800 text-lg">Hours of Restful Sleep</p>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Sleep from the night before this date</p>
+              <p className="text-sm text-blue-700 font-medium mb-3">Sleep from the night before this date</p>
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
@@ -994,16 +995,23 @@ See browser console for full configuration details.
                   value={sleepHours}
                   onChange={(e) => setSleepHours(e.target.value)}
                   placeholder="Enter hours (e.g., 7.5)"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="flex-1 px-3 py-2 border-2 border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none text-blue-900 font-bold text-lg"
+                  style={{ color: '#1e40af' }}
                 />
                 <Button
                   size="sm"
                   onClick={handleUpdateSleepHours}
                   disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
                 >
-                  Save
+                  Save Sleep
                 </Button>
               </div>
+              {selectedEvent.sleepHours && (
+                <p className="text-blue-800 font-bold mt-2">
+                  Current: {selectedEvent.sleepHours} hours
+                </p>
+              )}
             </div>
 
             {/* Meals Section */}
