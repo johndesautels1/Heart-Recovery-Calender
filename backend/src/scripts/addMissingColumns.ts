@@ -36,6 +36,22 @@ async function addMissingColumns() {
     `);
     console.log('✓ Added patientId column');
 
+    // Add createdBy column
+    await sequelize.query(`
+      ALTER TABLE calendar_events
+      ADD COLUMN IF NOT EXISTS "createdBy" INTEGER
+      REFERENCES users(id);
+    `);
+    console.log('✓ Added createdBy column');
+
+    // Add exerciseId column
+    await sequelize.query(`
+      ALTER TABLE calendar_events
+      ADD COLUMN IF NOT EXISTS "exerciseId" INTEGER
+      REFERENCES exercises(id);
+    `);
+    console.log('✓ Added exerciseId column');
+
     console.log('All columns added successfully!');
     process.exit(0);
   } catch (error) {
