@@ -430,11 +430,11 @@ export function ExercisesPage() {
         patientCalendar = await createResponse.json();
       }
 
-      // Create events on BOTH calendars
+      // Create event ONLY on patient's calendar
       const patientName = patients.find(p => p.id === parseInt(schedulePatientId))?.name || 'Patient';
 
-      // Event for patient's calendar (with invitation)
-      const patientEventData = {
+      // Event for patient's calendar
+      const eventData = {
         calendarId: patientCalendar.id,
         title: schedulingExercise.name,
         description: schedulingExercise.description || '',
@@ -442,40 +442,18 @@ export function ExercisesPage() {
         endTime: endDateTime.toISOString(),
         exerciseId: schedulingExercise.id,
         patientId: parseInt(schedulePatientId),
-        invitationStatus: 'pending',
-      };
-
-      // Event for therapist's calendar (for tracking)
-      const therapistEventData = {
-        calendarId: therapistCalendar.id,
-        title: `${schedulingExercise.name} - ${patientName}`,
-        description: `Exercise scheduled for ${patientName}\n\n${schedulingExercise.description || ''}`,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
-        exerciseId: schedulingExercise.id,
-        patientId: parseInt(schedulePatientId),
         status: 'scheduled',
       };
 
-      // Create both events
-      await Promise.all([
-        fetch('/api/events', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(patientEventData),
-        }),
-        fetch('/api/events', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(therapistEventData),
-        }),
-      ]);
+      // Create the event
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(eventData),
+      });
 
       toast.success(
         (t) => (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication } from '../types';
+import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication, SleepLog } from '../types';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
@@ -54,6 +54,7 @@ export function CalendarPage() {
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
+  const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const qrCodeRef = useRef<HTMLDivElement>(null);
@@ -76,6 +77,7 @@ export function CalendarPage() {
 
   const isAllDay = watch('isAllDay');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadCalendarsAndEvents();
@@ -97,17 +99,19 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
-      const [calendarsData, eventsData, mealsData, medicationsData] = await Promise.all([
+      const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData] = await Promise.all([
         api.getCalendars(),
         api.getEvents(),
         api.getMeals({ startDate, endDate }),
         api.getMedications(),
+        api.getSleepLogs({ startDate, endDate }),
       ]);
 
       setCalendars(calendarsData);
       setEvents(eventsData);
       setAllMeals(mealsData);
       setMedications(medicationsData);
+      setSleepLogs(sleepLogsData);
 
       // Load medication logs for the date range
       try {
@@ -610,6 +614,72 @@ See browser console for full configuration details.
     return medEvents;
   };
 
+  // Create a map of sleep logs by date for quick lookup
+  const sleepLogsByDate = sleepLogs.reduce((acc, log) => {
+    acc[log.date] = log;
+    return acc;
+  }, {} as Record<string, SleepLog>);
+
+  // Custom day cell content to show sleep hours
+  const renderDayCellContent = (arg: any) => {
+    const dateStr = arg.date.toISOString().split('T')[0];
+    const sleepLog = sleepLogsByDate[dateStr];
+
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Sleep hours indicator - TOP LEFT corner with GREEN & BURGUNDY theme */}
+        {sleepLog && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/sleep');
+            }}
+            style={{
+              position: 'absolute',
+              top: '-1px',
+              left: '5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              padding: '2px 4px',
+              borderRadius: '0 0 6px 0',
+              background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 50%, #7c2d12 100%)',
+              border: '2px solid #15803d',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              zIndex: 10,
+              cursor: 'pointer',
+            }}
+            title="Click to view sleep journal"
+          >
+            <span style={{ fontSize: '8px', lineHeight: 1 }}>🛏️</span>
+            <span
+              style={{
+                color: '#ffffff',
+                fontSize: '7px',
+                fontWeight: 800,
+                lineHeight: 1,
+                textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
+              }}
+            >
+              {sleepLog.hoursSlept}h
+            </span>
+          </div>
+        )}
+
+        {/* Default day number - positioned in top right */}
+        <div style={{
+          position: 'absolute',
+          top: '4px',
+          right: '8px',
+          fontSize: '14px',
+          fontWeight: 400
+        }}>
+          {arg.dayNumberText}
+        </div>
+      </div>
+    );
+  };
+
   // Create calendar events from both regular events and meals
   const calendarEvents = [
     ...events.map(event => {
@@ -797,6 +867,20 @@ See browser console for full configuration details.
       </div>
 
       <GlassCard className="p-6">
+        <style>
+          {`
+            .fc-event-title,
+            .fc-event-time {
+              font-size: 0.72em !important;
+            }
+            .fc-daygrid-event {
+              font-size: 10.8px !important;
+            }
+            .fc-timegrid-event {
+              font-size: 12px !important;
+            }
+          `}
+        </style>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -809,6 +893,7 @@ See browser console for full configuration details.
           events={calendarEvents}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
+          dayCellContent={renderDayCellContent}
           editable={true}
           selectable={true}
           selectMirror={true}

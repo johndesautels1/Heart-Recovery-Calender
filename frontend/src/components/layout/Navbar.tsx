@@ -74,6 +74,7 @@ export function Navbar() {
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
     { path: '/sleep', label: 'Sleep Journal', icon: Moon },
+    { path: '/exercises', label: 'Exercise & Activities', icon: Dumbbell },
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
