@@ -8,16 +8,18 @@ import {
   Clock,
   Edit2,
   Trash2,
-  BarChart3
+  BarChart3,
+  Trophy,
+  Award
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
 import { SleepLog, CreateSleepLogInput, SleepStats } from '../types';
 import toast from 'react-hot-toast';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from 'date-fns';
 
 const sleepSchema = z.object({
   date: z.string().min(1, 'Date is required'),
@@ -166,29 +168,161 @@ export function SleepPage() {
     }
   };
 
+  // Helper function to get color based on sleep hours
+  const getSleepHoursColor = (hours: number) => {
+    if (hours >= 0 && hours < 3) return '#ef4444'; // Red
+    if (hours >= 3 && hours < 6) return '#f59e0b'; // Orange
+    if (hours >= 6 && hours < 9) return '#3b82f6'; // Blue
+    if (hours >= 9 && hours <= 12) return '#10b981'; // Green
+    return '#6b7280'; // Gray for > 12 hours
+  };
+
+  // Helper function to get category name based on sleep hours
+  const getSleepHoursCategory = (hours: number) => {
+    if (hours >= 0 && hours < 3) return 'Critical (0-3h)';
+    if (hours >= 3 && hours < 6) return 'Poor (3-6h)';
+    if (hours >= 6 && hours < 9) return 'Good (6-9h)';
+    if (hours >= 9 && hours <= 12) return 'Excellent (9-12h)';
+    return 'Excessive (>12h)';
+  };
+
+  // Helper function to calculate points for a single sleep log
+  const getSleepPoints = (hours: number) => {
+    if (hours >= 0 && hours < 3) return 0; // Red - 0 points
+    if (hours >= 3 && hours < 6) return 1; // Orange - 1 point
+    if (hours >= 6 && hours < 9) return 2; // Blue - 2 points
+    if (hours >= 9 && hours <= 12) return 3; // Green - 3 points
+    return 2; // Excessive > 12 hours - treat as blue (2 points)
+  };
+
+  // Calculate monthly sleep score
+  const calculateMonthlySleepScore = () => {
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const daysInCurrentMonth = getDaysInMonth(now);
+
+    // Filter logs for current month
+    const monthLogs = sleepLogs.filter(log => {
+      const logDate = parseISO(log.date);
+      return logDate >= monthStart && logDate <= monthEnd;
+    });
+
+    // Calculate base score
+    let baseScore = 0;
+    monthLogs.forEach(log => {
+      const hours = parseFloat(log.hoursSlept.toString());
+      baseScore += getSleepPoints(hours);
+    });
+
+    // Check for perfect attendance (all days logged)
+    const allDaysLogged = monthLogs.length === daysInCurrentMonth;
+    let bonusPoints = 0;
+
+    if (allDaysLogged) {
+      bonusPoints = daysInCurrentMonth === 30 ? 10 : 7; // 10 for 30-day month, 7 for 31-day month
+    }
+
+    const totalScore = baseScore + bonusPoints;
+    const maxPossibleScore = (daysInCurrentMonth * 3) + (daysInCurrentMonth === 30 ? 10 : 7);
+
+    return {
+      totalScore,
+      baseScore,
+      bonusPoints,
+      maxPossibleScore,
+      daysLogged: monthLogs.length,
+      daysInMonth: daysInCurrentMonth,
+      isPerfect: allDaysLogged,
+    };
+  };
+
+  // Helper function to get score color based on total score
+  const getScoreColor = (score: number, maxScore: number) => {
+    const percentage = (score / maxScore) * 100;
+
+    if (percentage >= 90) return { bg: 'bg-gradient-to-br from-green-500 to-emerald-600', text: 'text-white', border: 'border-green-400' };
+    if (percentage >= 75) return { bg: 'bg-gradient-to-br from-blue-500 to-cyan-600', text: 'text-white', border: 'border-blue-400' };
+    if (percentage >= 50) return { bg: 'bg-gradient-to-br from-yellow-500 to-orange-500', text: 'text-white', border: 'border-yellow-400' };
+    if (percentage >= 25) return { bg: 'bg-gradient-to-br from-orange-500 to-red-500', text: 'text-white', border: 'border-orange-400' };
+    return { bg: 'bg-gradient-to-br from-red-600 to-red-800', text: 'text-white', border: 'border-red-500' };
+  };
+
+  const sleepScore = calculateMonthlySleepScore();
+  const scoreColor = getScoreColor(sleepScore.totalScore, sleepScore.maxPossibleScore);
+
   const chartData = sleepLogs
     .slice()
     .reverse()
-    .map(log => ({
-      date: format(parseISO(log.date), 'MMM d'),
-      hours: parseFloat(log.hoursSlept.toString()),
-    }));
+    .map(log => {
+      const hours = parseFloat(log.hoursSlept.toString());
+      return {
+        date: format(parseISO(log.date), 'MMM d'),
+        hours,
+        fill: getSleepHoursColor(hours),
+      };
+    });
 
-  const qualityData = stats ? [
-    { name: 'Excellent', value: stats.qualityDistribution.excellent, color: '#10b981' },
-    { name: 'Good', value: stats.qualityDistribution.good, color: '#3b82f6' },
-    { name: 'Fair', value: stats.qualityDistribution.fair, color: '#f59e0b' },
-    { name: 'Poor', value: stats.qualityDistribution.poor, color: '#ef4444' },
-  ].filter(item => item.value > 0) : [];
+  // Calculate hours category distribution for pie chart
+  const hoursCategories = sleepLogs.reduce((acc, log) => {
+    const hours = parseFloat(log.hoursSlept.toString());
+    const category = getSleepHoursCategory(hours);
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const hoursCategoryData = Object.entries(hoursCategories).map(([category, count]) => {
+    let color = '#6b7280';
+    if (category.includes('0-3h')) color = '#ef4444';
+    else if (category.includes('3-6h')) color = '#f59e0b';
+    else if (category.includes('6-9h')) color = '#3b82f6';
+    else if (category.includes('9-12h')) color = '#10b981';
+
+    return {
+      name: category,
+      value: count,
+      color,
+    };
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <h1 className="text-3xl font-bold text-white">Sleep Journal</h1>
-        <Button onClick={handleOpenModal}>
-          <Plus className="h-5 w-5 mr-2" />
-          Log Sleep
-        </Button>
+
+        {/* Sleep Score Card */}
+        <div className={`${scoreColor.bg} ${scoreColor.text} rounded-xl p-4 shadow-lg border-2 ${scoreColor.border} transform hover:scale-105 transition-transform duration-300`}>
+          <div className="flex items-center justify-center gap-3">
+            <Trophy className="h-8 w-8" />
+            <div className="text-center">
+              <div className="text-sm font-semibold opacity-90">Sleep Score</div>
+              <div className="text-3xl font-bold">
+                {sleepScore.totalScore}
+                <span className="text-lg opacity-75">/{sleepScore.maxPossibleScore}</span>
+              </div>
+              <div className="text-xs opacity-80 mt-1">
+                {sleepScore.daysLogged}/{sleepScore.daysInMonth} days
+                {sleepScore.isPerfect && (
+                  <span className="ml-2">
+                    <Award className="inline h-4 w-4 animate-pulse" />
+                  </span>
+                )}
+              </div>
+              {sleepScore.isPerfect && (
+                <div className="text-xs font-semibold mt-1 animate-pulse">
+                  Perfect Month! +{sleepScore.bonusPoints} Bonus
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={handleOpenModal}>
+            <Plus className="h-5 w-5 mr-2" />
+            Log Sleep
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Selector */}
@@ -260,14 +394,26 @@ export function SleepPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <GlassCard>
             <h3 className="text-lg font-semibold text-white mb-4">Sleep Hours Trend</h3>
+            <div className="mb-2 flex flex-wrap gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                <span className="text-white">Critical (0-3h)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                <span className="text-white">Poor (3-6h)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                <span className="text-white">Good (6-9h)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                <span className="text-white">Excellent (9-12h)</span>
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="date" stroke="#9ca3af" />
                 <YAxis stroke="#9ca3af" domain={[0, 12]} />
@@ -275,25 +421,22 @@ export function SleepPage() {
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                   labelStyle={{ color: '#fff' }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="#3b82f6"
-                  fillOpacity={1}
-                  fill="url(#colorHours)"
-                  name="Hours"
-                />
-              </AreaChart>
+                <Bar dataKey="hours" name="Hours" radius={[8, 8, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </GlassCard>
 
-          {qualityData.length > 0 && (
+          {hoursCategoryData.length > 0 && (
             <GlassCard>
-              <h3 className="text-lg font-semibold text-white mb-4">Sleep Quality Distribution</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">Sleep Hours Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={qualityData}
+                    data={hoursCategoryData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -302,7 +445,7 @@ export function SleepPage() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {qualityData.map((entry, index) => (
+                    {hoursCategoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>

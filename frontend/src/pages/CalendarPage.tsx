@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication, SleepLog } from '../types';
+import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication, SleepLog, VitalsSample } from '../types';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
@@ -55,6 +55,7 @@ export function CalendarPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
+  const [vitals, setVitals] = useState<VitalsSample[]>([]);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const qrCodeRef = useRef<HTMLDivElement>(null);
@@ -99,12 +100,13 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
-      const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData] = await Promise.all([
+      const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
         api.getCalendars(),
         api.getEvents(),
         api.getMeals({ startDate, endDate }),
         api.getMedications(),
         api.getSleepLogs({ startDate, endDate }),
+        api.getVitals({ startDate, endDate }),
       ]);
 
       setCalendars(calendarsData);
@@ -112,6 +114,7 @@ export function CalendarPage() {
       setAllMeals(mealsData);
       setMedications(medicationsData);
       setSleepLogs(sleepLogsData);
+      setVitals(vitalsData);
 
       // Load medication logs for the date range
       try {
@@ -620,15 +623,80 @@ See browser console for full configuration details.
     return acc;
   }, {} as Record<string, SleepLog>);
 
+  // Helper function to get sleep color gradient based on hours
+  const getSleepColorGradient = (hours: number) => {
+    if (hours >= 0 && hours < 3) {
+      // Red - Critical
+      return {
+        gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #7c2d12 100%)',
+        border: '#dc2626'
+      };
+    } else if (hours >= 3 && hours < 6) {
+      // Orange - Poor
+      return {
+        gradient: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #7c2d12 100%)',
+        border: '#ea580c'
+      };
+    } else if (hours >= 6 && hours < 9) {
+      // Blue - Good
+      return {
+        gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #7c2d12 100%)',
+        border: '#2563eb'
+      };
+    } else if (hours >= 9 && hours <= 12) {
+      // Green - Excellent
+      return {
+        gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #7c2d12 100%)',
+        border: '#059669'
+      };
+    } else {
+      // Gray for > 12 hours
+      return {
+        gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #7c2d12 100%)',
+        border: '#4b5563'
+      };
+    }
+  };
+
+  // Create a map of vitals by date for medication tracking
+  const vitalsByDate = vitals.reduce((acc, vital) => {
+    const dateStr = vital.date.split('T')[0];
+    acc[dateStr] = vital;
+    return acc;
+  }, {} as Record<string, VitalsSample>);
+
+  // Helper function to get medication pill color gradient based on adherence
+  const getMedicationPillColorGradient = (medicationsTaken: boolean) => {
+    if (medicationsTaken) {
+      // Green - All medications taken (3 points)
+      return {
+        gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #7c2d12 100%)',
+        border: '#059669'
+      };
+    } else {
+      // Red - No medications taken (0 points)
+      return {
+        gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #7c2d12 100%)',
+        border: '#dc2626'
+      };
+    }
+  };
+
   // Custom day cell content to show sleep hours
   const renderDayCellContent = (arg: any) => {
     const dateStr = arg.date.toISOString().split('T')[0];
     const sleepLog = sleepLogsByDate[dateStr];
+    const vitalsLog = vitalsByDate[dateStr];
+
+    const sleepColors = sleepLog ? getSleepColorGradient(parseFloat(sleepLog.hoursSlept.toString())) : null;
+    const medColors = (vitalsLog && vitalsLog.medicationsTaken !== undefined)
+      ? getMedicationPillColorGradient(vitalsLog.medicationsTaken)
+      : null;
 
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Sleep hours indicator - TOP LEFT corner with GREEN & BURGUNDY theme */}
-        {sleepLog && (
+        {/* Sleep hours indicator - TOP LEFT corner with COLOR-CODED & BURGUNDY theme */}
+        {sleepLog && sleepColors && (
           <div
             onClick={(e) => {
               e.stopPropagation();
@@ -643,8 +711,8 @@ See browser console for full configuration details.
               gap: '2px',
               padding: '2px 4px',
               borderRadius: '0 0 6px 0',
-              background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 50%, #7c2d12 100%)',
-              border: '2px solid #15803d',
+              background: sleepColors.gradient,
+              border: `2px solid ${sleepColors.border}`,
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
               zIndex: 10,
               cursor: 'pointer',
@@ -663,6 +731,34 @@ See browser console for full configuration details.
             >
               {sleepLog.hoursSlept}h
             </span>
+          </div>
+        )}
+
+        {/* Medication pill indicator - BOTTOM RIGHT corner with COLOR-CODED & BURGUNDY theme */}
+        {medColors && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/medications');
+            }}
+            style={{
+              position: 'absolute',
+              bottom: '2px',
+              right: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              padding: '2px 4px',
+              borderRadius: '6px 0 0 0',
+              background: medColors.gradient,
+              border: `2px solid ${medColors.border}`,
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              zIndex: 10,
+              cursor: 'pointer',
+            }}
+            title="Click to view medications"
+          >
+            <span style={{ fontSize: '8px', lineHeight: 1 }}>💊</span>
           </div>
         )}
 
