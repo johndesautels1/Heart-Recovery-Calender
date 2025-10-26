@@ -14,6 +14,7 @@ interface ExerciseAttributes {
   maxPostOpWeek?: number;
   contraindications?: string;
   instructions?: string;
+  recoveryBenefit?: string;
   defaultSets?: number;
   defaultReps?: number;
   defaultDuration?: number; // in minutes
@@ -23,7 +24,7 @@ interface ExerciseAttributes {
   updatedAt?: Date;
 }
 
-interface ExerciseCreationAttributes extends Optional<ExerciseAttributes, 'id' | 'description' | 'equipmentNeeded' | 'videoUrl' | 'imageUrl' | 'minPostOpWeek' | 'maxPostOpWeek' | 'contraindications' | 'instructions' | 'defaultSets' | 'defaultReps' | 'defaultDuration' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
+interface ExerciseCreationAttributes extends Optional<ExerciseAttributes, 'id' | 'description' | 'equipmentNeeded' | 'videoUrl' | 'imageUrl' | 'minPostOpWeek' | 'maxPostOpWeek' | 'contraindications' | 'instructions' | 'recoveryBenefit' | 'defaultSets' | 'defaultReps' | 'defaultDuration' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
 
 class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> implements ExerciseAttributes {
   public id!: number;
@@ -38,6 +39,7 @@ class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> imp
   public maxPostOpWeek?: number;
   public contraindications?: string;
   public instructions?: string;
+  public recoveryBenefit?: string;
   public defaultSets?: number;
   public defaultReps?: number;
   public defaultDuration?: number;
@@ -101,6 +103,11 @@ class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> imp
           type: DataTypes.TEXT,
           allowNull: true,
           comment: 'Step-by-step instructions',
+        },
+        recoveryBenefit: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'How this exercise benefits cardiac recovery',
         },
         defaultSets: {
           type: DataTypes.INTEGER,
