@@ -89,6 +89,21 @@ const difficulties = [
   { value: 'advanced', label: 'Advanced', color: 'red' },
 ];
 
+type MainTab = 'exercises' | 'activities' | 'stats';
+
+// Helper function to categorize exercises as activities vs structured exercises
+const isActivity = (exercise: Exercise): boolean => {
+  const activityKeywords = [
+    'Tennis', 'Pickleball', 'Cycling', 'Hiking', 'Dancing', 'Golf',
+    'Kayaking', 'Bowling', 'Swimming', 'Water Aerobics', 'Group Exercise Class',
+    'Jogging', 'Running', 'Sports'
+  ];
+
+  return activityKeywords.some(keyword =>
+    exercise.name.toLowerCase().includes(keyword.toLowerCase())
+  );
+};
+
 export function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
@@ -109,6 +124,7 @@ export function ExercisesPage() {
   const [schedulePatientId, setSchedulePatientId] = useState('');
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
+  const [mainTab, setMainTab] = useState<MainTab>('exercises');
   const { isTherapistView } = useView();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -122,7 +138,7 @@ export function ExercisesPage() {
 
   useEffect(() => {
     filterExercises();
-  }, [exercises, searchTerm, selectedCategory, selectedDifficulty, selectedSafetyLevel, selectedPatientId]);
+  }, [exercises, searchTerm, selectedCategory, selectedDifficulty, selectedSafetyLevel, selectedPatientId, mainTab]);
 
   const loadExercises = async () => {
     try {
@@ -212,6 +228,13 @@ export function ExercisesPage() {
 
   const filterExercises = () => {
     let filtered = exercises;
+
+    // Filter by main tab (exercises vs activities)
+    if (mainTab === 'exercises') {
+      filtered = filtered.filter(ex => !isActivity(ex));
+    } else if (mainTab === 'activities') {
+      filtered = filtered.filter(ex => isActivity(ex));
+    }
 
     if (searchTerm) {
       filtered = filtered.filter(ex =>
@@ -534,8 +557,51 @@ export function ExercisesPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="glass rounded-xl p-6 mb-6">
+      {/* Main Tabs */}
+      <div className="flex space-x-2 mb-6">
+        <button
+          onClick={() => setMainTab('exercises')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            mainTab === 'exercises'
+              ? 'glass text-white'
+              : 'bg-white/5 hover:bg-white/10'
+          }`}
+          style={mainTab === 'exercises' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+        >
+          <Dumbbell className="inline h-5 w-5 mr-2" />
+          Exercises
+        </button>
+        <button
+          onClick={() => setMainTab('activities')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            mainTab === 'activities'
+              ? 'glass text-white'
+              : 'bg-white/5 hover:bg-white/10'
+          }`}
+          style={mainTab === 'activities' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+        >
+          <Activity className="inline h-5 w-5 mr-2" />
+          Activities
+        </button>
+        <button
+          onClick={() => setMainTab('stats')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            mainTab === 'stats'
+              ? 'glass text-white'
+              : 'bg-white/5 hover:bg-white/10'
+          }`}
+          style={mainTab === 'stats' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+        >
+          <CheckCircle2 className="inline h-5 w-5 mr-2" />
+          Stats & Progress
+        </button>
+      </div>
+
+      {/* Show Filters and Exercise List for exercises/activities tabs */}
+      {mainTab !== 'stats' && (
+        <div>
+          {/* Filters */}
+          <div className="glass rounded-xl p-6 mb-6">
         {/* Patient Selector & Current Week Display */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
@@ -703,41 +769,41 @@ export function ExercisesPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-0.5">
                   <button
-                    onClick={() => handleViewInfo(exercise)}
-                    className="p-2 rounded-lg hover:bg-blue-500/20 transition-colors"
-                    title="View exercise details"
+                    onClick={() => handleDelete(exercise.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                    title="Delete exercise"
                   >
-                    <Info className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                  </button>
-                  <button
-                    onClick={() => navigate('/calendar')}
-                    className="p-2 rounded-lg hover:bg-purple-500/20 transition-colors"
-                    title="Go to calendar"
-                  >
-                    <ExternalLink className="h-4 w-4" style={{ color: '#a855f7' }} />
-                  </button>
-                  <button
-                    onClick={() => handleScheduleExercise(exercise)}
-                    className="p-2 rounded-lg hover:bg-green-500/20 transition-colors"
-                    title="Schedule exercise for patient"
-                  >
-                    <Calendar className="h-4 w-4" style={{ color: '#10b981' }} />
+                    <Trash2 className="h-4 w-4 text-red-600" />
                   </button>
                   <button
                     onClick={() => handleEdit(exercise)}
-                    className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
                     title="Edit exercise"
                   >
                     <Edit2 className="h-4 w-4" style={{ color: 'var(--accent)' }} />
                   </button>
                   <button
-                    onClick={() => handleDelete(exercise.id)}
-                    className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
-                    title="Delete exercise"
+                    onClick={() => handleViewInfo(exercise)}
+                    className="p-1.5 rounded-lg hover:bg-blue-500/20 transition-colors"
+                    title="View exercise details"
                   >
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Info className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  </button>
+                  <button
+                    onClick={() => handleScheduleExercise(exercise)}
+                    className="p-1.5 rounded-lg hover:bg-green-500/20 transition-colors"
+                    title="Schedule exercise for patient"
+                  >
+                    <Calendar className="h-4 w-4" style={{ color: '#10b981' }} />
+                  </button>
+                  <button
+                    onClick={() => navigate('/calendar')}
+                    className="p-1.5 rounded-lg hover:bg-purple-500/20 transition-colors"
+                    title="Go to calendar"
+                  >
+                    <ExternalLink className="h-4 w-4" style={{ color: '#a855f7' }} />
                   </button>
                 </div>
               </div>
@@ -836,6 +902,23 @@ export function ExercisesPage() {
               </div>
             );
           })}
+        </div>
+      )}
+        </div>
+      )}
+
+      {/* Stats & Progress Tab */}
+      {mainTab === 'stats' && (
+        <div className="space-y-6">
+          <div className="glass rounded-xl p-8 text-center">
+            <CheckCircle2 className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
+            <h3 className="text-2xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+              Activity Tracking Coming Soon
+            </h3>
+            <p style={{ color: 'var(--ink)' }} className="opacity-70">
+              Track your daily activities and view progress charts
+            </p>
+          </div>
         </div>
       )}
 

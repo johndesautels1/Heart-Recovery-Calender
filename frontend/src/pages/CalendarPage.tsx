@@ -455,34 +455,43 @@ See browser console for full configuration details.
       return;
     }
 
-    // Create calendar data for QR code
-    const calendarData = {
-      appName: 'Heart Recovery Calendar',
-      calendars: calendars.map(cal => ({
-        name: cal.name,
-        type: cal.type,
-        color: cal.color,
-      })),
-      events: events.map(event => ({
+    // QR codes have a maximum capacity of ~2953 bytes (for Level H error correction)
+    // We'll limit to upcoming events only to keep data small
+    const now = new Date();
+    const upcomingEvents = events
+      .filter(event => new Date(event.startTime) >= now)
+      .slice(0, 10) // Limit to 10 upcoming events
+      .map(event => ({
         title: event.title,
         start: event.startTime,
         end: event.endTime,
         location: event.location,
-        description: event.description,
-        isAllDay: event.isAllDay,
+      }));
+
+    // Create compact calendar data for QR code
+    const calendarData = {
+      app: 'HRC', // Shortened app name
+      cals: calendars.slice(0, 5).map(cal => ({
+        n: cal.name,
+        t: cal.type,
       })),
-      exportDate: new Date().toISOString(),
+      evts: upcomingEvents,
+      date: new Date().toISOString().split('T')[0], // Just date, no time
     };
 
     // Convert to JSON string
     const jsonData = JSON.stringify(calendarData);
 
-    // For large datasets, you might want to upload to a server and use a short URL
-    // For now, we'll encode the data directly (works for smaller calendars)
+    // Check size (QR codes can handle ~2900 bytes comfortably)
+    if (jsonData.length > 2800) {
+      toast.error('Too much data for QR code. Try exporting fewer events or use JSON export instead.');
+      return;
+    }
+
     setQrCodeData(jsonData);
     setIsQRModalOpen(true);
 
-    toast.success('QR Code generated! Scan to import calendar data.');
+    toast.success(`QR Code generated with ${upcomingEvents.length} upcoming events!`);
   };
 
   const handleDownloadQRCode = () => {
@@ -1373,7 +1382,7 @@ See browser console for full configuration details.
 
             {/* QR Code Display */}
             <div ref={qrCodeRef} className="flex justify-center p-6 bg-white rounded-lg">
-              {qrCodeData && (
+              {qrCodeData ? (
                 <QRCodeSVG
                   value={qrCodeData}
                   size={256}
@@ -1381,6 +1390,11 @@ See browser console for full configuration details.
                   includeMargin={true}
                   className="border-4 border-gray-200 rounded-lg"
                 />
+              ) : (
+                <div className="text-center p-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Generating QR Code...</p>
+                </div>
               )}
             </div>
 
@@ -1390,9 +1404,12 @@ See browser console for full configuration details.
               <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
                 <li>Open the Heart Recovery Calendar app on another device</li>
                 <li>Go to Calendar page and click "Scan QR"</li>
-                <li>Scan this QR code to import all calendar data</li>
-                <li>Alternatively, download the QR code image to share</li>
+                <li>Scan this QR code to import calendar data (up to 10 upcoming events)</li>
+                <li>For full data export, use the JSON export option instead</li>
               </ol>
+              <div className="mt-2 text-xs text-blue-600">
+                Note: QR codes have size limits. This includes your next 10 upcoming events and up to 5 calendars.
+              </div>
             </div>
 
             {/* Data Summary */}
