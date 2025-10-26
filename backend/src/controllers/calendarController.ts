@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import CalendarEvent from '../models/CalendarEvent';
 import Calendar from '../models/Calendar';
+import EventTemplate from '../models/EventTemplate';
+import Exercise from '../models/Exercise';
+import User from '../models/User';
 import { Op } from 'sequelize';
 
 // GET /api/events - Get events with filters
 export const getEvents = async (req: Request, res: Response) => {
   try {
-    const { calendarId, start, end, status } = req.query;
+    const { calendarId, start, end, status, patientId, invitationStatus, includeRelations } = req.query;
     const where: any = {};
 
     if (calendarId) {
@@ -23,10 +26,30 @@ export const getEvents = async (req: Request, res: Response) => {
       where.status = status;
     }
 
-    const events = await CalendarEvent.findAll({
+    if (patientId) {
+      where.patientId = patientId;
+    }
+
+    if (invitationStatus) {
+      where.invitationStatus = invitationStatus;
+    }
+
+    const queryOptions: any = {
       where,
-      order: [['startTime', 'ASC']]
-    });
+      order: [['startTime', 'ASC']],
+    };
+
+    // Optionally include related data
+    if (includeRelations === 'true') {
+      queryOptions.include = [
+        { model: EventTemplate, as: 'template' },
+        { model: Exercise, as: 'exercise' },
+        { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'patient', attributes: ['id', 'name', 'email'] },
+      ];
+    }
+
+    const events = await CalendarEvent.findAll(queryOptions);
 
     res.json({ data: events });
   } catch (error) {
@@ -38,8 +61,36 @@ export const getEvents = async (req: Request, res: Response) => {
 // POST /api/events - Create new event
 export const createEvent = async (req: Request, res: Response) => {
   try {
-    const event = await CalendarEvent.create(req.body);
-    res.status(201).json(event);
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+
+    // Prepare event data
+    const eventData: any = { ...req.body };
+
+    // Set createdBy for therapists/admins
+    if (userRole === 'therapist' || userRole === 'admin') {
+      eventData.createdBy = userId;
+    }
+
+    // If event has a patientId and requires acceptance, set initial invitation status
+    if (eventData.patientId && eventData.eventTemplateId) {
+      const template = await EventTemplate.findByPk(eventData.eventTemplateId);
+      if (template?.requiresPatientAcceptance && !eventData.invitationStatus) {
+        eventData.invitationStatus = 'pending';
+      }
+    }
+
+    const event = await CalendarEvent.create(eventData);
+
+    // Fetch with relations if needed
+    const createdEvent = await CalendarEvent.findByPk(event.id, {
+      include: [
+        { model: EventTemplate, as: 'template' },
+        { model: Exercise, as: 'exercise' },
+      ],
+    });
+
+    res.status(201).json(createdEvent);
   } catch (error) {
     console.error('Error creating event:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -229,6 +280,83 @@ export const getEventInstances = async (req: Request, res: Response) => {
     res.json({ instances });
   } catch (error) {
     console.error('Error fetching event instances:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// PATCH /api/events/:id/invitation-status - Update invitation status (patients only)
+export const updateInvitationStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { invitationStatus } = req.body;
+    const userId = (req as any).user.id;
+    const userRole = (req as any).user.role;
+
+    if (!invitationStatus || !['accepted', 'declined', 'pending'].includes(invitationStatus)) {
+      return res.status(400).json({ error: 'Valid invitationStatus is required (accepted, declined, or pending)' });
+    }
+
+    const event = await CalendarEvent.findByPk(id);
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Only the assigned patient can update invitation status
+    if (userRole === 'patient' && event.patientId !== userId) {
+      return res.status(403).json({ error: 'You can only update invitation status for events assigned to you' });
+    }
+
+    // Therapists can also update invitation status for their patients
+    if (userRole !== 'therapist' && userRole !== 'patient' && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only patients and therapists can update invitation status' });
+    }
+
+    await event.update({ invitationStatus });
+
+    const updatedEvent = await CalendarEvent.findByPk(id, {
+      include: [
+        { model: EventTemplate, as: 'template' },
+        { model: Exercise, as: 'exercise' },
+        { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'patient', attributes: ['id', 'name', 'email'] },
+      ],
+    });
+
+    res.json(updatedEvent);
+  } catch (error) {
+    console.error('Error updating invitation status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET /api/events/pending-invitations - Get all pending event invitations for current patient
+export const getPendingInvitations = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const userRole = (req as any).user.role;
+
+    // Only patients can access this endpoint
+    if (userRole !== 'patient') {
+      return res.status(403).json({ error: 'Only patients can view pending invitations' });
+    }
+
+    const events = await CalendarEvent.findAll({
+      where: {
+        patientId: userId,
+        invitationStatus: 'pending',
+      },
+      include: [
+        { model: EventTemplate, as: 'template' },
+        { model: Exercise, as: 'exercise' },
+        { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+      ],
+      order: [['startTime', 'ASC']],
+    });
+
+    res.json({ data: events });
+  } catch (error) {
+    console.error('Error fetching pending invitations:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

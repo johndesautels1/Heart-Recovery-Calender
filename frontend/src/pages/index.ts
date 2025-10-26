@@ -11,3 +11,4 @@ export { ProfilePage } from './ProfilePage';
 export { PatientsPage } from './PatientsPage';
 export { PatientCalendarView } from './PatientCalendarView';
 export { ExercisesPage } from './ExercisesPage';
+export { EventTemplatesPage } from './EventTemplatesPage';

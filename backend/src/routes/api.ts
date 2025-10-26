@@ -14,6 +14,7 @@ import * as foodItemsController from '../controllers/foodItemsController';
 import * as patientsController from '../controllers/patientsController';
 import * as exercisesController from '../controllers/exercisesController';
 import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
+import * as eventTemplatesController from '../controllers/eventTemplatesController';
 
 const router = Router();
 
@@ -42,12 +43,14 @@ router.delete('/calendars/:id', calendarsController.deleteCalendar);
 // ========== EVENTS ROUTES ==========
 router.get('/events', eventsController.getEvents);
 router.post('/events', eventsController.createEvent);
+router.get('/events/pending-invitations', eventsController.getPendingInvitations);
 router.delete('/events/today', eventsController.deleteTodayEvents);
 router.delete('/events/history', eventsController.deleteHistoricEvents);
 router.get('/events/:id', eventsController.getEvent);
 router.put('/events/:id', eventsController.updateEvent);
 router.delete('/events/:id', eventsController.deleteEvent);
 router.patch('/events/:id/status', eventsController.updateEventStatus);
+router.patch('/events/:id/invitation-status', eventsController.updateInvitationStatus);
 router.post('/events/:id/instances', eventsController.getEventInstances);
 
 // ========== MEALS ROUTES ==========
@@ -146,5 +149,15 @@ router.put('/exercise-prescriptions/:id', exercisePrescriptionsController.update
 router.delete('/exercise-prescriptions/:id', exercisePrescriptionsController.deletePrescription);
 router.patch('/exercise-prescriptions/:id/status', exercisePrescriptionsController.updatePrescriptionStatus);
 router.get('/exercise-prescriptions/:id/logs', exercisePrescriptionsController.getPrescriptionLogs);
+
+// ========== EVENT TEMPLATES ROUTES ==========
+router.get('/event-templates', eventTemplatesController.getEventTemplates);
+router.post('/event-templates', eventTemplatesController.createEventTemplate);
+router.get('/event-templates/categories/list', eventTemplatesController.getCategories);
+router.get('/event-templates/stats', eventTemplatesController.getEventTemplateStats);
+router.get('/event-templates/:id', eventTemplatesController.getEventTemplate);
+router.put('/event-templates/:id', eventTemplatesController.updateEventTemplate);
+router.delete('/event-templates/:id', eventTemplatesController.deleteEventTemplate);
+router.patch('/event-templates/:id/toggle-active', eventTemplatesController.toggleActive);
 
 export default router;

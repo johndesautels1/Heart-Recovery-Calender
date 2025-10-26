@@ -20,12 +20,14 @@ import Patient from './Patient';
 import Exercise from './Exercise';
 import ExercisePrescription from './ExercisePrescription';
 import ExerciseLog from './ExerciseLog';
+import EventTemplate from './EventTemplate';
 
 // Create models object
 const models = {
   User,
   Calendar,
   CalendarEvent,
+  EventTemplate,
   MealEntry,
   VitalsSample,
   Medication,

@@ -20,6 +20,7 @@ import {
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { useView } from '../contexts/ViewContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Exercise {
   id: number;
@@ -84,6 +85,7 @@ export function ExercisesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
   const { isTherapistView } = useView();
+  const { user } = useAuth();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExerciseInput>();
 
@@ -264,15 +266,15 @@ export function ExercisesPage() {
     return categories.find(c => c.value === category)?.icon || '🏃';
   };
 
-  // Only therapists can access this page
-  if (!isTherapistView) {
+  // Only therapists and admins can access this page
+  if (user?.role !== 'therapist' && user?.role !== 'admin') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="glass rounded-xl p-12 text-center">
           <AlertTriangle className="h-16 w-16 mx-auto mb-4 text-yellow-500" />
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>Therapist Access Only</h3>
+          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>Therapist/Admin Access Only</h3>
           <p style={{ color: 'var(--ink)' }} className="opacity-70">
-            Please switch to Therapist View to access the Exercise Library
+            Only therapists and administrators can access the Exercise Library
           </p>
         </div>
       </div>

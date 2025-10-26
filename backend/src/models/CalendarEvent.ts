@@ -15,6 +15,11 @@ interface CalendarEventAttributes {
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
   sleepHours?: number;
+  eventTemplateId?: number;
+  invitationStatus?: 'pending' | 'accepted' | 'declined';
+  createdBy?: number;
+  patientId?: number;
+  exerciseId?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -35,6 +40,11 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
   public status!: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   public notes?: string;
   public sleepHours?: number;
+  public eventTemplateId?: number;
+  public invitationStatus?: 'pending' | 'accepted' | 'declined';
+  public createdBy?: number;
+  public patientId?: number;
+  public exerciseId?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -100,6 +110,47 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
           allowNull: true,
           comment: 'Hours of restful sleep the night before this date',
         },
+        eventTemplateId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'event_templates',
+            key: 'id',
+          },
+          comment: 'Reference to event template if event was created from a template',
+        },
+        invitationStatus: {
+          type: DataTypes.ENUM('pending', 'accepted', 'declined'),
+          allowNull: true,
+          comment: 'Patient invitation status for this event',
+        },
+        createdBy: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'users',
+            key: 'id',
+          },
+          comment: 'Therapist user ID who created this event',
+        },
+        patientId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'users',
+            key: 'id',
+          },
+          comment: 'Patient user ID this event is assigned to',
+        },
+        exerciseId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'exercises',
+            key: 'id',
+          },
+          comment: 'Exercise associated with this event if applicable',
+        },
       },
       {
         sequelize,
@@ -112,6 +163,10 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
 
   static associate(models: any) {
     CalendarEvent.belongsTo(models.Calendar, { foreignKey: 'calendarId', as: 'calendar' });
+    CalendarEvent.belongsTo(models.EventTemplate, { foreignKey: 'eventTemplateId', as: 'template' });
+    CalendarEvent.belongsTo(models.User, { foreignKey: 'createdBy', as: 'creator' });
+    CalendarEvent.belongsTo(models.User, { foreignKey: 'patientId', as: 'patient' });
+    CalendarEvent.belongsTo(models.Exercise, { foreignKey: 'exerciseId', as: 'exercise' });
   }
 }
 

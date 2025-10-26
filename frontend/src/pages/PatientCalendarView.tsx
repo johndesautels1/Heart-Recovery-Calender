@@ -45,7 +45,26 @@ export function PatientCalendarView() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Add event form state
+  const [eventTemplateSearch, setEventTemplateSearch] = useState('');
+  const [exerciseSearch, setExerciseSearch] = useState('');
+  const [eventTemplates, setEventTemplates] = useState<any[]>([]);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const [showExerciseDropdown, setShowExerciseDropdown] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedExercise, setSelectedExercise] = useState<any>(null);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    startTime: '',
+    endTime: '',
+    location: '',
+    description: '',
+  });
 
   useEffect(() => {
     loadPatientData();
@@ -184,6 +203,148 @@ export function PatientCalendarView() {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
+  // Autocomplete for event templates
+  const searchEventTemplates = async (search: string) => {
+    if (!search) {
+      setEventTemplates([]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/event-templates?search=${encodeURIComponent(search)}&limit=10&isActive=true`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Failed to search event templates');
+
+      const data = await response.json();
+      setEventTemplates(data.data || []);
+    } catch (error) {
+      console.error('Error searching event templates:', error);
+      toast.error('Failed to search event templates');
+    }
+  };
+
+  // Autocomplete for exercises
+  const searchExercises = async (search: string) => {
+    if (!search) {
+      setExercises([]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/exercises?search=${encodeURIComponent(search)}&limit=10&isActive=true`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Failed to search exercises');
+
+      const data = await response.json();
+      setExercises(data.data || []);
+    } catch (error) {
+      console.error('Error searching exercises:', error);
+      toast.error('Failed to search exercises');
+    }
+  };
+
+  // Handle date click to add event
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setIsAddEventModalOpen(true);
+    setNewEvent({
+      title: '',
+      startTime: format(date, "yyyy-MM-dd'T'HH:mm"),
+      endTime: format(date, "yyyy-MM-dd'T'HH:mm"),
+      location: '',
+      description: '',
+    });
+    setSelectedTemplate(null);
+    setSelectedExercise(null);
+    setEventTemplateSearch('');
+    setExerciseSearch('');
+  };
+
+  // Handle template selection
+  const handleTemplateSelect = (template: any) => {
+    setSelectedTemplate(template);
+    setEventTemplateSearch(template.name);
+    setShowTemplateDropdown(false);
+
+    // Pre-fill form with template defaults
+    const startDate = selectedDate || new Date();
+    const endDate = new Date(startDate.getTime() + template.defaultDuration * 60000);
+
+    setNewEvent({
+      title: template.name,
+      startTime: format(startDate, "yyyy-MM-dd'T'HH:mm"),
+      endTime: format(endDate, "yyyy-MM-dd'T'HH:mm"),
+      location: template.defaultLocation || '',
+      description: template.description || '',
+    });
+  };
+
+  // Handle exercise selection
+  const handleExerciseSelect = (exercise: any) => {
+    setSelectedExercise(exercise);
+    setExerciseSearch(exercise.name);
+    setShowExerciseDropdown(false);
+  };
+
+  // Save new event
+  const handleSaveEvent = async () => {
+    try {
+      const token = localStorage.getItem('token');
+
+      const eventData: any = {
+        ...newEvent,
+        patientId: parseInt(patientId!),
+        status: 'upcoming',
+      };
+
+      if (selectedTemplate) {
+        eventData.eventTemplateId = selectedTemplate.id;
+        if (selectedTemplate.requiresPatientAcceptance) {
+          eventData.invitationStatus = 'pending';
+        }
+      }
+
+      if (selectedExercise) {
+        eventData.exerciseId = selectedExercise.id;
+      }
+
+      // Get patient's calendar
+      const calendarsResponse = await fetch('/api/calendars', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const calendarsData = await calendarsResponse.json();
+      const patientCalendar = calendarsData.data?.find((cal: any) => cal.userId === parseInt(patientId!));
+
+      if (patientCalendar) {
+        eventData.calendarId = patientCalendar.id;
+      }
+
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!response.ok) throw new Error('Failed to create event');
+
+      toast.success('Event created successfully');
+      setIsAddEventModalOpen(false);
+      loadCalendarEvents();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error('Failed to create event');
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -225,7 +386,7 @@ export function PatientCalendarView() {
               Track appointments, compliance, and recovery progress
             </p>
           </div>
-          <Button>
+          <Button onClick={() => handleDateClick(new Date())}>
             <Plus className="h-5 w-5 mr-2" />
             Schedule Event
           </Button>
@@ -289,10 +450,11 @@ export function PatientCalendarView() {
             return (
               <div
                 key={index}
-                className={`min-h-[120px] p-2 rounded-lg ${
+                className={`min-h-[120px] p-2 rounded-lg cursor-pointer ${
                   isSameMonth(day, currentMonth) ? 'glass' : 'opacity-40'
                 } ${isToday ? 'ring-2' : ''}`}
                 style={isToday ? { ringColor: 'var(--accent)' } : {}}
+                onClick={() => isSameMonth(day, currentMonth) && handleDateClick(day)}
               >
                 <div className="text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                   {format(day, 'd')}
@@ -422,6 +584,224 @@ export function PatientCalendarView() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Add Event Modal */}
+      <Modal
+        isOpen={isAddEventModalOpen}
+        onClose={() => {
+          setIsAddEventModalOpen(false);
+          setSelectedDate(null);
+          setSelectedTemplate(null);
+          setSelectedExercise(null);
+          setEventTemplateSearch('');
+          setExerciseSearch('');
+        }}
+        title={`Add Event${selectedDate ? ' - ' + format(selectedDate, 'MMM d, yyyy') : ''}`}
+      >
+        <div className="space-y-4">
+          {/* Event Template Autocomplete */}
+          <div className="relative">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Event Template (Optional)
+            </label>
+            <input
+              type="text"
+              value={eventTemplateSearch}
+              onChange={(e) => {
+                setEventTemplateSearch(e.target.value);
+                searchEventTemplates(e.target.value);
+                setShowTemplateDropdown(true);
+              }}
+              onFocus={() => setShowTemplateDropdown(true)}
+              placeholder="Search event templates..."
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+            />
+            {showTemplateDropdown && eventTemplates.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 glass rounded-lg border border-white/10 max-h-60 overflow-auto">
+                {eventTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => handleTemplateSelect(template)}
+                    className="w-full px-4 py-2 text-left hover:bg-white/5 transition-colors"
+                    style={{ color: 'var(--ink)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{template.name}</div>
+                        <div className="text-xs opacity-70">{template.category}</div>
+                      </div>
+                      {template.requiresPatientAcceptance && (
+                        <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)', color: 'var(--accent)' }}>
+                          Requires Accept
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Exercise Autocomplete */}
+          <div className="relative">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Exercise (Optional)
+            </label>
+            <input
+              type="text"
+              value={exerciseSearch}
+              onChange={(e) => {
+                setExerciseSearch(e.target.value);
+                searchExercises(e.target.value);
+                setShowExerciseDropdown(true);
+              }}
+              onFocus={() => setShowExerciseDropdown(true)}
+              placeholder="Search exercises..."
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+            />
+            {showExerciseDropdown && exercises.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 glass rounded-lg border border-white/10 max-h-60 overflow-auto">
+                {exercises.map((exercise) => (
+                  <button
+                    key={exercise.id}
+                    onClick={() => handleExerciseSelect(exercise)}
+                    className="w-full px-4 py-2 text-left hover:bg-white/5 transition-colors"
+                    style={{ color: 'var(--ink)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{exercise.name}</div>
+                        <div className="text-xs opacity-70">{exercise.category} - {exercise.difficulty}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Event Title */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Event Title *
+            </label>
+            <input
+              type="text"
+              value={newEvent.title}
+              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+              placeholder="Enter event title"
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+              required
+            />
+          </div>
+
+          {/* Start Time */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Start Time *
+            </label>
+            <input
+              type="datetime-local"
+              value={newEvent.startTime}
+              onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+              required
+            />
+          </div>
+
+          {/* End Time */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              End Time *
+            </label>
+            <input
+              type="datetime-local"
+              value={newEvent.endTime}
+              onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+              required
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Location
+            </label>
+            <input
+              type="text"
+              value={newEvent.location}
+              onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+              placeholder="Enter location"
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Description
+            </label>
+            <textarea
+              value={newEvent.description}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+              placeholder="Enter description"
+              rows={3}
+              className="w-full px-4 py-2 rounded-lg glass border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ color: 'var(--ink)' }}
+            />
+          </div>
+
+          {/* Selected Items Summary */}
+          {(selectedTemplate || selectedExercise) && (
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)' }}>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--accent)' }}>Selected Items:</h4>
+              {selectedTemplate && (
+                <div className="flex items-center space-x-2 text-sm mb-1">
+                  <CalendarIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  <span style={{ color: 'var(--ink)' }}>Template: {selectedTemplate.name}</span>
+                </div>
+              )}
+              {selectedExercise && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <Dumbbell className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  <span style={{ color: 'var(--ink)' }}>Exercise: {selectedExercise.name}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              variant="glass"
+              onClick={() => {
+                setIsAddEventModalOpen(false);
+                setSelectedDate(null);
+                setSelectedTemplate(null);
+                setSelectedExercise(null);
+                setEventTemplateSearch('');
+                setExerciseSearch('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEvent}
+              disabled={!newEvent.title || !newEvent.startTime || !newEvent.endTime}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -5,7 +5,7 @@ import { Op } from 'sequelize';
 // GET /api/exercises - Get all exercises with filters
 export const getExercises = async (req: Request, res: Response) => {
   try {
-    const { category, difficulty, postOpWeek, isActive, search } = req.query;
+    const { category, difficulty, postOpWeek, isActive, search, limit } = req.query;
     const where: any = {};
 
     if (category) {
@@ -43,22 +43,29 @@ export const getExercises = async (req: Request, res: Response) => {
       ];
     }
 
-    // Search by name or description
+    // Autocomplete search by name or description (case-insensitive)
     if (search) {
       where[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } },
       ];
     }
 
-    const exercises = await Exercise.findAll({
+    const queryOptions: any = {
       where,
       order: [
         ['category', 'ASC'],
         ['difficulty', 'ASC'],
         ['name', 'ASC'],
       ],
-    });
+    };
+
+    // Limit results for autocomplete
+    if (limit) {
+      queryOptions.limit = parseInt(limit as string);
+    }
+
+    const exercises = await Exercise.findAll(queryOptions);
 
     res.json({ data: exercises });
   } catch (error) {
