@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -73,10 +74,18 @@ export function CalendarPage() {
   });
 
   const isAllDay = watch('isAllDay');
+  const location = useLocation();
 
   useEffect(() => {
     loadCalendarsAndEvents();
   }, []);
+
+  // Refresh events when navigating to calendar page
+  useEffect(() => {
+    if (location.pathname === '/calendar') {
+      loadCalendarsAndEvents();
+    }
+  }, [location.pathname]);
 
   const loadCalendarsAndEvents = async () => {
     try {
