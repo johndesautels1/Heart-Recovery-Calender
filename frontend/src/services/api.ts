@@ -7,18 +7,21 @@ import {
   MealEntry,
   VitalsSample,
   Medication,
+  MedicationLog,
   ApiResponse,
   CreateCalendarInput,
   CreateEventInput,
   CreateMealInput,
   CreateVitalsInput,
   CreateMedicationInput,
+  CreateMedicationLogInput,
   FoodCategory,
   FoodItem,
   FoodStats,
   SleepLog,
   CreateSleepLogInput,
   SleepStats,
+  MedicationStats,
 } from '../types';
 
 class ApiService {
@@ -270,6 +273,54 @@ class ApiService {
   async toggleMedicationActive(id: number): Promise<Medication> {
     const response = await this.api.put<Medication>(`medications/${id}/toggle-active`);
     return response.data;
+  }
+
+  async getMedicationLogs(params?: { startDate?: string; endDate?: string; medicationId?: number; status?: string }): Promise<MedicationLog[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+    if (params?.medicationId) searchParams.append('medicationId', params.medicationId.toString());
+    if (params?.status) searchParams.append('status', params.status);
+
+    const response = await this.api.get<ApiResponse<MedicationLog[]>>(`medications/logs?${searchParams.toString()}`);
+    return response.data.data;
+  }
+
+  async createMedicationLog(medicationId: number, data: CreateMedicationLogInput): Promise<MedicationLog> {
+    const response = await this.api.post<MedicationLog>(`medications/${medicationId}/log-dose`, data);
+    return response.data;
+  }
+
+  async updateMedicationLog(logId: number, data: Partial<CreateMedicationLogInput>): Promise<MedicationLog> {
+    const response = await this.api.put<MedicationLog>(`medications/logs/${logId}`, data);
+    return response.data;
+  }
+
+  async getMedicationStats(startDate?: string, endDate?: string): Promise<MedicationStats> {
+    // This will calculate stats from the logs
+    const logs = await this.getMedicationLogs({ startDate, endDate });
+
+    const totalLogs = logs.length;
+    const taken = logs.filter(l => l.status === 'taken').length;
+    const missed = logs.filter(l => l.status === 'missed').length;
+    const skipped = logs.filter(l => l.status === 'skipped').length;
+    const scheduled = logs.filter(l => l.status === 'scheduled').length;
+
+    const adherenceRate = totalLogs > 0 ? Math.round((taken / totalLogs) * 100) : 0;
+
+    return {
+      totalLogs,
+      adherenceRate,
+      statusDistribution: {
+        taken,
+        missed,
+        skipped,
+        scheduled
+      },
+      trend: 'insufficient_data',
+      startDate,
+      endDate
+    };
   }
 
   // ==================== ANALYTICS ENDPOINTS ====================

@@ -351,3 +351,38 @@ export interface SleepStats {
   startDate?: string;
   endDate?: string;
 }
+
+export interface MedicationLog {
+  id: number;
+  userId: number;
+  medicationId: number;
+  scheduledTime: string;
+  takenTime?: string;
+  status: 'scheduled' | 'taken' | 'missed' | 'skipped';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  medication?: Medication;
+}
+
+export interface CreateMedicationLogInput {
+  medicationId: number;
+  scheduledTime: string;
+  takenTime?: string;
+  status: 'scheduled' | 'taken' | 'missed' | 'skipped';
+  notes?: string;
+}
+
+export interface MedicationStats {
+  totalLogs: number;
+  adherenceRate: number; // 0-100
+  statusDistribution: {
+    taken: number;
+    missed: number;
+    skipped: number;
+    scheduled: number;
+  };
+  trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
+  startDate?: string;
+  endDate?: string;
+}

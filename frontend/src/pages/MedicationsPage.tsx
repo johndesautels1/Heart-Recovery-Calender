@@ -11,18 +11,22 @@ import {
   AlertCircle,
   CheckCircle,
   Bell,
-  BellOff
+  BellOff,
+  BarChart3,
+  Trophy,
+  Award
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { Medication, CreateMedicationInput } from '../types';
+import { Medication, CreateMedicationInput, MedicationLog, VitalsSample } from '../types';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import { MedicationAutocomplete } from '../components/MedicationAutocomplete';
 import { SideEffectWarnings } from '../components/SideEffectWarnings';
 import { type MedicationInfo, STANDARD_FREQUENCIES, STANDARD_TIMES_OF_DAY } from '../data/medicationDatabase';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const medicationSchema = z.object({
   name: z.string().min(1, 'Medication name is required'),
@@ -47,6 +51,14 @@ export function MedicationsPage() {
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('active');
+  const [activeTab, setActiveTab] = useState<'medications' | 'adherence'>('medications');
+
+  // Adherence data
+  const [vitals, setVitals] = useState<VitalsSample[]>([]);
+  const [dateRange, setDateRange] = useState({
+    start: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd'),
+  });
 
   // Autocomplete state
   const [medicationName, setMedicationName] = useState('');
@@ -84,6 +96,26 @@ export function MedicationsPage() {
       setIsLoading(false);
     }
   };
+
+  const loadAdherenceData = async () => {
+    try {
+      setIsLoading(true);
+      const vitalsData = await api.getVitals({ startDate: dateRange.start, endDate: dateRange.end });
+      setVitals(vitalsData);
+    } catch (error) {
+      console.error('Failed to load adherence data:', error);
+      toast.error('Failed to load adherence data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load adherence data when tab or date range changes
+  useEffect(() => {
+    if (activeTab === 'adherence') {
+      loadAdherenceData();
+    }
+  }, [activeTab, dateRange]);
 
   const onSubmit = async (data: MedicationFormData) => {
     try {
@@ -272,6 +304,111 @@ export function MedicationsPage() {
     </GlassCard>
   );
 
+  // ==================== MEDICATION ADHERENCE SCORING ====================
+  // Helper function to get adherence color based on medicationsTaken status
+  const getAdherenceColor = (medicationsTaken: boolean) => {
+    if (medicationsTaken) {
+      return '#10b981'; // Green - All taken
+    } else {
+      return '#ef4444'; // Red - Not taken
+    }
+  };
+
+  const getAdherenceCategory = (medicationsTaken: boolean) => {
+    if (medicationsTaken) {
+      return 'All Taken';
+    } else {
+      return 'Missed';
+    }
+  };
+
+  const getAdherencePoints = (medicationsTaken: boolean) => {
+    return medicationsTaken ? 3 : 0;
+  };
+
+  // Calculate monthly medication score
+  const calculateMonthlyAdherenceScore = () => {
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const daysInCurrentMonth = getDaysInMonth(now);
+
+    // Filter vitals for current month that have medicationsTaken data
+    const monthVitals = vitals.filter(vital => {
+      const vitalDate = parseISO(vital.timestamp);
+      return vitalDate >= monthStart && vitalDate <= monthEnd && vital.medicationsTaken !== undefined;
+    });
+
+    // Calculate base score
+    let baseScore = 0;
+    monthVitals.forEach(vital => {
+      baseScore += getAdherencePoints(vital.medicationsTaken);
+    });
+
+    // Check for perfect attendance (all days logged)
+    const allDaysLogged = monthVitals.length === daysInCurrentMonth;
+    let bonusPoints = 0;
+
+    if (allDaysLogged) {
+      bonusPoints = daysInCurrentMonth === 30 ? 10 : 7; // 10 for 30-day month, 7 for 31-day month
+    }
+
+    const totalScore = baseScore + bonusPoints;
+    const maxPossibleScore = (daysInCurrentMonth * 3) + (daysInCurrentMonth === 30 ? 10 : 7);
+
+    return {
+      totalScore,
+      baseScore,
+      bonusPoints,
+      maxPossibleScore,
+      daysLogged: monthVitals.length,
+      daysInMonth: daysInCurrentMonth,
+      isPerfect: allDaysLogged,
+    };
+  };
+
+  const getScoreColor = (score: number, maxScore: number) => {
+    const percentage = (score / maxScore) * 100;
+
+    if (percentage >= 90) return { bg: 'bg-gradient-to-br from-green-500 to-emerald-600', text: 'text-white', border: 'border-green-400' };
+    if (percentage >= 75) return { bg: 'bg-gradient-to-br from-blue-500 to-cyan-600', text: 'text-white', border: 'border-blue-400' };
+    if (percentage >= 50) return { bg: 'bg-gradient-to-br from-yellow-500 to-orange-500', text: 'text-white', border: 'border-yellow-400' };
+    if (percentage >= 25) return { bg: 'bg-gradient-to-br from-orange-500 to-red-500', text: 'text-white', border: 'border-orange-400' };
+    return { bg: 'bg-gradient-to-br from-red-600 to-red-800', text: 'text-white', border: 'border-red-500' };
+  };
+
+  const adherenceScore = calculateMonthlyAdherenceScore();
+  const scoreColor = getScoreColor(adherenceScore.totalScore, adherenceScore.maxPossibleScore);
+
+  // Prepare chart data
+  const chartData = vitals
+    .slice()
+    .reverse()
+    .filter(vital => vital.medicationsTaken !== undefined)
+    .map(vital => ({
+      date: format(parseISO(vital.timestamp), 'MMM d'),
+      taken: vital.medicationsTaken ? 1 : 0,
+      fill: getAdherenceColor(vital.medicationsTaken),
+    }));
+
+  // Calculate adherence distribution for pie chart
+  const adherenceCategories = vitals
+    .filter(vital => vital.medicationsTaken !== undefined)
+    .reduce((acc, vital) => {
+      const category = getAdherenceCategory(vital.medicationsTaken);
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const adherenceCategoryData = Object.entries(adherenceCategories).map(([category, count]) => {
+    const color = category === 'All Taken' ? '#10b981' : '#ef4444';
+    return {
+      name: category,
+      value: count,
+      color,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -289,7 +426,38 @@ export function MedicationsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Main Tab Navigation */}
+      <div className="flex space-x-2">
+        <button
+          onClick={() => setActiveTab('medications')}
+          className={`px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'medications'
+              ? 'bg-purple-500'
+              : 'glass-button'
+          }`}
+          style={{ color: '#ffffff' }}
+        >
+          <Pill className="h-5 w-5" />
+          My Medications
+        </button>
+        <button
+          onClick={() => setActiveTab('adherence')}
+          className={`px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'adherence'
+              ? 'bg-blue-500'
+              : 'glass-button'
+          }`}
+          style={{ color: '#ffffff' }}
+        >
+          <BarChart3 className="h-5 w-5" />
+          Adherence & Stats
+        </button>
+      </div>
+
+      {/* Medications Tab Content */}
+      {activeTab === 'medications' && (
+        <>
+          {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <GlassCard>
           <div className="flex items-center justify-between">
@@ -396,6 +564,138 @@ export function MedicationsPage() {
             )}
           </div>
         </GlassCard>
+      )}
+
+        </>
+      )}
+
+      {/* Adherence & Stats Tab Content */}
+      {activeTab === 'adherence' && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div></div>
+
+            {/* Medication Score Card */}
+            <div className={`${scoreColor.bg} ${scoreColor.text} rounded-xl p-4 shadow-lg border-2 ${scoreColor.border} transform hover:scale-105 transition-transform duration-300`}>
+              <div className="flex items-center justify-center gap-3">
+                <Trophy className="h-8 w-8" />
+                <div className="text-center">
+                  <div className="text-sm font-semibold opacity-90">Medication Score</div>
+                  <div className="text-3xl font-bold">
+                    {adherenceScore.totalScore}
+                    <span className="text-lg opacity-75">/{adherenceScore.maxPossibleScore}</span>
+                  </div>
+                  <div className="text-xs opacity-80 mt-1">
+                    {adherenceScore.daysLogged}/{adherenceScore.daysInMonth} days
+                    {adherenceScore.isPerfect && (
+                      <span className="ml-2">
+                        <Award className="inline h-4 w-4 animate-pulse" />
+                      </span>
+                    )}
+                  </div>
+                  {adherenceScore.isPerfect && (
+                    <div className="text-xs font-semibold mt-1 animate-pulse">
+                      Perfect Month! +{adherenceScore.bonusPoints} Bonus
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div></div>
+          </div>
+
+          {/* Date Range Selector */}
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Date Range</h3>
+              <div className="flex space-x-2">
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                  className="glass-input"
+                />
+                <span className="text-white self-center">to</span>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                  className="glass-input"
+                />
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Charts */}
+          {chartData.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GlassCard>
+                <h3 className="text-lg font-semibold text-white mb-4">Medication Adherence Trend</h3>
+                <div className="mb-2 flex flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                    <span className="text-white">All Taken</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                    <span className="text-white">Missed</span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="date" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" domain={[0, 1]} ticks={[0, 1]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                      labelStyle={{ color: '#fff' }}
+                      formatter={(value) => [value === 1 ? 'Taken' : 'Missed', 'Status']}
+                    />
+                    <Bar dataKey="taken" name="Adherence" radius={[8, 8, 0, 0]}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </GlassCard>
+
+              {adherenceCategoryData.length > 0 && (
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4">Adherence Distribution</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={adherenceCategoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {adherenceCategoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </GlassCard>
+              )}
+            </div>
+          ) : (
+            <GlassCard>
+              <div className="text-center py-12">
+                <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-white font-bold">No adherence data available for the selected date range</p>
+                <p className="text-gray-400 mt-2">Track your medication adherence through vitals logging</p>
+              </div>
+            </GlassCard>
+          )}
+        </>
       )}
 
       {/* Add/Edit Medication Modal */}
