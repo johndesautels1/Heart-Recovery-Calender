@@ -16,25 +16,35 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [viewMode, setViewModeState] = useState<ViewMode>('patient');
 
-  // Load view preference from localStorage on mount
+  // Load view preference from localStorage on mount, or auto-set for therapist/admin
   useEffect(() => {
     const savedView = localStorage.getItem('viewMode') as ViewMode;
-    if (savedView && (savedView === 'patient' || savedView === 'therapist')) {
+
+    // If user is therapist or admin, default to therapist view
+    if (user && (user.role === 'therapist' || user.role === 'admin')) {
+      if (savedView && (savedView === 'patient' || savedView === 'therapist')) {
+        setViewModeState(savedView);
+      } else {
+        // Auto-set therapists and admins to therapist view
+        setViewModeState('therapist');
+        localStorage.setItem('viewMode', 'therapist');
+      }
+    } else if (savedView && (savedView === 'patient' || savedView === 'therapist')) {
       setViewModeState(savedView);
     }
-  }, []);
+  }, [user]);
 
-  // Reset to patient view if user is not a therapist
+  // Reset to patient view if user is not a therapist or admin
   useEffect(() => {
-    if (user?.role !== 'therapist' && viewMode === 'therapist') {
+    if (user && user.role !== 'therapist' && user.role !== 'admin' && viewMode === 'therapist') {
       setViewModeState('patient');
       localStorage.setItem('viewMode', 'patient');
     }
   }, [user, viewMode]);
 
   const setViewMode = (mode: ViewMode) => {
-    // Only therapists can switch to therapist view
-    if (mode === 'therapist' && user?.role !== 'therapist') {
+    // Only therapists and admins can switch to therapist view
+    if (mode === 'therapist' && user?.role !== 'therapist' && user?.role !== 'admin') {
       return;
     }
 

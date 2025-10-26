@@ -1,31 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   UserCircle2,
-  Plus,
-  Edit2,
-  Trash2,
-  Mail,
-  Phone,
-  MapPin,
-  Video,
   Calendar as CalendarIcon,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  TrendingUp,
+  Dumbbell,
+  FileText,
+  Plus,
+  Eye,
+  Clock,
   Activity
 } from 'lucide-react';
-import { Patient, CreatePatientInput, PostOpWeekResponse } from '../types';
-import { Modal } from '../components/ui/Modal';
+import { Patient, PostOpWeekResponse } from '../types';
 import { Button } from '../components/ui/Button';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
+
+type ComplianceStatus = 'excellent' | 'warning' | 'poor' | 'unknown';
+type TabType = 'patients' | 'exercises' | 'templates';
+
+interface PatientWithCompliance extends Patient {
+  complianceStatus: ComplianceStatus;
+  nextAppointment?: string;
+  recentEvents: number;
+  completionRate: number;
+}
 
 export function PatientsPage() {
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patients, setPatients] = useState<PatientWithCompliance[]>([]);
   const [postOpData, setPostOpData] = useState<Record<number, PostOpWeekResponse>>({});
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreatePatientInput>();
+  const [activeTab, setActiveTab] = useState<TabType>('patients');
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadPatients();
@@ -43,10 +52,42 @@ export function PatientsPage() {
       if (!response.ok) throw new Error('Failed to load patients');
 
       const data = await response.json();
-      setPatients(data.data || []);
 
-      // Load post-op week data for each patient with surgery date
-      for (const patient of data.data || []) {
+      // Enhance patients with mock compliance data
+      // TODO: Replace with real data from backend
+      const enhancedPatients: PatientWithCompliance[] = (data.data || []).map((patient: Patient) => {
+        // Mock compliance calculation
+        const random = Math.random();
+        let complianceStatus: ComplianceStatus;
+        let completionRate: number;
+
+        if (random > 0.7) {
+          complianceStatus = 'excellent';
+          completionRate = 85 + Math.random() * 15;
+        } else if (random > 0.4) {
+          complianceStatus = 'warning';
+          completionRate = 60 + Math.random() * 25;
+        } else if (random > 0.2) {
+          complianceStatus = 'poor';
+          completionRate = 30 + Math.random() * 30;
+        } else {
+          complianceStatus = 'unknown';
+          completionRate = 0;
+        }
+
+        return {
+          ...patient,
+          complianceStatus,
+          completionRate: Math.round(completionRate),
+          recentEvents: Math.floor(Math.random() * 10) + 1,
+          nextAppointment: patient.surgeryDate ? format(new Date(), 'yyyy-MM-dd') : undefined,
+        };
+      });
+
+      setPatients(enhancedPatients);
+
+      // Load post-op week data
+      for (const patient of enhancedPatients) {
         if (patient.surgeryDate) {
           loadPostOpWeek(patient.id);
         }
@@ -77,104 +118,46 @@ export function PatientsPage() {
     }
   };
 
-  const onSubmit = async (data: CreatePatientInput) => {
-    try {
-      const token = localStorage.getItem('token');
-      const url = editingPatient
-        ? `/api/patients/${editingPatient.id}`
-        : '/api/patients';
-      const method = editingPatient ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('Failed to save patient');
-
-      toast.success(editingPatient ? 'Patient updated successfully' : 'Patient added successfully');
-      setIsAddModalOpen(false);
-      setEditingPatient(null);
-      reset();
-      await loadPatients();
-    } catch (error) {
-      console.error('Error saving patient:', error);
-      toast.error('Failed to save patient');
+  const getComplianceColor = (status: ComplianceStatus) => {
+    switch (status) {
+      case 'excellent':
+        return {
+          bg: 'rgba(16, 185, 129, 0.1)',
+          border: '#10b981',
+          text: '#10b981',
+          icon: CheckCircle2,
+          label: 'Excellent Compliance'
+        };
+      case 'warning':
+        return {
+          bg: 'rgba(245, 158, 11, 0.1)',
+          border: '#f59e0b',
+          text: '#f59e0b',
+          icon: AlertTriangle,
+          label: 'Needs Attention'
+        };
+      case 'poor':
+        return {
+          bg: 'rgba(239, 68, 68, 0.1)',
+          border: '#ef4444',
+          text: '#ef4444',
+          icon: XCircle,
+          label: 'Poor Compliance'
+        };
+      default:
+        return {
+          bg: 'rgba(107, 114, 128, 0.1)',
+          border: '#6b7280',
+          text: '#6b7280',
+          icon: Activity,
+          label: 'No Data'
+        };
     }
   };
 
-  const handleEdit = (patient: Patient) => {
-    setEditingPatient(patient);
-    reset({
-      name: patient.name,
-      email: patient.email || '',
-      phone: patient.phone || '',
-      address: patient.address || '',
-      zoomHandle: patient.zoomHandle || '',
-      surgeryDate: patient.surgeryDate ? format(parseISO(patient.surgeryDate), 'yyyy-MM-dd') : '',
-      notes: patient.notes || '',
-    });
-    setIsAddModalOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this patient?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/patients/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to delete patient');
-
-      toast.success('Patient deleted successfully');
-      await loadPatients();
-    } catch (error) {
-      console.error('Error deleting patient:', error);
-      toast.error('Failed to delete patient');
-    }
-  };
-
-  const handleToggleActive = async (patient: Patient) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/patients/${patient.id}/toggle-active`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to toggle patient status');
-
-      toast.success(`Patient ${patient.isActive ? 'deactivated' : 'activated'} successfully`);
-      await loadPatients();
-    } catch (error) {
-      console.error('Error toggling patient status:', error);
-      toast.error('Failed to update patient status');
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingPatient(null);
-    reset({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      zoomHandle: '',
-      surgeryDate: '',
-      notes: '',
-    });
-    setIsAddModalOpen(true);
+  const viewPatientCalendar = (patientId: number) => {
+    // TODO: Navigate to detailed patient calendar view
+    toast.info('Patient calendar view coming soon!');
   };
 
   const getPostOpDisplay = (patientId: number) => {
@@ -183,20 +166,16 @@ export function PatientsPage() {
 
     if (data.isPreSurgery) {
       return (
-        <div className="flex items-center space-x-2 text-sm" style={{ color: '#60a5fa' }}>
-          <CalendarIcon className="h-4 w-4" />
-          <span className="font-medium">Pre-Surgery</span>
-          <span style={{ color: 'var(--ink)' }}>({Math.abs(data.daysSinceSurgery || 0)} days until surgery)</span>
-        </div>
+        <span className="text-xs" style={{ color: '#60a5fa' }}>
+          Pre-Op ({Math.abs(data.daysSinceSurgery || 0)}d until surgery)
+        </span>
       );
     }
 
     return (
-      <div className="flex items-center space-x-2 text-sm" style={{ color: '#10b981' }}>
-        <Activity className="h-4 w-4" />
-        <span className="font-medium">Week {data.postOpWeek}</span>
-        <span style={{ color: 'var(--ink)' }}>({data.daysSinceSurgery} days post-op)</span>
-      </div>
+      <span className="text-xs" style={{ color: '#10b981' }}>
+        Week {data.postOpWeek} ({data.daysSinceSurgery}d post-op)
+      </span>
     );
   };
 
@@ -213,251 +192,226 @@ export function PatientsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gradient mb-2">Patient Management</h1>
-          <p style={{ color: 'var(--ink)' }} className="text-sm">
-            Manage your patients and track their recovery progress
-          </p>
-        </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="h-5 w-5 mr-2" />
-          Add Patient
-        </Button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gradient mb-2">Patient Management</h1>
+        <p style={{ color: 'var(--ink)' }} className="text-sm">
+          Monitor patient compliance and manage calendar-based recovery programs
+        </p>
       </div>
 
-      {/* Patient Grid */}
-      {patients.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center">
-          <UserCircle2 className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>No patients yet</h3>
-          <p style={{ color: 'var(--ink)' }} className="mb-6 opacity-70">
-            Add your first patient to start tracking their recovery journey
-          </p>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-5 w-5 mr-2" />
-            Add Your First Patient
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {patients.map((patient) => (
-            <div key={patient.id} className="glass rounded-xl p-6 hover:scale-[1.02] transition-transform">
-              {/* Patient Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-12 w-12 rounded-full glass flex items-center justify-center" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)' }}>
-                    <UserCircle2 className="h-7 w-7" style={{ color: 'var(--accent)' }} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>{patient.name}</h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${patient.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
-                    >
-                      {patient.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
+      {/* Tab Navigation */}
+      <div className="glass rounded-xl p-2 mb-6 inline-flex space-x-2">
+        <button
+          onClick={() => setActiveTab('patients')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${
+            activeTab === 'patients' ? 'bg-white/30' : 'hover:bg-white/10'
+          }`}
+          style={{ color: activeTab === 'patients' ? 'var(--accent)' : 'var(--ink)' }}
+        >
+          <UserCircle2 className="h-5 w-5" />
+          <span>My Patients</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('exercises');
+            navigate('/exercises');
+          }}
+          className="px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:bg-white/10 flex items-center space-x-2"
+          style={{ color: 'var(--ink)' }}
+        >
+          <Dumbbell className="h-5 w-5" />
+          <span>Exercise Library</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('templates')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${
+            activeTab === 'templates' ? 'bg-white/30' : 'hover:bg-white/10'
+          }`}
+          style={{ color: activeTab === 'templates' ? 'var(--accent)' : 'var(--ink)' }}
+        >
+          <FileText className="h-5 w-5" />
+          <span>Event Templates</span>
+        </button>
+      </div>
+
+      {/* My Patients Tab */}
+      {activeTab === 'patients' && (
+        <>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="glass rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.7 }}>Total Patients</p>
+                  <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>{patients.length}</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(patient)}
-                    className="p-2 rounded-lg hover:bg-white/20 transition-colors"
-                    title="Edit patient"
-                  >
-                    <Edit2 className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(patient.id)}
-                    className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
-                    title="Delete patient"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </button>
-                </div>
+                <UserCircle2 className="h-8 w-8" style={{ color: 'var(--accent)', opacity: 0.3 }} />
               </div>
-
-              {/* Post-Op Week */}
-              {patient.surgeryDate && (
-                <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-                  {getPostOpDisplay(patient.id)}
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink)', opacity: 0.7 }}>
-                    Surgery: {format(parseISO(patient.surgeryDate), 'MMM d, yyyy')}
-                  </div>
-                </div>
-              )}
-
-              {/* Contact Info */}
-              <div className="space-y-2 mb-4">
-                {patient.email && (
-                  <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--ink)' }}>
-                    <Mail className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                    <span className="truncate">{patient.email}</span>
-                  </div>
-                )}
-                {patient.phone && (
-                  <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--ink)' }}>
-                    <Phone className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                    <span>{patient.phone}</span>
-                  </div>
-                )}
-                {patient.address && (
-                  <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--ink)' }}>
-                    <MapPin className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                    <span className="truncate">{patient.address}</span>
-                  </div>
-                )}
-                {patient.zoomHandle && (
-                  <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--ink)' }}>
-                    <Video className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                    <span className="truncate">{patient.zoomHandle}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes Preview */}
-              {patient.notes && (
-                <div className="text-xs p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}>
-                  <span className="opacity-70">Notes: </span>
-                  {patient.notes.length > 80 ? `${patient.notes.substring(0, 80)}...` : patient.notes}
-                </div>
-              )}
-
-              {/* Action Button */}
-              <button
-                onClick={() => handleToggleActive(patient)}
-                className="w-full mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: patient.isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                  color: patient.isActive ? '#dc2626' : '#10b981',
-                }}
-              >
-                {patient.isActive ? 'Deactivate Patient' : 'Activate Patient'}
-              </button>
             </div>
-          ))}
-        </div>
+            <div className="glass rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.7 }}>Excellent</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {patients.filter(p => p.complianceStatus === 'excellent').length}
+                  </p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-600 opacity-30" />
+              </div>
+            </div>
+            <div className="glass rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.7 }}>Needs Attention</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {patients.filter(p => p.complianceStatus === 'warning').length}
+                  </p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-yellow-600 opacity-30" />
+              </div>
+            </div>
+            <div className="glass rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.7 }}>Poor Compliance</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {patients.filter(p => p.complianceStatus === 'poor').length}
+                  </p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-600 opacity-30" />
+              </div>
+            </div>
+          </div>
+
+          {/* Patient Cards */}
+          {patients.length === 0 ? (
+            <div className="glass rounded-xl p-12 text-center">
+              <UserCircle2 className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
+              <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>No patients yet</h3>
+              <p style={{ color: 'var(--ink)' }} className="mb-6 opacity-70">
+                Patients will sync from the master app automatically
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {patients.map((patient) => {
+                const compliance = getComplianceColor(patient.complianceStatus);
+                const ComplianceIcon = compliance.icon;
+
+                return (
+                  <div
+                    key={patient.id}
+                    className="glass rounded-xl overflow-hidden hover:scale-[1.02] transition-transform"
+                  >
+                    {/* Traffic Light Banner */}
+                    <div
+                      className="px-6 py-3 flex items-center justify-between"
+                      style={{
+                        backgroundColor: compliance.bg,
+                        borderBottom: `2px solid ${compliance.border}`
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <ComplianceIcon className="h-5 w-5" style={{ color: compliance.text }} />
+                        <span className="font-medium text-sm" style={{ color: compliance.text }}>
+                          {compliance.label}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: compliance.text }}>
+                        {patient.completionRate}%
+                      </span>
+                    </div>
+
+                    {/* Patient Info */}
+                    <div className="p-6">
+                      {/* Name and Status */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-12 w-12 rounded-full glass flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)' }}>
+                            <UserCircle2 className="h-7 w-7" style={{ color: 'var(--accent)' }} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>
+                              {patient.name}
+                            </h3>
+                            {patient.surgeryDate && postOpData[patient.id] && (
+                              <div>{getPostOpDisplay(patient.id)}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Metrics */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <CalendarIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                            <span className="text-xs" style={{ color: 'var(--ink)', opacity: 0.7 }}>Events</span>
+                          </div>
+                          <p className="text-lg font-bold" style={{ color: 'var(--ink)' }}>
+                            {patient.recentEvents}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <TrendingUp className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                            <span className="text-xs" style={{ color: 'var(--ink)', opacity: 0.7 }}>Rate</span>
+                          </div>
+                          <p className="text-lg font-bold" style={{ color: 'var(--ink)' }}>
+                            {patient.completionRate}%
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Next Appointment */}
+                      {patient.nextAppointment && (
+                        <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)' }}>
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                            <div>
+                              <p className="text-xs" style={{ color: 'var(--ink)', opacity: 0.7 }}>Next Session</p>
+                              <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                                {format(new Date(patient.nextAppointment), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      <Button
+                        onClick={() => viewPatientCalendar(patient.id)}
+                        fullWidth
+                        variant="glass"
+                        className="flex items-center justify-center space-x-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View Calendar</span>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Add/Edit Modal */}
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setEditingPatient(null);
-          reset();
-        }}
-        title={editingPatient ? 'Edit Patient' : 'Add New Patient'}
-      >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Patient Name *
-            </label>
-            <input
-              type="text"
-              className="glass-input"
-              placeholder="John Doe"
-              {...register('name', { required: 'Name is required' })}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                className="glass-input"
-                placeholder="john@example.com"
-                {...register('email')}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-                Phone
-              </label>
-              <input
-                type="tel"
-                className="glass-input"
-                placeholder="(555) 123-4567"
-                {...register('phone')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Address
-            </label>
-            <input
-              type="text"
-              className="glass-input"
-              placeholder="123 Main St, City, State 12345"
-              {...register('address')}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Zoom Handle
-            </label>
-            <input
-              type="text"
-              className="glass-input"
-              placeholder="john.doe@zoom.us"
-              {...register('zoomHandle')}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Surgery Date (Day 0)
-            </label>
-            <input
-              type="date"
-              className="glass-input"
-              {...register('surgeryDate')}
-            />
-            <p className="text-xs mt-1" style={{ color: 'var(--ink)', opacity: 0.7 }}>
-              Set the surgery date to track post-operative recovery progress
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Notes
-            </label>
-            <textarea
-              className="glass-input"
-              rows={3}
-              placeholder="Additional notes about the patient..."
-              {...register('notes')}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              type="button"
-              variant="glass"
-              onClick={() => {
-                setIsAddModalOpen(false);
-                setEditingPatient(null);
-                reset();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">
-              {editingPatient ? 'Update Patient' : 'Add Patient'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      {/* Event Templates Tab */}
+      {activeTab === 'templates' && (
+        <div className="glass rounded-xl p-12 text-center">
+          <FileText className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
+          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>Event Templates</h3>
+          <p style={{ color: 'var(--ink)' }} className="mb-6 opacity-70">
+            Quick event templates for scheduling coming soon!
+          </p>
+          <Button>
+            <Plus className="h-5 w-5 mr-2" />
+            Create Template
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

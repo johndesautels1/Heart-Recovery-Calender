@@ -76,10 +76,9 @@ export function Navbar() {
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
-  // Add therapist portal if user is a therapist or admin
+  // Add Admin/Provider portal if user is a therapist or admin
   if (user?.role === 'therapist' || user?.role === 'admin') {
-    navItems.push({ path: '/patients', label: 'Patients', icon: Stethoscope });
-    navItems.push({ path: '/exercises', label: 'Exercises', icon: Dumbbell });
+    navItems.push({ path: '/patients', label: 'Admin/Provider', icon: Stethoscope });
   }
 
   const isActive = (path: string) => location.pathname === path;
@@ -134,8 +133,8 @@ export function Navbar() {
               {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* View Toggle - Show for therapists and admins */}
-            {(user?.role === 'therapist' || user?.role === 'admin') && (
+            {/* View Toggle - Hidden for now to simplify UI */}
+            {/* {(user?.role === 'therapist' || user?.role === 'admin') && (
               <button
                 onClick={toggleView}
                 className="flex items-center space-x-1 px-2 py-2 rounded-lg transition-all duration-300 hover:scale-105 font-medium text-sm"
@@ -160,7 +159,7 @@ export function Navbar() {
                   </>
                 )}
               </button>
-            )}
+            )} */}
 
             <Link
               to="/profile"
@@ -228,8 +227,8 @@ export function Navbar() {
               <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
 
-            {/* View Toggle for Mobile - Show for therapists and admins */}
-            {(user?.role === 'therapist' || user?.role === 'admin') && (
+            {/* View Toggle for Mobile - Hidden for now to simplify UI */}
+            {/* {(user?.role === 'therapist' || user?.role === 'admin') && (
               <button
                 onClick={toggleView}
                 className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium"
@@ -253,7 +252,7 @@ export function Navbar() {
                   </>
                 )}
               </button>
-            )}
+            )} */}
 
             <Link
               to="/profile"
