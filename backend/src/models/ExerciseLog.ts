@@ -11,12 +11,13 @@ interface ExerciseLogAttributes {
   actualDuration?: number; // in minutes
   difficultyRating?: number; // 1-10 scale
   painLevel?: number; // 1-10 scale
+  performanceScore?: number; // 0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 'id' | 'actualSets' | 'actualReps' | 'actualDuration' | 'difficultyRating' | 'painLevel' | 'notes' | 'createdAt' | 'updatedAt'> {}
+interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 'id' | 'actualSets' | 'actualReps' | 'actualDuration' | 'difficultyRating' | 'painLevel' | 'performanceScore' | 'notes' | 'createdAt' | 'updatedAt'> {}
 
 class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttributes> implements ExerciseLogAttributes {
   public id!: number;
@@ -28,6 +29,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public actualDuration?: number;
   public difficultyRating?: number;
   public painLevel?: number;
+  public performanceScore?: number;
   public notes?: string;
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
@@ -82,6 +84,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: '1-10 scale, 1 = no pain, 10 = severe pain',
+        },
+        performanceScore: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: '0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals',
         },
         notes: {
           type: DataTypes.TEXT,

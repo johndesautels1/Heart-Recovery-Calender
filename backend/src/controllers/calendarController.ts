@@ -360,3 +360,101 @@ export const getPendingInvitations = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// GET /api/events/stats/monthly - Get monthly performance statistics from calendar events
+export const getMonthlyStats = async (req: Request, res: Response) => {
+  try {
+    const { patientId, year, month } = req.query;
+
+    if (!patientId || !year || !month) {
+      return res.status(400).json({ error: 'patientId, year, and month are required' });
+    }
+
+    // Calculate date range for the month
+    const startDate = new Date(Number(year), Number(month) - 1, 1);
+    const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59);
+
+    const events = await CalendarEvent.findAll({
+      where: {
+        patientId: Number(patientId),
+        exerciseId: { [Op.not]: null }, // Only exercise events
+        performanceScore: { [Op.not]: null }, // Only events with scores
+        startTime: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      include: [
+        {
+          model: Exercise,
+          as: 'exercise',
+        },
+      ],
+      order: [['startTime', 'DESC']],
+    });
+
+    // Calculate total sessions and scores
+    const totalSessions = events.length;
+    const totalScore = events.reduce((sum, event) => sum + (event.performanceScore || 0), 0);
+
+    // Calculate percentage based on number of sessions
+    let maxPoints: number;
+    let bonusPoints: number;
+    let pointsPerSession: number;
+
+    if (totalSessions === 0) {
+      maxPoints = 0;
+      bonusPoints = 0;
+      pointsPerSession = 8;
+    } else if (totalSessions <= 12) {
+      // 12 sessions: each worth 8 points = 96 points + 4 bonus = 100
+      pointsPerSession = 8;
+      maxPoints = totalSessions * 8;
+      bonusPoints = Math.min(4, Math.round((totalScore / (totalSessions * 8)) * 4));
+    } else {
+      // 13-15 sessions: each worth 6 points = 90 points + 10 bonus = 100
+      pointsPerSession = 6;
+      maxPoints = totalSessions * 6;
+      bonusPoints = Math.min(10, Math.round((totalScore / (totalSessions * 6)) * 10));
+    }
+
+    const finalScore = Math.min(100, totalScore + bonusPoints);
+    const percentageScore = maxPoints > 0 ? Math.round((finalScore / 100) * 100) : 0;
+
+    // Group by performance level
+    const performanceBreakdown = {
+      noShow: events.filter(e => e.performanceScore === 0).length,
+      completed: events.filter(e => e.performanceScore === 4).length,
+      metGoals: events.filter(e => e.performanceScore === 6).length,
+      exceededGoals: events.filter(e => e.performanceScore === 8).length,
+    };
+
+    // Calculate weekly breakdown
+    const weeklyStats = events.reduce((acc, event) => {
+      const week = Math.ceil(new Date(event.startTime).getDate() / 7);
+      if (!acc[week]) {
+        acc[week] = { sessions: 0, score: 0 };
+      }
+      acc[week].sessions++;
+      acc[week].score += event.performanceScore || 0;
+      return acc;
+    }, {} as Record<number, { sessions: number; score: number }>);
+
+    res.json({
+      month: Number(month),
+      year: Number(year),
+      totalSessions,
+      totalScore,
+      bonusPoints,
+      finalScore,
+      percentageScore,
+      maxPossibleScore: 100,
+      pointsPerSession,
+      performanceBreakdown,
+      weeklyStats,
+      events,
+    });
+  } catch (error) {
+    console.error('Error fetching monthly stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

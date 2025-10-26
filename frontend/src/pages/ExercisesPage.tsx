@@ -19,8 +19,28 @@ import {
   XCircle,
   Calendar,
   Info,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  Award,
+  Target
 } from 'lucide-react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadialBarChart,
+  RadialBar
+} from 'recharts';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { useView } from '../contexts/ViewContext';
@@ -52,6 +72,26 @@ interface Patient {
   name: string;
   surgeryDate?: string;
   isActive: boolean;
+}
+
+interface MonthlyStats {
+  month: number;
+  year: number;
+  totalSessions: number;
+  totalScore: number;
+  bonusPoints: number;
+  finalScore: number;
+  percentageScore: number;
+  maxPossibleScore: number;
+  pointsPerSession: number;
+  performanceBreakdown: {
+    noShow: number;
+    completed: number;
+    metGoals: number;
+    exceededGoals: number;
+  };
+  weeklyStats: Record<number, { sessions: number; score: number }>;
+  logs: any[];
 }
 
 type SafetyLevel = 'safe' | 'upcoming' | 'not-safe' | 'no-patient';
@@ -125,6 +165,15 @@ export function ExercisesPage() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   const [mainTab, setMainTab] = useState<MainTab>('exercises');
+  const [statsPatientId, setStatsPatientId] = useState<string>('');
+  const [statsMonth, setStatsMonth] = useState<number>(new Date().getMonth() + 1);
+  const [statsYear, setStatsYear] = useState<number>(new Date().getFullYear());
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [isCreateLogModalOpen, setIsCreateLogModalOpen] = useState(false);
+  const [newLogDate, setNewLogDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newLogScore, setNewLogScore] = useState<number>(8);
+  const [newLogNotes, setNewLogNotes] = useState('');
   const { isTherapistView } = useView();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -139,6 +188,12 @@ export function ExercisesPage() {
   useEffect(() => {
     filterExercises();
   }, [exercises, searchTerm, selectedCategory, selectedDifficulty, selectedSafetyLevel, selectedPatientId, mainTab]);
+
+  useEffect(() => {
+    if (mainTab === 'stats' && statsPatientId) {
+      loadMonthlyStats();
+    }
+  }, [mainTab, statsPatientId, statsMonth, statsYear]);
 
   const loadExercises = async () => {
     try {
@@ -177,6 +232,42 @@ export function ExercisesPage() {
     } catch (error) {
       console.error('Error loading patients:', error);
       toast.error('Failed to load patients');
+    }
+  };
+
+  const loadMonthlyStats = async () => {
+    if (!statsPatientId) return;
+
+    setLoadingStats(true);
+    try {
+      const token = localStorage.getItem('token');
+      const url = `/api/events/stats/monthly?patientId=${statsPatientId}&year=${statsYear}&month=${statsMonth}`;
+      console.log('📊 Loading stats from:', url);
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Stats API error:', response.status, errorData);
+        throw new Error('Failed to load monthly stats');
+      }
+
+      const data = await response.json();
+      console.log('✅ Stats data received:', data);
+      console.log('📈 Total Sessions:', data.totalSessions);
+      console.log('🎯 Performance Breakdown:', data.performanceBreakdown);
+      console.log('📅 Weekly Stats:', data.weeklyStats);
+      setMonthlyStats(data);
+    } catch (error) {
+      console.error('Error loading monthly stats:', error);
+      toast.error('Failed to load monthly statistics');
+      setMonthlyStats(null);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -904,21 +995,415 @@ export function ExercisesPage() {
           })}
         </div>
       )}
-        </div>
+      </div>
       )}
 
       {/* Stats & Progress Tab */}
       {mainTab === 'stats' && (
         <div className="space-y-6">
-          <div className="glass rounded-xl p-8 text-center">
-            <CheckCircle2 className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
-            <h3 className="text-2xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>
-              Activity Tracking Coming Soon
-            </h3>
-            <p style={{ color: 'var(--ink)' }} className="opacity-70">
-              Track your daily activities and view progress charts
-            </p>
+          {/* Patient and Date Selector */}
+          <div className="glass rounded-xl p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                  Select Patient *
+                </label>
+                <select
+                  className="glass-input"
+                  value={statsPatientId}
+                  onChange={(e) => setStatsPatientId(e.target.value)}
+                >
+                  <option value="">Choose a patient...</option>
+                  {patients.filter(p => p.isActive).map(patient => (
+                    <option key={patient.id} value={patient.id}>{patient.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                  Month
+                </label>
+                <select
+                  className="glass-input"
+                  value={statsMonth}
+                  onChange={(e) => setStatsMonth(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>
+                      {new Date(2000, month - 1, 1).toLocaleDateString('en-US', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                  Year
+                </label>
+                <select
+                  className="glass-input"
+                  value={statsYear}
+                  onChange={(e) => setStatsYear(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
+
+          {/* No Patient Selected State */}
+          {!statsPatientId && (
+            <div className="glass rounded-xl p-12 text-center">
+              <Target className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--accent)' }} />
+              <h3 className="text-2xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+                Select a Patient to View Stats
+              </h3>
+              <p style={{ color: 'var(--ink)' }} className="opacity-70 mb-6">
+                Choose a patient from the dropdown above to view their exercise performance statistics
+              </p>
+              <div className="glass rounded-lg p-6 max-w-2xl mx-auto text-left" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}>
+                <h4 className="font-semibold mb-3" style={{ color: '#a855f7' }}>
+                  📊 What Stats Show
+                </h4>
+                <p className="text-sm mb-3" style={{ color: 'var(--ink)' }}>
+                  This tab displays performance statistics for <strong>Exercise Logs</strong> - these are different from calendar events or patient data.
+                </p>
+                <p className="text-sm" style={{ color: 'var(--ink)' }}>
+                  Exercise logs track how well patients perform in their therapy sessions with scores of 0 (no show), 4 (completed), 6 (met goals), or 8 (exceeded goals).
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loadingStats && statsPatientId && (
+            <div className="glass rounded-xl p-12 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--accent)' }}></div>
+                <span style={{ color: 'var(--ink)' }}>Loading statistics...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Stats Display */}
+          {!loadingStats && statsPatientId && monthlyStats && (
+            <>
+              {/* Summary Cards Row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Weekly Score Card */}
+                <div className="glass rounded-xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#ea580c', transform: 'translate(30%, -30%)' }}></div>
+                  <TrendingUp className="h-8 w-8 mb-3" style={{ color: '#ea580c' }} />
+                  <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Weekly Score</p>
+                  <p className="text-3xl font-bold" style={{ color: '#ea580c' }}>
+                    {monthlyStats.totalSessions > 0 ? Math.round(monthlyStats.totalScore / Math.ceil(monthlyStats.totalSessions / 3)) : 0}
+                  </p>
+                  <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
+                    Average per week
+                  </p>
+                </div>
+
+                {/* Cumulative Score Card */}
+                <div className="glass rounded-xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#2563eb', transform: 'translate(30%, -30%)' }}></div>
+                  <Activity className="h-8 w-8 mb-3" style={{ color: '#2563eb' }} />
+                  <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Cumulative Score</p>
+                  <p className="text-3xl font-bold" style={{ color: '#2563eb' }}>{monthlyStats.totalScore}</p>
+                  <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
+                    {monthlyStats.totalSessions} sessions
+                  </p>
+                </div>
+
+                {/* Percentage Score Card - Color based on performance */}
+                <div className="glass rounded-xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{
+                    backgroundColor: monthlyStats.percentageScore >= 80 ? '#059669' : monthlyStats.percentageScore >= 60 ? '#2563eb' : monthlyStats.percentageScore >= 40 ? '#ea580c' : '#dc2626',
+                    transform: 'translate(30%, -30%)'
+                  }}></div>
+                  <Award className="h-8 w-8 mb-3" style={{
+                    color: monthlyStats.percentageScore >= 80 ? '#059669' : monthlyStats.percentageScore >= 60 ? '#2563eb' : monthlyStats.percentageScore >= 40 ? '#ea580c' : '#dc2626'
+                  }} />
+                  <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Percentage Score</p>
+                  <p className="text-3xl font-bold" style={{
+                    color: monthlyStats.percentageScore >= 80 ? '#059669' : monthlyStats.percentageScore >= 60 ? '#2563eb' : monthlyStats.percentageScore >= 40 ? '#ea580c' : '#dc2626'
+                  }}>{monthlyStats.percentageScore}%</p>
+                  <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
+                    {monthlyStats.finalScore}/{monthlyStats.maxPossibleScore} points
+                  </p>
+                </div>
+
+                {/* Exceeded Goals Card - Green to match 8-point color */}
+                <div className="glass rounded-xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#059669', transform: 'translate(30%, -30%)' }}></div>
+                  <CheckCircle2 className="h-8 w-8 mb-3" style={{ color: '#059669' }} />
+                  <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Exceeded Goals</p>
+                  <p className="text-3xl font-bold" style={{ color: '#059669' }}>{monthlyStats.performanceBreakdown.exceededGoals}</p>
+                  <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
+                    8 pts sessions
+                  </p>
+                </div>
+              </div>
+
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Performance Breakdown Pie Chart */}
+                <div className="glass rounded-xl p-6">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                    Performance Breakdown
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Exceeded Goals (8 pts)', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
+                          { name: 'Met Goals (6 pts)', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
+                          { name: 'Completed (4 pts)', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
+                          { name: 'No Show (0 pts)', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                        ].filter(item => item.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={(entry) => `${entry.value}`}
+                      >
+                        {[
+                          { name: 'Exceeded Goals (8 pts)', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
+                          { name: 'Met Goals (6 pts)', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
+                          { name: 'Completed (4 pts)', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
+                          { name: 'No Show (0 pts)', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                        ].filter(item => item.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: '#ffffff'
+                        }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Weekly Progress Bar Chart */}
+                <div className="glass rounded-xl p-6">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                    Weekly Progress
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={Object.entries(monthlyStats.weeklyStats).map(([week, data]) => {
+                        const avgScore = data.sessions > 0 ? Math.round(data.score / data.sessions) : 0;
+                        const weekNum = parseInt(week);
+                        const year = monthlyStats.year;
+                        const month = monthlyStats.month;
+
+                        // Calculate start and end dates for this week
+                        const startDay = (weekNum - 1) * 7 + 1;
+                        const endDay = Math.min(weekNum * 7, new Date(year, month, 0).getDate());
+                        const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short' });
+                        const dateRange = `${monthName} ${startDay}-${endDay}`;
+
+                        // Color based on average score
+                        let barColor = '#6b7280'; // gray for no data
+                        if (avgScore === 0) barColor = '#dc2626'; // red - no show
+                        else if (avgScore === 4) barColor = '#ea580c'; // orange - completed
+                        else if (avgScore === 6) barColor = '#2563eb'; // blue - met goals
+                        else if (avgScore === 8) barColor = '#059669'; // green - exceeded goals
+
+                        return {
+                          week: dateRange,
+                          sessions: data.sessions,
+                          score: data.score,
+                          avgScore,
+                          fill: barColor
+                        };
+                      })}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="week" stroke="#ffffff80" />
+                      <YAxis stroke="#ffffff80" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: '#ffffff'
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="score" name="Total Points" radius={[8, 8, 0, 0]}>
+                        {Object.entries(monthlyStats.weeklyStats).map(([week, data], index) => {
+                          const avgScore = data.sessions > 0 ? Math.round(data.score / data.sessions) : 0;
+                          let barColor = '#6b7280'; // gray for no data
+                          if (avgScore === 0) barColor = '#dc2626'; // red - no show
+                          else if (avgScore === 4) barColor = '#ea580c'; // orange - completed
+                          else if (avgScore === 6) barColor = '#2563eb'; // blue - met goals
+                          else if (avgScore === 8) barColor = '#059669'; // green - exceeded goals
+
+                          return <Cell key={`cell-${index}`} fill={barColor} />;
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Score Gauge */}
+              <div className="glass rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                  Monthly Performance Score
+                </h3>
+                <div className="flex flex-col items-center">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <RadialBarChart
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="60%"
+                      outerRadius="90%"
+                      barSize={30}
+                      data={[{
+                        name: 'Score',
+                        value: monthlyStats.percentageScore,
+                        fill: monthlyStats.percentageScore >= 80 ? '#10b981' : monthlyStats.percentageScore >= 60 ? '#3b82f6' : monthlyStats.percentageScore >= 40 ? '#f59e0b' : '#ef4444'
+                      }]}
+                      startAngle={180}
+                      endAngle={0}
+                    >
+                      <RadialBar
+                        background
+                        dataKey="value"
+                        cornerRadius={15}
+                      />
+                      <text
+                        x="50%"
+                        y="50%"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        style={{ fontSize: '48px', fontWeight: 'bold', fill: '#ffffff' }}
+                      >
+                        {monthlyStats.percentageScore}%
+                      </text>
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                  <div className="flex items-center justify-center space-x-8 mt-6">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>0-39%</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>40-59%</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>60-79%</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>80-100%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Performance Level Legend */}
+              <div className="glass rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                  Scoring Guide
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid #ef4444' }}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <XCircle className="h-5 w-5" style={{ color: '#ef4444' }} />
+                      <span className="font-semibold" style={{ color: '#ef4444' }}>No Show</span>
+                    </div>
+                    <p className="text-2xl font-bold mb-1" style={{ color: '#ef4444' }}>0 pts</p>
+                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                      Patient did not attend session
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b' }}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CheckCircle2 className="h-5 w-5" style={{ color: '#f59e0b' }} />
+                      <span className="font-semibold" style={{ color: '#f59e0b' }}>Completed</span>
+                    </div>
+                    <p className="text-2xl font-bold mb-1" style={{ color: '#f59e0b' }}>4 pts</p>
+                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                      Completed the session
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid #3b82f6' }}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Target className="h-5 w-5" style={{ color: '#3b82f6' }} />
+                      <span className="font-semibold" style={{ color: '#3b82f6' }}>Met Goals</span>
+                    </div>
+                    <p className="text-2xl font-bold mb-1" style={{ color: '#3b82f6' }}>6 pts</p>
+                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                      Achieved therapist goals
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981' }}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Award className="h-5 w-5" style={{ color: '#10b981' }} />
+                      <span className="font-semibold" style={{ color: '#10b981' }}>Exceeded</span>
+                    </div>
+                    <p className="text-2xl font-bold mb-1" style={{ color: '#10b981' }}>8 pts</p>
+                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                      Surpassed expectations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* No Data State */}
+          {!loadingStats && statsPatientId && monthlyStats && monthlyStats.totalSessions === 0 && (
+            <div className="glass rounded-xl p-12 text-center">
+              <Activity className="h-16 w-16 mx-auto mb-4 opacity-50" style={{ color: 'var(--accent)' }} />
+              <h3 className="text-2xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+                No Exercise Logs Found
+              </h3>
+              <p style={{ color: 'var(--ink)' }} className="opacity-70 mb-4">
+                No exercise sessions found for {patients.find(p => p.id === parseInt(statsPatientId))?.name} in {new Date(statsYear, statsMonth - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
+              <div className="glass rounded-lg p-6 max-w-2xl mx-auto text-left" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                <h4 className="font-semibold mb-3 flex items-center" style={{ color: 'var(--accent)' }}>
+                  <Info className="h-5 w-5 mr-2" />
+                  How to Add Exercise Sessions
+                </h4>
+                <ol className="space-y-2 text-sm" style={{ color: 'var(--ink)' }}>
+                  <li className="flex items-start">
+                    <span className="font-bold mr-2">1.</span>
+                    <span>Go to the Calendar and create exercise events for your patient</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-bold mr-2">2.</span>
+                    <span>After the session, open the event and add a performance score:</span>
+                  </li>
+                  <li className="ml-6 text-xs opacity-80">
+                    • <strong>0 points</strong> = Patient no show<br />
+                    • <strong>4 points</strong> = Completed session<br />
+                    • <strong>6 points</strong> = Met goals<br />
+                    • <strong>8 points</strong> = Exceeded goals
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-bold mr-2">3.</span>
+                    <span>Stats will automatically appear here!</span>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

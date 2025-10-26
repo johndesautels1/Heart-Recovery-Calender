@@ -20,6 +20,7 @@ interface CalendarEventAttributes {
   createdBy?: number;
   patientId?: number;
   exerciseId?: number;
+  performanceScore?: number; // 0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,6 +46,7 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
   public createdBy?: number;
   public patientId?: number;
   public exerciseId?: number;
+  public performanceScore?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -150,6 +152,11 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
             key: 'id',
           },
           comment: 'Exercise associated with this event if applicable',
+        },
+        performanceScore: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: '0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals',
         },
       },
       {

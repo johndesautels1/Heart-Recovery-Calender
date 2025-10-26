@@ -45,6 +45,7 @@ router.delete('/calendars/:id', calendarsController.deleteCalendar);
 router.get('/events', eventsController.getEvents);
 router.post('/events', eventsController.createEvent);
 router.get('/events/pending-invitations', eventsController.getPendingInvitations);
+router.get('/events/stats/monthly', eventsController.getMonthlyStats);
 router.delete('/events/today', eventsController.deleteTodayEvents);
 router.delete('/events/history', eventsController.deleteHistoricEvents);
 router.get('/events/:id', eventsController.getEvent);

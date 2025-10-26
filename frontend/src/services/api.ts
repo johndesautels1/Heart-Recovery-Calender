@@ -165,7 +165,7 @@ class ApiService {
     return response.data;
   }
 
-  async updateEvent(id: number, data: Partial<CreateEventInput>): Promise<CalendarEvent> {
+  async updateEvent(id: number, data: Partial<CalendarEvent>): Promise<CalendarEvent> {
     const response = await this.api.put<CalendarEvent>(`events/${id}`, data);
     return response.data;
   }

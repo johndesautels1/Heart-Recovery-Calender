@@ -45,6 +45,8 @@ export interface CalendarEvent {
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
   sleepHours?: number;
+  exerciseId?: number;
+  performanceScore?: number;
   createdAt: string;
   updatedAt: string;
   calendar?: Calendar;  // Optional joined data

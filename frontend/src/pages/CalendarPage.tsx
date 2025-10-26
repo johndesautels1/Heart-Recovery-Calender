@@ -49,6 +49,7 @@ export function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
+  const [performanceScore, setPerformanceScore] = useState<string>('');
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -224,6 +225,7 @@ export function CalendarPage() {
     if (event) {
       setSelectedEvent(event);
       setSleepHours(event.sleepHours?.toString() || '');
+      setPerformanceScore(event.performanceScore?.toString() || '');
 
       // Load meals for this event's date
       const eventDate = new Date(event.startTime).toISOString().split('T')[0];
@@ -422,6 +424,53 @@ export function CalendarPage() {
     toast.success('Calendar backup downloaded as JSON');
   };
 
+  const handleExportFullJSON = () => {
+    if (events.length === 0 && calendars.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    // Create a comprehensive JSON export with all calendar-related data
+    const exportData = {
+      metadata: {
+        exportDate: new Date().toISOString(),
+        appVersion: '1.0.0',
+        dataType: 'Heart Recovery Calendar - Full Export',
+      },
+      calendars: calendars,
+      events: events,
+      meals: allMeals,
+      medications: medications,
+      medicationLogs: medicationLogs,
+      sleepLogs: sleepLogs,
+      vitals: vitals,
+      statistics: {
+        totalCalendars: calendars.length,
+        totalEvents: events.length,
+        totalMeals: allMeals.length,
+        totalMedications: medications.length,
+        totalSleepLogs: sleepLogs.length,
+        totalVitals: vitals.length,
+      },
+    };
+
+    // Convert to JSON string with pretty formatting
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    // Create blob and download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `heart-recovery-calendar-full-export-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Full calendar data exported as JSON');
+  };
+
   const handleShowIntegrationInfo = () => {
     const googleConfig = getGoogleCalendarOAuthConfig();
     const calendlyConfig = getCalendlyWebhookConfig();
@@ -529,6 +578,40 @@ See browser console for full configuration details.
     } catch (error) {
       console.error('Failed to update sleep hours:', error);
       toast.error('Failed to update sleep hours');
+    }
+  };
+
+  const handleUpdatePerformanceScore = async () => {
+    console.log('🎯 handleUpdatePerformanceScore called');
+    console.log('📊 performanceScore state:', performanceScore);
+    console.log('🎪 selectedEvent:', selectedEvent);
+
+    if (!selectedEvent) {
+      console.error('❌ No selected event');
+      toast.error('No event selected');
+      return;
+    }
+
+    if (!performanceScore || performanceScore === '') {
+      console.error('❌ No score selected');
+      toast.error('Please select a performance score');
+      return;
+    }
+
+    try {
+      const score = parseInt(performanceScore);
+      console.log('📤 Sending API request with score:', score);
+      console.log('🆔 Event ID:', selectedEvent.id);
+
+      const updated = await api.updateEvent(selectedEvent.id, { performanceScore: score });
+
+      console.log('✅ API response received:', updated);
+      setEvents(events.map(e => e.id === updated.id ? updated : e));
+      setSelectedEvent(updated);
+      toast.success(`Performance score updated to ${score} points`);
+    } catch (error) {
+      console.error('❌ Failed to update performance score:', error);
+      toast.error('Failed to update performance score');
     }
   };
 
@@ -953,6 +1036,16 @@ See browser console for full configuration details.
         <Button
           size="sm"
           variant="glass"
+          onClick={handleExportFullJSON}
+          className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400"
+          title="Export Full Calendar Data as JSON"
+        >
+          <FileJson className="h-4 w-4 mr-1" />
+          Export JSON
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
           onClick={handleShareQRCode}
           className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400"
           title="Share via QR Code"
@@ -1119,6 +1212,7 @@ See browser console for full configuration details.
           setSelectedEvent(null);
           setSelectedDateMeals([]);
           setSleepHours('');
+          setPerformanceScore('');
         }}
         title="Event Details"
         size="lg"
@@ -1189,6 +1283,44 @@ See browser console for full configuration details.
                 </p>
               )}
             </div>
+
+            {/* Performance Score Section - Only show for exercise events */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-300 mt-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-2xl">🏋️</span>
+                  <p className="font-bold text-purple-800 text-lg">Exercise Performance Score</p>
+                </div>
+                <p className="text-sm text-purple-700 font-medium mb-3">Rate the patient's performance for this exercise session</p>
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={performanceScore}
+                    onChange={(e) => setPerformanceScore(e.target.value)}
+                    className="flex-1 px-3 py-2 border-2 border-purple-400 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none text-purple-900 font-bold text-lg bg-white"
+                    style={{ color: '#6b21a8' }}
+                  >
+                    <option value="">Select Score...</option>
+                    <option value="0" style={{ color: '#dc2626' }}>0 - No Show (Red)</option>
+                    <option value="4" style={{ color: '#ea580c' }}>4 - Completed (Orange)</option>
+                    <option value="6" style={{ color: '#2563eb' }}>6 - Met Goals (Blue)</option>
+                    <option value="8" style={{ color: '#059669' }}>8 - Exceeded Goals (Green)</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={handleUpdatePerformanceScore}
+                    disabled={isLoading}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                  >
+                    Save Score
+                  </Button>
+                </div>
+                {selectedEvent.performanceScore !== undefined && selectedEvent.performanceScore !== null && (
+                  <p className="text-purple-800 font-bold mt-2">
+                    Current: {selectedEvent.performanceScore} points
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Meals Section */}
             {selectedDateMeals.length > 0 && (
