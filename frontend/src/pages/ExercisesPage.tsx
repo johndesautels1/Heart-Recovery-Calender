@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Calendar
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -35,12 +36,22 @@ interface Exercise {
   maxPostOpWeek?: number;
   contraindications?: string;
   instructions?: string;
+  recoveryBenefit?: string;
   defaultSets?: number;
   defaultReps?: number;
   defaultDuration?: number;
   isActive: boolean;
   createdBy?: number;
 }
+
+interface Patient {
+  id: number;
+  name: string;
+  surgeryDate?: string;
+  isActive: boolean;
+}
+
+type SafetyLevel = 'safe' | 'upcoming' | 'not-safe' | 'no-patient';
 
 interface CreateExerciseInput {
   name: string;
@@ -84,6 +95,15 @@ export function ExercisesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
+  const [selectedSafetyLevel, setSelectedSafetyLevel] = useState<string>('');
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [schedulingExercise, setSchedulingExercise] = useState<Exercise | null>(null);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [scheduleDuration, setScheduleDuration] = useState(30);
+  const [schedulePatientId, setSchedulePatientId] = useState('');
   const { isTherapistView } = useView();
   const { user } = useAuth();
 
@@ -91,11 +111,12 @@ export function ExercisesPage() {
 
   useEffect(() => {
     loadExercises();
+    loadPatients();
   }, []);
 
   useEffect(() => {
     filterExercises();
-  }, [exercises, searchTerm, selectedCategory, selectedDifficulty]);
+  }, [exercises, searchTerm, selectedCategory, selectedDifficulty, selectedSafetyLevel, selectedPatientId]);
 
   const loadExercises = async () => {
     try {
@@ -118,6 +139,71 @@ export function ExercisesPage() {
     }
   };
 
+  const loadPatients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/patients', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to load patients');
+
+      const data = await response.json();
+      setPatients(data.data || []);
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      toast.error('Failed to load patients');
+    }
+  };
+
+  const calculatePostOpWeek = (surgeryDate: string): number => {
+    const surgery = new Date(surgeryDate);
+    const today = new Date();
+    const diffTime = today.getTime() - surgery.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.floor(diffDays / 7) + 1; // Week 1 starts on day 0
+  };
+
+  const getSafetyLevel = (exercise: Exercise): SafetyLevel => {
+    if (!selectedPatientId) return 'no-patient';
+
+    const patient = patients.find(p => p.id === parseInt(selectedPatientId));
+    if (!patient || !patient.surgeryDate) return 'no-patient';
+
+    const currentWeek = calculatePostOpWeek(patient.surgeryDate);
+    const minWeek = exercise.minPostOpWeek || 0;
+    const maxWeek = exercise.maxPostOpWeek;
+
+    // Check if exercise is past its max week
+    if (maxWeek !== null && maxWeek !== undefined && currentWeek > maxWeek) {
+      return 'not-safe';
+    }
+
+    // Check if exercise is safe for current week
+    if (currentWeek >= minWeek) {
+      return 'safe';
+    }
+
+    // Check if exercise is upcoming (within 1 week)
+    if (currentWeek === minWeek - 1) {
+      return 'upcoming';
+    }
+
+    // Exercise is not yet safe
+    return 'not-safe';
+  };
+
+  const getSafetyLevelColor = (level: SafetyLevel) => {
+    switch (level) {
+      case 'safe': return { bg: '#10b98120', border: '#10b981', text: '#10b981', label: 'Safe Now' };
+      case 'upcoming': return { bg: '#f59e0b20', border: '#f59e0b', text: '#f59e0b', label: 'Upcoming (Next Week)' };
+      case 'not-safe': return { bg: '#ef444420', border: '#ef4444', text: '#ef4444', label: 'Not Yet Safe' };
+      case 'no-patient': return { bg: '#6b728020', border: '#6b7280', text: '#6b7280', label: 'Select Patient' };
+    }
+  };
+
   const filterExercises = () => {
     let filtered = exercises;
 
@@ -134,6 +220,10 @@ export function ExercisesPage() {
 
     if (selectedDifficulty) {
       filtered = filtered.filter(ex => ex.difficulty === selectedDifficulty);
+    }
+
+    if (selectedSafetyLevel && selectedPatientId) {
+      filtered = filtered.filter(ex => getSafetyLevel(ex) === selectedSafetyLevel);
     }
 
     setFilteredExercises(filtered);
@@ -253,6 +343,112 @@ export function ExercisesPage() {
     setIsAddModalOpen(true);
   };
 
+  const handleScheduleExercise = (exercise: Exercise) => {
+    setSchedulingExercise(exercise);
+    setSchedulePatientId(selectedPatientId || '');
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setScheduleDate(tomorrow.toISOString().split('T')[0]);
+    setScheduleDuration(exercise.defaultDuration || 30);
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!schedulingExercise || !scheduleDate || !schedulePatientId) {
+      toast.error('Please select a patient and date');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+
+      // Combine date and time
+      const startDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+      const endDateTime = new Date(startDateTime.getTime() + scheduleDuration * 60000);
+
+      // Fetch user's calendars and patient's calendars
+      const [therapistCalResponse, patientCalResponse] = await Promise.all([
+        fetch('/api/calendars', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch(`/api/calendars?userId=${schedulePatientId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+      ]);
+
+      const therapistCals = await therapistCalResponse.json();
+      const patientCals = await patientCalResponse.json();
+
+      // Find or create exercise calendars
+      let therapistCalendar = therapistCals.data?.find((c: any) => c.type === 'exercise');
+      let patientCalendar = patientCals.data?.find((c: any) => c.type === 'exercise');
+
+      // Create therapist calendar if not exists
+      if (!therapistCalendar) {
+        const createResponse = await fetch('/api/calendars', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: 'Exercise Calendar',
+            type: 'exercise',
+            color: '#10b981',
+          }),
+        });
+        therapistCalendar = await createResponse.json();
+      }
+
+      // Create patient calendar if not exists
+      if (!patientCalendar) {
+        const createResponse = await fetch('/api/calendars', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: parseInt(schedulePatientId),
+            name: 'Exercise Calendar',
+            type: 'exercise',
+            color: '#10b981',
+          }),
+        });
+        patientCalendar = await createResponse.json();
+      }
+
+      // Create event on patient's calendar with invitation
+      const eventData = {
+        calendarId: patientCalendar.id,
+        title: schedulingExercise.name,
+        description: schedulingExercise.description || '',
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        exerciseId: schedulingExercise.id,
+        patientId: parseInt(schedulePatientId),
+        invitationStatus: 'pending',
+      };
+
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      toast.success(`Exercise "${schedulingExercise.name}" scheduled for patient`);
+      setIsScheduleModalOpen(false);
+      setSchedulingExercise(null);
+    } catch (error) {
+      console.error('Error scheduling exercise:', error);
+      toast.error('Failed to schedule exercise');
+    }
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner': return '#10b981';
@@ -309,7 +505,34 @@ export function ExercisesPage() {
 
       {/* Filters */}
       <div className="glass rounded-xl p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Patient Selector & Current Week Display */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+            Select Patient (for safety color-coding)
+          </label>
+          <div className="flex items-center space-x-4">
+            <select
+              className="glass-input flex-1"
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+            >
+              <option value="">No Patient Selected</option>
+              {patients.filter(p => p.isActive).map(patient => (
+                <option key={patient.id} value={patient.id}>{patient.name}</option>
+              ))}
+            </select>
+            {selectedPatientId && patients.find(p => p.id === parseInt(selectedPatientId))?.surgeryDate && (
+              <div className="flex items-center space-x-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' + '20' }}>
+                <Heart className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                  Week {calculatePostOpWeek(patients.find(p => p.id === parseInt(selectedPatientId))!.surgeryDate!)} Post-Op
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: 'var(--accent)' }} />
@@ -349,11 +572,31 @@ export function ExercisesPage() {
               ))}
             </select>
           </div>
+
+          {/* Safety Level Filter */}
+          <div>
+            <select
+              className="glass-input"
+              value={selectedSafetyLevel}
+              onChange={(e) => setSelectedSafetyLevel(e.target.value)}
+              disabled={!selectedPatientId}
+            >
+              <option value="">All Safety Levels</option>
+              <option value="safe">✅ Safe Now</option>
+              <option value="upcoming">⚠️ Upcoming</option>
+              <option value="not-safe">🚫 Not Yet Safe</option>
+            </select>
+          </div>
         </div>
 
         {/* Results Count */}
         <div className="mt-4 text-sm" style={{ color: 'var(--ink)', opacity: 0.7 }}>
           Showing {filteredExercises.length} of {exercises.length} exercises
+          {selectedPatientId && (
+            <span className="ml-2">
+              (Safety color-coding enabled for {patients.find(p => p.id === parseInt(selectedPatientId))?.name})
+            </span>
+          )}
         </div>
       </div>
 
@@ -376,8 +619,33 @@ export function ExercisesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredExercises.map((exercise) => (
-            <div key={exercise.id} className="glass rounded-xl p-6 hover:scale-[1.02] transition-transform">
+          {filteredExercises.map((exercise) => {
+            const safetyLevel = getSafetyLevel(exercise);
+            const safetyColors = getSafetyLevelColor(safetyLevel);
+
+            return (
+              <div
+                key={exercise.id}
+                className="glass rounded-xl p-6 hover:scale-[1.02] transition-transform relative"
+                style={{
+                  borderLeft: selectedPatientId ? `4px solid ${safetyColors.border}` : undefined,
+                }}
+              >
+              {/* Safety Level Badge */}
+              {selectedPatientId && (
+                <div
+                  className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: safetyColors.bg,
+                    color: safetyColors.text,
+                  }}
+                >
+                  {safetyLevel === 'safe' && '✅ Safe'}
+                  {safetyLevel === 'upcoming' && '⚠️ Next Week'}
+                  {safetyLevel === 'not-safe' && '🚫 Not Yet'}
+                </div>
+              )}
+
               {/* Exercise Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -405,6 +673,13 @@ export function ExercisesPage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => handleScheduleExercise(exercise)}
+                    className="p-2 rounded-lg hover:bg-green-500/20 transition-colors"
+                    title="Schedule exercise for patient"
+                  >
+                    <Calendar className="h-4 w-4" style={{ color: '#10b981' }} />
+                  </button>
                   <button
                     onClick={() => handleEdit(exercise)}
                     className="p-2 rounded-lg hover:bg-white/20 transition-colors"
@@ -513,8 +788,9 @@ export function ExercisesPage() {
                   </>
                 )}
               </button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -739,6 +1015,111 @@ export function ExercisesPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Schedule Exercise Modal */}
+      <Modal
+        isOpen={isScheduleModalOpen}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setSchedulingExercise(null);
+        }}
+        title={`Schedule: ${schedulingExercise?.name || ''}`}
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Patient Selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
+              Patient *
+            </label>
+            <select
+              className="glass-input"
+              value={schedulePatientId}
+              onChange={(e) => setSchedulePatientId(e.target.value)}
+            >
+              <option value="">Select Patient</option>
+              {patients.filter(p => p.isActive).map(patient => (
+                <option key={patient.id} value={patient.id}>{patient.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
+              Date *
+            </label>
+            <input
+              type="date"
+              className="glass-input"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+            />
+          </div>
+
+          {/* Time */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
+              Time *
+            </label>
+            <input
+              type="time"
+              className="glass-input"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+            />
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
+              Duration (minutes)
+            </label>
+            <input
+              type="number"
+              className="glass-input"
+              value={scheduleDuration}
+              onChange={(e) => setScheduleDuration(parseInt(e.target.value))}
+              min="5"
+              step="5"
+            />
+          </div>
+
+          {/* Exercise Info */}
+          {schedulingExercise && (
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)' }}>
+              <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                <strong>Category:</strong> {schedulingExercise.category}
+              </p>
+              <p className="text-sm mt-1" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                <strong>Difficulty:</strong> {schedulingExercise.difficulty}
+              </p>
+              {schedulingExercise.description && (
+                <p className="text-sm mt-2" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                  {schedulingExercise.description}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="glass"
+              onClick={() => {
+                setIsScheduleModalOpen(false);
+                setSchedulingExercise(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleScheduleSubmit}>
+              Schedule Exercise
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
