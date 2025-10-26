@@ -9,3 +9,4 @@ export { FoodDiaryPage } from './FoodDiaryPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ProfilePage } from './ProfilePage';
 export { PatientsPage } from './PatientsPage';
+export { ExercisesPage } from './ExercisesPage';

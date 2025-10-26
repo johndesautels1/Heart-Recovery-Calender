@@ -85,8 +85,8 @@ class ApiService {
     return response.data;
   }
 
-  async register(email: string, password: string, name: string): Promise<AuthResponse> {
-    const response = await this.api.post<AuthResponse>('auth/register', { email, password, name });
+  async register(email: string, password: string, name: string, role?: 'patient' | 'therapist'): Promise<AuthResponse> {
+    const response = await this.api.post<AuthResponse>('auth/register', { email, password, name, role });
     this.setToken(response.data.token);
     return response.data;
   }

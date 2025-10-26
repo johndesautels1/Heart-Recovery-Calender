@@ -29,10 +29,15 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 // POST /api/auth/register - Register new user
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, phoneNumber, timezone } = req.body;
+    const { email, password, name, phoneNumber, timezone, role } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    // Validate role if provided
+    if (role && !['patient', 'therapist'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be "patient" or "therapist"' });
     }
 
     // Check if user already exists
@@ -50,7 +55,8 @@ export const register = async (req: Request, res: Response) => {
       password: hashedPassword,
       name,
       phoneNumber,
-      timezone: timezone || 'America/New_York'
+      timezone: timezone || 'America/New_York',
+      role: role || 'patient' // Default to patient if not provided
     });
 
     // Generate JWT token

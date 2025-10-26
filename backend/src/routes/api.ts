@@ -12,6 +12,8 @@ import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
 import * as patientsController from '../controllers/patientsController';
+import * as exercisesController from '../controllers/exercisesController';
+import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
 
 const router = Router();
 
@@ -123,5 +125,26 @@ router.put('/patients/:id', patientsController.updatePatient);
 router.delete('/patients/:id', patientsController.deletePatient);
 router.patch('/patients/:id/toggle-active', patientsController.toggleActive);
 router.get('/patients/:id/post-op-week', patientsController.getPostOpWeek);
+
+// ========== EXERCISES ROUTES ==========
+router.get('/exercises', exercisesController.getExercises);
+router.post('/exercises', exercisesController.createExercise);
+router.get('/exercises/categories/list', exercisesController.getCategories);
+router.get('/exercises/stats', exercisesController.getExerciseStats);
+router.get('/exercises/:id', exercisesController.getExercise);
+router.put('/exercises/:id', exercisesController.updateExercise);
+router.delete('/exercises/:id', exercisesController.deleteExercise);
+router.patch('/exercises/:id/toggle-active', exercisesController.toggleActive);
+
+// ========== EXERCISE PRESCRIPTIONS ROUTES ==========
+router.get('/exercise-prescriptions', exercisePrescriptionsController.getPrescriptions);
+router.post('/exercise-prescriptions', exercisePrescriptionsController.createPrescription);
+router.get('/exercise-prescriptions/stats', exercisePrescriptionsController.getPrescriptionStats);
+router.get('/exercise-prescriptions/patient/:patientId', exercisePrescriptionsController.getPatientPrescriptions);
+router.get('/exercise-prescriptions/:id', exercisePrescriptionsController.getPrescription);
+router.put('/exercise-prescriptions/:id', exercisePrescriptionsController.updatePrescription);
+router.delete('/exercise-prescriptions/:id', exercisePrescriptionsController.deletePrescription);
+router.patch('/exercise-prescriptions/:id/status', exercisePrescriptionsController.updatePrescriptionStatus);
+router.get('/exercise-prescriptions/:id/logs', exercisePrescriptionsController.getPrescriptionLogs);
 
 export default router;

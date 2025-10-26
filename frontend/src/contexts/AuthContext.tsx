@@ -7,7 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role?: 'patient' | 'therapist') => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -60,9 +60,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, role?: 'patient' | 'therapist') => {
     try {
-      const response: AuthResponse = await api.register(email, password, name);
+      const response: AuthResponse = await api.register(email, password, name, role);
       setUser(response.user);
     } catch (error) {
       console.error('Registration failed:', error);

@@ -17,6 +17,7 @@ import {
   AnalyticsPage,
   ProfilePage,
   PatientsPage,
+  ExercisesPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ function App() {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/exercises" element={<ExercisesPage />} />
               </Route>
 
               {/* Default redirect */}

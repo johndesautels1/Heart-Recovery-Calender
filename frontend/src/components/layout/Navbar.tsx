@@ -16,7 +16,8 @@ import {
   FileText,
   Moon,
   Sun,
-  UserCircle2
+  UserCircle2,
+  Dumbbell
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useView } from '../../contexts/ViewContext';
@@ -77,7 +78,8 @@ export function Navbar() {
 
   // Add therapist portal if user is a therapist
   if (user?.role === 'therapist') {
-    navItems.push({ path: '/therapist', label: 'Patients', icon: Stethoscope });
+    navItems.push({ path: '/patients', label: 'Patients', icon: Stethoscope });
+    navItems.push({ path: '/exercises', label: 'Exercises', icon: Dumbbell });
   }
 
   const isActive = (path: string) => location.pathname === path;

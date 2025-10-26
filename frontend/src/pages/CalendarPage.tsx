@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,6 +12,15 @@ import api from '../services/api';
 import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication } from '../types';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
+import {
+  exportToGoogleCalendar,
+  exportToAppleCalendar,
+  exportToCalendly,
+  exportAsJSON,
+  printCalendar,
+  getCalendlyWebhookConfig,
+  getGoogleCalendarOAuthConfig,
+} from '../utils/calendarExport';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -362,6 +371,79 @@ export function CalendarPage() {
     }
   };
 
+  // Export and Print Handlers
+  const handleExportToGoogle = () => {
+    if (events.length === 0) {
+      toast.error('No events to export');
+      return;
+    }
+    exportToGoogleCalendar(events);
+    toast.success('Google Calendar file downloaded! Import it to Google Calendar.');
+  };
+
+  const handleExportToApple = () => {
+    if (events.length === 0) {
+      toast.error('No events to export');
+      return;
+    }
+    exportToAppleCalendar(events);
+    toast.success('Apple Calendar file downloaded! Double-click to import.');
+  };
+
+  const handleExportToCalendly = () => {
+    if (events.length === 0) {
+      toast.error('No events to export');
+      return;
+    }
+    exportToCalendly(events);
+
+    // Show webhook configuration info
+    const webhookConfig = getCalendlyWebhookConfig();
+    console.log('Calendly Webhook Configuration:', webhookConfig);
+    toast.success('Calendly file downloaded! See console for webhook setup.');
+  };
+
+  const handlePrintCalendar = () => {
+    printCalendar();
+    toast.success('Print dialog opened');
+  };
+
+  const handleBackupAsJSON = () => {
+    if (events.length === 0 && calendars.length === 0) {
+      toast.error('No data to backup');
+      return;
+    }
+    exportAsJSON(events, calendars);
+    toast.success('Calendar backup downloaded as JSON');
+  };
+
+  const handleShowIntegrationInfo = () => {
+    const googleConfig = getGoogleCalendarOAuthConfig();
+    const calendlyConfig = getCalendlyWebhookConfig();
+
+    alert(`
+INTEGRATION SETUP INSTRUCTIONS
+==============================
+
+📅 GOOGLE CALENDAR SYNC (OAuth)
+${googleConfig.instructions}
+
+📆 CALENDLY WEBHOOK INTEGRATION
+${calendlyConfig.instructions}
+
+🔗 Webhook URL: ${calendlyConfig.webhookUrl}
+
+See browser console for full configuration details.
+    `);
+
+    console.group('🔧 Integration Configuration');
+    console.log('Google Calendar OAuth:', googleConfig);
+    console.log('Calendly Webhook:', calendlyConfig);
+    console.groupEnd();
+
+    toast.success('Integration details logged to console');
+  };
+
   const handleUpdateSleepHours = async () => {
     if (!selectedEvent) return;
 
@@ -581,6 +663,70 @@ export function CalendarPage() {
             Delete Historic
           </Button>
         </div>
+      </div>
+
+      {/* Export & Print Section */}
+      <div className="flex items-center justify-end gap-2 -mt-2">
+        <span className="text-sm font-semibold text-cyan-400 mr-2">Export & Share:</span>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleExportToGoogle}
+          className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400"
+          title="Export to Google Calendar"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Google
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleExportToApple}
+          className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400"
+          title="Export to Apple Calendar"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Apple
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleExportToCalendly}
+          className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400"
+          title="Export for Calendly"
+        >
+          <Share2 className="h-4 w-4 mr-1" />
+          Calendly
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handlePrintCalendar}
+          className="bg-green-500/20 hover:bg-green-500/30 border border-green-400"
+          title="Print Calendar"
+        >
+          <Printer className="h-4 w-4 mr-1" />
+          Print
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleBackupAsJSON}
+          className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400"
+          title="Backup as JSON"
+        >
+          <FileJson className="h-4 w-4 mr-1" />
+          Backup
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleShowIntegrationInfo}
+          className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400"
+          title="Integration Setup Info"
+        >
+          🔧 API Setup
+        </Button>
       </div>
 
       <GlassCard className="p-6">

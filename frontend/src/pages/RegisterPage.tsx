@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Heart, Mail, Lock, User } from 'lucide-react';
+import { Heart, Mail, Lock, User, Stethoscope, UserCircle2 } from 'lucide-react';
 import { Button, Input, GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
+  role: z.enum(['patient', 'therapist'], { required_error: 'Please select a role' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -36,7 +37,7 @@ export function RegisterPage() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setIsLoading(true);
-      await registerUser(data.email, data.password, data.name);
+      await registerUser(data.email, data.password, data.name, data.role);
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -72,6 +73,46 @@ export function RegisterPage() {
               error={errors.name?.message}
               {...register('name')}
             />
+
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                I am a...
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    value="patient"
+                    {...register('role')}
+                    className="peer sr-only"
+                  />
+                  <div className="glass p-4 rounded-lg border-2 border-transparent peer-checked:border-blue-500 peer-checked:bg-blue-50/50 hover:border-blue-300 transition-all">
+                    <div className="flex flex-col items-center space-y-2">
+                      <UserCircle2 className="h-8 w-8 text-blue-500" />
+                      <span className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Patient</span>
+                    </div>
+                  </div>
+                </label>
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    value="therapist"
+                    {...register('role')}
+                    className="peer sr-only"
+                  />
+                  <div className="glass p-4 rounded-lg border-2 border-transparent peer-checked:border-green-500 peer-checked:bg-green-50/50 hover:border-green-300 transition-all">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Stethoscope className="h-8 w-8 text-green-500" />
+                      <span className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Therapist</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+              )}
+            </div>
 
             <Input
               label="Email"
