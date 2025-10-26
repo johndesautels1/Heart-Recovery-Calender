@@ -141,31 +141,13 @@ export function CalendarPage() {
   };
 
   const handleDateClick = async (arg: any) => {
+    // Just store the selected date for reference, don't open any modals
+    // User can browse the calendar freely
     const clickedDate = arg.dateStr;
     setSelectedDate(clickedDate);
 
-    // Load meals for this date
-    const dateMeals = allMeals.filter(meal => {
-      const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
-      return mealDate === clickedDate;
-    });
-
-    setSelectedDateMeals(dateMeals);
-
-    // If there are meals for this date, show them
-    if (dateMeals.length > 0) {
-      setShowDateDetailsModal(true);
-    } else {
-      // No meals, create a new event
-      reset({
-        startTime: arg.dateStr + 'T09:00',
-        endTime: arg.dateStr + 'T10:00',
-        calendarId: calendars[0]?.id,
-        reminderMinutes: 30,
-      });
-      setEditingEvent(null);
-      setIsEventModalOpen(true);
-    }
+    // Don't automatically open modals - let the user browse the calendar
+    // They can create events using the "Create Event" button instead
   };
 
   const handleEventClick = async (arg: any) => {
