@@ -1,10 +1,11 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
+import logoImage from '../data/John E. Desautels & Associates AI Division.png';
 
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-gray-800 bg-gradient-to-b from-gray-900 to-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         {/* Main Footer Content */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
@@ -54,6 +55,15 @@ export function Footer() {
           >
             Contact Support
           </a>
+        </div>
+
+        {/* Company Logo */}
+        <div className="absolute left-8 bottom-[264px]">
+          <img
+            src={logoImage}
+            alt="AI Applications Division - John E. Desautels & Associates"
+            className="w-32 h-auto opacity-80 hover:opacity-100 transition-opacity"
+          />
         </div>
 
         {/* Medical Disclaimer */}

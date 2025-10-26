@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -289,6 +289,79 @@ export function CalendarPage() {
     }
   };
 
+  const handleDeleteTodayEvents = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayEvents = events.filter(e => {
+      const eventDate = new Date(e.startTime).toISOString().split('T')[0];
+      return eventDate === today;
+    });
+
+    if (todayEvents.length === 0) {
+      toast.error('No events found for today');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete all ${todayEvents.length} event(s) for today? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/events/today', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to delete today\'s events');
+
+      const result = await response.json();
+      setEvents(events.filter(e => {
+        const eventDate = new Date(e.startTime).toISOString().split('T')[0];
+        return eventDate !== today;
+      }));
+      toast.success(`Deleted ${result.deletedCount} event(s) from today`);
+    } catch (error) {
+      console.error('Failed to delete today\'s events:', error);
+      toast.error('Failed to delete today\'s events');
+    }
+  };
+
+  const handleDeleteHistoricEvents = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const historicEvents = events.filter(e => new Date(e.endTime) < today);
+
+    if (historicEvents.length === 0) {
+      toast.error('No historic events found');
+      return;
+    }
+
+    if (!window.confirm(`⚠️ WARNING: This will permanently delete all ${historicEvents.length} past event(s). This action cannot be undone. Are you absolutely sure?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/events/history', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to delete historic events');
+
+      const result = await response.json();
+      setEvents(events.filter(e => new Date(e.endTime) >= today));
+      toast.success(`Deleted ${result.deletedCount} historic event(s)`);
+    } catch (error) {
+      console.error('Failed to delete historic events:', error);
+      toast.error('Failed to delete historic events');
+    }
+  };
+
   const handleUpdateSleepHours = async () => {
     if (!selectedEvent) return;
 
@@ -472,8 +545,8 @@ export function CalendarPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Calendar</h1>
-        <div className="flex space-x-3">
+        <h1 className="text-3xl font-bold text-green-500">Calendar</h1>
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="glass"
             onClick={() => setIsCalendarModalOpen(true)}
@@ -490,6 +563,22 @@ export function CalendarPage() {
           >
             <Plus className="h-5 w-5 mr-2" />
             Add Event
+          </Button>
+          <Button
+            variant="glass"
+            onClick={handleDeleteTodayEvents}
+            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500"
+          >
+            <Trash2 className="h-5 w-5 mr-2" />
+            Delete Today
+          </Button>
+          <Button
+            variant="glass"
+            onClick={handleDeleteHistoricEvents}
+            className="bg-red-500/20 hover:bg-red-500/30 border border-red-500"
+          >
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            Delete Historic
           </Button>
         </div>
       </div>
@@ -633,7 +722,7 @@ export function CalendarPage() {
         {selectedEvent && (
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-gray-800">{selectedEvent.title}</h3>
+              <h3 className="font-medium text-green-500">{selectedEvent.title}</h3>
               <p className="text-sm text-gray-600 mt-1">
                 {format(new Date(selectedEvent.startTime), 'PPP p')} -
                 {format(new Date(selectedEvent.endTime), 'p')}

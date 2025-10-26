@@ -104,6 +104,83 @@ export const deleteEvent = async (req: Request, res: Response) => {
   }
 };
 
+// DELETE /api/events/today - Delete all events for today
+export const deleteTodayEvents = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get user's calendar IDs
+    const userCalendars = await Calendar.findAll({
+      where: { userId },
+      attributes: ['id'],
+    });
+    const calendarIds = userCalendars.map(cal => cal.id);
+
+    if (calendarIds.length === 0) {
+      return res.json({ deletedCount: 0, message: 'No events found' });
+    }
+
+    // Delete events from user's calendars for today
+    const result = await CalendarEvent.destroy({
+      where: {
+        calendarId: {
+          [Op.in]: calendarIds,
+        },
+        startTime: {
+          [Op.gte]: today.toISOString(),
+          [Op.lt]: tomorrow.toISOString(),
+        },
+      },
+    });
+
+    res.json({ deletedCount: result, message: `Deleted ${result} event(s) from today` });
+  } catch (error) {
+    console.error('Error deleting today\'s events:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// DELETE /api/events/history - Delete all historic events
+export const deleteHistoricEvents = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get user's calendar IDs
+    const userCalendars = await Calendar.findAll({
+      where: { userId },
+      attributes: ['id'],
+    });
+    const calendarIds = userCalendars.map(cal => cal.id);
+
+    if (calendarIds.length === 0) {
+      return res.json({ deletedCount: 0, message: 'No events found' });
+    }
+
+    // Delete events from user's calendars that ended before today
+    const result = await CalendarEvent.destroy({
+      where: {
+        calendarId: {
+          [Op.in]: calendarIds,
+        },
+        endTime: {
+          [Op.lt]: today.toISOString(),
+        },
+      },
+    });
+
+    res.json({ deletedCount: result, message: `Deleted ${result} historic event(s)` });
+  } catch (error) {
+    console.error('Error deleting historic events:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // PATCH /api/events/:id/status - Update event status
 export const updateEventStatus = async (req: Request, res: Response) => {
   try {

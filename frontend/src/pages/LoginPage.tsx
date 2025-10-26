@@ -56,11 +56,11 @@ export function LoginPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gradient mb-2">Heart Recovery Calendar</h1>
-          <p className="text-gray-600">Your cardiac recovery companion</p>
+          <p className="text-orange-500 font-bold">Your cardiac recovery companion</p>
         </div>
 
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Welcome Back</h2>
+          <h2 className="text-2xl font-semibold text-white mb-6">Welcome Back</h2>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
@@ -87,7 +87,7 @@ export function LoginPage() {
                   type="checkbox"
                   className="mr-2 rounded border-gray-300"
                 />
-                <span className="text-gray-600">Remember me</span>
+                <span className="text-orange-500 font-bold">Remember me</span>
               </label>
               <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700">
                 Forgot password?
@@ -105,7 +105,7 @@ export function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-white font-bold">
               Don't have an account?{' '}
               <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign Up
@@ -114,7 +114,7 @@ export function LoginPage() {
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-orange-500 font-bold text-center">
               Demo credentials: demo@example.com / password123
             </p>
           </div>

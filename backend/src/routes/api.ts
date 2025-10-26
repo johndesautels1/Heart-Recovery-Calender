@@ -40,6 +40,8 @@ router.delete('/calendars/:id', calendarsController.deleteCalendar);
 // ========== EVENTS ROUTES ==========
 router.get('/events', eventsController.getEvents);
 router.post('/events', eventsController.createEvent);
+router.delete('/events/today', eventsController.deleteTodayEvents);
+router.delete('/events/history', eventsController.deleteHistoricEvents);
 router.get('/events/:id', eventsController.getEvent);
 router.put('/events/:id', eventsController.updateEvent);
 router.delete('/events/:id', eventsController.deleteEvent);
