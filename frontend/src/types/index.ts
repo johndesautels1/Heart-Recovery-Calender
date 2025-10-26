@@ -83,6 +83,7 @@ export interface VitalsSample {
   temperature?: number;
   oxygenSaturation?: number;
   bloodSugar?: number;
+  hydrationStatus?: number;
   cholesterolTotal?: number;      // API returns this name
   cholesterolLDL?: number;        // API returns this name
   cholesterolHDL?: number;        // API returns this name
@@ -176,6 +177,7 @@ export interface CreateVitalsInput {
   temperature?: number;
   oxygenSaturation?: number;
   bloodSugar?: number;
+  hydrationStatus?: number;
   cholesterolTotal?: number;
   cholesterolLDL?: number;
   cholesterolHDL?: number;

@@ -13,6 +13,7 @@ interface VitalsSampleAttributes {
   temperature?: number;
   oxygenSaturation?: number;
   bloodSugar?: number;
+  hydrationStatus?: number;
   cholesterolTotal?: number;
   cholesterolLDL?: number;
   cholesterolHDL?: number;
@@ -41,6 +42,7 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public temperature?: number;
   public oxygenSaturation?: number;
   public bloodSugar?: number;
+  public hydrationStatus?: number;
   public cholesterolTotal?: number;
   public cholesterolLDL?: number;
   public cholesterolHDL?: number;
@@ -131,6 +133,15 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'Blood sugar in mg/dL',
+        },
+        hydrationStatus: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Hydration status percentage (0-100)',
+          validate: {
+            min: 0,
+            max: 100,
+          },
         },
         cholesterolTotal: {
           type: DataTypes.INTEGER,

@@ -97,7 +97,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Heart className="h-12 w-12 text-red-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-600">Loading your health data...</p>
+          <p className="text-white font-bold">Loading your health data...</p>
         </div>
       </div>
     );
@@ -107,10 +107,10 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className="text-3xl font-bold text-white font-bold">
           {getGreeting()}, {user?.name || 'Patient'}!
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-white font-bold mt-2">
           Here's your health overview for {format(new Date(), 'EEEE, MMMM d')}
         </p>
       </div>
@@ -121,8 +121,8 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Weekly Compliance</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.weeklyCompliance}%</p>
+              <p className="text-sm text-white font-bold mb-1">Weekly Compliance</p>
+              <p className="text-3xl font-bold text-white font-bold">{stats.weeklyCompliance}%</p>
               <div className="flex items-center mt-2">
                 {stats.weeklyCompliance >= 80 ? (
                   <>
@@ -147,11 +147,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Today's Events</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.todayEvents.length}</p>
+              <p className="text-sm text-white font-bold mb-1">Today's Events</p>
+              <p className="text-3xl font-bold text-white font-bold">{stats.todayEvents.length}</p>
               <div className="flex items-center mt-2">
                 <Clock className="h-4 w-4 text-blue-500 mr-1" />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-white font-bold">
                   {stats.todayEvents.filter(e => e.status === 'scheduled').length} pending
                 </span>
               </div>
@@ -166,11 +166,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Active Medications</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.activeMedications.length}</p>
+              <p className="text-sm text-white font-bold mb-1">Active Medications</p>
+              <p className="text-3xl font-bold text-white font-bold">{stats.activeMedications.length}</p>
               <div className="flex items-center mt-2">
                 <Pill className="h-4 w-4 text-purple-500 mr-1" />
-                <span className="text-sm text-gray-600">Daily reminders on</span>
+                <span className="text-sm text-white font-bold">Daily reminders on</span>
               </div>
             </div>
             <div className="p-3 rounded-full bg-purple-100">
@@ -183,11 +183,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Meals Logged</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.todayMeals.length}/4</p>
+              <p className="text-sm text-white font-bold mb-1">Meals Logged</p>
+              <p className="text-3xl font-bold text-white font-bold">{stats.todayMeals.length}/4</p>
               <div className="flex items-center mt-2">
                 <UtensilsCrossed className="h-4 w-4 text-orange-500 mr-1" />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-white font-bold">
                   {stats.todayMeals.filter(m => m.withinSpec).length} within limits
                 </span>
               </div>
@@ -204,7 +204,7 @@ export function DashboardPage() {
         {/* Latest Vitals */}
         <GlassCard className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Latest Vitals</h2>
+            <h2 className="text-xl font-semibold text-white font-bold">Latest Vitals</h2>
             <Link to="/vitals" className="text-blue-600 hover:text-blue-700 flex items-center">
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
@@ -214,10 +214,10 @@ export function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Blood Pressure</span>
+                  <span className="text-sm text-white font-bold">Blood Pressure</span>
                   <Heart className="h-4 w-4 text-red-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.bloodPressureSystolic}/{stats.latestVitals.bloodPressureDiastolic}
                 </p>
                 <p className={`text-sm mt-1 text-${bpStatus.color}-600`}>{bpStatus.status}</p>
@@ -225,13 +225,13 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Heart Rate</span>
+                  <span className="text-sm text-white font-bold">Heart Rate</span>
                   <Activity className="h-4 w-4 text-red-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.heartRate || '--'} <span className="text-sm">bpm</span>
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-white font-bold mt-1">
                   {stats.latestVitals.heartRate && stats.latestVitals.heartRate < 60
                     ? 'Low'
                     : stats.latestVitals.heartRate && stats.latestVitals.heartRate > 100
@@ -242,24 +242,24 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Weight</span>
+                  <span className="text-sm text-white font-bold">Weight</span>
                   <TrendingUp className="h-4 w-4 text-blue-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.weight || '--'} <span className="text-sm">lbs</span>
                 </p>
-                <p className="text-sm text-gray-500 mt-1">Target: 165 lbs</p>
+                <p className="text-sm text-white font-bold mt-1">Target: 165 lbs</p>
               </div>
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Blood Sugar</span>
+                  <span className="text-sm text-white font-bold">Blood Sugar</span>
                   <Activity className="h-4 w-4 text-orange-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.bloodSugar || '--'} <span className="text-sm">mg/dL</span>
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-white font-bold mt-1">
                   {stats.latestVitals.bloodSugar && stats.latestVitals.bloodSugar < 100
                     ? 'Normal'
                     : stats.latestVitals.bloodSugar && stats.latestVitals.bloodSugar < 126
@@ -270,13 +270,13 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">O₂ Saturation</span>
+                  <span className="text-sm text-white font-bold">O₂ Saturation</span>
                   <Activity className="h-4 w-4 text-blue-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.oxygenSaturation || '--'}%
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-white font-bold mt-1">
                   {stats.latestVitals.oxygenSaturation && stats.latestVitals.oxygenSaturation >= 95
                     ? 'Normal'
                     : 'Low'}
@@ -285,18 +285,18 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Temperature</span>
+                  <span className="text-sm text-white font-bold">Temperature</span>
                   <Activity className="h-4 w-4 text-green-500" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-white font-bold">
                   {stats.latestVitals.temperature || '--'}°F
                 </p>
-                <p className="text-sm text-gray-500 mt-1">Normal: 98.6°F</p>
+                <p className="text-sm text-white font-bold mt-1">Normal: 98.6°F</p>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Activity className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+            <div className="text-center py-8 text-white font-bold">
+              <Activity className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
               <p>No vitals recorded yet</p>
               <Link to="/vitals" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
                 Record your first vitals →
@@ -308,7 +308,7 @@ export function DashboardPage() {
         {/* Today's Schedule */}
         <GlassCard>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Today's Schedule</h2>
+            <h2 className="text-xl font-semibold text-white font-bold">Today's Schedule</h2>
             <Link to="/calendar" className="text-blue-600 hover:text-blue-700">
               <Calendar className="h-5 w-5" />
             </Link>
@@ -323,8 +323,8 @@ export function DashboardPage() {
                 >
                   <div className={`w-2 h-2 rounded-full mt-2 bg-${event.calendar?.type || 'general'}-500`} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">{event.title}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="font-medium text-white font-bold truncate">{event.title}</p>
+                    <p className="text-sm text-white font-bold">
                       {format(new Date(event.startTime), 'h:mm a')}
                       {event.location && ` • ${event.location}`}
                     </p>
@@ -344,8 +344,8 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+            <div className="text-center py-8 text-white font-bold">
+              <Calendar className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
               <p>No events scheduled for today</p>
               <Link to="/calendar" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
                 Add an event →
@@ -358,7 +358,7 @@ export function DashboardPage() {
       {/* Active Medications List */}
       <GlassCard>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Active Medications</h2>
+          <h2 className="text-xl font-semibold text-white font-bold">Active Medications</h2>
           <Link to="/medications" className="text-blue-600 hover:text-blue-700 flex items-center">
             Manage <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
@@ -373,14 +373,14 @@ export function DashboardPage() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-gray-800">{med.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">{med.dosage}</p>
-                    <p className="text-xs text-gray-500 mt-1">{med.frequency}</p>
+                    <p className="font-medium text-white font-bold">{med.name}</p>
+                    <p className="text-sm text-white font-bold mt-1">{med.dosage}</p>
+                    <p className="text-xs text-white font-bold mt-1">{med.frequency}</p>
                   </div>
                   <Pill className="h-5 w-5 text-purple-500" />
                 </div>
                 {med.timeOfDay && (
-                  <div className="mt-2 flex items-center text-xs text-gray-600">
+                  <div className="mt-2 flex items-center text-xs text-white font-bold">
                     <Clock className="h-3 w-3 mr-1" />
                     {med.timeOfDay}
                   </div>
@@ -389,8 +389,8 @@ export function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Pill className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+          <div className="text-center py-8 text-white font-bold">
+            <Pill className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
             <p>No active medications</p>
             <Link to="/medications" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
               Add medication →

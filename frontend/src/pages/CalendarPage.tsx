@@ -552,7 +552,7 @@ export function CalendarPage() {
               className="rounded border-gray-300"
               {...register('isAllDay')}
             />
-            <label htmlFor="isAllDay" className="text-sm text-gray-700">
+            <label htmlFor="isAllDay" className="text-sm font-bold text-green-500">
               All day event
             </label>
           </div>
@@ -581,7 +581,7 @@ export function CalendarPage() {
           />
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold text-orange-500">
               Description (optional)
             </label>
             <textarea
