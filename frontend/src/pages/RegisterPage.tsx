@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Heart, Mail, Lock, User, Stethoscope, UserCircle2 } from 'lucide-react';
+import { Heart, Mail, Lock, User, Stethoscope, UserCircle2, Shield } from 'lucide-react';
 import { Button, Input, GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -13,7 +13,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  role: z.enum(['patient', 'therapist'], { required_error: 'Please select a role' }),
+  role: z.enum(['patient', 'therapist', 'admin'], { required_error: 'Please select a role' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -79,7 +79,7 @@ export function RegisterPage() {
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                 I am a...
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <label className="cursor-pointer">
                   <input
                     type="radio"
@@ -105,6 +105,20 @@ export function RegisterPage() {
                     <div className="flex flex-col items-center space-y-2">
                       <Stethoscope className="h-8 w-8 text-green-500" />
                       <span className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Therapist</span>
+                    </div>
+                  </div>
+                </label>
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    value="admin"
+                    {...register('role')}
+                    className="peer sr-only"
+                  />
+                  <div className="glass p-4 rounded-lg border-2 border-transparent peer-checked:border-purple-500 peer-checked:bg-purple-50/50 hover:border-purple-300 transition-all">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Shield className="h-8 w-8 text-purple-500" />
+                      <span className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Admin</span>
                     </div>
                   </div>
                 </label>

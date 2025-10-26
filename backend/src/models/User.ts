@@ -12,6 +12,7 @@ interface UserAttributes {
   doctorName?: string;
   doctorPhone?: string;
   timezone?: string;
+  role?: 'patient' | 'therapist' | 'admin';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,6 +30,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public doctorName?: string;
   public doctorPhone?: string;
   public timezone?: string;
+  public role?: 'patient' | 'therapist' | 'admin';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -86,6 +88,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
         timezone: {
           type: DataTypes.STRING(50),
           defaultValue: 'America/New_York',
+        },
+        role: {
+          type: DataTypes.ENUM('patient', 'therapist', 'admin'),
+          allowNull: false,
+          defaultValue: 'patient',
         },
       },
       {

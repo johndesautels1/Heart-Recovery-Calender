@@ -7,7 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role?: 'patient' | 'therapist') => Promise<void>;
+  register: (email: string, password: string, name: string, role?: 'patient' | 'therapist' | 'admin') => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const register = async (email: string, password: string, name: string, role?: 'patient' | 'therapist') => {
+  const register = async (email: string, password: string, name: string, role?: 'patient' | 'therapist' | 'admin') => {
     try {
       const response: AuthResponse = await api.register(email, password, name, role);
       setUser(response.user);

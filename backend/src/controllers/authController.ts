@@ -36,8 +36,8 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Validate role if provided
-    if (role && !['patient', 'therapist'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be "patient" or "therapist"' });
+    if (role && !['patient', 'therapist', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be "patient", "therapist", or "admin"' });
     }
 
     // Check if user already exists

@@ -76,8 +76,8 @@ export function Navbar() {
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
-  // Add therapist portal if user is a therapist
-  if (user?.role === 'therapist') {
+  // Add therapist portal if user is a therapist or admin
+  if (user?.role === 'therapist' || user?.role === 'admin') {
     navItems.push({ path: '/patients', label: 'Patients', icon: Stethoscope });
     navItems.push({ path: '/exercises', label: 'Exercises', icon: Dumbbell });
   }
@@ -86,8 +86,8 @@ export function Navbar() {
 
   return (
     <nav className="glass sticky top-0 z-40 border-b border-white/20">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="w-full px-2">
+        <div className="flex items-center justify-between h-16 max-w-full">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center space-x-2">
             <Heart className="h-8 w-8 text-red-500" />
@@ -103,7 +103,7 @@ export function Navbar() {
                   key={item.path}
                   to={item.path}
                   className={clsx(
-                    'flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200',
+                    'flex items-center space-x-1 px-2 py-2 rounded-lg transition-all duration-200 text-sm',
                     isActive(item.path)
                       ? 'bg-white/30 font-medium'
                       : 'hover:bg-white/20'
@@ -112,7 +112,7 @@ export function Navbar() {
                     color: isActive(item.path) ? 'var(--accent)' : 'var(--ink)'
                   }}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -120,7 +120,7 @@ export function Navbar() {
           </div>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-2">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -131,14 +131,14 @@ export function Navbar() {
               }}
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* View Toggle - Only show for therapists */}
-            {user?.role === 'therapist' && (
+            {/* View Toggle - Show for therapists and admins */}
+            {(user?.role === 'therapist' || user?.role === 'admin') && (
               <button
                 onClick={toggleView}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105 font-medium"
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg transition-all duration-300 hover:scale-105 font-medium text-sm"
                 style={{
                   color: isTherapistView ? '#10b981' : '#60a5fa',
                   backgroundColor: isTherapistView ? 'rgba(16, 185, 129, 0.1)' : 'rgba(96, 165, 250, 0.1)',
@@ -150,12 +150,12 @@ export function Navbar() {
               >
                 {isTherapistView ? (
                   <>
-                    <Stethoscope className="h-5 w-5" />
+                    <Stethoscope className="h-4 w-4" />
                     <span className="text-sm">Therapist View</span>
                   </>
                 ) : (
                   <>
-                    <UserCircle2 className="h-5 w-5" />
+                    <UserCircle2 className="h-4 w-4" />
                     <span className="text-sm">Patient View</span>
                   </>
                 )}
@@ -164,17 +164,17 @@ export function Navbar() {
 
             <Link
               to="/profile"
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
+              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors"
             >
-              <User className="h-5 w-5" />
+              <User className="h-4 w-4" />
               <span className="text-sm">{user?.name || 'Profile'}</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-500/20 text-red-600 transition-colors"
+              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-red-500/20 text-red-600 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              <span>Logout</span>
+              <LogOut className="h-4 w-4" />
+              <span className="text-sm">Logout</span>
             </button>
           </div>
 
@@ -209,7 +209,7 @@ export function Navbar() {
                     color: isActive(item.path) ? 'var(--accent)' : 'var(--ink)'
                   }}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -228,8 +228,8 @@ export function Navbar() {
               <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
 
-            {/* View Toggle for Mobile - Only show for therapists */}
-            {user?.role === 'therapist' && (
+            {/* View Toggle for Mobile - Show for therapists and admins */}
+            {(user?.role === 'therapist' || user?.role === 'admin') && (
               <button
                 onClick={toggleView}
                 className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium"
