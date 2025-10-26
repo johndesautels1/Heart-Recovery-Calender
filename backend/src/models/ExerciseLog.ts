@@ -1,0 +1,114 @@
+import { DataTypes, Model, Optional } from 'sequelize';
+import sequelize from './database';
+
+interface ExerciseLogAttributes {
+  id: number;
+  prescriptionId: number;
+  patientId: number;
+  completedAt: Date;
+  actualSets?: number;
+  actualReps?: number;
+  actualDuration?: number; // in minutes
+  difficultyRating?: number; // 1-10 scale
+  painLevel?: number; // 1-10 scale
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 'id' | 'actualSets' | 'actualReps' | 'actualDuration' | 'difficultyRating' | 'painLevel' | 'notes' | 'createdAt' | 'updatedAt'> {}
+
+class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttributes> implements ExerciseLogAttributes {
+  public id!: number;
+  public prescriptionId!: number;
+  public patientId!: number;
+  public completedAt!: Date;
+  public actualSets?: number;
+  public actualReps?: number;
+  public actualDuration?: number;
+  public difficultyRating?: number;
+  public painLevel?: number;
+  public notes?: string;
+  public readonly createdAt?: Date;
+  public readonly updatedAt?: Date;
+
+  static initialize() {
+    ExerciseLog.init(
+      {
+        id: {
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
+          primaryKey: true,
+        },
+        prescriptionId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: 'exercise_prescriptions',
+            key: 'id',
+          },
+        },
+        patientId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: 'patients',
+            key: 'id',
+          },
+        },
+        completedAt: {
+          type: DataTypes.DATE,
+          allowNull: false,
+        },
+        actualSets: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+        },
+        actualReps: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+        },
+        actualDuration: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Actual duration in minutes',
+        },
+        difficultyRating: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: '1-10 scale, 1 = very easy, 10 = very hard',
+        },
+        painLevel: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: '1-10 scale, 1 = no pain, 10 = severe pain',
+        },
+        notes: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        },
+      },
+      {
+        sequelize,
+        modelName: 'ExerciseLog',
+        tableName: 'exercise_logs',
+        timestamps: true,
+      }
+    );
+  }
+
+  static associate(models: any) {
+    ExerciseLog.belongsTo(models.ExercisePrescription, {
+      foreignKey: 'prescriptionId',
+      as: 'prescription',
+    });
+    ExerciseLog.belongsTo(models.Patient, {
+      foreignKey: 'patientId',
+      as: 'patient',
+    });
+  }
+}
+
+ExerciseLog.initialize();
+
+export default ExerciseLog;

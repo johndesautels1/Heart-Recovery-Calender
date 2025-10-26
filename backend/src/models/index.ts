@@ -17,6 +17,9 @@ import FoodItem from './FoodItem';
 import MealItemEntry from './MealItemEntry';
 import MedicationLog from './MedicationLog';
 import Patient from './Patient';
+import Exercise from './Exercise';
+import ExercisePrescription from './ExercisePrescription';
+import ExerciseLog from './ExerciseLog';
 
 // Create models object
 const models = {
@@ -36,6 +39,9 @@ const models = {
   FoodItem,
   MealItemEntry,
   Patient,
+  Exercise,
+  ExercisePrescription,
+  ExerciseLog,
 };
 
 // Call associate methods for all models
