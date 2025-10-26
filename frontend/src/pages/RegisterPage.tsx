@@ -141,20 +141,20 @@ export function RegisterPage() {
               {...register('confirmPassword')}
             />
 
-            <div className="text-sm text-gray-600">
+            <div className="text-sm">
               <label className="flex items-start">
                 <input
                   type="checkbox"
                   className="mr-2 mt-0.5"
                   required
                 />
-                <span>
+                <span className="text-white">
                   I agree to the{' '}
-                  <Link to="/terms" className="text-blue-600 hover:text-blue-700">
+                  <Link to="/terms" className="text-blue-400 hover:text-blue-300 font-medium">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" className="text-blue-600 hover:text-blue-700">
+                  <Link to="/privacy" className="text-blue-400 hover:text-blue-300 font-medium">
                     Privacy Policy
                   </Link>
                 </span>
@@ -165,16 +165,16 @@ export function RegisterPage() {
               type="submit"
               fullWidth
               loading={isLoading}
-              className="mt-6"
+              className="mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold"
             >
               Create Account
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-white">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
                 Sign In
               </Link>
             </p>

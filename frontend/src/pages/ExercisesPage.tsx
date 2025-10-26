@@ -222,7 +222,7 @@ export function ExercisesPage() {
 
       if (!response.ok) throw new Error('Failed to toggle exercise status');
 
-      toast.success(`Exercise ${exercise.isActive ? 'deactivated' : 'activated'} successfully');
+      toast.success('Exercise ' + (exercise.isActive ? 'deactivated' : 'activated') + ' successfully');
       await loadExercises();
     } catch (error) {
       console.error('Error toggling exercise status:', error);
@@ -395,7 +395,7 @@ export function ExercisesPage() {
                         {exercise.difficulty}
                       </span>
                       <span
-                        className={`text-xs px-2 py-1 rounded-full ${exercise.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
+                        className={'text-xs px-2 py-1 rounded-full ' + (exercise.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700')}
                       >
                         {exercise.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -430,7 +430,7 @@ export function ExercisesPage() {
               {/* Description */}
               {exercise.description && (
                 <p className="text-sm mb-4" style={{ color: 'var(--ink)', opacity: 0.8 }}>
-                  {exercise.description.length > 120 ? `${exercise.description.substring(0, 120)}...` : exercise.description}
+                  {exercise.description.length > 120 ? exercise.description.substring(0, 120) + '...' : exercise.description}
                 </p>
               )}
 
@@ -454,9 +454,9 @@ export function ExercisesPage() {
                   <div className="flex items-center space-x-2">
                     <Clock className="h-3 w-3" />
                     <span>
-                      {exercise.defaultSets && `${exercise.defaultSets} sets`}
-                      {exercise.defaultReps && ` × ${exercise.defaultReps} reps`}
-                      {exercise.defaultDuration && ` • ${exercise.defaultDuration} min`}
+                      {exercise.defaultSets && (exercise.defaultSets + ' sets')}
+                      {exercise.defaultReps && (' × ' + exercise.defaultReps + ' reps')}
+                      {exercise.defaultDuration && (' • ' + exercise.defaultDuration + ' min')}
                     </span>
                   </div>
                 )}
@@ -484,7 +484,7 @@ export function ExercisesPage() {
                   <div className="flex items-start space-x-2">
                     <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-red-600">
-                      {exercise.contraindications.length > 80 ? `${exercise.contraindications.substring(0, 80)}...` : exercise.contraindications}
+                      {exercise.contraindications.length > 80 ? exercise.contraindications.substring(0, 80) + '...' : exercise.contraindications}
                     </p>
                   </div>
                 </div>

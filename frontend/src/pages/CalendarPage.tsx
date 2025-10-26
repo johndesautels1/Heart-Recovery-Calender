@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,6 +12,7 @@ import api from '../services/api';
 import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication } from '../types';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   exportToGoogleCalendar,
   exportToAppleCalendar,
@@ -52,6 +53,9 @@ export function CalendarPage() {
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string>('');
+  const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -444,6 +448,65 @@ See browser console for full configuration details.
     toast.success('Integration details logged to console');
   };
 
+  const handleShareQRCode = () => {
+    if (events.length === 0 && calendars.length === 0) {
+      toast.error('No calendar data to share');
+      return;
+    }
+
+    // Create calendar data for QR code
+    const calendarData = {
+      appName: 'Heart Recovery Calendar',
+      calendars: calendars.map(cal => ({
+        name: cal.name,
+        type: cal.type,
+        color: cal.color,
+      })),
+      events: events.map(event => ({
+        title: event.title,
+        start: event.startTime,
+        end: event.endTime,
+        location: event.location,
+        description: event.description,
+        isAllDay: event.isAllDay,
+      })),
+      exportDate: new Date().toISOString(),
+    };
+
+    // Convert to JSON string
+    const jsonData = JSON.stringify(calendarData);
+
+    // For large datasets, you might want to upload to a server and use a short URL
+    // For now, we'll encode the data directly (works for smaller calendars)
+    setQrCodeData(jsonData);
+    setIsQRModalOpen(true);
+
+    toast.success('QR Code generated! Scan to import calendar data.');
+  };
+
+  const handleDownloadQRCode = () => {
+    if (!qrCodeRef.current) return;
+
+    const svg = qrCodeRef.current.querySelector('svg');
+    if (!svg) return;
+
+    // Convert SVG to data URL
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    // Create download link
+    const downloadLink = document.createElement('a');
+    downloadLink.href = svgUrl;
+    downloadLink.download = `calendar-qr-code-${format(new Date(), 'yyyy-MM-dd')}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
+
+    toast.success('QR Code downloaded!');
+  };
+
   const handleUpdateSleepHours = async () => {
     if (!selectedEvent) return;
 
@@ -717,6 +780,16 @@ See browser console for full configuration details.
         >
           <FileJson className="h-4 w-4 mr-1" />
           Backup
+        </Button>
+        <Button
+          size="sm"
+          variant="glass"
+          onClick={handleShareQRCode}
+          className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400"
+          title="Share via QR Code"
+        >
+          <QrCode className="h-4 w-4 mr-1" />
+          QR Code
         </Button>
         <Button
           size="sm"
@@ -1095,6 +1168,76 @@ See browser console for full configuration details.
             <Plus className="h-5 w-5 mr-2" />
             Add Calendar
           </Button>
+        </div>
+      </Modal>
+
+      {/* QR Code Modal */}
+      <Modal
+        isOpen={isQRModalOpen}
+        onClose={() => {
+          setIsQRModalOpen(false);
+          setQrCodeData('');
+        }}
+        title="Share Calendar via QR Code"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Scan this QR code to import calendar data into another device or share with others.
+            </p>
+
+            {/* QR Code Display */}
+            <div ref={qrCodeRef} className="flex justify-center p-6 bg-white rounded-lg">
+              {qrCodeData && (
+                <QRCodeSVG
+                  value={qrCodeData}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                  className="border-4 border-gray-200 rounded-lg"
+                />
+              )}
+            </div>
+
+            {/* Information */}
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg text-left">
+              <h4 className="font-semibold text-blue-900 mb-2">How to Use:</h4>
+              <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                <li>Open the Heart Recovery Calendar app on another device</li>
+                <li>Go to Calendar page and click "Scan QR"</li>
+                <li>Scan this QR code to import all calendar data</li>
+                <li>Alternatively, download the QR code image to share</li>
+              </ol>
+            </div>
+
+            {/* Data Summary */}
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left">
+              <h4 className="font-semibold text-gray-900 mb-2">Included Data:</h4>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>📅 {calendars.length} Calendar{calendars.length !== 1 ? 's' : ''}</li>
+                <li>📌 {events.length} Event{events.length !== 1 ? 's' : ''}</li>
+                <li>🕐 Exported: {format(new Date(), 'PPP p')}</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button
+              variant="glass"
+              onClick={() => {
+                setIsQRModalOpen(false);
+                setQrCodeData('');
+              }}
+            >
+              Close
+            </Button>
+            <Button onClick={handleDownloadQRCode}>
+              <Download className="h-4 w-4 mr-2" />
+              Download QR Code
+            </Button>
+          </div>
         </div>
       </Modal>
 
