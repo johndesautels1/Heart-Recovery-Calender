@@ -156,8 +156,7 @@ export function PatientsPage() {
   };
 
   const viewPatientCalendar = (patientId: number) => {
-    // TODO: Navigate to detailed patient calendar view
-    toast.info('Patient calendar view coming soon!');
+    navigate(`/patients/${patientId}/calendar`);
   };
 
   const getPostOpDisplay = (patientId: number) => {

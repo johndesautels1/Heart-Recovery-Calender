@@ -17,6 +17,7 @@ import {
   AnalyticsPage,
   ProfilePage,
   PatientsPage,
+  PatientCalendarView,
   ExercisesPage,
 } from './pages';
 
@@ -57,6 +58,7 @@ function App() {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/patients/:patientId/calendar" element={<PatientCalendarView />} />
                 <Route path="/exercises" element={<ExercisesPage />} />
               </Route>
 
