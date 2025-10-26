@@ -16,7 +16,8 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Calendar
+  Calendar,
+  Info
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -104,6 +105,8 @@ export function ExercisesPage() {
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [scheduleDuration, setScheduleDuration] = useState(30);
   const [schedulePatientId, setSchedulePatientId] = useState('');
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   const { isTherapistView } = useView();
   const { user } = useAuth();
 
@@ -352,6 +355,11 @@ export function ExercisesPage() {
     setScheduleDate(tomorrow.toISOString().split('T')[0]);
     setScheduleDuration(exercise.defaultDuration || 30);
     setIsScheduleModalOpen(true);
+  };
+
+  const handleViewInfo = (exercise: Exercise) => {
+    setViewingExercise(exercise);
+    setIsInfoModalOpen(true);
   };
 
   const handleScheduleSubmit = async () => {
@@ -699,6 +707,13 @@ export function ExercisesPage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => handleViewInfo(exercise)}
+                    className="p-2 rounded-lg hover:bg-blue-500/20 transition-colors"
+                    title="View exercise details"
+                  >
+                    <Info className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  </button>
                   <button
                     onClick={() => handleScheduleExercise(exercise)}
                     className="p-2 rounded-lg hover:bg-green-500/20 transition-colors"
@@ -1146,6 +1161,199 @@ export function ExercisesPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Exercise Info Modal */}
+      <Modal
+        isOpen={isInfoModalOpen}
+        onClose={() => {
+          setIsInfoModalOpen(false);
+          setViewingExercise(null);
+        }}
+        title={viewingExercise?.name || 'Exercise Details'}
+        size="lg"
+      >
+        {viewingExercise && (
+          <div className="space-y-6">
+            {/* Header with category and difficulty */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="h-12 w-12 rounded-full glass flex items-center justify-center text-2xl">
+                  {getCategoryIcon(viewingExercise.category)}
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      style={{
+                        backgroundColor: getDifficultyColor(viewingExercise.difficulty) + '20',
+                        color: getDifficultyColor(viewingExercise.difficulty),
+                      }}
+                    >
+                      {viewingExercise.difficulty}
+                    </span>
+                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ backgroundColor: 'rgba(96, 165, 250, 0.1)', color: 'var(--accent)' }}>
+                      {categories.find(c => c.value === viewingExercise.category)?.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            {viewingExercise.description && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Description</h4>
+                <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                  {viewingExercise.description}
+                </p>
+              </div>
+            )}
+
+            {/* Recovery Benefit */}
+            {viewingExercise.recoveryBenefit && (
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                <div className="flex items-start space-x-2">
+                  <Heart className="h-5 w-5 mt-0.5" style={{ color: '#22c55e' }} />
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1" style={{ color: '#22c55e' }}>Recovery Benefit</h4>
+                    <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                      {viewingExercise.recoveryBenefit}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions */}
+            {viewingExercise.instructions && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Instructions</h4>
+                <p className="text-sm whitespace-pre-line" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                  {viewingExercise.instructions}
+                </p>
+              </div>
+            )}
+
+            {/* Equipment Needed */}
+            {viewingExercise.equipmentNeeded && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Equipment Needed</h4>
+                <div className="flex items-center space-x-2">
+                  <Dumbbell className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  <span className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                    {viewingExercise.equipmentNeeded}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Default Sets/Reps/Duration */}
+            {(viewingExercise.defaultSets || viewingExercise.defaultReps || viewingExercise.defaultDuration) && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Recommended</h4>
+                <div className="flex flex-wrap gap-4">
+                  {viewingExercise.defaultSets && (
+                    <div className="flex items-center space-x-2">
+                      <Activity className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                        {viewingExercise.defaultSets} sets
+                      </span>
+                    </div>
+                  )}
+                  {viewingExercise.defaultReps && (
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                        {viewingExercise.defaultReps} reps
+                      </span>
+                    </div>
+                  )}
+                  {viewingExercise.defaultDuration && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                        {viewingExercise.defaultDuration} minutes
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Post-Op Week Range */}
+            {(viewingExercise.minPostOpWeek !== null || viewingExercise.maxPostOpWeek !== null) && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Recommended Post-Op Timeframe</h4>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                  <span className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                    Week {viewingExercise.minPostOpWeek || 0}
+                    {viewingExercise.maxPostOpWeek ? ` - ${viewingExercise.maxPostOpWeek}` : '+'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Contraindications */}
+            {viewingExercise.contraindications && (
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="h-5 w-5 mt-0.5" style={{ color: '#ef4444' }} />
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>Contraindications & Warnings</h4>
+                    <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                      {viewingExercise.contraindications}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Media Links */}
+            {(viewingExercise.videoUrl || viewingExercise.imageUrl) && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Media Resources</h4>
+                <div className="flex flex-wrap gap-3">
+                  {viewingExercise.videoUrl && (
+                    <a
+                      href={viewingExercise.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg glass hover:bg-white/10 transition-colors"
+                    >
+                      <Video className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm" style={{ color: 'var(--accent)' }}>Watch Video</span>
+                    </a>
+                  )}
+                  {viewingExercise.imageUrl && (
+                    <a
+                      href={viewingExercise.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg glass hover:bg-white/10 transition-colors"
+                    >
+                      <ImageIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm" style={{ color: 'var(--accent)' }}>View Image</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Close Button */}
+            <div className="flex justify-end pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <Button
+                onClick={() => {
+                  setIsInfoModalOpen(false);
+                  setViewingExercise(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
