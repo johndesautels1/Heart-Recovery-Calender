@@ -57,6 +57,7 @@ export function CalendarPage() {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const qrCodeRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<any>(null);
 
   const {
     register,
@@ -141,13 +142,15 @@ export function CalendarPage() {
   };
 
   const handleDateClick = async (arg: any) => {
-    // Just store the selected date for reference, don't open any modals
-    // User can browse the calendar freely
+    // When a date is clicked, navigate to the day view for that date
     const clickedDate = arg.dateStr;
     setSelectedDate(clickedDate);
 
-    // Don't automatically open modals - let the user browse the calendar
-    // They can create events using the "Create Event" button instead
+    // Get the calendar API and change to day view for the clicked date
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.changeView('timeGridDay', clickedDate);
+    }
   };
 
   const handleEventClick = async (arg: any) => {
@@ -209,7 +212,7 @@ export function CalendarPage() {
       return;
     }
 
-    // Handle regular events
+    // Handle regular events - clicking on an event opens the details modal
     const event = events.find(e => e.id === parseInt(arg.event.id));
     if (event) {
       setSelectedEvent(event);
@@ -795,6 +798,7 @@ See browser console for full configuration details.
 
       <GlassCard className="p-6">
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           headerToolbar={{
@@ -1046,7 +1050,7 @@ See browser console for full configuration details.
             )}
 
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Status:</span>
+              <span className="text-sm text-white font-bold">Status:</span>
               <span
                 className={`px-2 py-1 text-xs font-bold rounded-full ${
                   selectedEvent.status === 'completed'

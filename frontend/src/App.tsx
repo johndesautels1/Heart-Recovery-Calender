@@ -20,6 +20,7 @@ import {
   PatientCalendarView,
   ExercisesPage,
   EventTemplatesPage,
+  SleepPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ function App() {
                 <Route path="/medications" element={<MedicationsPage />} />
                 <Route path="/meals" element={<MealsPage />} />
                 <Route path="/food-diary" element={<FoodDiaryPage />} />
+                <Route path="/sleep" element={<SleepPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/patients" element={<PatientsPage />} />

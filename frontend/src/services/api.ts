@@ -16,6 +16,9 @@ import {
   FoodCategory,
   FoodItem,
   FoodStats,
+  SleepLog,
+  CreateSleepLogInput,
+  SleepStats,
 } from '../types';
 
 class ApiService {
@@ -375,6 +378,50 @@ class ApiService {
 
   async getFoodItem(id: number): Promise<FoodItem> {
     const response = await this.api.get<FoodItem>(`food-items/${id}`);
+    return response.data;
+  }
+
+  // ==================== SLEEP LOGS ENDPOINTS ====================
+  async getSleepLogs(filters?: { startDate?: string; endDate?: string; date?: string }): Promise<SleepLog[]> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('start', filters.startDate);
+    if (filters?.endDate) params.append('end', filters.endDate);
+    if (filters?.date) params.append('date', filters.date);
+
+    const response = await this.api.get<ApiResponse<SleepLog[]>>(`sleep-logs?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getSleepLog(id: number): Promise<SleepLog> {
+    const response = await this.api.get<SleepLog>(`sleep-logs/${id}`);
+    return response.data;
+  }
+
+  async getSleepLogByDate(date: string): Promise<SleepLog> {
+    const response = await this.api.get<SleepLog>(`sleep-logs/date/${date}`);
+    return response.data;
+  }
+
+  async createSleepLog(data: CreateSleepLogInput): Promise<SleepLog> {
+    const response = await this.api.post<SleepLog>('sleep-logs', data);
+    return response.data;
+  }
+
+  async updateSleepLog(id: number, data: Partial<CreateSleepLogInput>): Promise<SleepLog> {
+    const response = await this.api.put<SleepLog>(`sleep-logs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteSleepLog(id: number): Promise<void> {
+    await this.api.delete(`sleep-logs/${id}`);
+  }
+
+  async getSleepStats(startDate?: string, endDate?: string): Promise<SleepStats> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start', startDate);
+    if (endDate) params.append('end', endDate);
+
+    const response = await this.api.get<SleepStats>(`sleep-logs/stats?${params.toString()}`);
     return response.data;
   }
 }

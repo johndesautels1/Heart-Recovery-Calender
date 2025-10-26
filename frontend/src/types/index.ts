@@ -315,3 +315,39 @@ export interface PostOpWeekResponse {
   surgeryDate?: string;
   isPreSurgery: boolean;
 }
+
+export interface SleepLog {
+  id: number;
+  userId: number;
+  date: string;
+  hoursSlept: number;
+  sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  notes?: string;
+  bedTime?: string;
+  wakeTime?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSleepLogInput {
+  date: string;
+  hoursSlept: number;
+  sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  notes?: string;
+  bedTime?: string;
+  wakeTime?: string;
+}
+
+export interface SleepStats {
+  totalLogs: number;
+  averageHours: number;
+  qualityDistribution: {
+    excellent: number;
+    good: number;
+    fair: number;
+    poor: number;
+  };
+  trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
+  startDate?: string;
+  endDate?: string;
+}

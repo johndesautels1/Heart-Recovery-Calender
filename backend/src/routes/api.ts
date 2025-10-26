@@ -15,6 +15,7 @@ import * as patientsController from '../controllers/patientsController';
 import * as exercisesController from '../controllers/exercisesController';
 import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
 import * as eventTemplatesController from '../controllers/eventTemplatesController';
+import * as sleepLogsController from '../controllers/sleepLogsController';
 
 const router = Router();
 
@@ -159,5 +160,14 @@ router.get('/event-templates/:id', eventTemplatesController.getEventTemplate);
 router.put('/event-templates/:id', eventTemplatesController.updateEventTemplate);
 router.delete('/event-templates/:id', eventTemplatesController.deleteEventTemplate);
 router.patch('/event-templates/:id/toggle-active', eventTemplatesController.toggleActive);
+
+// ========== SLEEP LOGS ROUTES ==========
+router.get('/sleep-logs', sleepLogsController.getSleepLogs);
+router.post('/sleep-logs', sleepLogsController.addSleepLog);
+router.get('/sleep-logs/stats', sleepLogsController.getSleepStats);
+router.get('/sleep-logs/date/:date', sleepLogsController.getSleepLogByDate);
+router.get('/sleep-logs/:id', sleepLogsController.getSleepLog);
+router.put('/sleep-logs/:id', sleepLogsController.updateSleepLog);
+router.delete('/sleep-logs/:id', sleepLogsController.deleteSleepLog);
 
 export default router;

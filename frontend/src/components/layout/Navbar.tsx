@@ -73,6 +73,7 @@ export function Navbar() {
     { path: '/medications', label: 'Medications', icon: Pill },
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
+    { path: '/sleep', label: 'Sleep Journal', icon: Moon },
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
