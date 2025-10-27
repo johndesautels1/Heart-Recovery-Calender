@@ -124,8 +124,9 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
-      // If therapist has selected a patient, load that patient's data
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      // If a patient is selected, load that patient's data
+      const userId = selectedPatient?.userId ? selectedPatient.userId : undefined;
+      console.log('[CalendarPage] Loading data for userId:', userId, 'selectedPatient:', selectedPatient);
 
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
         api.getCalendars(),
@@ -1010,7 +1011,7 @@ See browser console for full configuration details.
             onClick={() => setIsCalendarModalOpen(true)}
           >
             <CalendarIcon className="h-5 w-5 mr-2" />
-            Manage Calendars
+            Manage My Calendars
           </Button>
           <Button
             onClick={() => {
@@ -1495,7 +1496,7 @@ See browser console for full configuration details.
       <Modal
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
-        title="Manage Calendars"
+        title="Manage My Calendars"
         size="lg"
       >
         <div className="space-y-4">
