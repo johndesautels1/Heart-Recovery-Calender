@@ -59,7 +59,9 @@ export function PatientsPage() {
     phone: '',
     address: '',
     surgeryDate: '',
-    notes: ''
+    notes: '',
+    createUserAccount: false,
+    password: ''
   });
   const navigate = useNavigate();
   const { selectedPatient, setSelectedPatient } = usePatientSelection();
@@ -244,7 +246,9 @@ export function PatientsPage() {
       phone: patient.phone || '',
       address: patient.address || '',
       surgeryDate: patient.surgeryDate || '',
-      notes: patient.notes || ''
+      notes: patient.notes || '',
+      createUserAccount: false,
+      password: ''
     });
   };
 
@@ -254,23 +258,34 @@ export function PatientsPage() {
 
     try {
       const token = localStorage.getItem('token');
+
+      // Prepare the update data
+      const updateData = {
+        ...editPatientForm
+      };
+
       const response = await fetch(`/api/patients/${editingPatient.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editPatientForm),
+        body: JSON.stringify(updateData),
       });
 
-      if (!response.ok) throw new Error('Failed to update patient');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update patient');
+      }
 
-      toast.success('Patient updated successfully!');
+      toast.success(editPatientForm.createUserAccount && !editingPatient.userId
+        ? 'Patient updated and user account created!'
+        : 'Patient updated successfully!');
       setEditingPatient(null);
       loadPatients();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating patient:', error);
-      toast.error('Failed to update patient');
+      toast.error(error.message || 'Failed to update patient');
     }
   };
 
@@ -282,7 +297,9 @@ export function PatientsPage() {
       phone: '',
       address: '',
       surgeryDate: '',
-      notes: ''
+      notes: '',
+      createUserAccount: false,
+      password: ''
     });
   };
 
@@ -547,6 +564,40 @@ export function PatientsPage() {
                   />
                 </div>
 
+                {/* Create User Account Section - Only show if patient doesn't have userId */}
+                {!editingPatient?.userId && (
+                  <div className="pt-4 border-t border-white/10">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editPatientForm.createUserAccount}
+                        onChange={(e) => setEditPatientForm({ ...editPatientForm, createUserAccount: e.target.checked, password: e.target.checked ? editPatientForm.password : '' })}
+                        className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Create user account for this patient</span>
+                        <p className="text-xs opacity-60">Allow patient to log in and manage their own data</p>
+                      </div>
+                    </label>
+
+                    {editPatientForm.createUserAccount && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium mb-2">Initial Password *</label>
+                        <input
+                          type="password"
+                          required={editPatientForm.createUserAccount}
+                          value={editPatientForm.password}
+                          onChange={(e) => setEditPatientForm({ ...editPatientForm, password: e.target.value })}
+                          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                          placeholder="Enter password for patient"
+                          minLength={6}
+                        />
+                        <p className="text-xs opacity-60 mt-1">Patient can change this password after first login</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex space-x-3 pt-4">
                   <Button type="submit" variant="primary" className="flex-1">
                     <Save className="h-4 w-4" />
@@ -706,10 +757,15 @@ export function PatientsPage() {
             <p className="text-sm opacity-70 mb-6">
               Import patient data from the main cardiac-recovery-pro application
             </p>
-            <Button onClick={handleImportData} variant="primary">
-              <Download className="h-4 w-4" />
-              <span>Import from Cardiac Recovery Pro</span>
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={handleImportData} variant="primary">
+                <Download className="h-4 w-4" />
+                <span>Import from Cardiac Recovery Pro</span>
+              </Button>
+              <Button onClick={() => setPatientSubTab('select-existing')} variant="glass">
+                <span>Cancel</span>
+              </Button>
+            </div>
           </div>
         </div>
       )}
