@@ -7,6 +7,7 @@ export interface User {
   emergencyPhone?: string;
   doctorName?: string;
   doctorPhone?: string;
+  profilePhoto?: string;
   timezone: string;
   role?: 'patient' | 'therapist' | 'admin';
   createdAt: string;

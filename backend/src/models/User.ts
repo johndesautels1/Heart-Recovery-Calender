@@ -11,6 +11,7 @@ interface UserAttributes {
   emergencyPhone?: string;
   doctorName?: string;
   doctorPhone?: string;
+  profilePhoto?: string;
   timezone?: string;
   role?: 'patient' | 'therapist' | 'admin';
   createdAt?: Date;
@@ -29,6 +30,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public emergencyPhone?: string;
   public doctorName?: string;
   public doctorPhone?: string;
+  public profilePhoto?: string;
   public timezone?: string;
   public role?: 'patient' | 'therapist' | 'admin';
   public readonly createdAt!: Date;
@@ -83,6 +85,10 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
         },
         doctorPhone: {
           type: DataTypes.STRING(20),
+          allowNull: true,
+        },
+        profilePhoto: {
+          type: DataTypes.TEXT,
           allowNull: true,
         },
         timezone: {

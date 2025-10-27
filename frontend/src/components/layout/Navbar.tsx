@@ -165,14 +165,19 @@ export function Navbar() {
 
             <Link
               to="/profile"
-              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors"
+              className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors"
             >
               <User className="h-4 w-4" />
-              <span className="text-sm">{user?.name || 'Profile'}</span>
+              <div className="flex flex-col items-start">
+                <span className="text-sm">{user?.name || 'Profile'}</span>
+                <span className="text-xs font-medium" style={{ color: '#ffa726' }}>
+                  {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                </span>
+              </div>
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-red-500/20 text-red-600 transition-colors"
+              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors"
             >
               <LogOut className="h-4 w-4" />
               <span className="text-sm">Logout</span>
@@ -262,11 +267,16 @@ export function Navbar() {
               className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/20 transition-colors"
             >
               <User className="h-5 w-5" />
-              <span>Profile ({user?.name})</span>
+              <div className="flex flex-col items-start">
+                <span>{user?.name || 'Profile'}</span>
+                <span className="text-sm font-medium" style={{ color: '#ffa726' }}>
+                  {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                </span>
+              </div>
             </Link>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-red-500/20 text-red-600 transition-colors"
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>

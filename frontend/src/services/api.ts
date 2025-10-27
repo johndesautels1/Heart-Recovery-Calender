@@ -103,7 +103,7 @@ class ApiService {
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
-    const response = await this.api.put<User>('auth/profile', data);
+    const response = await this.api.put<User>('users/profile', data);
     return response.data;
   }
 

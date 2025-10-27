@@ -5,9 +5,9 @@
 @layer base {
   :root {
     /* Dark Mode (Default) - High contrast colors for dark background */
-    --bg: #0a0e1a;
-    --card: #111827;
-    --card-light: #1a2332;
+    --bg: #1e243d;
+    --card: #232d42;
+    --card-light: #2d3a57;
     --ink: #ffffff;              /* Bright white for maximum contrast */
     --ink-bright: #fef3c7;       /* Light gold for emphasis */
     --ink-gold: #fde68a;         /* Bright gold for highlights */
@@ -78,15 +78,15 @@
 
   .glass-button {
     @apply px-6 py-3 rounded-lg transition-all duration-300 font-bold;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
+    background: linear-gradient(135deg, #4ade80, #22c55e);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
   }
 
   .glass-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(96, 165, 250, 0.5);
+    box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
   }
 
   .glass-input {
@@ -119,15 +119,15 @@
   /* Premium button variants using CSS variables */
   .btn-primary {
     @apply px-6 py-3 rounded-lg font-bold transition-all duration-300;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
+    background: linear-gradient(135deg, #4ade80, #22c55e);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
   }
 
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(96, 165, 250, 0.5);
+    box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
   }
 
   .btn-secondary {
