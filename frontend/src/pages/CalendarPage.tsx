@@ -961,7 +961,7 @@ See browser console for full configuration details.
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-green-500">{calendarOwnerDisplay}</h1>
+        <h1 className="text-3xl font-bold text-yellow-400">{calendarOwnerDisplay}</h1>
         <div className="flex flex-wrap gap-3">
           <Button
             variant="glass"
