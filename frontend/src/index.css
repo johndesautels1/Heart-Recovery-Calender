@@ -107,6 +107,13 @@
     box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3);
   }
 
+  /* Dropdown option styling - cobalt blue text */
+  .glass-input option {
+    color: #1e40af;
+    background: #ffffff;
+    font-weight: 600;
+  }
+
   /* Light mode adjustments */
   body.light-mode .glass {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
