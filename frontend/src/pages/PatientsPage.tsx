@@ -356,7 +356,7 @@ export function PatientsPage() {
           <Download className="inline-block w-4 h-4 mr-2" />
           Import Data
           {patientSubTab === 'import' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5bg-white" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
           )}
         </button>
       </div>
@@ -493,8 +493,14 @@ export function PatientsPage() {
 
       {/* Edit Patient Modal/Form */}
       {editingPatient && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handleCancelEdit}
+        >
+          <div
+            className="max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="glass rounded-xl p-6 border border-white/10">
               <h2 className="text-2xl font-bold mb-4">Edit Patient: {editingPatient.name}</h2>
               <form onSubmit={handleUpdatePatient} className="space-y-3">

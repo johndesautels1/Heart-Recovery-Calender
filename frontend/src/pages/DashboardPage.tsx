@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   Heart,
   Activity,
   Pill,
@@ -10,13 +10,16 @@ import {
   ChevronRight,
   UtensilsCrossed,
   CheckCircle,
-  Clock
+  Clock,
+  UserPlus,
+  Stethoscope,
+  Users
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { VitalsSample, Medication, CalendarEvent, MealEntry } from '../types';
-import { format } from 'date-fns';
+import { VitalsSample, Medication, CalendarEvent, MealEntry, Patient } from '../types';
+import { format, subDays, differenceInWeeks } from 'date-fns';
 
 interface DashboardStats {
   todayEvents: CalendarEvent[];
@@ -24,6 +27,13 @@ interface DashboardStats {
   latestVitals: VitalsSample | null;
   todayMeals: MealEntry[];
   weeklyCompliance: number;
+}
+
+interface AdminDashboardStats {
+  newPatients: Patient[];
+  completingTherapyPatients: Patient[];
+  todayAllEvents: CalendarEvent[];
+  activePatients: Patient[];
 }
 
 export function DashboardPage() {
@@ -35,17 +45,29 @@ export function DashboardPage() {
     todayMeals: [],
     weeklyCompliance: 0,
   });
+  const [adminStats, setAdminStats] = useState<AdminDashboardStats>({
+    newPatients: [],
+    completingTherapyPatients: [],
+    todayAllEvents: [],
+    activePatients: [],
+  });
   const [isLoading, setIsLoading] = useState(true);
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
+
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (isAdmin) {
+      loadAdminDashboardData();
+    } else {
+      loadDashboardData();
+    }
+  }, [isAdmin]);
 
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
       const today = new Date().toISOString().split('T')[0];
-      
+
       const [events, medications, vitals, meals] = await Promise.all([
         api.getEvents(undefined, today, today),
         api.getMedications(true),
@@ -67,6 +89,58 @@ export function DashboardPage() {
       });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAdminDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const today = new Date().toISOString().split('T')[0];
+      const sevenDaysAgo = subDays(new Date(), 7);
+
+      // Get all patients for this therapist/admin
+      const { data: allPatients } = await api.getPatients();
+
+      // Filter new patients (created in last 7 days)
+      const newPatients = allPatients.filter(p => {
+        const createdDate = new Date(p.createdAt);
+        return createdDate >= sevenDaysAgo;
+      });
+
+      // Filter patients completing therapy (surgery date was ~10-14 weeks ago)
+      const completingTherapyPatients = allPatients.filter(p => {
+        if (!p.surgeryDate) return false;
+        const surgeryDate = new Date(p.surgeryDate);
+        const weeksPostOp = differenceInWeeks(new Date(), surgeryDate);
+        return weeksPostOp >= 10 && weeksPostOp <= 14 && p.isActive;
+      });
+
+      // Get all active patients
+      const activePatients = allPatients.filter(p => p.isActive);
+
+      // Get today's events across all patients
+      const todayAllEvents: CalendarEvent[] = [];
+      for (const patient of activePatients) {
+        if (patient.userId) {
+          try {
+            const events = await api.getEvents(patient.userId, today, today);
+            todayAllEvents.push(...events);
+          } catch (err) {
+            console.error(`Failed to load events for patient ${patient.id}:`, err);
+          }
+        }
+      }
+
+      setAdminStats({
+        newPatients,
+        completingTherapyPatients,
+        todayAllEvents,
+        activePatients,
+      });
+    } catch (error) {
+      console.error('Failed to load admin dashboard data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +177,305 @@ export function DashboardPage() {
     );
   }
 
+  // Admin Dashboard
+  if (isAdmin) {
+    return (
+      <div className="space-y-6">
+        {/* Welcome Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-white font-bold">
+            {getGreeting()}, {user?.name || 'Admin'}!
+          </h1>
+          <p className="text-white font-bold mt-2">
+            Admin Dashboard for {format(new Date(), 'EEEE, MMMM d')}
+          </p>
+        </div>
+
+        {/* Admin Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Patients Completing Therapy */}
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white font-bold mb-1">Completing Therapy</p>
+                <p className="text-3xl font-bold text-white font-bold">{adminStats.completingTherapyPatients.length}</p>
+                <div className="flex items-center mt-2">
+                  <CheckCircle className="h-4 w-4 text-blue-500 mr-1" />
+                  <span className="text-sm text-white font-bold">10-14 weeks post-op</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-full bg-blue-100">
+                <Stethoscope className="h-8 w-8 text-blue-600" />
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* New Patients */}
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white font-bold mb-1">New Patients</p>
+                <p className="text-3xl font-bold text-white font-bold">{adminStats.newPatients.length}</p>
+                <div className="flex items-center mt-2">
+                  <UserPlus className="h-4 w-4 text-green-500 mr-1" />
+                  <span className="text-sm text-white font-bold">Last 7 days</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-full bg-green-100">
+                <UserPlus className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Active Patients */}
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white font-bold mb-1">Active Patients</p>
+                <p className="text-3xl font-bold text-white font-bold">{adminStats.activePatients.length}</p>
+                <div className="flex items-center mt-2">
+                  <Users className="h-4 w-4 text-orange-500 mr-1" />
+                  <span className="text-sm text-white font-bold">In treatment</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-full bg-orange-100">
+                <Users className="h-8 w-8 text-orange-600" />
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Today's Appointments & Events */}
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white font-bold mb-1">Today's Events</p>
+                <p className="text-3xl font-bold text-white font-bold">{adminStats.todayAllEvents.length}</p>
+                <div className="flex items-center mt-2">
+                  <Calendar className="h-4 w-4 text-purple-500 mr-1" />
+                  <span className="text-sm text-white font-bold">All patients</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-full bg-purple-100">
+                <Calendar className="h-8 w-8 text-purple-600" />
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* New Patients Details */}
+          <GlassCard>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white font-bold">New Patients (Last 7 Days)</h2>
+              <Link to="/patients" className="text-blue-600 hover:text-blue-700 flex items-center">
+                View all <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+
+            {adminStats.newPatients.length > 0 ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {adminStats.newPatients.map((patient) => (
+                  <div
+                    key={patient.id}
+                    className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                  >
+                    <UserPlus className="h-5 w-5 text-green-500 mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white font-bold truncate">{patient.name}</p>
+                      <p className="text-sm text-white font-bold">
+                        Added {format(new Date(patient.createdAt), 'MMM d, yyyy')}
+                      </p>
+                      {patient.surgeryDate && (
+                        <p className="text-xs text-white font-bold mt-1">
+                          Surgery: {format(new Date(patient.surgeryDate), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-white font-bold">
+                <UserPlus className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
+                <p>No new patients in the last 7 days</p>
+              </div>
+            )}
+          </GlassCard>
+
+          {/* Weekly Highlights */}
+          <GlassCard className="relative overflow-hidden">
+            {/* Glassmorphic gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white font-bold flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-yellow-400" />
+                  Weekly Highlights
+                </h2>
+                <span className="text-xs text-white font-bold bg-white/20 px-3 py-1 rounded-full">
+                  {format(new Date(), 'MMM d')} - {format(subDays(new Date(), 7), 'MMM d')}
+                </span>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* Total Active Patients */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-400/30">
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <Users className="h-5 w-5 text-blue-400" />
+                      <span className="text-2xl font-bold text-white">{adminStats.activePatients.length}</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">Active Patients</p>
+                    <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600" style={{ width: '100%' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* New This Week */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-400/30">
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <UserPlus className="h-5 w-5 text-green-400" />
+                      <span className="text-2xl font-bold text-white">{adminStats.newPatients.length}</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">New Patients</p>
+                    <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-green-400 to-green-600" style={{ width: `${Math.min((adminStats.newPatients.length / 5) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Completing Soon */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-400/30">
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <Stethoscope className="h-5 w-5 text-purple-400" />
+                      <span className="text-2xl font-bold text-white">{adminStats.completingTherapyPatients.length}</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">Completing Therapy</p>
+                    <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-400 to-purple-600" style={{ width: `${Math.min((adminStats.completingTherapyPatients.length / 3) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Today's Events */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-400/30">
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <Calendar className="h-5 w-5 text-orange-400" />
+                      <span className="text-2xl font-bold text-white">{adminStats.todayAllEvents.length}</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">Today's Events</p>
+                    <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: `${Math.min((adminStats.todayAllEvents.length / 10) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Achievement Badges */}
+              <div className="space-y-2">
+                <p className="text-xs text-white font-bold mb-3">Weekly Achievements</p>
+
+                {adminStats.newPatients.length > 0 && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-400/20">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-white">New Patient Onboarding</p>
+                      <p className="text-xs text-white font-bold">Added {adminStats.newPatients.length} new {adminStats.newPatients.length === 1 ? 'patient' : 'patients'} this week</p>
+                    </div>
+                  </div>
+                )}
+
+                {adminStats.completingTherapyPatients.length > 0 && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-400/20">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-white">Recovery Progress</p>
+                      <p className="text-xs text-white font-bold">{adminStats.completingTherapyPatients.length} {adminStats.completingTherapyPatients.length === 1 ? 'patient' : 'patients'} nearing completion</p>
+                    </div>
+                  </div>
+                )}
+
+                {adminStats.activePatients.length >= 10 && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-400/20">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-white">Full Caseload</p>
+                      <p className="text-xs text-white font-bold">Managing {adminStats.activePatients.length} active patients</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Active Patients with Metrics */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white font-bold">Active Patients</h2>
+            <Link to="/patients" className="text-blue-600 hover:text-blue-700 flex items-center">
+              Manage <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+
+          {adminStats.activePatients.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+              {adminStats.activePatients.map((patient) => {
+                const weeksPostOp = patient.surgeryDate
+                  ? differenceInWeeks(new Date(), new Date(patient.surgeryDate))
+                  : null;
+                return (
+                  <div
+                    key={patient.id}
+                    className="p-4 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white font-bold truncate">{patient.name}</p>
+                        {weeksPostOp !== null && (
+                          <p className="text-sm text-white font-bold mt-1">Week {weeksPostOp} post-op</p>
+                        )}
+                        {patient.email && (
+                          <p className="text-xs text-white font-bold mt-1 truncate">{patient.email}</p>
+                        )}
+                        {patient.phone && (
+                          <p className="text-xs text-white font-bold mt-1">{patient.phone}</p>
+                        )}
+                      </div>
+                      <Users className="h-5 w-5 text-orange-500" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-white font-bold">
+              <Users className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
+              <p>No active patients</p>
+              <Link to="/patients" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
+                Add patient →
+              </Link>
+            </div>
+          )}
+        </GlassCard>
+      </div>
+    );
+  }
+
+  // Patient Dashboard
   return (
     <div className="space-y-6">
       {/* Welcome Header */}

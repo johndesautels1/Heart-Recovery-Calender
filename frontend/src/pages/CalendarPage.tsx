@@ -129,12 +129,12 @@ export function CalendarPage() {
       console.log('[CalendarPage] Loading data for userId:', userId, 'selectedPatient:', selectedPatient);
 
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
-        api.getCalendars(),
-        api.getEvents(),
+        api.getCalendars(userId),
+        api.getEvents(userId),
         api.getMeals({ startDate, endDate, userId }),
         api.getMedications(false, userId),
         api.getSleepLogs({ startDate, endDate, userId }),
-        api.getVitals({ startDate, endDate }),
+        api.getVitals({ startDate, endDate, userId }),
       ]);
 
       setCalendars(calendarsData);
@@ -974,157 +974,160 @@ See browser console for full configuration details.
     : `${user?.name}'s Calendar`;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-yellow-400">{calendarOwnerDisplay}</h1>
+    <div className="space-y-3">
+      {/* Calendar Title Line */}
+      <div className="flex items-center gap-2">
+        <h1 className="text-xs font-bold text-yellow-400 whitespace-nowrap">{calendarOwnerDisplay}</h1>
 
-          {/* Patient Selector - Only show for admin/therapist */}
-          {(user?.role === 'admin' || user?.role === 'therapist') && patients.length > 0 && (
-            <Select
-              value={selectedPatient?.id?.toString() || 'my-calendar'}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'my-calendar') {
-                  setSelectedPatient(null);
-                } else {
-                  const patient = patients.find(p => p.id.toString() === value);
-                  if (patient) setSelectedPatient(patient);
-                }
-              }}
-              className="w-64"
-            >
-              <option value="my-calendar">My Calendar</option>
-              <optgroup label="Patients">
-                {patients.map(patient => (
-                  <option key={patient.id} value={patient.id.toString()}>
-                    {patient.name}
-                  </option>
-                ))}
-              </optgroup>
-            </Select>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-3">
+        {/* Patient Selector - Only show for admin/therapist */}
+        {(user?.role === 'admin' || user?.role === 'therapist') && patients.length > 0 && (
+          <select
+            value={selectedPatient?.id?.toString() || 'my-calendar'}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'my-calendar') {
+                setSelectedPatient(null);
+              } else {
+                const patient = patients.find(p => p.id.toString() === value);
+                if (patient) setSelectedPatient(patient);
+              }
+            }}
+            className="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 cursor-pointer"
+          >
+            <option value="my-calendar">My Calendar</option>
+            <optgroup label="Patients">
+              {patients.map(patient => (
+                <option key={patient.id} value={patient.id.toString()}>
+                  {patient.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        )}
+      </div>
+
+      {/* Buttons Line */}
+      <div className="flex gap-2 items-center overflow-x-auto">
           <Button
+            size="sm"
             variant="glass"
             onClick={() => setIsCalendarModalOpen(true)}
+            className="text-white whitespace-nowrap"
           >
-            <CalendarIcon className="h-5 w-5 mr-2" />
+            <CalendarIcon className="h-4 w-4 mr-1" />
             Manage My Calendars
           </Button>
           <Button
+            size="sm"
             onClick={() => {
               reset({ calendarId: calendars[0]?.id, reminderMinutes: 30 });
               setEditingEvent(null);
               setIsEventModalOpen(true);
             }}
+            className="text-white whitespace-nowrap"
           >
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-4 w-4 mr-1" />
             Add Event
           </Button>
           <Button
+            size="sm"
             variant="glass"
             onClick={handleDeleteTodayEvents}
-            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500"
+            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500 text-white whitespace-nowrap"
           >
-            <Trash2 className="h-5 w-5 mr-2" />
+            <Trash2 className="h-4 w-4 mr-1" />
             Delete Today
           </Button>
           <Button
+            size="sm"
             variant="glass"
             onClick={handleDeleteHistoricEvents}
-            className="bg-red-500/20 hover:bg-red-500/30 border border-red-500"
+            className="bg-red-500/20 hover:bg-red-500/30 border border-red-500 text-white whitespace-nowrap"
           >
-            <AlertTriangle className="h-5 w-5 mr-2" />
+            <AlertTriangle className="h-4 w-4 mr-1" />
             Delete Historic
           </Button>
-        </div>
-      </div>
 
-      {/* Export & Print Section */}
-      <div className="flex items-center justify-end gap-2 -mt-2">
-        <span className="text-sm font-semibold text-cyan-400 mr-2">Export & Share:</span>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleExportToGoogle}
-          className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400"
-          title="Export to Google Calendar"
-        >
-          <Download className="h-4 w-4 mr-1" />
-          Google
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleExportToApple}
-          className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400"
-          title="Export to Apple Calendar"
-        >
-          <Download className="h-4 w-4 mr-1" />
-          Apple
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleExportToCalendly}
-          className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400"
-          title="Export for Calendly"
-        >
-          <Share2 className="h-4 w-4 mr-1" />
-          Calendly
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handlePrintCalendar}
-          className="bg-green-500/20 hover:bg-green-500/30 border border-green-400"
-          title="Print Calendar"
-        >
-          <Printer className="h-4 w-4 mr-1" />
-          Print
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleBackupAsJSON}
-          className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400"
-          title="Backup as JSON"
-        >
-          <FileJson className="h-4 w-4 mr-1" />
-          Backup
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleExportFullJSON}
-          className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400"
-          title="Export Full Calendar Data as JSON"
-        >
-          <FileJson className="h-4 w-4 mr-1" />
-          Export JSON
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleShareQRCode}
-          className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400"
-          title="Share via QR Code"
-        >
-          <QrCode className="h-4 w-4 mr-1" />
-          QR Code
-        </Button>
-        <Button
-          size="sm"
-          variant="glass"
-          onClick={handleShowIntegrationInfo}
-          className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400"
-          title="Integration Setup Info"
-        >
-          🔧 API Setup
-        </Button>
-      </div>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleExportToGoogle}
+            className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400 text-white whitespace-nowrap"
+            title="Export to Google Calendar"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Google
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleExportToApple}
+            className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400 text-white whitespace-nowrap"
+            title="Export to Apple Calendar"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Apple
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleExportToCalendly}
+            className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400 text-white whitespace-nowrap"
+            title="Export for Calendly"
+          >
+            <Share2 className="h-4 w-4 mr-1" />
+            Calendly
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handlePrintCalendar}
+            className="bg-green-500/20 hover:bg-green-500/30 border border-green-400 text-white whitespace-nowrap"
+            title="Print Calendar"
+          >
+            <Printer className="h-4 w-4 mr-1" />
+            Print
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleBackupAsJSON}
+            className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400 text-white whitespace-nowrap"
+            title="Backup as JSON"
+          >
+            <FileJson className="h-4 w-4 mr-1" />
+            Backup
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleExportFullJSON}
+            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400 text-white whitespace-nowrap"
+            title="Export Full Calendar Data as JSON"
+          >
+            <FileJson className="h-4 w-4 mr-1" />
+            Export JSON
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleShareQRCode}
+            className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400 text-white whitespace-nowrap"
+            title="Share via QR Code"
+          >
+            <QrCode className="h-4 w-4 mr-1" />
+            QR Code
+          </Button>
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={handleShowIntegrationInfo}
+            className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400 text-white whitespace-nowrap"
+            title="Integration Setup Info"
+          >
+            🔧 API Setup
+          </Button>
+        </div>
 
       <GlassCard className="p-6">
         <style>
