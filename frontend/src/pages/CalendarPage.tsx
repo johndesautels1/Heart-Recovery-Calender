@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   exportToGoogleCalendar,
   exportToAppleCalendar,
@@ -42,6 +43,7 @@ type EventFormData = z.infer<typeof eventSchema>;
 
 export function CalendarPage() {
   const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
+  const { user } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -949,10 +951,17 @@ See browser console for full configuration details.
     ...generateMedicationEvents()
   ];
 
+  // Determine whose calendar is being viewed
+  const calendarOwnerDisplay = isViewingAsTherapist && selectedPatient
+    ? `${selectedPatient.name}'s Calendar`
+    : user?.role === 'admin' || user?.role === 'therapist'
+    ? `${user?.role === 'admin' ? 'Admin' : 'Therapist'} ${user?.name}'s Calendar`
+    : `${user?.name}'s Calendar`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-green-500">Calendar</h1>
+        <h1 className="text-3xl font-bold text-green-500">{calendarOwnerDisplay}</h1>
         <div className="flex flex-wrap gap-3">
           <Button
             variant="glass"
