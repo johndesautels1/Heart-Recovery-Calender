@@ -67,20 +67,20 @@ export function Navbar() {
   };
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/calendar', label: 'Calendar', icon: Calendar },
-    { path: '/medications', label: 'Medications', icon: Pill },
+    { path: '/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/exercises', label: 'Exercise & Activities', icon: Dumbbell },
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
+    { path: '/medications', label: 'Medications', icon: Pill },
     { path: '/sleep', label: 'Sleep Journal', icon: Moon },
-    { path: '/exercises', label: 'Exercise & Activities', icon: Dumbbell },
   ];
 
-  // Add My Patients tab for therapists/admins or My Providers tab for patients
+  // Add My Patients tab for therapists/admins or My Providers tab for patients at position 3
   if (user?.role === 'therapist' || user?.role === 'admin') {
-    navItems.push({ path: '/patients', label: 'My Patients', icon: Stethoscope });
+    navItems.splice(2, 0, { path: '/patients', label: 'My Patients', icon: Stethoscope });
   } else if (user?.role === 'patient') {
-    navItems.push({ path: '/my-providers', label: 'My Providers', icon: UserCircle2 });
+    navItems.splice(2, 0, { path: '/my-providers', label: 'My Providers', icon: UserCircle2 });
   }
 
   const isActive = (path: string) => location.pathname === path;
