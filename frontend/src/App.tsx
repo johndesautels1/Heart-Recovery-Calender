@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ViewProvider } from './contexts/ViewContext';
+import { PatientSelectionProvider } from './contexts/PatientSelectionContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import {
@@ -17,6 +18,7 @@ import {
   AnalyticsPage,
   ProfilePage,
   PatientsPage,
+  MyProvidersPage,
   PatientCalendarView,
   ExercisesPage,
   EventTemplatesPage,
@@ -37,7 +39,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ViewProvider>
-          <Router>
+          <PatientSelectionProvider>
+            <Router>
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
@@ -61,6 +64,7 @@ function App() {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/my-providers" element={<MyProvidersPage />} />
                 <Route path="/patients/:patientId/calendar" element={<PatientCalendarView />} />
                 <Route path="/exercises" element={<ExercisesPage />} />
                 <Route path="/event-templates" element={<EventTemplatesPage />} />
@@ -70,7 +74,8 @@ function App() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
-          </Router>
+            </Router>
+          </PatientSelectionProvider>
         </ViewProvider>
       </AuthProvider>
     </QueryClientProvider>

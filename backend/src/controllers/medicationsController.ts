@@ -43,7 +43,8 @@ export const addMedication = async (req: Request, res: Response) => {
     console.log('[ADD_MEDICATION] User ID:', req.user?.id);
     console.log('[ADD_MEDICATION] Request body:', JSON.stringify(req.body, null, 2));
 
-    const userId = req.user?.id;
+    // Use userId from body if provided (for therapists adding for patients), otherwise use authenticated user's ID
+    const userId = req.body.userId || req.user?.id;
 
     if (!userId) {
       console.error('[ADD_MEDICATION] No user ID found in request');
@@ -52,6 +53,8 @@ export const addMedication = async (req: Request, res: Response) => {
 
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
+    // Remove userId from sanitizedData to avoid duplication
+    delete sanitizedData.userId;
 
     // Convert empty strings to null for date fields
     if (sanitizedData.endDate === '') sanitizedData.endDate = null;

@@ -289,6 +289,7 @@ export interface FoodStats {
 export interface Patient {
   id: number;
   therapistId: number;
+  userId?: number;  // Link to patient's user account
   name: string;
   email?: string;
   phone?: string;

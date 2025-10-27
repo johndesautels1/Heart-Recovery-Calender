@@ -180,10 +180,11 @@ class ApiService {
   }
 
   // ==================== MEAL ENDPOINTS ====================
-  async getMeals(filters?: { startDate?: string; endDate?: string }): Promise<MealEntry[]> {
+  async getMeals(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<MealEntry[]> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
 
     const response = await this.api.get<ApiResponse<MealEntry[]>>(`meals?${params.toString()}`);
     return response.data.data;
@@ -243,9 +244,10 @@ class ApiService {
   }
 
   // ==================== MEDICATION ENDPOINTS ====================
-  async getMedications(activeOnly: boolean = false): Promise<Medication[]> {
+  async getMedications(activeOnly: boolean = false, userId?: number): Promise<Medication[]> {
     const params = new URLSearchParams();
     if (activeOnly) params.append('active', 'true');
+    if (userId) params.append('userId', userId.toString());
 
     const response = await this.api.get<ApiResponse<Medication[]>>(`medications?${params.toString()}`);
     return response.data.data;
@@ -275,12 +277,13 @@ class ApiService {
     return response.data;
   }
 
-  async getMedicationLogs(params?: { startDate?: string; endDate?: string; medicationId?: number; status?: string }): Promise<MedicationLog[]> {
+  async getMedicationLogs(params?: { startDate?: string; endDate?: string; medicationId?: number; status?: string; userId?: number }): Promise<MedicationLog[]> {
     const searchParams = new URLSearchParams();
     if (params?.startDate) searchParams.append('startDate', params.startDate);
     if (params?.endDate) searchParams.append('endDate', params.endDate);
     if (params?.medicationId) searchParams.append('medicationId', params.medicationId.toString());
     if (params?.status) searchParams.append('status', params.status);
+    if (params?.userId) searchParams.append('userId', params.userId.toString());
 
     const response = await this.api.get<ApiResponse<MedicationLog[]>>(`medications/logs?${searchParams.toString()}`);
     return response.data.data;
@@ -433,11 +436,12 @@ class ApiService {
   }
 
   // ==================== SLEEP LOGS ENDPOINTS ====================
-  async getSleepLogs(filters?: { startDate?: string; endDate?: string; date?: string }): Promise<SleepLog[]> {
+  async getSleepLogs(filters?: { startDate?: string; endDate?: string; date?: string; userId?: number }): Promise<SleepLog[]> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('start', filters.startDate);
     if (filters?.endDate) params.append('end', filters.endDate);
     if (filters?.date) params.append('date', filters.date);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
 
     const response = await this.api.get<ApiResponse<SleepLog[]>>(`sleep-logs?${params.toString()}`);
     return response.data.data;
@@ -467,10 +471,11 @@ class ApiService {
     await this.api.delete(`sleep-logs/${id}`);
   }
 
-  async getSleepStats(startDate?: string, endDate?: string): Promise<SleepStats> {
+  async getSleepStats(startDate?: string, endDate?: string, userId?: number): Promise<SleepStats> {
     const params = new URLSearchParams();
     if (startDate) params.append('start', startDate);
     if (endDate) params.append('end', endDate);
+    if (userId) params.append('userId', userId.toString());
 
     const response = await this.api.get<SleepStats>(`sleep-logs/stats?${params.toString()}`);
     return response.data;

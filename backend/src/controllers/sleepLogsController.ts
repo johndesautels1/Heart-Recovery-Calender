@@ -30,10 +30,13 @@ export const getSleepLogs = async (req: Request, res: Response) => {
 
 export const addSleepLog = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    // Use userId from body if provided (for therapists adding for patients), otherwise use authenticated user's ID
+    const userId = req.body.userId || req.user?.id;
+    const { userId: _, ...bodyWithoutUserId } = req.body; // Remove userId from body to avoid duplication
+
     const sleepLogData = {
       userId,
-      ...req.body
+      ...bodyWithoutUserId
     };
 
     const sleepLog = await SleepLog.create(sleepLogData);

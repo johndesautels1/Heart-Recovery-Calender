@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import Patient from '../models/Patient';
+import User from '../models/User';
+import bcrypt from 'bcrypt';
 
 // GET /api/patients - Get all patients for the logged-in therapist
 export const getPatients = async (req: Request, res: Response) => {
@@ -40,6 +42,12 @@ export const addPatient = async (req: Request, res: Response) => {
 
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
+    const createUserAccount = sanitizedData.createUserAccount;
+    const password = sanitizedData.password;
+
+    // Remove fields that shouldn't be in patient data
+    delete sanitizedData.createUserAccount;
+    delete sanitizedData.password;
 
     if (sanitizedData.email === '') sanitizedData.email = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
@@ -48,8 +56,35 @@ export const addPatient = async (req: Request, res: Response) => {
     if (sanitizedData.surgeryDate === '') sanitizedData.surgeryDate = null;
     if (sanitizedData.notes === '') sanitizedData.notes = null;
 
+    let userId = null;
+
+    // If therapist wants to create a user account for this patient
+    if (createUserAccount && password && sanitizedData.email) {
+      // Check if user already exists
+      const existingUser = await User.findOne({ where: { email: sanitizedData.email } });
+
+      if (existingUser) {
+        return res.status(400).json({ error: 'A user with this email already exists' });
+      }
+
+      // Create user account
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await User.create({
+        email: sanitizedData.email,
+        password: hashedPassword,
+        name: sanitizedData.name,
+        phoneNumber: sanitizedData.phone || undefined,
+        role: 'patient',
+        timezone: 'America/New_York'
+      });
+
+      userId = user.id;
+      console.log(`[ADD_PATIENT] Created user account ${user.id} for patient ${sanitizedData.name}`);
+    }
+
     const patientData = {
       therapistId,
+      userId,
       ...sanitizedData,
     };
 

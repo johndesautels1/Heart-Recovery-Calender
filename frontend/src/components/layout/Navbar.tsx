@@ -78,9 +78,11 @@ export function Navbar() {
     { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
-  // Add Admin/Provider portal if user is a therapist or admin
+  // Add My Patients tab for therapists/admins or My Providers tab for patients
   if (user?.role === 'therapist' || user?.role === 'admin') {
-    navItems.push({ path: '/patients', label: 'Admin/Provider', icon: Stethoscope });
+    navItems.push({ path: '/patients', label: 'My Patients', icon: Stethoscope });
+  } else if (user?.role === 'patient') {
+    navItems.push({ path: '/my-providers', label: 'My Providers', icon: UserCircle2 });
   }
 
   const isActive = (path: string) => location.pathname === path;
@@ -122,18 +124,32 @@ export function Navbar() {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-2">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
-              style={{
-                color: 'var(--accent)',
-                backgroundColor: 'rgba(96, 165, 250, 0.1)',
-              }}
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+            {/* Theme Toggle Switch */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={toggleTheme}
+                className="relative inline-flex items-center h-6 rounded-full w-12 transition-all duration-300 hover:scale-105"
+                style={{
+                  background: isDarkMode
+                    ? 'linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%)'
+                    : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                  boxShadow: isDarkMode
+                    ? '0 2px 8px rgba(124, 58, 237, 0.4)'
+                    : '0 2px 8px rgba(251, 191, 36, 0.4)',
+                }}
+                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                <span
+                  className="inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-300 flex items-center justify-center"
+                  style={{
+                    transform: isDarkMode ? 'translateX(2px)' : 'translateX(26px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  {isDarkMode ? <Moon className="h-3 w-3 text-blue-900" /> : <Sun className="h-3 w-3 text-amber-500" />}
+                </span>
+              </button>
+            </div>
 
             {/* View Toggle - Hidden for now to simplify UI */}
             {/* {(user?.role === 'therapist' || user?.role === 'admin') && (
@@ -221,18 +237,32 @@ export function Navbar() {
               );
             })}
 
-            {/* Theme Toggle for Mobile */}
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200"
-              style={{
-                color: 'var(--accent)',
-                backgroundColor: 'rgba(96, 165, 250, 0.1)',
-              }}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-            </button>
+            {/* Theme Toggle Switch for Mobile */}
+            <div className="w-full flex items-center justify-between px-4 py-3">
+              <span style={{ color: 'var(--ink)' }}>Theme</span>
+              <button
+                onClick={toggleTheme}
+                className="relative inline-flex items-center h-8 rounded-full w-16 transition-all duration-300"
+                style={{
+                  background: isDarkMode
+                    ? 'linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%)'
+                    : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                  boxShadow: isDarkMode
+                    ? '0 2px 8px rgba(124, 58, 237, 0.4)'
+                    : '0 2px 8px rgba(251, 191, 36, 0.4)',
+                }}
+              >
+                <span
+                  className="inline-block h-6 w-6 transform rounded-full bg-white transition-all duration-300 flex items-center justify-center"
+                  style={{
+                    transform: isDarkMode ? 'translateX(4px)' : 'translateX(36px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  {isDarkMode ? <Moon className="h-4 w-4 text-blue-900" /> : <Sun className="h-4 w-4 text-amber-500" />}
+                </span>
+              </button>
+            </div>
 
             {/* View Toggle for Mobile - Hidden for now to simplify UI */}
             {/* {(user?.role === 'therapist' || user?.role === 'admin') && (

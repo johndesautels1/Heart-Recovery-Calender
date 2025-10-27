@@ -4,6 +4,7 @@ import sequelize from './database';
 interface PatientAttributes {
   id: number;
   therapistId: number;
+  userId?: number;  // Link to the patient's user account
   name: string;
   email?: string;
   phone?: string;
@@ -21,6 +22,7 @@ interface PatientCreationAttributes extends Optional<PatientAttributes, 'id' | '
 class Patient extends Model<PatientAttributes, PatientCreationAttributes> implements PatientAttributes {
   public id!: number;
   public therapistId!: number;
+  public userId?: number;
   public name!: string;
   public email?: string;
   public phone?: string;
@@ -47,6 +49,15 @@ class Patient extends Model<PatientAttributes, PatientCreationAttributes> implem
             model: 'users',
             key: 'id',
           },
+        },
+        userId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'users',
+            key: 'id',
+          },
+          comment: 'Link to the patient user account for their data',
         },
         name: {
           type: DataTypes.STRING(255),
@@ -93,6 +104,7 @@ class Patient extends Model<PatientAttributes, PatientCreationAttributes> implem
 
   static associate(models: any) {
     Patient.belongsTo(models.User, { foreignKey: 'therapistId', as: 'therapist' });
+    Patient.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
   }
 }
 

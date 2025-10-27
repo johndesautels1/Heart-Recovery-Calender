@@ -10,7 +10,8 @@ import {
   Trash2,
   BarChart3,
   Trophy,
-  Award
+  Award,
+  User
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -20,6 +21,8 @@ import api from '../services/api';
 import { SleepLog, CreateSleepLogInput, SleepStats } from '../types';
 import toast from 'react-hot-toast';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from 'date-fns';
+import { useAuth } from '../contexts/AuthContext';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 
 const sleepSchema = z.object({
   date: z.string().min(1, 'Date is required'),
@@ -33,6 +36,8 @@ const sleepSchema = z.object({
 type SleepFormData = z.infer<typeof sleepSchema>;
 
 export function SleepPage() {
+  const { user } = useAuth();
+  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [stats, setStats] = useState<SleepStats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,7 +61,7 @@ export function SleepPage() {
   useEffect(() => {
     loadSleepLogs();
     loadStats();
-  }, [dateRange]);
+  }, [dateRange, selectedPatient]); // Reload when selected patient changes
 
   const loadSleepLogs = async () => {
     try {
@@ -64,10 +69,12 @@ export function SleepPage() {
       const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
 
       const data = await api.getSleepLogs({
         startDate,
         endDate,
+        userId
       });
 
       setSleepLogs(data);
@@ -84,8 +91,9 @@ export function SleepPage() {
       const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
 
-      const data = await api.getSleepStats(startDate, endDate);
+      const data = await api.getSleepStats(startDate, endDate, userId);
       setStats(data);
     } catch (error) {
       console.error('Failed to load sleep stats:', error);
@@ -101,7 +109,13 @@ export function SleepPage() {
         setSleepLogs(sleepLogs.map(log => log.id === editingLog.id ? updated : log));
         toast.success('Sleep log updated successfully');
       } else {
-        const newLog = await api.createSleepLog(data);
+        const newLogData = {
+          ...data,
+          // Include userId if therapist is adding for a selected patient
+          ...(isViewingAsTherapist && selectedPatient?.userId && { userId: selectedPatient.userId })
+        } as CreateSleepLogInput & { userId?: number };
+
+        const newLog = await api.createSleepLog(newLogData);
         setSleepLogs([newLog, ...sleepLogs]);
         toast.success('Sleep log added successfully');
       }
@@ -287,6 +301,24 @@ export function SleepPage() {
 
   return (
     <div className="space-y-6">
+      {/* Patient Selection Banner */}
+      {isViewingAsTherapist && selectedPatient && (
+        <div className="glass rounded-xl p-4 border-2" style={{ borderColor: 'var(--accent)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+              <div>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing sleep data for:</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
+              </div>
+            </div>
+            <div className="text-sm" style={{ color: 'var(--muted)' }}>
+              Therapist View
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <h1 className="text-3xl font-bold text-white">Sleep Journal</h1>
 

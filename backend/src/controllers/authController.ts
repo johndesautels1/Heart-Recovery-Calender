@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Patient from '../models/Patient';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
@@ -58,6 +59,15 @@ export const register = async (req: Request, res: Response) => {
       timezone: timezone || 'America/New_York',
       role: role || 'patient' // Default to patient if not provided
     });
+
+    // If this is a patient, check if there's a Patient record with this email and link it
+    if (user.role === 'patient') {
+      const patientRecord = await Patient.findOne({ where: { email } });
+      if (patientRecord && !patientRecord.userId) {
+        await patientRecord.update({ userId: user.id });
+        console.log(`[REGISTER] Linked Patient record ${patientRecord.id} to User ${user.id}`);
+      }
+    }
 
     // Generate JWT token
     const token = jwt.sign(

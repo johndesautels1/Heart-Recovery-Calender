@@ -9,6 +9,7 @@ export { FoodDiaryPage } from './FoodDiaryPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ProfilePage } from './ProfilePage';
 export { PatientsPage } from './PatientsPage';
+export { MyProvidersPage } from './MyProvidersPage';
 export { PatientCalendarView } from './PatientCalendarView';
 export { ExercisesPage } from './ExercisesPage';
 export { EventTemplatesPage } from './EventTemplatesPage';

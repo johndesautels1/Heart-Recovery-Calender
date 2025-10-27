@@ -22,6 +22,8 @@ import { z } from 'zod';
 import api from '../services/api';
 import { Medication, CreateMedicationInput, MedicationLog, VitalsSample } from '../types';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import { MedicationAutocomplete } from '../components/MedicationAutocomplete';
 import { SideEffectWarnings } from '../components/SideEffectWarnings';
@@ -44,6 +46,8 @@ const medicationSchema = z.object({
 type MedicationFormData = z.infer<typeof medicationSchema>;
 
 export function MedicationsPage() {
+  const { user } = useAuth();
+  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [activeMeds, setActiveMeds] = useState<Medication[]>([]);
   const [inactiveMeds, setInactiveMeds] = useState<Medication[]>([]);
@@ -80,12 +84,14 @@ export function MedicationsPage() {
 
   useEffect(() => {
     loadMedications();
-  }, []);
+  }, [selectedPatient]); // Reload when selected patient changes
 
   const loadMedications = async () => {
     try {
       setIsLoading(true);
-      const medsData = await api.getMedications();
+      // Use selected patient's userId if viewing as therapist, otherwise use own data
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const medsData = await api.getMedications(false, userId);
       setMedications(medsData);
       setActiveMeds(medsData.filter(m => m.isActive));
       setInactiveMeds(medsData.filter(m => !m.isActive));
@@ -100,7 +106,12 @@ export function MedicationsPage() {
   const loadAdherenceData = async () => {
     try {
       setIsLoading(true);
-      const logsData = await api.getMedicationLogs({ startDate: dateRange.start, endDate: dateRange.end });
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const logsData = await api.getMedicationLogs({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+        userId
+      });
       setMedicationLogs(logsData);
     } catch (error) {
       console.error('Failed to load adherence data:', error);
@@ -131,7 +142,9 @@ export function MedicationsPage() {
         const newMedData = {
           ...data,
           isActive: true,
-        } as CreateMedicationInput;
+          // Include userId if therapist is adding for a selected patient
+          ...(isViewingAsTherapist && selectedPatient?.userId && { userId: selectedPatient.userId })
+        } as CreateMedicationInput & { userId?: number };
 
         console.log('Creating medication with data:', newMedData);
 
@@ -451,6 +464,24 @@ export function MedicationsPage() {
           Add Medication
         </Button>
       </div>
+
+      {/* Patient Selection Banner */}
+      {isViewingAsTherapist && selectedPatient && (
+        <div className="glass rounded-xl p-4 border-2" style={{ borderColor: 'var(--accent)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+              <div>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing medications for:</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
+              </div>
+            </div>
+            <div className="text-sm" style={{ color: 'var(--muted)' }}>
+              Therapist View
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Tab Navigation */}
       <div className="flex space-x-2">

@@ -22,7 +22,8 @@ import {
   ExternalLink,
   TrendingUp,
   Award,
-  Target
+  Target,
+  User
 } from 'lucide-react';
 import {
   PieChart,
@@ -45,6 +46,7 @@ import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { useView } from '../contexts/ViewContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 
 interface Exercise {
   id: number;
@@ -176,6 +178,7 @@ export function ExercisesPage() {
   const [newLogNotes, setNewLogNotes] = useState('');
   const { isTherapistView } = useView();
   const { user } = useAuth();
+  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExerciseInput>();
@@ -647,6 +650,24 @@ export function ExercisesPage() {
           Add Exercise
         </Button>
       </div>
+
+      {/* Patient Selection Banner */}
+      {isViewingAsTherapist && selectedPatient && (
+        <div className="glass rounded-xl p-4 border-2 mb-6" style={{ borderColor: 'var(--accent)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+              <div>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing exercises for:</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
+              </div>
+            </div>
+            <div className="text-sm" style={{ color: 'var(--muted)' }}>
+              Therapist View
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Tabs */}
       <div className="flex space-x-2 mb-6">

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Input } from '../components/ui';
-import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus } from 'lucide-react';
+import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User } from 'lucide-react';
 import { api } from '../services/api';
 import { FoodCategory, FoodItem, FoodStats } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
+import { useAuth } from '../contexts/AuthContext';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 
 export function MealsPage() {
+  const { user } = useAuth();
+  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [categories, setCategories] = useState<FoodCategory[]>([]);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [stats, setStats] = useState<FoodStats | null>(null);
@@ -131,6 +135,24 @@ export function MealsPage() {
           <span>Heart-Healthy Food Guide</span>
         </div>
       </div>
+
+      {/* Patient Selection Banner */}
+      {isViewingAsTherapist && selectedPatient && (
+        <div className="glass rounded-xl p-4 border-2" style={{ borderColor: 'var(--accent)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+              <div>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing meals for:</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
+              </div>
+            </div>
+            <div className="text-sm" style={{ color: 'var(--muted)' }}>
+              Therapist View
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Overview */}
       {stats && (

@@ -39,9 +39,12 @@ export const getMeals = async (req: Request, res: Response) => {
 
 export const addMeal = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
-    const withinSpec = checkCompliance(req.body);
-    const mealData = { userId, ...req.body, withinSpec, timestamp: req.body.timestamp || new Date() };
+    // Use userId from body if provided (for therapists adding for patients), otherwise use authenticated user's ID
+    const userId = req.body.userId || req.user?.id;
+    const { userId: _, ...bodyWithoutUserId } = req.body; // Remove userId from body to avoid duplication
+
+    const withinSpec = checkCompliance(bodyWithoutUserId);
+    const mealData = { userId, ...bodyWithoutUserId, withinSpec, timestamp: bodyWithoutUserId.timestamp || new Date() };
     const meal = await MealEntry.create(mealData);
     res.status(201).json(meal);
   } catch (error) {
