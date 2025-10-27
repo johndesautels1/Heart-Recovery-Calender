@@ -52,6 +52,8 @@ export function CalendarPage() {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
+  const [calendarFormData, setCalendarFormData] = useState({ name: '', type: 'general', color: '#607d8b' });
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
   const [performanceScore, setPerformanceScore] = useState<string>('');
@@ -1498,66 +1500,196 @@ See browser console for full configuration details.
       {/* Calendar Management Modal */}
       <Modal
         isOpen={isCalendarModalOpen}
-        onClose={() => setIsCalendarModalOpen(false)}
-        title="Manage My Calendars"
+        onClose={() => {
+          setIsCalendarModalOpen(false);
+          setEditingCalendar(null);
+          setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+        }}
+        title={editingCalendar ? 'Edit Calendar' : 'Manage My Calendars'}
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3">
-            {calendars.map(calendar => (
-              <div
-                key={calendar.id}
-                className="flex items-center justify-between p-4 bg-white/50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
+          {!editingCalendar ? (
+            <>
+              {/* Calendar List */}
+              <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                {calendars.map(calendar => (
                   <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: calendar.color || '#607d8b' }}
+                    key={calendar.id}
+                    className="flex items-center justify-between p-4 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div
+                        className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: calendar.color || '#607d8b' }}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-yellow-400">{calendar.name}</p>
+                        <p className="text-sm text-yellow-300 capitalize">{calendar.type.replace('_', ' ')}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setEditingCalendar(calendar);
+                          setCalendarFormData({
+                            name: calendar.name,
+                            type: calendar.type,
+                            color: calendar.color || '#607d8b'
+                          });
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={async () => {
+                          if (window.confirm('Delete this calendar and all its events?')) {
+                            try {
+                              await api.deleteCalendar(calendar.id);
+                              setCalendars(calendars.filter(c => c.id !== calendar.id));
+                              setEvents(events.filter(e => e.calendarId !== calendar.id));
+                              toast.success('Calendar deleted');
+                            } catch (error) {
+                              toast.error('Failed to delete calendar');
+                            }
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Calendar Button */}
+              <Button
+                fullWidth
+                variant="glass"
+                onClick={() => {
+                  setEditingCalendar({ id: 0, name: '', type: 'general', color: '#607d8b', userId: user?.id || 0, createdAt: '', updatedAt: '' } as Calendar);
+                  setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                }}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add New Calendar
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* Calendar Edit/Create Form */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                    Calendar Name
+                  </label>
+                  <input
+                    type="text"
+                    value={calendarFormData.name}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
+                    className="glass-input"
+                    placeholder="My Calendar"
                   />
-                  <div>
-                    <p className="font-medium">{calendar.name}</p>
-                    <p className="text-sm text-gray-600">Type: {calendar.type}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                    Calendar Type
+                  </label>
+                  <select
+                    value={calendarFormData.type}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
+                    className="glass-input"
+                  >
+                    <option value="general">General</option>
+                    <option value="vitals">Vitals</option>
+                    <option value="medications">Medications</option>
+                    <option value="meals">Meals</option>
+                    <option value="diet">Food Diary</option>
+                    <option value="sleep">Sleep Journal</option>
+                    <option value="exercise">Exercise & Activities</option>
+                    <option value="appointments">Appointments</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                    Calendar Color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={calendarFormData.color}
+                      onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                      className="h-12 w-20 rounded border-2 border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={calendarFormData.color}
+                      onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                      className="glass-input flex-1"
+                      placeholder="#607d8b"
+                      pattern="^#[0-9A-Fa-f]{6}$"
+                    />
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={async () => {
-                    if (window.confirm('Delete this calendar and all its events?')) {
-                      try {
-                        await api.deleteCalendar(calendar.id);
-                        setCalendars(calendars.filter(c => c.id !== calendar.id));
-                        setEvents(events.filter(e => e.calendarId !== calendar.id));
-                        toast.success('Calendar deleted');
-                      } catch (error) {
-                        toast.error('Failed to delete calendar');
-                      }
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            ))}
-          </div>
 
-          <Button
-            fullWidth
-            variant="glass"
-            onClick={() => {
-              const name = prompt('Calendar name:');
-              if (name) {
-                createCalendar({
-                  name,
-                  type: 'general',
-                  color: '#' + Math.floor(Math.random()*16777215).toString(16),
-                });
-              }
-            }}
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Add Calendar
-          </Button>
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => {
+                      setEditingCalendar(null);
+                      setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="glass"
+                    fullWidth
+                    onClick={async () => {
+                      if (!calendarFormData.name.trim()) {
+                        toast.error('Calendar name is required');
+                        return;
+                      }
+
+                      try {
+                        if (editingCalendar.id === 0) {
+                          // Create new calendar
+                          await createCalendar({
+                            name: calendarFormData.name,
+                            type: calendarFormData.type,
+                            color: calendarFormData.color,
+                          });
+                        } else {
+                          // Update existing calendar
+                          const updated = await api.updateCalendar(editingCalendar.id, {
+                            name: calendarFormData.name,
+                            type: calendarFormData.type,
+                            color: calendarFormData.color,
+                          });
+                          setCalendars(calendars.map(c => c.id === editingCalendar.id ? updated : c));
+                          toast.success('Calendar updated successfully');
+                        }
+                        setEditingCalendar(null);
+                        setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                      } catch (error) {
+                        toast.error('Failed to save calendar');
+                      }
+                    }}
+                  >
+                    {editingCalendar.id === 0 ? 'Create' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 
