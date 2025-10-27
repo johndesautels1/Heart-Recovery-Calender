@@ -9,15 +9,18 @@ interface ExerciseLogAttributes {
   actualSets?: number;
   actualReps?: number;
   actualDuration?: number; // in minutes
+  weight?: number; // NEW: Weight used (for progressive overload tracking)
+  rangeOfMotion?: number; // NEW: Range of motion in degrees or percentage (0-100)
   difficultyRating?: number; // 1-10 scale
   painLevel?: number; // 1-10 scale
+  painLocation?: string; // NEW: Where the pain is located
   performanceScore?: number; // 0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 'id' | 'actualSets' | 'actualReps' | 'actualDuration' | 'difficultyRating' | 'painLevel' | 'performanceScore' | 'notes' | 'createdAt' | 'updatedAt'> {}
+interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 'id' | 'actualSets' | 'actualReps' | 'actualDuration' | 'weight' | 'rangeOfMotion' | 'difficultyRating' | 'painLevel' | 'painLocation' | 'performanceScore' | 'notes' | 'createdAt' | 'updatedAt'> {}
 
 class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttributes> implements ExerciseLogAttributes {
   public id!: number;
@@ -27,8 +30,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public actualSets?: number;
   public actualReps?: number;
   public actualDuration?: number;
+  public weight?: number;
+  public rangeOfMotion?: number;
   public difficultyRating?: number;
   public painLevel?: number;
+  public painLocation?: string;
   public performanceScore?: number;
   public notes?: string;
   public readonly createdAt?: Date;
@@ -75,6 +81,16 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           allowNull: true,
           comment: 'Actual duration in minutes',
         },
+        weight: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          comment: 'Weight used in pounds for progressive overload tracking',
+        },
+        rangeOfMotion: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Range of motion in degrees (0-180) or percentage (0-100)',
+        },
         difficultyRating: {
           type: DataTypes.INTEGER,
           allowNull: true,
@@ -84,6 +100,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: '1-10 scale, 1 = no pain, 10 = severe pain',
+        },
+        painLocation: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+          comment: 'Location of pain/discomfort (e.g., chest, shoulder, knee)',
         },
         performanceScore: {
           type: DataTypes.INTEGER,

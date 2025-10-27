@@ -23,7 +23,8 @@ import {
   TrendingUp,
   Award,
   Target,
-  User
+  User,
+  Timer
 } from 'lucide-react';
 import {
   PieChart,
@@ -44,6 +45,7 @@ import {
 } from 'recharts';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { RestTimer } from '../components/RestTimer';
 import { useView } from '../contexts/ViewContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
@@ -166,6 +168,7 @@ export function ExercisesPage() {
   const [schedulePatientId, setSchedulePatientId] = useState('');
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
+  const [isRestTimerOpen, setIsRestTimerOpen] = useState(false);
   const [mainTab, setMainTab] = useState<MainTab>('exercises');
   const [statsPatientId, setStatsPatientId] = useState<string>('');
   const [statsMonth, setStatsMonth] = useState<number>(new Date().getMonth() + 1);
@@ -893,41 +896,48 @@ export function ExercisesPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-0.5">
+                <div className="flex items-center space-x-0.5 -mr-1">
+                  <button
+                    onClick={() => setIsRestTimerOpen(true)}
+                    className="p-1 rounded-lg hover:bg-orange-500/20 transition-colors"
+                    title="Start rest timer"
+                  >
+                    <Timer className="h-3.5 w-3.5 text-orange-500" />
+                  </button>
                   <button
                     onClick={() => handleDelete(exercise.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                    className="p-1 rounded-lg hover:bg-red-500/20 transition-colors"
                     title="Delete exercise"
                   >
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Trash2 className="h-3.5 w-3.5 text-red-600" />
                   </button>
                   <button
                     onClick={() => handleEdit(exercise)}
-                    className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
+                    className="p-1 rounded-lg hover:bg-white/20 transition-colors"
                     title="Edit exercise"
                   >
-                    <Edit2 className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                    <Edit2 className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
                   </button>
                   <button
                     onClick={() => handleViewInfo(exercise)}
-                    className="p-1.5 rounded-lg hover:bg-blue-500/20 transition-colors"
+                    className="p-1 rounded-lg hover:bg-blue-500/20 transition-colors"
                     title="View exercise details"
                   >
-                    <Info className="h-4 w-4" style={{ color: 'var(--accent)' }} />
+                    <Info className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
                   </button>
                   <button
                     onClick={() => handleScheduleExercise(exercise)}
-                    className="p-1.5 rounded-lg hover:bg-green-500/20 transition-colors"
+                    className="p-1 rounded-lg hover:bg-green-500/20 transition-colors"
                     title="Schedule exercise for patient"
                   >
-                    <Calendar className="h-4 w-4" style={{ color: '#10b981' }} />
+                    <Calendar className="h-3.5 w-3.5" style={{ color: '#10b981' }} />
                   </button>
                   <button
                     onClick={() => navigate('/calendar')}
-                    className="p-1.5 rounded-lg hover:bg-purple-500/20 transition-colors"
+                    className="p-1 rounded-lg hover:bg-purple-500/20 transition-colors"
                     title="Go to calendar"
                   >
-                    <ExternalLink className="h-4 w-4" style={{ color: '#a855f7' }} />
+                    <ExternalLink className="h-3.5 w-3.5" style={{ color: '#a855f7' }} />
                   </button>
                 </div>
               </div>
@@ -992,7 +1002,7 @@ export function ExercisesPage() {
 
               {/* Contraindications Warning */}
               {exercise.contraindications && (
-                <div className="p-2 rounded-lg mb-4" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+                <div className="p-2 rounded-lg mb-4" style={{ backgroundColor: '#ffffff' }}>
                   <div className="flex items-start space-x-2">
                     <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-red-600">
@@ -1007,7 +1017,7 @@ export function ExercisesPage() {
                 onClick={() => handleToggleActive(exercise)}
                 className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
                 style={{
-                  backgroundColor: exercise.isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                  backgroundColor: exercise.isActive ? '#ffffff' : 'rgba(16, 185, 129, 0.1)',
                   color: exercise.isActive ? '#dc2626' : '#10b981',
                 }}
               >
@@ -1644,6 +1654,30 @@ export function ExercisesPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#3b82f6' }}>
+              Form Tips & Technique
+            </label>
+            <textarea
+              className="glass-input"
+              rows={3}
+              placeholder="Tips for proper form and technique..."
+              {...register('formTips')}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#a855f7' }}>
+              Exercise Modifications
+            </label>
+            <textarea
+              className="glass-input"
+              rows={3}
+              placeholder="Modifications for different abilities or limitations..."
+              {...register('modifications')}
+            />
+          </div>
+
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
@@ -1902,12 +1936,12 @@ export function ExercisesPage() {
 
             {/* Contraindications */}
             {viewingExercise.contraindications && (
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="h-5 w-5 mt-0.5" style={{ color: '#ef4444' }} />
                   <div>
                     <h4 className="text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>Contraindications & Warnings</h4>
-                    <p className="text-sm" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                    <p className="text-sm" style={{ color: '#dc2626' }}>
                       {viewingExercise.contraindications}
                     </p>
                   </div>
@@ -1915,33 +1949,91 @@ export function ExercisesPage() {
               </div>
             )}
 
-            {/* Media Links */}
-            {(viewingExercise.videoUrl || viewingExercise.imageUrl) && (
+            {/* Form Tips */}
+            {viewingExercise.formTips && (
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="h-5 w-5 mt-0.5" style={{ color: '#3b82f6' }} />
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1" style={{ color: '#3b82f6' }}>Form Tips & Technique</h4>
+                    <p className="text-sm whitespace-pre-line" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                      {viewingExercise.formTips}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modifications */}
+            {viewingExercise.modifications && (
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}>
+                <div className="flex items-start space-x-2">
+                  <Activity className="h-5 w-5 mt-0.5" style={{ color: '#a855f7' }} />
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1" style={{ color: '#a855f7' }}>Exercise Modifications</h4>
+                    <p className="text-sm whitespace-pre-line" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                      {viewingExercise.modifications}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Embedded Video Player */}
+            {viewingExercise.videoUrl && (
               <div>
-                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Media Resources</h4>
-                <div className="flex flex-wrap gap-3">
-                  {viewingExercise.videoUrl && (
-                    <a
-                      href={viewingExercise.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 px-3 py-2 rounded-lg glass hover:bg-white/10 transition-colors"
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink)' }}>Exercise Video</h4>
+                <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+                  {viewingExercise.videoUrl.includes('youtube.com') || viewingExercise.videoUrl.includes('youtu.be') ? (
+                    <iframe
+                      width="100%"
+                      height="315"
+                      src={viewingExercise.videoUrl.includes('youtube.com')
+                        ? viewingExercise.videoUrl.replace('watch?v=', 'embed/')
+                        : viewingExercise.videoUrl.replace('youtu.be/', 'youtube.com/embed/')}
+                      title="Exercise video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full"
+                    />
+                  ) : (
+                    <video
+                      controls
+                      className="w-full"
+                      style={{ maxHeight: '400px' }}
                     >
-                      <Video className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                      <span className="text-sm" style={{ color: 'var(--accent)' }}>Watch Video</span>
-                    </a>
+                      <source src={viewingExercise.videoUrl} />
+                      Your browser does not support the video tag.
+                    </video>
                   )}
-                  {viewingExercise.imageUrl && (
-                    <a
-                      href={viewingExercise.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 px-3 py-2 rounded-lg glass hover:bg-white/10 transition-colors"
-                    >
-                      <ImageIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />
-                      <span className="text-sm" style={{ color: 'var(--accent)' }}>View Image</span>
-                    </a>
-                  )}
+                </div>
+                <div className="mt-2">
+                  <a
+                    href={viewingExercise.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 text-sm hover:opacity-80 transition-opacity"
+                    style={{ color: 'var(--accent)' }}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Open in new tab</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Image */}
+            {viewingExercise.imageUrl && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink)' }}>Exercise Image</h4>
+                <div className="rounded-lg overflow-hidden">
+                  <img
+                    src={viewingExercise.imageUrl}
+                    alt={viewingExercise.name}
+                    className="w-full h-auto"
+                    style={{ maxHeight: '400px', objectFit: 'contain' }}
+                  />
                 </div>
               </div>
             )}
@@ -1960,6 +2052,14 @@ export function ExercisesPage() {
           </div>
         )}
       </Modal>
+
+      {/* Rest Timer */}
+      {isRestTimerOpen && (
+        <RestTimer
+          onClose={() => setIsRestTimerOpen(false)}
+          defaultSeconds={90}
+        />
+      )}
     </div>
   );
 }

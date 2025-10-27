@@ -14,6 +14,8 @@ interface ExerciseAttributes {
   maxPostOpWeek?: number;
   contraindications?: string;
   instructions?: string;
+  formTips?: string; // NEW: Proper form and technique tips
+  modifications?: string; // NEW: Exercise modifications for different abilities
   recoveryBenefit?: string;
   defaultSets?: number;
   defaultReps?: number;
@@ -24,7 +26,7 @@ interface ExerciseAttributes {
   updatedAt?: Date;
 }
 
-interface ExerciseCreationAttributes extends Optional<ExerciseAttributes, 'id' | 'description' | 'equipmentNeeded' | 'videoUrl' | 'imageUrl' | 'minPostOpWeek' | 'maxPostOpWeek' | 'contraindications' | 'instructions' | 'recoveryBenefit' | 'defaultSets' | 'defaultReps' | 'defaultDuration' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
+interface ExerciseCreationAttributes extends Optional<ExerciseAttributes, 'id' | 'description' | 'equipmentNeeded' | 'videoUrl' | 'imageUrl' | 'minPostOpWeek' | 'maxPostOpWeek' | 'contraindications' | 'instructions' | 'formTips' | 'modifications' | 'recoveryBenefit' | 'defaultSets' | 'defaultReps' | 'defaultDuration' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
 
 class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> implements ExerciseAttributes {
   public id!: number;
@@ -39,6 +41,8 @@ class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> imp
   public maxPostOpWeek?: number;
   public contraindications?: string;
   public instructions?: string;
+  public formTips?: string;
+  public modifications?: string;
   public recoveryBenefit?: string;
   public defaultSets?: number;
   public defaultReps?: number;
@@ -103,6 +107,16 @@ class Exercise extends Model<ExerciseAttributes, ExerciseCreationAttributes> imp
           type: DataTypes.TEXT,
           allowNull: true,
           comment: 'Step-by-step instructions',
+        },
+        formTips: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'Proper form and technique tips',
+        },
+        modifications: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'Exercise modifications for different abilities or limitations',
         },
         recoveryBenefit: {
           type: DataTypes.TEXT,
