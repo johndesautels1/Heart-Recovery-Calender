@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication, SleepLog, VitalsSample } from '../types';
+import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEntry, Medication, SleepLog, VitalsSample, Patient } from '../types';
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
@@ -42,7 +42,7 @@ const eventSchema = z.object({
 type EventFormData = z.infer<typeof eventSchema>;
 
 export function CalendarPage() {
-  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
+  const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const { user } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
@@ -51,6 +51,7 @@ export function CalendarPage() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
   const [performanceScore, setPerformanceScore] = useState<string>('');
@@ -87,6 +88,7 @@ export function CalendarPage() {
 
   useEffect(() => {
     loadCalendarsAndEvents();
+    loadPatients();
   }, []);
 
   // Refresh events when navigating to calendar page
@@ -100,6 +102,18 @@ export function CalendarPage() {
   useEffect(() => {
     loadCalendarsAndEvents();
   }, [selectedPatient]);
+
+  const loadPatients = async () => {
+    // Only load patients if user is admin or therapist
+    if (user?.role === 'admin' || user?.role === 'therapist') {
+      try {
+        const patientsData = await api.getPatients();
+        setPatients(patientsData.data);
+      } catch (error) {
+        console.error('Error loading patients:', error);
+      }
+    }
+  };
 
   const loadCalendarsAndEvents = async () => {
     try {
@@ -961,7 +975,35 @@ See browser console for full configuration details.
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-yellow-400">{calendarOwnerDisplay}</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-yellow-400">{calendarOwnerDisplay}</h1>
+
+          {/* Patient Selector - Only show for admin/therapist */}
+          {(user?.role === 'admin' || user?.role === 'therapist') && patients.length > 0 && (
+            <Select
+              value={selectedPatient?.id?.toString() || 'my-calendar'}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'my-calendar') {
+                  setSelectedPatient(null);
+                } else {
+                  const patient = patients.find(p => p.id.toString() === value);
+                  if (patient) setSelectedPatient(patient);
+                }
+              }}
+              className="w-64"
+            >
+              <option value="my-calendar">My Calendar</option>
+              <optgroup label="Patients">
+                {patients.map(patient => (
+                  <option key={patient.id} value={patient.id.toString()}>
+                    {patient.name}
+                  </option>
+                ))}
+              </optgroup>
+            </Select>
+          )}
+        </div>
         <div className="flex flex-wrap gap-3">
           <Button
             variant="glass"
