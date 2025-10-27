@@ -14,6 +14,7 @@ import { CalendarEvent, Calendar, CreateEventInput, CreateCalendarInput, MealEnt
 import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import {
   exportToGoogleCalendar,
   exportToAppleCalendar,
@@ -40,6 +41,7 @@ const eventSchema = z.object({
 type EventFormData = z.infer<typeof eventSchema>;
 
 export function CalendarPage() {
+  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -92,6 +94,11 @@ export function CalendarPage() {
     }
   }, [location.pathname]);
 
+  // Reload calendar data when patient selection changes
+  useEffect(() => {
+    loadCalendarsAndEvents();
+  }, [selectedPatient]);
+
   const loadCalendarsAndEvents = async () => {
     try {
       setIsLoading(true);
@@ -101,12 +108,15 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
+      // If therapist has selected a patient, load that patient's data
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
         api.getCalendars(),
         api.getEvents(),
-        api.getMeals({ startDate, endDate }),
-        api.getMedications(),
-        api.getSleepLogs({ startDate, endDate }),
+        api.getMeals({ startDate, endDate, userId }),
+        api.getMedications(false, userId),
+        api.getSleepLogs({ startDate, endDate, userId }),
         api.getVitals({ startDate, endDate }),
       ]);
 
