@@ -22,6 +22,7 @@ import {
   CreateSleepLogInput,
   SleepStats,
   MedicationStats,
+  Patient,
 } from '../types';
 
 class ApiService {
@@ -356,9 +357,9 @@ class ApiService {
   }
 
   // ==================== THERAPIST ENDPOINTS (Future) ====================
-  async getPatients(): Promise<User[]> {
-    const response = await this.api.get<ApiResponse<User[]>>('/therapist/patients');
-    return response.data.data;
+  async getPatients(): Promise<{ data: Patient[] }> {
+    const response = await this.api.get<{ data: Patient[] }>('/patients');
+    return response.data;
   }
 
   async getPatientData(patientId: number, dataType: string, startDate?: string, endDate?: string) {
