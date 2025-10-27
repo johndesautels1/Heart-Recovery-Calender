@@ -17,7 +17,8 @@ import {
   UserPlus,
   Users,
   Download,
-  Save
+  Save,
+  Edit
 } from 'lucide-react';
 import { Patient, PostOpWeekResponse } from '../types';
 import { Button } from '../components/ui/Button';
@@ -50,6 +51,15 @@ export function PatientsPage() {
     notes: '',
     createUserAccount: false,
     password: ''
+  });
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [editPatientForm, setEditPatientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    surgeryDate: '',
+    notes: ''
   });
   const navigate = useNavigate();
   const { selectedPatient, setSelectedPatient } = usePatientSelection();
@@ -226,6 +236,56 @@ export function PatientsPage() {
     }
   };
 
+  const handleEditPatient = (patient: Patient) => {
+    setEditingPatient(patient);
+    setEditPatientForm({
+      name: patient.name,
+      email: patient.email || '',
+      phone: patient.phone || '',
+      address: patient.address || '',
+      surgeryDate: patient.surgeryDate || '',
+      notes: patient.notes || ''
+    });
+  };
+
+  const handleUpdatePatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPatient) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/patients/${editingPatient.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editPatientForm),
+      });
+
+      if (!response.ok) throw new Error('Failed to update patient');
+
+      toast.success('Patient updated successfully!');
+      setEditingPatient(null);
+      loadPatients();
+    } catch (error) {
+      console.error('Error updating patient:', error);
+      toast.error('Failed to update patient');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPatient(null);
+    setEditPatientForm({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      surgeryDate: '',
+      notes: ''
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -381,7 +441,7 @@ export function PatientsPage() {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       onClick={() => handleSelectPatient(patient)}
                       variant={selectedPatient?.id === patient.id ? "primary" : "glass"}
@@ -391,18 +451,118 @@ export function PatientsPage() {
                       <span>{selectedPatient?.id === patient.id ? 'Selected' : 'Select'}</span>
                     </Button>
                     <Button
+                      onClick={() => handleEditPatient(patient)}
+                      variant="glass"
+                      size="sm"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span>Edit</span>
+                    </Button>
+                    <Button
                       onClick={() => viewPatientCalendar(patient.id)}
                       variant="glass"
                       size="sm"
                     >
                       <Eye className="h-4 w-4" />
-                      <span>View Calendar</span>
+                      <span>View</span>
                     </Button>
                   </div>
                 </div>
               );
             })
           )}
+        </div>
+      )}
+
+      {/* Edit Patient Modal/Form */}
+      {editingPatient && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-2xl w-full">
+            <div className="glass rounded-xl p-8 border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Edit Patient: {editingPatient.name}</h2>
+              <form onSubmit={handleUpdatePatient} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Patient Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editPatientForm.name}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, name: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="Enter patient's full name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={editPatientForm.email}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, email: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="patient@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    value={editPatientForm.phone}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, phone: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={editPatientForm.address}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, address: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="Street address"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Surgery Date</label>
+                  <input
+                    type="date"
+                    value={editPatientForm.surgeryDate}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, surgeryDate: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Notes</label>
+                  <textarea
+                    value={editPatientForm.notes}
+                    onChange={(e) => setEditPatientForm({ ...editPatientForm, notes: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    rows={3}
+                    placeholder="Additional notes about the patient..."
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <Button type="submit" variant="primary" className="flex-1">
+                    <Save className="h-4 w-4" />
+                    <span>Update Patient</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="glass"
+                    onClick={handleCancelEdit}
+                  >
+                    <span>Cancel</span>
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
 
