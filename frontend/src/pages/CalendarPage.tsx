@@ -994,12 +994,13 @@ See browser console for full configuration details.
                 if (patient) setSelectedPatient(patient);
               }
             }}
-            className="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 cursor-pointer"
+            className="text-xs px-2 py-1 rounded bg-white border border-white/10 cursor-pointer font-bold"
+            style={{ color: '#1e40af' }}
           >
-            <option value="my-calendar">My Calendar</option>
-            <optgroup label="Patients">
+            <option value="my-calendar" style={{ color: '#1e40af', fontWeight: 700 }}>My Calendar</option>
+            <optgroup label="Patients" style={{ color: '#1e40af', fontWeight: 700 }}>
               {patients.map(patient => (
-                <option key={patient.id} value={patient.id.toString()}>
+                <option key={patient.id} value={patient.id.toString()} style={{ color: '#1e40af', fontWeight: 700 }}>
                   {patient.name}
                 </option>
               ))}
