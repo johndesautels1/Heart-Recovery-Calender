@@ -21,7 +21,8 @@ import {
   BarChart3,
   ThumbsUp,
   Star,
-  Zap
+  Zap,
+  X
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -125,6 +126,8 @@ export function DashboardPage() {
     },
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [progressPhotos, setProgressPhotos] = useState<string[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
 
@@ -135,6 +138,18 @@ export function DashboardPage() {
       loadDashboardData();
     }
   }, [isAdmin]);
+
+  // Load progress photos from localStorage on mount
+  useEffect(() => {
+    const savedPhotos = localStorage.getItem('progressPhotos');
+    if (savedPhotos) {
+      try {
+        setProgressPhotos(JSON.parse(savedPhotos));
+      } catch (error) {
+        console.error('Error loading photos:', error);
+      }
+    }
+  }, []);
 
   const loadDashboardData = async () => {
     try {
@@ -379,6 +394,49 @@ export function DashboardPage() {
     stats.latestVitals?.bloodPressureSystolic,
     stats.latestVitals?.bloodPressureDiastolic
   );
+
+  // Handle photo upload
+  const handlePhotoUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      const newPhotos = [...progressPhotos, base64];
+      setProgressPhotos(newPhotos);
+      localStorage.setItem('progressPhotos', JSON.stringify(newPhotos));
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input
+    event.target.value = '';
+  };
+
+  const handleDeletePhoto = (index: number) => {
+    const newPhotos = progressPhotos.filter((_, i) => i !== index);
+    setProgressPhotos(newPhotos);
+    localStorage.setItem('progressPhotos', JSON.stringify(newPhotos));
+  };
 
   if (isLoading) {
     return (
@@ -784,24 +842,59 @@ export function DashboardPage() {
 
               {/* Before/After Photos Upload */}
               <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-400/30">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Camera className="h-5 w-5 text-teal-400" />
                     <h3 className="text-sm font-bold text-teal-400">Patient Progress Photos</h3>
                   </div>
-                  <button className="px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg text-xs text-teal-300 font-bold transition-all">
+                  <button
+                    onClick={handlePhotoUpload}
+                    className="px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg text-xs text-teal-300 font-bold transition-all"
+                  >
                     Upload Photos
                   </button>
                 </div>
                 <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
-                  {/* TODO: Wire to real photo upload functionality */}
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group">
+                  {/* Display uploaded photos */}
+                  {progressPhotos.map((photo, index) => (
+                    <div key={index} className="relative aspect-square bg-white/5 rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group">
+                      <img
+                        src={photo}
+                        alt={`Progress ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => handleDeletePhoto(index)}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Empty slots to add more photos */}
+                  {Array.from({ length: Math.max(0, 6 - progressPhotos.length) }).map((_, i) => (
+                    <div
+                      key={`empty-${i}`}
+                      onClick={handlePhotoUpload}
+                      className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
+                    >
                       <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-teal-300 mt-2">Upload before/after photos to track patient progress visually</p>
+                <p className="text-xs text-teal-300 mt-2">
+                  {progressPhotos.length > 0
+                    ? `${progressPhotos.length} photo${progressPhotos.length > 1 ? 's' : ''} uploaded. Click photos to view, hover to delete.`
+                    : 'Upload before/after photos to track patient progress visually (max 5MB per photo)'
+                  }
+                </p>
               </div>
 
             </div>

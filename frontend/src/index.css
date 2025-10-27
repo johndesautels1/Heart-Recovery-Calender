@@ -107,11 +107,16 @@
     box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3);
   }
 
-  /* Dropdown option styling - cobalt blue text */
+  /* Dropdown styling - cobalt blue text for select and options */
+  select.glass-input {
+    color: #1e40af !important;
+    font-weight: 700 !important;
+  }
+
   .glass-input option {
-    color: #1e40af;
+    color: #1e40af !important;
     background: #ffffff;
-    font-weight: 600;
+    font-weight: 700 !important;
   }
 
   /* Light mode adjustments */
