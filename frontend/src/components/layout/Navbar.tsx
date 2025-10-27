@@ -75,7 +75,6 @@ export function Navbar() {
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
     { path: '/sleep', label: 'Sleep Journal', icon: Moon },
     { path: '/exercises', label: 'Exercise & Activities', icon: Dumbbell },
-    { path: '/analytics', label: 'Analytics', icon: BarChart },
   ];
 
   // Add My Patients tab for therapists/admins or My Providers tab for patients
@@ -98,7 +97,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center gap-3 flex-1 justify-center">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
