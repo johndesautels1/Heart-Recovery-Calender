@@ -979,7 +979,7 @@ See browser console for full configuration details.
     <div className="space-y-3">
       {/* Calendar Title Line */}
       <div className="flex items-center gap-2">
-        <h1 className="text-xs font-bold text-yellow-400 whitespace-nowrap">{calendarOwnerDisplay}</h1>
+        <h1 className="text-xs font-bold whitespace-nowrap" style={{ color: '#ff6600' }}>{calendarOwnerDisplay}</h1>
 
         {/* Patient Selector - Only show for admin/therapist */}
         {(user?.role === 'admin' || user?.role === 'therapist') && patients.length > 0 && (
@@ -1525,8 +1525,8 @@ See browser console for full configuration details.
                         style={{ backgroundColor: calendar.color || '#607d8b' }}
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-yellow-400">{calendar.name}</p>
-                        <p className="text-sm text-yellow-300 capitalize">{calendar.type.replace('_', ' ')}</p>
+                        <p className="font-bold" style={{ color: '#ff6600' }}>{calendar.name}</p>
+                        <p className="text-sm font-bold capitalize" style={{ color: '#ff8533' }}>{calendar.type.replace('_', ' ')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1585,7 +1585,7 @@ See browser console for full configuration details.
               {/* Calendar Edit/Create Form */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
                     Calendar Name
                   </label>
                   <input
@@ -1598,7 +1598,7 @@ See browser console for full configuration details.
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
                     Calendar Type
                   </label>
                   <select
@@ -1618,7 +1618,7 @@ See browser console for full configuration details.
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-yellow-400 mb-2">
+                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
                     Calendar Color
                   </label>
                   <div className="flex items-center gap-3">

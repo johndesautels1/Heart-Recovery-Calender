@@ -92,16 +92,21 @@ export const getExercise = async (req: Request, res: Response) => {
   }
 };
 
-// POST /api/exercises - Create new exercise (therapists only)
+// POST /api/exercises - Create new exercise (therapists and admins only)
 export const createExercise = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const userRole = (req as any).user.role;
 
-    // Only therapists can create exercises
-    if (userRole !== 'therapist') {
-      return res.status(403).json({ error: 'Only therapists can create exercises' });
+    console.log('CREATE EXERCISE - User ID:', userId, 'User Role:', userRole);
+
+    // Only therapists and admins can create exercises
+    if (userRole !== 'therapist' && userRole !== 'admin') {
+      console.log('PERMISSION DENIED - Role:', userRole, 'is not therapist or admin');
+      return res.status(403).json({ error: 'Only therapists and admins can create exercises' });
     }
+
+    console.log('PERMISSION GRANTED - Creating exercise');
 
     const exerciseData = {
       ...req.body,
@@ -124,9 +129,9 @@ export const updateExercise = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userRole = (req as any).user.role;
 
-    // Only therapists can update exercises
-    if (userRole !== 'therapist') {
-      return res.status(403).json({ error: 'Only therapists can update exercises' });
+    // Only therapists and admins can update exercises
+    if (userRole !== 'therapist' && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only therapists and admins can update exercises' });
     }
 
     const exercise = await Exercise.findByPk(id);
@@ -150,9 +155,9 @@ export const deleteExercise = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userRole = (req as any).user.role;
 
-    // Only therapists can delete exercises
-    if (userRole !== 'therapist') {
-      return res.status(403).json({ error: 'Only therapists can delete exercises' });
+    // Only therapists and admins can delete exercises
+    if (userRole !== 'therapist' && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only therapists and admins can delete exercises' });
     }
 
     const exercise = await Exercise.findByPk(id);
@@ -176,9 +181,9 @@ export const toggleActive = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userRole = (req as any).user.role;
 
-    // Only therapists can toggle exercise status
-    if (userRole !== 'therapist') {
-      return res.status(403).json({ error: 'Only therapists can update exercises' });
+    // Only therapists and admins can toggle exercise status
+    if (userRole !== 'therapist' && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only therapists and admins can update exercises' });
     }
 
     const exercise = await Exercise.findByPk(id);

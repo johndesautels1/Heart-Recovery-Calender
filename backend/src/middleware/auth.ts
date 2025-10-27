@@ -8,6 +8,7 @@ declare global {
       user?: {
         id: number;
         email: string;
+        role?: string;
       };
     }
   }
@@ -28,6 +29,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
       id: number;
       email: string;
+      role?: string;
     };
 
     req.user = decoded;
@@ -50,6 +52,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
         id: number;
         email: string;
+        role?: string;
       };
       req.user = decoded;
     } catch (err) {

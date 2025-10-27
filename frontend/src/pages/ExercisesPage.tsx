@@ -178,7 +178,7 @@ export function ExercisesPage() {
   const [newLogNotes, setNewLogNotes] = useState('');
   const { isTherapistView } = useView();
   const { user } = useAuth();
-  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
+  const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExerciseInput>();
@@ -723,7 +723,19 @@ export function ExercisesPage() {
             <select
               className="glass-input flex-1"
               value={selectedPatientId}
-              onChange={(e) => setSelectedPatientId(e.target.value)}
+              onChange={(e) => {
+                const patientId = e.target.value;
+                setSelectedPatientId(patientId);
+                // Update context to sync the "viewing exercises for" banner
+                if (patientId) {
+                  const patient = patients.find(p => p.id === parseInt(patientId));
+                  if (patient) {
+                    setSelectedPatient(patient);
+                  }
+                } else {
+                  setSelectedPatient(null);
+                }
+              }}
             >
               <option value="">No Patient Selected</option>
               {patients.filter(p => p.isActive).map(patient => (
