@@ -69,7 +69,6 @@ export function Navbar() {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/calendar', label: 'Calendar', icon: Calendar },
-    { path: '/vitals', label: 'Vitals', icon: Activity },
     { path: '/medications', label: 'Medications', icon: Pill },
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
