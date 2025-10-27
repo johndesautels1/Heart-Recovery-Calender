@@ -13,7 +13,15 @@ import {
   Clock,
   UserPlus,
   Stethoscope,
-  Users
+  Users,
+  Award,
+  Target,
+  Camera,
+  Bell,
+  BarChart3,
+  ThumbsUp,
+  Star,
+  Zap
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -263,7 +271,7 @@ export function DashboardPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* New Patients Details */}
           <GlassCard>
             <div className="flex items-center justify-between mb-4">
@@ -303,26 +311,26 @@ export function DashboardPage() {
             )}
           </GlassCard>
 
-          {/* Weekly Highlights */}
+          {/* Weekly Highlights - Expanded */}
           <GlassCard className="relative overflow-hidden">
             {/* Glassmorphic gradient background */}
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 pointer-events-none" />
 
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white font-bold flex items-center gap-2">
-                  <TrendingUp className="h-6 w-6 text-yellow-400" />
+                <h2 className="text-2xl font-semibold text-white font-bold flex items-center gap-2">
+                  <TrendingUp className="h-7 w-7 text-yellow-400" />
                   Weekly Highlights
                 </h2>
                 <span className="text-xs text-white font-bold bg-white/20 px-3 py-1 rounded-full">
-                  {format(new Date(), 'MMM d')} - {format(subDays(new Date(), 7), 'MMM d')}
+                  {format(subDays(new Date(), 7), 'MMM d')} - {format(new Date(), 'MMM d')}
                 </span>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              {/* Quick Stats Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {/* Total Active Patients */}
-                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-400/30">
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-400/30 hover:border-blue-400/50 transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-2">
                       <Users className="h-5 w-5 text-blue-400" />
@@ -330,13 +338,13 @@ export function DashboardPage() {
                     </div>
                     <p className="text-xs text-white font-bold">Active Patients</p>
                     <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600" style={{ width: '100%' }} />
+                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 animate-pulse" style={{ width: '100%' }} />
                     </div>
                   </div>
                 </div>
 
                 {/* New This Week */}
-                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-400/30">
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-400/30 hover:border-green-400/50 transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-2">
                       <UserPlus className="h-5 w-5 text-green-400" />
@@ -344,80 +352,251 @@ export function DashboardPage() {
                     </div>
                     <p className="text-xs text-white font-bold">New Patients</p>
                     <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-green-400 to-green-600" style={{ width: `${Math.min((adminStats.newPatients.length / 5) * 100, 100)}%` }} />
+                      <div className="h-full bg-gradient-to-r from-green-400 to-green-600 animate-pulse" style={{ width: `${Math.min((adminStats.newPatients.length / 5) * 100, 100)}%` }} />
                     </div>
                   </div>
                 </div>
 
-                {/* Completing Soon */}
-                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-400/30">
+                {/* Alerts */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-400/30 hover:border-red-400/50 transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-2">
-                      <Stethoscope className="h-5 w-5 text-purple-400" />
-                      <span className="text-2xl font-bold text-white">{adminStats.completingTherapyPatients.length}</span>
+                      <Bell className="h-5 w-5 text-red-400" />
+                      <span className="text-2xl font-bold text-white">3</span>
+                      {/* TODO: Wire to real alerts count */}
                     </div>
-                    <p className="text-xs text-white font-bold">Completing Therapy</p>
+                    <p className="text-xs text-white font-bold">Active Alerts</p>
                     <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-400 to-purple-600" style={{ width: `${Math.min((adminStats.completingTherapyPatients.length / 3) * 100, 100)}%` }} />
+                      <div className="h-full bg-gradient-to-r from-red-400 to-red-600 animate-pulse" style={{ width: '30%' }} />
                     </div>
                   </div>
                 </div>
 
-                {/* Today's Events */}
-                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-400/30">
+                {/* Completion Rate */}
+                <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-400/30 hover:border-cyan-400/50 transition-all">
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-2">
-                      <Calendar className="h-5 w-5 text-orange-400" />
-                      <span className="text-2xl font-bold text-white">{adminStats.todayAllEvents.length}</span>
+                      <CheckCircle className="h-5 w-5 text-cyan-400" />
+                      <span className="text-2xl font-bold text-white">92%</span>
+                      {/* TODO: Wire to real completion rate */}
                     </div>
-                    <p className="text-xs text-white font-bold">Today's Events</p>
+                    <p className="text-xs text-white font-bold">Event Completion</p>
                     <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600" style={{ width: `${Math.min((adminStats.todayAllEvents.length / 10) * 100, 100)}%` }} />
+                      <div className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 animate-pulse" style={{ width: '92%' }} />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Achievement Badges */}
-              <div className="space-y-2">
-                <p className="text-xs text-white font-bold mb-3">Weekly Achievements</p>
-
-                {adminStats.newPatients.length > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-400/20">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
+              {/* Recovery Milestones & Top Performers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                {/* Recovery Milestones */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-400/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Award className="h-5 w-5 text-yellow-400" />
+                    <h3 className="text-sm font-bold text-yellow-400">Recovery Milestones</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {/* TODO: Wire to real milestone data */}
+                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                      <span className="text-white font-bold">Week 4 Milestones</span>
+                      <span className="text-yellow-400 font-bold">5 patients</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-white">New Patient Onboarding</p>
-                      <p className="text-xs text-white font-bold">Added {adminStats.newPatients.length} new {adminStats.newPatients.length === 1 ? 'patient' : 'patients'} this week</p>
+                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                      <span className="text-white font-bold">Weight Goals Achieved</span>
+                      <span className="text-yellow-400 font-bold">3 patients</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                      <span className="text-white font-bold">First Exercise Session</span>
+                      <span className="text-yellow-400 font-bold">7 patients</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                      <span className="text-white font-bold">Medication Independence</span>
+                      <span className="text-yellow-400 font-bold">2 patients</span>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {adminStats.completingTherapyPatients.length > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-400/20">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-purple-400" />
+                {/* Top Performers */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-400/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="h-5 w-5 text-pink-400" />
+                    <h3 className="text-sm font-bold text-pink-400">Top Performers</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {/* TODO: Wire to real performance data */}
+                    <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">Biggest Vitals Improvement</span>
+                        <ThumbsUp className="h-4 w-4 text-pink-400" />
+                      </div>
+                      <p className="text-xs text-pink-300">John D. - BP improved 15%</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-white">Recovery Progress</p>
-                      <p className="text-xs text-white font-bold">{adminStats.completingTherapyPatients.length} {adminStats.completingTherapyPatients.length === 1 ? 'patient' : 'patients'} nearing completion</p>
+                    <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">Perfect Attendance</span>
+                        <CheckCircle className="h-4 w-4 text-pink-400" />
+                      </div>
+                      <p className="text-xs text-pink-300">Sarah M. - 28 days streak</p>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">Best Patient Outcome</span>
+                        <Award className="h-4 w-4 text-pink-400" />
+                      </div>
+                      <p className="text-xs text-pink-300">Mike R. - All goals met</p>
                     </div>
                   </div>
-                )}
-
-                {adminStats.activePatients.length >= 10 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-400/20">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-white">Full Caseload</p>
-                      <p className="text-xs text-white font-bold">Managing {adminStats.activePatients.length} active patients</p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+
+              {/* Clinical Improvements */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-400/30 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity className="h-5 w-5 text-emerald-400" />
+                  <h3 className="text-sm font-bold text-emerald-400">Clinical Improvements</h3>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* TODO: Wire to real clinical data */}
+                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-white">+8.5%</p>
+                    <p className="text-xs text-emerald-300 mt-1">Avg Vitals Improvement</p>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-white">12</p>
+                    <p className="text-xs text-emerald-300 mt-1">Improving Trends</p>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-white">4</p>
+                    <p className="text-xs text-emerald-300 mt-1">Medication Reduced</p>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-white">+22%</p>
+                    <p className="text-xs text-emerald-300 mt-1">Exercise Capacity</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Productivity & Week-over-Week */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                {/* Therapist Productivity */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-400/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="h-5 w-5 text-indigo-400" />
+                    <h3 className="text-sm font-bold text-indigo-400">Productivity Metrics</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {/* TODO: Wire to real productivity data */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">Total Appointments</span>
+                        <span className="text-xl font-bold text-white">47</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-400 to-purple-400" style={{ width: '94%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">Avg Session Time</span>
+                        <span className="text-xl font-bold text-white">38 min</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-400 to-purple-400" style={{ width: '76%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-white font-bold">No-Show Rate</span>
+                        <span className="text-xl font-bold text-white">4.2%</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-green-400 to-emerald-400" style={{ width: '95.8%' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Week-over-Week Scores */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-400/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-5 w-5 text-violet-400" />
+                    <h3 className="text-sm font-bold text-violet-400">Week-over-Week Scores</h3>
+                  </div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {/* TODO: Wire to real patient score data */}
+                    {adminStats.activePatients.slice(0, 5).map((patient, idx) => (
+                      <div key={patient.id} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                        <span className="text-xs text-white font-bold truncate flex-1">{patient.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-violet-300">
+                            {(75 + Math.random() * 20).toFixed(0)}%
+                          </span>
+                          <TrendingUp className="h-3 w-3 text-green-400" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Upcoming Focus Areas */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-400/30 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-5 w-5 text-amber-400" />
+                  <h3 className="text-sm font-bold text-amber-400">Upcoming Focus Areas</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {/* TODO: Wire to real focus area data */}
+                  <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white font-bold">Milestone Check-ins Due</span>
+                      <span className="text-lg font-bold text-amber-400">6</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white font-bold">Upcoming Discharges</span>
+                      <span className="text-lg font-bold text-amber-400">3</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white font-bold">Patients Needing Attention</span>
+                      <span className="text-lg font-bold text-amber-400">2</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white font-bold">High-Priority Appointments</span>
+                      <span className="text-lg font-bold text-amber-400">5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Before/After Photos Upload */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-400/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Camera className="h-5 w-5 text-teal-400" />
+                    <h3 className="text-sm font-bold text-teal-400">Patient Progress Photos</h3>
+                  </div>
+                  <button className="px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg text-xs text-teal-300 font-bold transition-all">
+                    Upload Photos
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
+                  {/* TODO: Wire to real photo upload functionality */}
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group">
+                      <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-teal-300 mt-2">Upload before/after photos to track patient progress visually</p>
+              </div>
+
             </div>
           </GlassCard>
         </div>
