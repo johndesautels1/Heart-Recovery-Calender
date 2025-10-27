@@ -1140,10 +1140,10 @@ See browser console for full configuration details.
               font-size: 0.72em !important;
             }
             .fc-daygrid-event {
-              font-size: 10.8px !important;
+              font-size: 11.8px !important;
             }
             .fc-timegrid-event {
-              font-size: 12px !important;
+              font-size: 13px !important;
             }
           `}
         </style>
