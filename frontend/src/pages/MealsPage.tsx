@@ -796,7 +796,8 @@ export function MealsPage() {
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
                     backdropFilter: 'blur(10px)'
                   }}
-                  labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '14px' }}
+                  itemStyle={{ color: '#10b981', fontWeight: '700', fontSize: '15px' }}
                   cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                 />
                 <Bar dataKey="points" name="Daily Points" radius={[8, 8, 0, 0]} barSize={35} filter="url(#mealBarShadow)">
@@ -819,78 +820,227 @@ export function MealsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 2: Food Group Distribution */}
             <GlassCard>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <PieChartIcon className="h-5 w-5" />
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <PieChartIcon className="h-6 w-6 text-emerald-400" />
                 Food Group Distribution
               </h3>
-              <div className="mb-2 text-xs text-white/80">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span>Outer: Your Actual Intake</span>
+              <div className="mb-3 text-sm text-white/90 font-medium">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg"></div>
+                  <span>Outer Ring: Your Actual Intake</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-white/40"></div>
-                  <span>Inner: Recommended Servings</span>
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 shadow-lg opacity-60"></div>
+                  <span>Inner Circle: Recommended Daily Servings</span>
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={650}>
                 <PieChart>
                   <defs>
-                    {/* 3D shadow for pie */}
+                    {/* Ultra 3D shadow with multiple layers for raised effect */}
                     <filter id="mealPieShadow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-                      <feOffset dx="0" dy="4" result="offsetblur"/>
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+                      <feOffset dx="0" dy="10" result="offsetblur"/>
                       <feComponentTransfer>
-                        <feFuncA type="linear" slope="0.4"/>
+                        <feFuncA type="linear" slope="0.7"/>
                       </feComponentTransfer>
                       <feMerge>
                         <feMergeNode/>
                         <feMergeNode in="SourceGraphic"/>
                       </feMerge>
                     </filter>
+
+                    {/* Additional highlight for top edge to create raised appearance */}
+                    <filter id="pieHighlight">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                      <feOffset dx="0" dy="-2" result="offsetblur"/>
+                      <feFlood floodColor="#ffffff" floodOpacity="0.3"/>
+                      <feComposite in2="offsetblur" operator="in"/>
+                      <feMerge>
+                        <feMergeNode/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+
+                    {/* Radial gradients for each food group - creates 3D lighting effect */}
+                    <radialGradient id="pieGradientVegetables" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#6ee7b7" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#047857" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientFruits" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#fca5a5" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#ef4444" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#b91c1c" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientGrains" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#c4b5fd" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#8b5cf6" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#6b21a8" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientProtein" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#fcd34d" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#f59e0b" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientDairy" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#93c5fd" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#3b82f6" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#1e40af" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientFats" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#c084fc" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#a855f7" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#7e22ce" stopOpacity={1}/>
+                    </radialGradient>
+                    <radialGradient id="pieGradientOther" cx="30%" cy="30%">
+                      <stop offset="0%" stopColor="#cbd5e1" stopOpacity={1}/>
+                      <stop offset="50%" stopColor="#94a3b8" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#475569" stopOpacity={1}/>
+                    </radialGradient>
+
+                    {/* Bevel/Highlight effect for top of slices */}
+                    <linearGradient id="pieBevelHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity={0.4}/>
+                      <stop offset="50%" stopColor="#ffffff" stopOpacity={0.1}/>
+                      <stop offset="100%" stopColor="#000000" stopOpacity={0.2}/>
+                    </linearGradient>
                   </defs>
-                  {/* Recommended (inner circle) */}
+                  {/* Recommended (inner circle) - with 3D gradients */}
                   <Pie
                     data={foodGroupRecommended}
                     cx="50%"
                     cy="50%"
                     innerRadius={0}
-                    outerRadius={60}
+                    outerRadius={130}
                     fill="#8884d8"
                     dataKey="value"
-                    opacity={0.5}
                     strokeWidth={2}
+                    stroke="#d1d5db"
+                    paddingAngle={2}
                   >
-                    {foodGroupRecommended.map((entry, index) => (
-                      <Cell key={`rec-${index}`} fill={entry.fill} stroke={entry.fill} />
-                    ))}
+                    {foodGroupRecommended.map((entry, index) => {
+                      // Map food group name to gradient ID for 3D effect
+                      const gradientId = entry.name.toLowerCase().includes('vegetable') ? 'pieGradientVegetables'
+                        : entry.name.toLowerCase().includes('fruit') ? 'pieGradientFruits'
+                        : entry.name.toLowerCase().includes('grain') ? 'pieGradientGrains'
+                        : entry.name.toLowerCase().includes('protein') ? 'pieGradientProtein'
+                        : entry.name.toLowerCase().includes('dairy') ? 'pieGradientDairy'
+                        : entry.name.toLowerCase().includes('fat') || entry.name.toLowerCase().includes('oil') ? 'pieGradientFats'
+                        : 'pieGradientOther';
+
+                      return (
+                        <Cell
+                          key={`rec-${index}`}
+                          fill={`url(#${gradientId})`}
+                          stroke="#ffffff"
+                          strokeWidth={4}
+                          opacity={0.65}
+                          style={{
+                            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))'
+                          }}
+                        />
+                      );
+                    })}
                   </Pie>
-                  {/* Actual (outer circle) */}
+                  {/* Actual (outer circle) - with enhanced styling */}
                   <Pie
                     data={foodGroupActual}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={100}
+                    innerRadius={145}
+                    outerRadius={220}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    paddingAngle={2}
+                    label={(props) => {
+                      const { cx, cy, midAngle, innerRadius, outerRadius, name, percent } = props;
+                      const RADIAN = Math.PI / 180;
+                      const radius = outerRadius + 35;
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#ffffff"
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          style={{
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))'
+                          }}
+                        >
+                          {`${name}`}
+                          <tspan
+                            x={x}
+                            dy="1.2em"
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: '800',
+                              fill: '#10b981'
+                            }}
+                          >
+                            {`${(percent * 100).toFixed(0)}%`}
+                          </tspan>
+                        </text>
+                      );
+                    }}
+                    labelLine={{
+                      stroke: '#d1d5db',
+                      strokeWidth: 2,
+                      strokeDasharray: '3 3'
+                    }}
+                    paddingAngle={4}
                     filter="url(#mealPieShadow)"
                   >
-                    {foodGroupActual.map((entry, index) => (
-                      <Cell key={`act-${index}`} fill={entry.fill} stroke={entry.fill} strokeWidth={3} />
-                    ))}
+                    {foodGroupActual.map((entry, index) => {
+                      // Map food group name to gradient ID for 3D effect
+                      const gradientId = entry.name.toLowerCase().includes('vegetable') ? 'pieGradientVegetables'
+                        : entry.name.toLowerCase().includes('fruit') ? 'pieGradientFruits'
+                        : entry.name.toLowerCase().includes('grain') ? 'pieGradientGrains'
+                        : entry.name.toLowerCase().includes('protein') ? 'pieGradientProtein'
+                        : entry.name.toLowerCase().includes('dairy') ? 'pieGradientDairy'
+                        : entry.name.toLowerCase().includes('fat') || entry.name.toLowerCase().includes('oil') ? 'pieGradientFats'
+                        : 'pieGradientOther';
+
+                      return (
+                        <Cell
+                          key={`act-${index}`}
+                          fill={`url(#${gradientId})`}
+                          stroke="#d1d5db"
+                          strokeWidth={2}
+                          style={{
+                            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      );
+                    })}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98))',
                       border: '2px solid #10b981',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
-                      backdropFilter: 'blur(10px)'
+                      borderRadius: '16px',
+                      boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.4)',
+                      backdropFilter: 'blur(12px)',
+                      padding: '12px 16px'
                     }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    labelStyle={{
+                      color: '#ffffff',
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      marginBottom: '4px'
+                    }}
+                    itemStyle={{
+                      color: '#10b981',
+                      fontWeight: '600',
+                      fontSize: '14px'
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>

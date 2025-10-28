@@ -184,7 +184,7 @@ export function ExercisesPage() {
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExerciseInput>();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CreateExerciseInput>();
 
   useEffect(() => {
     loadExercises();
@@ -871,7 +871,7 @@ export function ExercisesPage() {
               )}
 
               {/* Exercise Header */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-4 mt-12">
                 <div className="flex items-center space-x-3">
                   <div className="h-12 w-12 rounded-full glass flex items-center justify-center text-2xl">
                     {getCategoryIcon(exercise.category)}
@@ -1610,24 +1610,60 @@ export function ExercisesPage() {
             <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
               Video URL
             </label>
-            <input
-              type="url"
-              className="glass-input"
-              placeholder="https://youtube.com/watch?v=..."
-              {...register('videoUrl')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                className="glass-input flex-1"
+                placeholder="https://youtube.com/watch?v=..."
+                {...register('videoUrl')}
+              />
+              {watch('videoUrl') && (
+                <a
+                  href={watch('videoUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    color: '#3b82f6',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                  }}
+                  title="Open video in new tab"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
               Image URL
             </label>
-            <input
-              type="url"
-              className="glass-input"
-              placeholder="https://example.com/image.jpg"
-              {...register('imageUrl')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                className="glass-input flex-1"
+                placeholder="https://example.com/image.jpg"
+                {...register('imageUrl')}
+              />
+              {watch('imageUrl') && (
+                <a
+                  href={watch('imageUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    color: '#3b82f6',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                  }}
+                  title="Open image in new tab"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
 
           <div>
