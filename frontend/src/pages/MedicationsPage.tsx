@@ -601,6 +601,53 @@ export function MedicationsPage() {
         </GlassCard>
       </div>
 
+      {/* NEW: Recently Started Medications */}
+      {medications.length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>Recently Started (Last 30 Days)</p>
+              <p className={`text-3xl font-bold ${(() => {
+                const thirtyDaysAgo = subDays(new Date(), 30);
+                const recentCount = medications.filter(m => new Date(m.startDate) >= thirtyDaysAgo).length;
+                if (recentCount === 0) return 'text-green-400';
+                if (recentCount <= 2) return 'text-yellow-400';
+                return 'text-red-400';
+              })()}`}>
+                {(() => {
+                  const thirtyDaysAgo = subDays(new Date(), 30);
+                  return medications.filter(m => new Date(m.startDate) >= thirtyDaysAgo).length;
+                })()}
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                {(() => {
+                  const thirtyDaysAgo = subDays(new Date(), 30);
+                  const recentCount = medications.filter(m => new Date(m.startDate) >= thirtyDaysAgo).length;
+                  if (recentCount === 0) return 'No recent changes';
+                  if (recentCount === 1) return '1 new medication';
+                  return `${recentCount} new medications`;
+                })()}
+              </p>
+            </div>
+            <div className={`text-xs font-bold px-4 py-2 rounded-full ${(() => {
+              const thirtyDaysAgo = subDays(new Date(), 30);
+              const recentCount = medications.filter(m => new Date(m.startDate) >= thirtyDaysAgo).length;
+              if (recentCount === 0) return 'bg-green-500 text-white';
+              if (recentCount <= 2) return 'bg-yellow-500 text-black';
+              return 'bg-red-500 text-white';
+            })()}`}>
+              {(() => {
+                const thirtyDaysAgo = subDays(new Date(), 30);
+                const recentCount = medications.filter(m => new Date(m.startDate) >= thirtyDaysAgo).length;
+                if (recentCount === 0) return 'Stable';
+                if (recentCount <= 2) return 'Some Changes';
+                return 'Many Changes';
+              })()}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* NEW: Prescription vs OTC Split */}
       {activeMeds.length > 0 && (
         <GlassCard>

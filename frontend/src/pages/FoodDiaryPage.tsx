@@ -428,6 +428,42 @@ export function FoodDiaryPage() {
         </GlassCard>
       )}
 
+      {/* NEW: Sodium Intake vs Limit */}
+      <GlassCard>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-bold mb-2" style={{ color: 'var(--muted)' }}>Sodium Intake vs Daily Limit</p>
+            <div className="w-full bg-gray-700 rounded-full h-4">
+              <div
+                className={`h-4 rounded-full transition-all ${
+                  totals.sodium <= 1500 ? 'bg-green-500' :
+                  totals.sodium <= 2300 ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}
+                style={{ width: `${Math.min((totals.sodium / 2300) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+              Limit: 2300mg daily (1500mg ideal for heart patients)
+            </p>
+          </div>
+          <div className="ml-4 text-right">
+            <p className="text-3xl font-bold" style={{ color: totals.sodium <= 1500 ? '#22c55e' : totals.sodium <= 2300 ? '#eab308' : '#ef4444' }}>
+              {totals.sodium}mg
+            </p>
+            <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${
+              totals.sodium <= 1500 ? 'bg-green-500 text-white' :
+              totals.sodium <= 2300 ? 'bg-yellow-500 text-black' :
+              'bg-red-500 text-white'
+            }`}>
+              {totals.sodium <= 1500 ? 'Excellent' :
+               totals.sodium <= 2300 ? 'Within Limit' :
+               'Over Limit'}
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Meal Sections */}
       {mealSections.map(section => {
         const sectionMeals = getMealsByType(section.type);

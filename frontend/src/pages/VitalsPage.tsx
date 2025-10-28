@@ -390,12 +390,49 @@ export function VitalsPage() {
         </GlassCard>
       </div>
 
-      {/* NEW: 7-Day Average Heart Rate */}
+      {/* NEW: Resting Heart Rate & 7-Day Average */}
       {vitals.length > 0 && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold mb-1">Resting Heart Rate</p>
+                <p className="text-3xl font-bold font-bold">
+                  {(() => {
+                    const recentVitals = vitals.slice(-7);
+                    const validHRs = recentVitals.filter(v => v.heartRate);
+                    if (validHRs.length === 0) return '--';
+                    const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                    return minHR;
+                  })()} <span className="text-sm">bpm</span>
+                </p>
+                <p className={`text-sm font-bold mt-1 ${(() => {
+                  const recentVitals = vitals.slice(-7);
+                  const validHRs = recentVitals.filter(v => v.heartRate);
+                  if (validHRs.length === 0) return 'text-yellow-500';
+                  const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                  return minHR < 60 ? 'text-yellow-500' : minHR > 100 ? 'text-red-500' : 'text-white';
+                })()}`}>
+                  {(() => {
+                    const recentVitals = vitals.slice(-7);
+                    const validHRs = recentVitals.filter(v => v.heartRate);
+                    if (validHRs.length === 0) return 'No data';
+                    const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                    if (minHR < 60) return 'Athletic/Low';
+                    if (minHR > 100) return 'Elevated';
+                    return 'Normal';
+                  })()}
+                </p>
+                <p className="text-xs mt-1">Lowest in last 7 days</p>
+              </div>
+              <Heart className="h-8 w-8 text-pink-500" />
+            </div>
+          </GlassCard>
+
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
               <p className="text-3xl font-bold font-bold">
                 {(() => {
                   const recentVitals = vitals.slice(-7);
@@ -427,9 +464,10 @@ export function VitalsPage() {
                 return recentVitals.filter(v => v.heartRate).length;
               })()} readings</p>
             </div>
-            <Activity className="h-8 w-8 text-red-500" />
-          </div>
-        </GlassCard>
+              <Activity className="h-8 w-8 text-red-500" />
+            </div>
+          </GlassCard>
+        </div>
       )}
 
       {/* NEW: Blood Pressure Trend */}
@@ -488,6 +526,42 @@ export function VitalsPage() {
               const diff = recentAvg - olderAvg;
               return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
             })()}`} />
+          </div>
+        </GlassCard>
+      )}
+
+      {/* NEW: Hydration Goal Tracker */}
+      {latestVitals?.hydrationStatus && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-bold mb-2">Daily Hydration Goal</p>
+              <div className="w-full bg-gray-700 rounded-full h-4">
+                <div
+                  className={`h-4 rounded-full transition-all ${
+                    latestVitals.hydrationStatus >= 70 ? 'bg-green-500' :
+                    latestVitals.hydrationStatus >= 50 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(latestVitals.hydrationStatus, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-xs mt-2">
+                {latestVitals.hydrationStatus}% of recommended daily intake
+              </p>
+            </div>
+            <div className="ml-4 text-right">
+              <p className="text-3xl font-bold font-bold">{latestVitals.hydrationStatus}%</p>
+              <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${
+                latestVitals.hydrationStatus >= 70 ? 'bg-green-500 text-white' :
+                latestVitals.hydrationStatus >= 50 ? 'bg-yellow-500 text-black' :
+                'bg-red-500 text-white'
+              }`}>
+                {latestVitals.hydrationStatus >= 70 ? 'Well Hydrated' :
+                 latestVitals.hydrationStatus >= 50 ? 'Moderate' :
+                 'Dehydrated'}
+              </p>
+            </div>
           </div>
         </GlassCard>
       )}

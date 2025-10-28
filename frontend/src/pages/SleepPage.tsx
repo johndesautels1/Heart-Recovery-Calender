@@ -575,6 +575,36 @@ export function SleepPage() {
             </GlassCard>
           </div>
 
+          {/* NEW: Poor Sleep Nights Tracker */}
+          {sleepLogs.length > 0 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Poor Sleep Nights (Last 30)</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const recentLogs = sleepLogs.slice(0, Math.min(30, sleepLogs.length));
+                    const recentPoor = recentLogs.filter(log => log.sleepQuality === 'poor').length;
+                    return recentPoor === 0 ? 'text-green-400' : recentPoor <= 3 ? 'text-yellow-400' : 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(30, sleepLogs.length));
+                      return recentLogs.filter(log => log.sleepQuality === 'poor').length;
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(30, sleepLogs.length));
+                      const poorNights = recentLogs.filter(log => log.sleepQuality === 'poor').length;
+                      const percentage = recentLogs.length > 0 ? (poorNights / recentLogs.length * 100).toFixed(0) : 0;
+                      return `${percentage}% of nights`;
+                    })()}
+                  </p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-red-400" />
+              </div>
+            </GlassCard>
+          )}
+
           {/* NEW: Sleep Consistency Score */}
           {sleepLogs.length >= 3 && (
             <GlassCard>
