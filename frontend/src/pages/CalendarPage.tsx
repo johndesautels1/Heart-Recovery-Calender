@@ -1047,7 +1047,10 @@ See browser console for full configuration details.
           <Button
             size="sm"
             variant="glass"
-            onClick={() => setIsCalendarModalOpen(true)}
+            onClick={() => {
+              loadCalendarsAndEvents();
+              setIsCalendarModalOpen(true);
+            }}
             className="text-white whitespace-nowrap"
           >
             <CalendarIcon className="h-4 w-4 mr-1" />
@@ -1724,7 +1727,18 @@ See browser console for full configuration details.
 
               {/* Calendar List */}
               <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
-                {calendars.map(calendar => (
+                {calendars
+                  .filter(calendar => {
+                    // Filter based on Step 1 selection
+                    if (selectedPatientForCalendar === undefined) {
+                      return true; // Show all if nothing selected
+                    } else if (selectedPatientForCalendar === null) {
+                      return calendar.userId === user?.id; // Show admin's calendars
+                    } else {
+                      return calendar.userId === selectedPatientForCalendar; // Show selected patient's calendars
+                    }
+                  })
+                  .map(calendar => (
                   <div
                     key={calendar.id}
                     className="flex items-center justify-between p-4 bg-white/90 border-2 border-white/30 rounded-lg hover:bg-white transition-colors shadow-md"

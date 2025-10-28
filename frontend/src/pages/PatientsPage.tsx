@@ -344,13 +344,50 @@ export function PatientsPage() {
 
   const handleSubmitCalendar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!calendarPatient || !calendarPatient.userId) {
-      toast.error('Patient must have a user account to create a calendar');
+    if (!calendarPatient) {
+      toast.error('Please select a patient');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
+      let patientUserId = calendarPatient.userId;
+
+      // If patient doesn't have a user account, create one automatically
+      if (!patientUserId) {
+        toast.info('Creating user account for patient...');
+
+        // Generate a default password
+        const defaultPassword = `${calendarPatient.name.replace(/\s+/g, '').toLowerCase()}123`;
+
+        const updateResponse = await fetch(`/api/patients/${calendarPatient.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...calendarPatient,
+            createUserAccount: true,
+            password: defaultPassword
+          }),
+        });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          throw new Error(errorData.error || 'Failed to create user account for patient');
+        }
+
+        const updatedPatient = await updateResponse.json();
+        patientUserId = updatedPatient.userId;
+
+        // Refresh patients list
+        await loadPatients();
+
+        toast.success(`User account created with password: ${defaultPassword}`);
+      }
+
+      // Now create the calendar
       const response = await fetch('/api/calendars', {
         method: 'POST',
         headers: {
@@ -359,7 +396,7 @@ export function PatientsPage() {
         },
         body: JSON.stringify({
           ...calendarFormData,
-          assignToUserId: calendarPatient.userId
+          assignToUserId: patientUserId
         }),
       });
 
@@ -369,9 +406,9 @@ export function PatientsPage() {
       setIsCalendarModalOpen(false);
       setCalendarPatient(null);
       setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating calendar:', error);
-      toast.error('Failed to create calendar');
+      toast.error(error.message || 'Failed to create calendar');
     }
   };
 
@@ -1153,7 +1190,8 @@ export function PatientsPage() {
                     required
                     value={calendarFormData.name}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{ color: '#1e40af' }}
                     placeholder="My Calendar"
                   />
                 </div>
@@ -1163,16 +1201,17 @@ export function PatientsPage() {
                   <select
                     value={calendarFormData.type}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{ color: '#1e40af' }}
                   >
-                    <option value="general">General</option>
-                    <option value="vitals">Vitals</option>
-                    <option value="medications">Medications</option>
-                    <option value="meals">Meals</option>
-                    <option value="diet">Food Diary</option>
-                    <option value="sleep">Sleep Journal</option>
-                    <option value="exercise">Exercise & Activities</option>
-                    <option value="appointments">Appointments</option>
+                    <option value="general" style={{ color: '#1e40af', fontWeight: 700 }}>General</option>
+                    <option value="vitals" style={{ color: '#1e40af', fontWeight: 700 }}>Vitals</option>
+                    <option value="medications" style={{ color: '#1e40af', fontWeight: 700 }}>Medications</option>
+                    <option value="meals" style={{ color: '#1e40af', fontWeight: 700 }}>Meals</option>
+                    <option value="diet" style={{ color: '#1e40af', fontWeight: 700 }}>Food Diary</option>
+                    <option value="sleep" style={{ color: '#1e40af', fontWeight: 700 }}>Sleep Journal</option>
+                    <option value="exercise" style={{ color: '#1e40af', fontWeight: 700 }}>Exercise & Activities</option>
+                    <option value="appointments" style={{ color: '#1e40af', fontWeight: 700 }}>Appointments</option>
                   </select>
                 </div>
 
@@ -1183,13 +1222,14 @@ export function PatientsPage() {
                       type="color"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer bg-white/10"
+                      className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer"
                     />
                     <input
                       type="text"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                      className="flex-1 px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                      style={{ color: '#1e40af' }}
                       placeholder="#607d8b"
                       pattern="^#[0-9A-Fa-f]{6}$"
                     />
