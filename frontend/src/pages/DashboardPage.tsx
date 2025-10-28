@@ -1169,7 +1169,7 @@ export function DashboardPage() {
               </div>
             </GlassCard>
 
-            {/* Holistic Dashboard Visuals */}
+            {/* 4-Category Summary Tabs */}
             <GlassCard className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 pointer-events-none" />
 
@@ -1177,114 +1177,57 @@ export function DashboardPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-semibold text-white font-bold flex items-center gap-2">
                     <BarChart3 className="h-7 w-7 text-cyan-400" />
-                    Comprehensive Health Overview
+                    Category Summaries
                   </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Overall Wellness Score */}
-                  <div className="col-span-full lg:col-span-2 p-6 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-cyan-300 mb-2">Overall Wellness</div>
-                        <div className="text-5xl font-bold text-white">
-                          {Math.round(((calculateWeightScore(selectedPatient) +
-                            (weeklyMetrics.completionRate * 4)) / 500) * 100)}%
-                        </div>
-                        <div className="text-xs text-white/60 mt-2">Combined Health Score</div>
-                      </div>
-                      <Heart className="h-20 w-20 text-cyan-400/30" />
+                  {/* Exercise Summary */}
+                  <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 hover:border-blue-400/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <Activity className="h-8 w-8 text-blue-400" />
+                      <div className="text-3xl font-bold text-white">{weeklyMetrics.completionRate || 0}</div>
                     </div>
-                    <div className="mt-4 h-3 bg-white/10 rounded-full overflow-hidden">
+                    <h3 className="text-lg font-bold text-blue-300 mb-3">Exercise</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Completion Rate</span>
+                        <span className="text-blue-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Sessions</span>
+                        <span className="text-blue-300 font-bold">{weeklyMetrics.milestonesData.firstExerciseCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Capacity</span>
+                        <span className="text-blue-300 font-bold">+{weeklyMetrics.clinicalImprovements.exerciseCapacityIncrease}%</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 animate-pulse"
-                        style={{ width: `${Math.round(((calculateWeightScore(selectedPatient) + (weeklyMetrics.completionRate * 4)) / 500) * 100)}%` }}
+                        className="h-full bg-gradient-to-r from-blue-400 to-cyan-400"
+                        style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Recovery Progress */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30">
-                    <CheckCircle className="h-6 w-6 text-green-400 mb-3" />
-                    <div className="text-2xl font-bold text-white mb-1">
-                      {differenceInWeeks(new Date(), new Date(selectedPatient.surgeryDate || new Date()))}
+                  {/* Meals Summary */}
+                  <div className="p-6 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 hover:border-green-400/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <UtensilsCrossed className="h-8 w-8 text-green-400" />
+                      <div className="text-3xl font-bold text-white">{weeklyMetrics.completionRate || 0}</div>
                     </div>
-                    <div className="text-xs text-green-300">Weeks Post-Op</div>
-                    <div className="mt-3 text-xs text-white/60">
-                      Target: 12 weeks
-                    </div>
-                  </div>
-
-                  {/* Goals Achieved */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-yellow-500/20 to-amber-500/20 border border-yellow-400/30">
-                    <Star className="h-6 w-6 text-yellow-400 mb-3" />
-                    <div className="text-2xl font-bold text-white mb-1">
-                      {Math.round((calculateWeightScore(selectedPatient) + (weeklyMetrics.completionRate * 4)) / 100)} / 5
-                    </div>
-                    <div className="text-xs text-yellow-300">Goals Achieved</div>
-                    <div className="mt-3 text-xs text-white/60">
-                      Major milestones
-                    </div>
-                  </div>
-
-                  {/* Activity Summary */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/30">
-                    <Zap className="h-6 w-6 text-blue-400 mb-3" />
-                    <div className="text-sm font-bold text-white mb-2">Weekly Activity</div>
+                    <h3 className="text-lg font-bold text-green-300 mb-3">Meals</h3>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Events</span>
-                        <span className="text-blue-300 font-bold">{weeklyMetrics.totalAppointments}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Completion</span>
-                        <span className="text-blue-300 font-bold">{weeklyMetrics.completionRate}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Vitals Trend */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30">
-                    <Heart className="h-6 w-6 text-red-400 mb-3" />
-                    <div className="text-sm font-bold text-white mb-2">Vitals Status</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">BP Status</span>
-                        <span className={`font-bold text-${bpStatus.color}-400`}>{bpStatus.status}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Improvement</span>
-                        <span className="text-green-300 font-bold">+{weeklyMetrics.clinicalImprovements.avgVitalsImprovement.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Medication Adherence */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 border border-purple-400/30">
-                    <Pill className="h-6 w-6 text-purple-400 mb-3" />
-                    <div className="text-sm font-bold text-white mb-2">Medication</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Adherence</span>
-                        <span className="text-purple-300 font-bold">{weeklyMetrics.completionRate}%</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">Reduced</span>
-                        <span className="text-purple-300 font-bold">{weeklyMetrics.clinicalImprovements.medicationReductionCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Nutrition Compliance */}
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-green-500/20 to-teal-500/20 border border-green-400/30">
-                    <UtensilsCrossed className="h-6 w-6 text-green-400 mb-3" />
-                    <div className="text-sm font-bold text-white mb-2">Nutrition</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Compliance</span>
                         <span className="text-green-300 font-bold">{weeklyMetrics.completionRate}%</span>
                       </div>
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Weight Goal</span>
+                        <span className="text-green-300 font-bold">{weeklyMetrics.milestonesData.weightGoalsCount} achieved</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Weight Lost</span>
                         <span className="text-green-300 font-bold">
                           {selectedPatient.startingWeight && selectedPatient.currentWeight
@@ -1292,6 +1235,70 @@ export function DashboardPage() {
                             : 'N/A'}
                         </span>
                       </div>
+                    </div>
+                    <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-green-400 to-emerald-400"
+                        style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Medications Summary */}
+                  <div className="p-6 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 hover:border-purple-400/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <Pill className="h-8 w-8 text-purple-400" />
+                      <div className="text-3xl font-bold text-white">{weeklyMetrics.completionRate || 0}</div>
+                    </div>
+                    <h3 className="text-lg font-bold text-purple-300 mb-3">Medications</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Adherence</span>
+                        <span className="text-purple-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Reduced Meds</span>
+                        <span className="text-purple-300 font-bold">{weeklyMetrics.clinicalImprovements.medicationReductionCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Independence</span>
+                        <span className="text-purple-300 font-bold">{weeklyMetrics.milestonesData.medicationIndependenceCount} patients</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-purple-400 to-pink-400"
+                        style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sleep Summary */}
+                  <div className="p-6 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-400/30 hover:border-indigo-400/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <Clock className="h-8 w-8 text-indigo-400" />
+                      <div className="text-3xl font-bold text-white">{weeklyMetrics.completionRate || 0}</div>
+                    </div>
+                    <h3 className="text-lg font-bold text-indigo-300 mb-3">Sleep</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Quality Score</span>
+                        <span className="text-indigo-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Avg Hours</span>
+                        <span className="text-indigo-300 font-bold">7.5 hrs</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/60">Consistency</span>
+                        <span className="text-indigo-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-400 to-violet-400"
+                        style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                      />
                     </div>
                   </div>
                 </div>
