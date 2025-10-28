@@ -27,7 +27,7 @@ import { usePatientSelection } from '../contexts/PatientSelectionContext';
 
 type ComplianceStatus = 'excellent' | 'warning' | 'poor' | 'unknown';
 type TabType = 'patients' | 'exercises' | 'templates';
-type PatientSubTab = 'add-new' | 'select-existing' | 'import';
+type PatientSubTab = 'add-new' | 'select-existing' | 'import' | 'add-calendar';
 
 interface PatientWithCompliance extends Patient {
   complianceStatus: ComplianceStatus;
@@ -48,7 +48,13 @@ export function PatientsPage() {
     phone: '',
     address: '',
     surgeryDate: '',
+    height: '',
+    heightUnit: 'in' as 'in' | 'cm',
     notes: '',
+    startingWeight: '',
+    currentWeight: '',
+    targetWeight: '',
+    weightUnit: 'lbs' as 'kg' | 'lbs',
     createUserAccount: false,
     password: ''
   });
@@ -59,10 +65,19 @@ export function PatientsPage() {
     phone: '',
     address: '',
     surgeryDate: '',
+    height: '',
+    heightUnit: 'in' as 'in' | 'cm',
     notes: '',
+    startingWeight: '',
+    currentWeight: '',
+    targetWeight: '',
+    weightUnit: 'lbs' as 'kg' | 'lbs',
     createUserAccount: false,
     password: ''
   });
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [calendarPatient, setCalendarPatient] = useState<Patient | null>(null);
+  const [calendarFormData, setCalendarFormData] = useState({ name: '', type: 'general', color: '#607d8b' });
   const navigate = useNavigate();
   const { selectedPatient, setSelectedPatient } = usePatientSelection();
 
@@ -226,7 +241,13 @@ export function PatientsPage() {
         phone: '',
         address: '',
         surgeryDate: '',
+        height: '',
+        heightUnit: 'in',
         notes: '',
+        startingWeight: '',
+        currentWeight: '',
+        targetWeight: '',
+        weightUnit: 'lbs',
         createUserAccount: false,
         password: ''
       });
@@ -246,7 +267,13 @@ export function PatientsPage() {
       phone: patient.phone || '',
       address: patient.address || '',
       surgeryDate: patient.surgeryDate || '',
+      height: patient.height?.toString() || '',
+      heightUnit: patient.heightUnit || 'in',
       notes: patient.notes || '',
+      startingWeight: patient.startingWeight?.toString() || '',
+      currentWeight: patient.currentWeight?.toString() || '',
+      targetWeight: patient.targetWeight?.toString() || '',
+      weightUnit: patient.weightUnit || 'lbs',
       createUserAccount: false,
       password: ''
     });
@@ -297,10 +324,55 @@ export function PatientsPage() {
       phone: '',
       address: '',
       surgeryDate: '',
+      height: '',
+      heightUnit: 'in',
       notes: '',
+      startingWeight: '',
+      currentWeight: '',
+      targetWeight: '',
+      weightUnit: 'lbs',
       createUserAccount: false,
       password: ''
     });
+  };
+
+  const handleCreateCalendar = (patient: Patient) => {
+    setCalendarPatient(patient);
+    setCalendarFormData({ name: `${patient.name}'s Calendar`, type: 'general', color: '#607d8b' });
+    setIsCalendarModalOpen(true);
+  };
+
+  const handleSubmitCalendar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!calendarPatient || !calendarPatient.userId) {
+      toast.error('Patient must have a user account to create a calendar');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/calendars', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...calendarFormData,
+          assignToUserId: calendarPatient.userId
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create calendar');
+
+      toast.success(`Calendar created successfully for ${calendarPatient.name}`);
+      setIsCalendarModalOpen(false);
+      setCalendarPatient(null);
+      setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+    } catch (error) {
+      console.error('Error creating calendar:', error);
+      toast.error('Failed to create calendar');
+    }
   };
 
   return (
@@ -341,6 +413,21 @@ export function PatientsPage() {
           <UserPlus className="inline-block w-4 h-4 mr-2" />
           Add New Patient
           {patientSubTab === 'add-new' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setPatientSubTab('add-calendar')}
+          className={`px-6 py-3 font-medium transition-colors relative ${
+            patientSubTab === 'add-calendar'
+              ? 'text-white'
+              : 'text-white/50 hover:text-white/75'
+          }`}
+        >
+          <CalendarIcon className="inline-block w-4 h-4 mr-2" />
+          Add New Patient Calendar
+          {patientSubTab === 'add-calendar' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
           )}
         </button>
@@ -458,11 +545,12 @@ export function PatientsPage() {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => handleSelectPatient(patient)}
                       variant={selectedPatient?.id === patient.id ? "primary" : "glass"}
                       size="sm"
+                      className="col-span-2"
                     >
                       <UserCircle2 className="h-4 w-4" />
                       <span>{selectedPatient?.id === patient.id ? 'Selected' : 'Select'}</span>
@@ -482,6 +570,15 @@ export function PatientsPage() {
                     >
                       <Eye className="h-4 w-4" />
                       <span>View</span>
+                    </Button>
+                    <Button
+                      onClick={() => handleCreateCalendar(patient)}
+                      variant="glass"
+                      size="sm"
+                      className="col-span-2"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      <span>Create Calendar</span>
                     </Button>
                   </div>
                 </div>
@@ -557,6 +654,78 @@ export function PatientsPage() {
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, surgeryDate: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
                   />
+                </div>
+
+                {/* Height Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Height</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editPatientForm.height}
+                      onChange={(e) => setEditPatientForm({ ...editPatientForm, height: e.target.value })}
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      placeholder="70"
+                    />
+                    <select
+                      value={editPatientForm.heightUnit}
+                      onChange={(e) => setEditPatientForm({ ...editPatientForm, heightUnit: e.target.value as 'in' | 'cm' })}
+                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    >
+                      <option value="in">inches</option>
+                      <option value="cm">cm</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Weight Tracking Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Starting Weight</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editPatientForm.startingWeight}
+                        onChange={(e) => setEditPatientForm({ ...editPatientForm, startingWeight: e.target.value })}
+                        className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                        placeholder="165.5"
+                      />
+                      <select
+                        value={editPatientForm.weightUnit}
+                        onChange={(e) => setEditPatientForm({ ...editPatientForm, weightUnit: e.target.value as 'kg' | 'lbs' })}
+                        className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      >
+                        <option value="lbs">lbs</option>
+                        <option value="kg">kg</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Current Weight</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editPatientForm.currentWeight}
+                      onChange={(e) => setEditPatientForm({ ...editPatientForm, currentWeight: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      placeholder="165.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Target Weight</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editPatientForm.targetWeight}
+                      onChange={(e) => setEditPatientForm({ ...editPatientForm, targetWeight: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      placeholder="155.0"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -683,6 +852,78 @@ export function PatientsPage() {
                 />
               </div>
 
+              {/* Height Field */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Height</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={newPatientForm.height}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, height: e.target.value })}
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="70"
+                  />
+                  <select
+                    value={newPatientForm.heightUnit}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, heightUnit: e.target.value as 'in' | 'cm' })}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  >
+                    <option value="in">inches</option>
+                    <option value="cm">cm</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Weight Tracking Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Starting Weight</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={newPatientForm.startingWeight}
+                      onChange={(e) => setNewPatientForm({ ...newPatientForm, startingWeight: e.target.value })}
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      placeholder="165.5"
+                    />
+                    <select
+                      value={newPatientForm.weightUnit}
+                      onChange={(e) => setNewPatientForm({ ...newPatientForm, weightUnit: e.target.value as 'kg' | 'lbs' })}
+                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    >
+                      <option value="lbs">lbs</option>
+                      <option value="kg">kg</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Current Weight</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={newPatientForm.currentWeight}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, currentWeight: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="165.5"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Target Weight</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={newPatientForm.targetWeight}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, targetWeight: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    placeholder="155.0"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">Notes</label>
                 <textarea
@@ -726,8 +967,8 @@ export function PatientsPage() {
                 )}
               </div>
 
-              <div className="flex space-x-3 pt-4">
-                <Button type="submit" variant="primary" className="flex-1">
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1 gap-2">
                   <Save className="h-4 w-4" />
                   <span>Save Patient</span>
                 </Button>
@@ -741,10 +982,17 @@ export function PatientsPage() {
                       phone: '',
                       address: '',
                       surgeryDate: '',
+                      height: '',
+                      heightUnit: 'in',
                       notes: '',
+                      startingWeight: '',
+                      currentWeight: '',
+                      targetWeight: '',
+                      weightUnit: 'lbs',
                       createUserAccount: false,
                       password: ''
                     });
+                    setPatientSubTab('select-existing');
                   }}
                 >
                   <span>Cancel</span>
@@ -771,6 +1019,206 @@ export function PatientsPage() {
               <Button onClick={() => setPatientSubTab('select-existing')} variant="glass">
                 <span>Cancel</span>
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {patientSubTab === 'add-calendar' && (
+        <div className="max-w-2xl mx-auto">
+          <div className="glass rounded-xl p-8 border border-white/10">
+            <h2 className="text-2xl font-bold mb-6">Add New Patient Calendar</h2>
+            <form onSubmit={handleSubmitCalendar} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">Select Patient *</label>
+                <select
+                  required
+                  value={calendarPatient?.id || ''}
+                  onChange={(e) => {
+                    const patient = patients.find(p => p.id === parseInt(e.target.value));
+                    setCalendarPatient(patient || null);
+                    if (patient) {
+                      setCalendarFormData({ ...calendarFormData, name: `${patient.name}'s Calendar` });
+                    }
+                  }}
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                >
+                  <option value="">-- Select a Patient --</option>
+                  {patients.map(patient => (
+                    <option key={patient.id} value={patient.id} className="bg-gray-800 text-white">
+                      {patient.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">Calendar Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={calendarFormData.name}
+                  onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                  placeholder="Patient's Calendar"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">Calendar Type *</label>
+                <select
+                  value={calendarFormData.type}
+                  onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                >
+                  <option value="general" className="bg-gray-800 text-white">General</option>
+                  <option value="vitals" className="bg-gray-800 text-white">Vitals</option>
+                  <option value="medications" className="bg-gray-800 text-white">Medications</option>
+                  <option value="meals" className="bg-gray-800 text-white">Meals</option>
+                  <option value="diet" className="bg-gray-800 text-white">Food Diary</option>
+                  <option value="sleep" className="bg-gray-800 text-white">Sleep Journal</option>
+                  <option value="exercise" className="bg-gray-800 text-white">Exercise & Activities</option>
+                  <option value="appointments" className="bg-gray-800 text-white">Appointments</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">Calendar Color *</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={calendarFormData.color}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                    className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer bg-white/10"
+                  />
+                  <input
+                    type="text"
+                    value={calendarFormData.color}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                    placeholder="#607d8b"
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="glass"
+                  className="flex-1"
+                  onClick={() => {
+                    setPatientSubTab('select-existing');
+                    setCalendarPatient(null);
+                    setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                  }}
+                >
+                  <span>Cancel</span>
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="flex-1 gap-2"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>Create Calendar</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Creation Modal */}
+      {isCalendarModalOpen && calendarPatient && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setIsCalendarModalOpen(false);
+            setCalendarPatient(null);
+            setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+          }}
+        >
+          <div
+            className="max-w-lg w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="glass rounded-xl p-6 border border-white/10">
+              <h2 className="text-2xl font-bold mb-4">Create Calendar for {calendarPatient.name}</h2>
+              <form onSubmit={handleSubmitCalendar} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">Calendar Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={calendarFormData.name}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                    placeholder="My Calendar"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">Calendar Type *</label>
+                  <select
+                    value={calendarFormData.type}
+                    onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                  >
+                    <option value="general">General</option>
+                    <option value="vitals">Vitals</option>
+                    <option value="medications">Medications</option>
+                    <option value="meals">Meals</option>
+                    <option value="diet">Food Diary</option>
+                    <option value="sleep">Sleep Journal</option>
+                    <option value="exercise">Exercise & Activities</option>
+                    <option value="appointments">Appointments</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">Calendar Color *</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={calendarFormData.color}
+                      onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                      className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer bg-white/10"
+                    />
+                    <input
+                      type="text"
+                      value={calendarFormData.color}
+                      onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                      placeholder="#607d8b"
+                      pattern="^#[0-9A-Fa-f]{6}$"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="glass"
+                    className="flex-1"
+                    onClick={() => {
+                      setIsCalendarModalOpen(false);
+                      setCalendarPatient(null);
+                      setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                    }}
+                  >
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="flex-1 gap-2"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Create Calendar</span>
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

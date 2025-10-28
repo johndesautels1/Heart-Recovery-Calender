@@ -26,9 +26,11 @@ import {
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import api from '../services/api';
 import { VitalsSample, Medication, CalendarEvent, MealEntry, Patient } from '../types';
 import { format, subDays, differenceInWeeks } from 'date-fns';
+import { WeightTrackingChart } from '../components/charts/WeightTrackingChart';
 
 interface DashboardStats {
   todayEvents: CalendarEvent[];
@@ -80,6 +82,7 @@ interface WeeklyMetrics {
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const { selectedPatient } = usePatientSelection();
   const [stats, setStats] = useState<DashboardStats>({
     todayEvents: [],
     activeMedications: [],
@@ -303,8 +306,13 @@ export function DashboardPage() {
     );
     const totalAppointments = appointments.length;
 
-    // Average session time (estimate 45 min per appointment)
-    const avgSessionTime = totalAppointments > 0 ? 42 : 0;
+    // Average session time (calculate from actual start/end times)
+    const avgSessionTime = totalAppointments > 0
+      ? Math.round(appointments.reduce((sum, e) => {
+          const duration = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / (1000 * 60);
+          return sum + duration;
+        }, 0) / totalAppointments)
+      : 0;
 
     // No-show rate
     const noShows = appointments.filter(e => e.status === 'missed').length;
@@ -319,7 +327,11 @@ export function DashboardPage() {
         const weeks = differenceInWeeks(today, new Date(p.surgeryDate));
         return weeks === 4;
       }).length,
-      weightGoalsCount: Math.floor(patients.length * 0.2), // Estimate 20% achieved weight goals
+      weightGoalsCount: patients.filter(p => {
+        // Count patients who have reached or exceeded their target weight
+        if (!p.currentWeight || !p.targetWeight) return false;
+        return p.currentWeight <= p.targetWeight;
+      }).length,
       firstExerciseCount: weekEvents.filter(e =>
         e.calendar?.type === 'exercise' && e.status === 'completed'
       ).length,
@@ -550,7 +562,8 @@ export function DashboardPage() {
                 {adminStats.newPatients.map((patient) => (
                   <div
                     key={patient.id}
-                    className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#2d3a57] transition-colors"
+                    style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
                   >
                     <UserPlus className="h-5 w-5 text-green-500 mt-1" />
                     <div className="flex-1 min-w-0">
@@ -659,19 +672,19 @@ export function DashboardPage() {
                     <h3 className="text-sm font-bold text-yellow-400">Recovery Milestones</h3>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                       <span className="text-white font-bold">Week 4 Milestones</span>
                       <span className="text-yellow-400 font-bold">{weeklyMetrics.milestonesData.week4Count} {weeklyMetrics.milestonesData.week4Count === 1 ? 'patient' : 'patients'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                       <span className="text-white font-bold">Weight Goals Achieved</span>
                       <span className="text-yellow-400 font-bold">{weeklyMetrics.milestonesData.weightGoalsCount} {weeklyMetrics.milestonesData.weightGoalsCount === 1 ? 'patient' : 'patients'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                       <span className="text-white font-bold">First Exercise Session</span>
                       <span className="text-yellow-400 font-bold">{weeklyMetrics.milestonesData.firstExerciseCount} {weeklyMetrics.milestonesData.firstExerciseCount === 1 ? 'session' : 'sessions'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs p-2 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                       <span className="text-white font-bold">Medication Independence</span>
                       <span className="text-yellow-400 font-bold">{weeklyMetrics.milestonesData.medicationIndependenceCount} {weeklyMetrics.milestonesData.medicationIndependenceCount === 1 ? 'patient' : 'patients'}</span>
                     </div>
@@ -686,7 +699,7 @@ export function DashboardPage() {
                   </div>
                   <div className="space-y-2">
                     {weeklyMetrics.topPerformers.biggestVitalsImprovement ? (
-                      <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-white font-bold">Biggest Vitals Improvement</span>
                           <ThumbsUp className="h-4 w-4 text-pink-400" />
@@ -694,10 +707,10 @@ export function DashboardPage() {
                         <p className="text-xs text-pink-300">{weeklyMetrics.topPerformers.biggestVitalsImprovement.name} - {weeklyMetrics.topPerformers.biggestVitalsImprovement.improvement}</p>
                       </div>
                     ) : (
-                      <div className="p-2 bg-white/5 rounded-lg text-center text-xs text-white">No data yet</div>
+                      <div className="p-2 rounded-lg text-center text-xs text-white" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>No data yet</div>
                     )}
                     {weeklyMetrics.topPerformers.perfectAttendance ? (
-                      <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-white font-bold">Perfect Attendance</span>
                           <CheckCircle className="h-4 w-4 text-pink-400" />
@@ -706,7 +719,7 @@ export function DashboardPage() {
                       </div>
                     ) : null}
                     {weeklyMetrics.topPerformers.bestOutcome ? (
-                      <div className="p-2 bg-white/5 rounded-lg">
+                      <div className="p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-white font-bold">Best Patient Outcome</span>
                           <Award className="h-4 w-4 text-pink-400" />
@@ -725,19 +738,19 @@ export function DashboardPage() {
                   <h3 className="text-sm font-bold text-emerald-400">Clinical Improvements</h3>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="p-3 rounded-lg text-center" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <p className="text-2xl font-bold text-white">+{weeklyMetrics.clinicalImprovements.avgVitalsImprovement.toFixed(1)}%</p>
                     <p className="text-xs text-emerald-300 mt-1">Avg Vitals Improvement</p>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="p-3 rounded-lg text-center" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <p className="text-2xl font-bold text-white">{weeklyMetrics.clinicalImprovements.improvingTrendsCount}</p>
                     <p className="text-xs text-emerald-300 mt-1">Improving Trends</p>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="p-3 rounded-lg text-center" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <p className="text-2xl font-bold text-white">{weeklyMetrics.clinicalImprovements.medicationReductionCount}</p>
                     <p className="text-xs text-emerald-300 mt-1">Medication Reduced</p>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg text-center">
+                  <div className="p-3 rounded-lg text-center" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <p className="text-2xl font-bold text-white">+{weeklyMetrics.clinicalImprovements.exerciseCapacityIncrease}%</p>
                     <p className="text-xs text-emerald-300 mt-1">Exercise Capacity</p>
                   </div>
@@ -792,7 +805,7 @@ export function DashboardPage() {
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {/* TODO: Wire to real patient score data */}
                     {adminStats.activePatients.slice(0, 5).map((patient, idx) => (
-                      <div key={patient.id} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                      <div key={patient.id} className="flex items-center justify-between p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                         <span className="text-xs text-white font-bold truncate flex-1">{patient.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-violet-300">
@@ -813,25 +826,25 @@ export function DashboardPage() {
                   <h3 className="text-sm font-bold text-amber-400">Upcoming Focus Areas</h3>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  <div className="p-3 bg-white/5 rounded-lg">
+                  <div className="p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white font-bold">Milestone Check-ins Due</span>
                       <span className="text-lg font-bold text-amber-400">{weeklyMetrics.upcomingFocus.milestoneCheckIns}</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg">
+                  <div className="p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white font-bold">Upcoming Discharges</span>
                       <span className="text-lg font-bold text-amber-400">{weeklyMetrics.upcomingFocus.upcomingDischarges}</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg">
+                  <div className="p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white font-bold">Patients Needing Attention</span>
                       <span className="text-lg font-bold text-amber-400">{weeklyMetrics.upcomingFocus.needsAttention}</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-white/5 rounded-lg">
+                  <div className="p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white font-bold">High-Priority Appointments</span>
                       <span className="text-lg font-bold text-amber-400">{weeklyMetrics.upcomingFocus.highPriorityAppts}</span>
@@ -864,7 +877,7 @@ export function DashboardPage() {
                 <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
                   {/* Display uploaded photos */}
                   {progressPhotos.map((photo, index) => (
-                    <div key={index} className="relative aspect-square bg-white/5 rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group">
+                    <div key={index} className="relative aspect-square rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
                       <img
                         src={photo}
                         alt={`Progress ${index + 1}`}
@@ -883,7 +896,8 @@ export function DashboardPage() {
                     <div
                       key={`empty-${i}`}
                       onClick={handlePhotoUpload}
-                      className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
+                      className="aspect-square rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
+                      style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
                     >
                       <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
                     </div>
@@ -900,6 +914,21 @@ export function DashboardPage() {
             </div>
           </GlassCard>
         </div>
+
+        {/* Weight Tracking Chart - Show for selected patient */}
+        {selectedPatient && selectedPatient.height && (selectedPatient.startingWeight || selectedPatient.currentWeight || selectedPatient.targetWeight) ? (
+          <GlassCard>
+            <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-yellow-400" />
+              Weight Progress: {selectedPatient.name}
+            </h2>
+            <WeightTrackingChart
+              patient={selectedPatient}
+              weightEntries={[]} // TODO: Fetch weight entries from vitals for this patient
+              showTargetStar={true}
+            />
+          </GlassCard>
+        ) : null}
 
         {/* Active Patients with Metrics */}
         <GlassCard>
@@ -919,7 +948,8 @@ export function DashboardPage() {
                 return (
                   <div
                     key={patient.id}
-                    className="p-4 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                    className="p-4 rounded-lg hover:bg-[#2d3a57] transition-colors"
+                    style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1249,6 +1279,33 @@ export function DashboardPage() {
             </Link>
           </div>
         )}
+      </GlassCard>
+
+      {/* Weight Tracking Progress */}
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-yellow-400" />
+          My Weight Progress
+        </h2>
+        <WeightTrackingChart
+          patient={{
+            id: user?.id || 0,
+            therapistId: 0,
+            name: user?.name || '',
+            isActive: true,
+            height: 70, // TODO: Get from user profile
+            heightUnit: 'in' as 'in' | 'cm',
+            startingWeight: 180, // TODO: Get from user profile
+            currentWeight: stats.latestVitals?.weight || 175, // Get from latest vitals
+            targetWeight: 165, // TODO: Get from user profile
+            weightUnit: 'lbs' as 'kg' | 'lbs',
+            surgeryDate: '', // TODO: Get from user profile
+            createdAt: '',
+            updatedAt: ''
+          }}
+          weightEntries={[]} // TODO: Fetch weight history from vitals
+          showTargetStar={true}
+        />
       </GlassCard>
     </div>
   );

@@ -27,10 +27,15 @@ export const getCalendars = async (req: Request, res: Response) => {
 export const createCalendar = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
-    
+    const { assignToUserId, ...restBody } = req.body;
+
+    // If assignToUserId is provided and user is a therapist/admin, create for that user
+    // Otherwise create for the logged-in user
+    const targetUserId = assignToUserId && req.user?.role !== 'patient' ? assignToUserId : userId;
+
     const calendarData = {
-      userId,
-      ...req.body
+      userId: targetUserId,
+      ...restBody
     };
 
     const calendar = await Calendar.create(calendarData);

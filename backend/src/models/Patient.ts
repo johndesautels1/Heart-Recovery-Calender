@@ -13,6 +13,12 @@ interface PatientAttributes {
   surgeryDate?: Date;
   notes?: string;
   isActive: boolean;
+  height?: number;          // Height in inches or cm
+  heightUnit?: 'in' | 'cm'; // Unit of measurement
+  startingWeight?: number;  // Weight at start of therapy (kg or lbs)
+  currentWeight?: number;   // Most recent weight (kg or lbs)
+  targetWeight?: number;    // Goal weight (kg or lbs)
+  weightUnit?: 'kg' | 'lbs'; // Unit of measurement
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -31,6 +37,12 @@ class Patient extends Model<PatientAttributes, PatientCreationAttributes> implem
   public surgeryDate?: Date;
   public notes?: string;
   public isActive!: boolean;
+  public height?: number;
+  public heightUnit?: 'in' | 'cm';
+  public startingWeight?: number;
+  public currentWeight?: number;
+  public targetWeight?: number;
+  public weightUnit?: 'kg' | 'lbs';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -91,6 +103,38 @@ class Patient extends Model<PatientAttributes, PatientCreationAttributes> implem
         isActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: true,
+        },
+        height: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Height in inches or cm',
+        },
+        heightUnit: {
+          type: DataTypes.STRING(2),
+          allowNull: true,
+          defaultValue: 'in',
+          comment: 'in for inches, cm for centimeters',
+        },
+        startingWeight: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Weight at start of therapy',
+        },
+        currentWeight: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Most recent weight measurement',
+        },
+        targetWeight: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Goal weight for patient',
+        },
+        weightUnit: {
+          type: DataTypes.STRING(3),
+          allowNull: true,
+          defaultValue: 'lbs',
+          comment: 'kg or lbs',
         },
       },
       {

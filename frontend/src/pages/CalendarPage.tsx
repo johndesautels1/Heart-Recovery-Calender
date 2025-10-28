@@ -53,7 +53,7 @@ export function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
-  const [calendarFormData, setCalendarFormData] = useState({ name: '', type: 'general', color: '#607d8b' });
+  const [calendarFormData, setCalendarFormData] = useState({ name: '', type: 'general', color: '#607d8b', assignToPatientId: 0 });
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
   const [performanceScore, setPerformanceScore] = useState<string>('');
@@ -68,6 +68,9 @@ export function CalendarPage() {
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const qrCodeRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<any>(null);
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState<number[]>([]);
+  const [selectedPatientForCalendar, setSelectedPatientForCalendar] = useState<number | null | undefined>(undefined);
+  const [selectedCalendarForView, setSelectedCalendarForView] = useState<number | null>(null);
 
   const {
     register,
@@ -103,7 +106,16 @@ export function CalendarPage() {
   // Reload calendar data when patient selection changes
   useEffect(() => {
     loadCalendarsAndEvents();
+    // Reset calendar selection when switching patients
+    setSelectedCalendarIds([]);
   }, [selectedPatient]);
+
+  // Initialize selected calendars when calendars are loaded
+  useEffect(() => {
+    if (calendars.length > 0 && selectedCalendarIds.length === 0) {
+      setSelectedCalendarIds(calendars.map(cal => cal.id));
+    }
+  }, [calendars]);
 
   const loadPatients = async () => {
     // Only load patients if user is admin or therapist
@@ -644,11 +656,18 @@ See browser console for full configuration details.
     }
   };
 
-  const createCalendar = async (data: CreateCalendarInput) => {
+  const createCalendar = async (data: CreateCalendarInput & { assignToUserId?: number }) => {
     try {
+      // If assignToUserId is provided (for therapist creating calendar for patient),
+      // we need to create it via a different endpoint or handle it specially
       const newCalendar = await api.createCalendar(data);
       setCalendars([...calendars, newCalendar]);
-      toast.success('Calendar created successfully');
+
+      const assignedTo = data.assignToUserId && data.assignToUserId !== user?.id
+        ? patients.find(p => p.userId === data.assignToUserId)?.name
+        : 'yourself';
+
+      toast.success(`Calendar created successfully${assignedTo !== 'yourself' ? ` for ${assignedTo}` : ''}`);
       setIsCalendarModalOpen(false);
     } catch (error) {
       console.error('Failed to create calendar:', error);
@@ -899,23 +918,26 @@ See browser console for full configuration details.
 
   // Create calendar events from both regular events and meals
   const calendarEvents = [
-    ...events.map(event => {
-      const calendar = calendars.find(c => c.id === event.calendarId);
-      return {
-        id: event.id.toString(),
-        title: event.title,
-        start: event.startTime,
-        end: event.endTime,
-        allDay: event.isAllDay,
-        backgroundColor: calendar?.color || '#607d8b',
-        borderColor: calendar?.color || '#607d8b',
-        extendedProps: {
-          ...event,
-          calendarType: calendar?.type,
-          isMealEvent: false,
-        },
-      };
-    }),
+    // Filter events based on selected calendars
+    ...events
+      .filter(event => selectedCalendarIds.length === 0 || selectedCalendarIds.includes(event.calendarId))
+      .map(event => {
+        const calendar = calendars.find(c => c.id === event.calendarId);
+        return {
+          id: event.id.toString(),
+          title: event.title,
+          start: event.startTime,
+          end: event.endTime,
+          allDay: event.isAllDay,
+          backgroundColor: calendar?.color || '#607d8b',
+          borderColor: calendar?.color || '#607d8b',
+          extendedProps: {
+            ...event,
+            calendarType: calendar?.type,
+            isMealEvent: false,
+          },
+        };
+      }),
     // Add meal indicators to calendar
     ...Object.entries(
       allMeals.reduce((acc, meal) => {
@@ -969,16 +991,26 @@ See browser console for full configuration details.
   ];
 
   // Determine whose calendar is being viewed
-  const calendarOwnerDisplay = isViewingAsTherapist && selectedPatient
-    ? `${selectedPatient.name}'s Calendar`
-    : user?.role === 'admin' || user?.role === 'therapist'
-    ? `${user?.role === 'admin' ? 'Admin' : 'Therapist'} ${user?.name}'s Calendar`
-    : `${user?.name}'s Calendar`;
+  const getCalendarOwnerDisplay = () => {
+    if (selectedCalendarIds.length === 1 && selectedCalendarIds.length < calendars.length) {
+      const selectedCalendar = calendars.find(cal => cal.id === selectedCalendarIds[0]);
+      if (selectedCalendar) {
+        return `Now viewing: ${selectedCalendar.name}`;
+      }
+    }
+    return isViewingAsTherapist && selectedPatient
+      ? `${selectedPatient.name}'s Calendar`
+      : user?.role === 'admin' || user?.role === 'therapist'
+      ? `${user?.role === 'admin' ? 'Admin' : 'Therapist'} ${user?.name}'s Calendar`
+      : `${user?.name}'s Calendar`;
+  };
+
+  const calendarOwnerDisplay = getCalendarOwnerDisplay();
 
   return (
     <div className="space-y-3">
       {/* Calendar Title Line */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <h1 className="text-xs font-bold whitespace-nowrap" style={{ color: '#ff6600' }}>{calendarOwnerDisplay}</h1>
 
         {/* Patient Selector - Only show for admin/therapist */}
@@ -1007,6 +1039,7 @@ See browser console for full configuration details.
             </optgroup>
           </select>
         )}
+
       </div>
 
       {/* Buttons Line */}
@@ -1504,7 +1537,9 @@ See browser console for full configuration details.
         onClose={() => {
           setIsCalendarModalOpen(false);
           setEditingCalendar(null);
-          setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+          setCalendarFormData({ name: '', type: 'general', color: '#607d8b', assignToPatientId: 0 });
+          setSelectedPatientForCalendar(undefined);
+          setSelectedCalendarForView(null);
         }}
         title={editingCalendar ? 'Edit Calendar' : 'Manage My Calendars'}
         size="lg"
@@ -1512,21 +1547,196 @@ See browser console for full configuration details.
         <div className="space-y-4">
           {!editingCalendar ? (
             <>
+              {/* Calendar Selector - Two-Step Process */}
+              <div className="space-y-4">
+                {/* Step 1: Select Person */}
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-white">1. Select Calendar Owner</label>
+                  <select
+                    value={selectedPatientForCalendar === null ? 'admin' : selectedPatientForCalendar || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setSelectedPatientForCalendar(undefined);
+                        setSelectedCalendarForView(null);
+                      } else if (value === 'admin') {
+                        setSelectedPatientForCalendar(null);
+                        setSelectedCalendarForView(null);
+                      } else {
+                        setSelectedPatientForCalendar(parseInt(value));
+                        setSelectedCalendarForView(null);
+                      }
+                    }}
+                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{ color: '#1e40af', maxHeight: '300px', overflowY: 'auto' }}
+                  >
+                    <option value="" style={{ color: '#1e40af', fontWeight: 700 }}>
+                      -- Select Owner --
+                    </option>
+
+                    {/* Admin/Current User at Top */}
+                    <option value="admin" style={{ color: '#1e40af', fontWeight: 700, backgroundColor: '#e0f2fe' }}>
+                      {user?.role === 'admin' ? 'Admin: ' : user?.role === 'therapist' ? 'Therapist: ' : ''}{user?.name}
+                    </option>
+
+                    {/* Patient Names Only - Alphabetically */}
+                    {patients
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map(patient => (
+                        <option
+                          key={patient.id}
+                          value={patient.userId}
+                          style={{ color: '#1e40af', fontWeight: 700 }}
+                        >
+                          {patient.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Step 2: Select Specific Calendar (only shown after Step 1 selection) */}
+                {selectedPatientForCalendar !== undefined && (
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-white">
+                      2. Select Calendar
+                    </label>
+                    <select
+                      value={selectedCalendarForView || ''}
+                      onChange={(e) => {
+                        const calendarId = parseInt(e.target.value);
+                        if (calendarId) {
+                          setSelectedCalendarForView(calendarId);
+                        }
+                      }}
+                      className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                      style={{ color: '#1e40af', maxHeight: '200px', overflowY: 'auto' }}
+                    >
+                      <option value="" style={{ color: '#1e40af', fontWeight: 700 }}>
+                        -- Select Calendar --
+                      </option>
+
+                      {(() => {
+                        const typeOrder = ['general', 'meals', 'sleep', 'exercise', 'medications', 'vitals', 'appointments'];
+                        const userCalendars = selectedPatientForCalendar === null
+                          ? calendars.filter(cal => cal.userId === user?.id)
+                          : calendars.filter(cal => cal.userId === selectedPatientForCalendar);
+
+                        return userCalendars
+                          .sort((a, b) => {
+                            const indexA = typeOrder.indexOf(a.type);
+                            const indexB = typeOrder.indexOf(b.type);
+                            const orderA = indexA === -1 ? 999 : indexA;
+                            const orderB = indexB === -1 ? 999 : indexB;
+                            return orderA - orderB;
+                          })
+                          .map(calendar => (
+                            <option
+                              key={calendar.id}
+                              value={calendar.id}
+                              style={{ color: '#1e40af', fontWeight: 700 }}
+                            >
+                              {calendar.name}
+                            </option>
+                          ));
+                      })()}
+                    </select>
+                  </div>
+                )}
+
+                {/* Step 3: Edit/Delete Section (only shown after calendar selection) */}
+                {selectedCalendarForView && (() => {
+                  const selectedCal = calendars.find(c => c.id === selectedCalendarForView);
+                  if (!selectedCal) return null;
+
+                  return (
+                    <div className="border-2 border-white/30 rounded-lg p-4 bg-white/5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-white font-bold text-lg">
+                          {selectedCal.name}
+                        </h3>
+                        <div
+                          className="w-8 h-8 rounded-full border-2 border-white"
+                          style={{ backgroundColor: selectedCal.color || '#607d8b' }}
+                        />
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div>
+                          <span className="text-white/60 text-sm">Type:</span>
+                          <p className="text-white font-bold capitalize">{selectedCal.type.replace('_', ' ')}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          fullWidth
+                          variant="primary"
+                          onClick={() => {
+                            setSelectedCalendarIds([selectedCalendarForView]);
+                            setIsCalendarModalOpen(false);
+                            setSelectedPatientForCalendar(undefined);
+                            setSelectedCalendarForView(null);
+                            toast.success(`Now viewing: ${selectedCal.name}`);
+                          }}
+                        >
+                          View This Calendar
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            setEditingCalendar(selectedCal);
+                            setCalendarFormData({
+                              name: selectedCal.name,
+                              type: selectedCal.type,
+                              color: selectedCal.color || '#607d8b',
+                              assignToPatientId: 0
+                            });
+                            setSelectedPatientForCalendar(undefined);
+                            setSelectedCalendarForView(null);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={async () => {
+                            if (window.confirm(`Delete "${selectedCal.name}" calendar and all its events?`)) {
+                              try {
+                                await api.deleteCalendar(selectedCal.id);
+                                setCalendars(calendars.filter(c => c.id !== selectedCal.id));
+                                setEvents(events.filter(e => e.calendarId !== selectedCal.id));
+                                setSelectedPatientForCalendar(undefined);
+                                setSelectedCalendarForView(null);
+                                toast.success('Calendar deleted');
+                              } catch (error) {
+                                toast.error('Failed to delete calendar');
+                              }
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
               {/* Calendar List */}
               <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
                 {calendars.map(calendar => (
                   <div
                     key={calendar.id}
-                    className="flex items-center justify-between p-4 bg-white/50 rounded-lg hover:bg-white/70 transition-colors"
+                    className="flex items-center justify-between p-4 bg-white/90 border-2 border-white/30 rounded-lg hover:bg-white transition-colors shadow-md"
                   >
                     <div className="flex items-center space-x-3 flex-1">
                       <div
-                        className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                        className="w-8 h-8 rounded-full border-3 border-gray-300 shadow-md"
                         style={{ backgroundColor: calendar.color || '#607d8b' }}
                       />
                       <div className="flex-1">
-                        <p className="font-bold" style={{ color: '#ff6600' }}>{calendar.name}</p>
-                        <p className="text-sm font-bold capitalize" style={{ color: '#ff8533' }}>{calendar.type.replace('_', ' ')}</p>
+                        <p className="font-bold text-lg text-gray-900">{calendar.name}</p>
+                        <p className="text-sm font-semibold capitalize text-gray-600">{calendar.type.replace('_', ' ')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1538,7 +1748,8 @@ See browser console for full configuration details.
                           setCalendarFormData({
                             name: calendar.name,
                             type: calendar.type,
-                            color: calendar.color || '#607d8b'
+                            color: calendar.color || '#607d8b',
+                            assignToPatientId: 0
                           });
                         }}
                       >
@@ -1573,7 +1784,7 @@ See browser console for full configuration details.
                 variant="glass"
                 onClick={() => {
                   setEditingCalendar({ id: 0, name: '', type: 'general', color: '#607d8b', userId: user?.id || 0, createdAt: '', updatedAt: '' } as Calendar);
-                  setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                  setCalendarFormData({ name: '', type: 'general', color: '#607d8b', assignToPatientId: 0 });
                 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -1585,40 +1796,67 @@ See browser console for full configuration details.
               {/* Calendar Edit/Create Form */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
+                  <label className="block text-sm font-bold mb-2 text-white">
                     Calendar Name
                   </label>
                   <input
                     type="text"
                     value={calendarFormData.name}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
-                    className="glass-input"
+                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{ color: '#1e40af' }}
                     placeholder="My Calendar"
                   />
                 </div>
 
+                {/* Patient Selector - Only for therapists */}
+                {isViewingAsTherapist && patients.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-white">
+                      Assign To Patient (Optional)
+                    </label>
+                    <select
+                      value={calendarFormData.assignToPatientId}
+                      onChange={(e) => setCalendarFormData({ ...calendarFormData, assignToPatientId: parseInt(e.target.value) })}
+                      className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                      style={{ color: '#1e40af' }}
+                    >
+                      <option value={0} style={{ color: '#1e40af', fontWeight: 700 }}>My Own Calendar</option>
+                      {patients.map((patient) => (
+                        <option key={patient.id} value={patient.userId || 0} style={{ color: '#1e40af', fontWeight: 700 }}>
+                          {patient.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-white/60 mt-1">
+                      Select a patient to create a calendar for them, or leave as "My Own Calendar" to create one for yourself
+                    </p>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
+                  <label className="block text-sm font-bold mb-2 text-white">
                     Calendar Type
                   </label>
                   <select
                     value={calendarFormData.type}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
-                    className="glass-input"
+                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{ color: '#1e40af' }}
                   >
-                    <option value="general">General</option>
-                    <option value="vitals">Vitals</option>
-                    <option value="medications">Medications</option>
-                    <option value="meals">Meals</option>
-                    <option value="diet">Food Diary</option>
-                    <option value="sleep">Sleep Journal</option>
-                    <option value="exercise">Exercise & Activities</option>
-                    <option value="appointments">Appointments</option>
+                    <option value="general" style={{ color: '#1e40af', fontWeight: 700 }}>General</option>
+                    <option value="vitals" style={{ color: '#1e40af', fontWeight: 700 }}>Vitals</option>
+                    <option value="medications" style={{ color: '#1e40af', fontWeight: 700 }}>Medications</option>
+                    <option value="meals" style={{ color: '#1e40af', fontWeight: 700 }}>Meals</option>
+                    <option value="diet" style={{ color: '#1e40af', fontWeight: 700 }}>Food Diary</option>
+                    <option value="sleep" style={{ color: '#1e40af', fontWeight: 700 }}>Sleep Journal</option>
+                    <option value="exercise" style={{ color: '#1e40af', fontWeight: 700 }}>Exercise & Activities</option>
+                    <option value="appointments" style={{ color: '#1e40af', fontWeight: 700 }}>Appointments</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold mb-2" style={{ color: '#ff6600' }}>
+                  <label className="block text-sm font-bold mb-2 text-white">
                     Calendar Color
                   </label>
                   <div className="flex items-center gap-3">
@@ -1626,13 +1864,14 @@ See browser console for full configuration details.
                       type="color"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="h-12 w-20 rounded border-2 border-gray-300 cursor-pointer"
+                      className="h-12 w-20 rounded border-2 border-white/30 cursor-pointer bg-white"
                     />
                     <input
                       type="text"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="glass-input flex-1"
+                      className="flex-1 px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
+                      style={{ color: '#1e40af' }}
                       placeholder="#607d8b"
                       pattern="^#[0-9A-Fa-f]{6}$"
                     />
@@ -1646,7 +1885,7 @@ See browser console for full configuration details.
                     fullWidth
                     onClick={() => {
                       setEditingCalendar(null);
-                      setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                      setCalendarFormData({ name: '', type: 'general', color: '#607d8b', assignToPatientId: 0 });
                     }}
                   >
                     Cancel
@@ -1667,6 +1906,7 @@ See browser console for full configuration details.
                             name: calendarFormData.name,
                             type: calendarFormData.type,
                             color: calendarFormData.color,
+                            assignToUserId: calendarFormData.assignToPatientId || undefined,
                           });
                         } else {
                           // Update existing calendar
@@ -1679,7 +1919,7 @@ See browser console for full configuration details.
                           toast.success('Calendar updated successfully');
                         }
                         setEditingCalendar(null);
-                        setCalendarFormData({ name: '', type: 'general', color: '#607d8b' });
+                        setCalendarFormData({ name: '', type: 'general', color: '#607d8b', assignToPatientId: 0 });
                       } catch (error) {
                         toast.error('Failed to save calendar');
                       }

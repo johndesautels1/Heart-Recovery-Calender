@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Input } from '../components/ui';
-import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User, Trophy, Award, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User, Trophy, Award, BarChart3, PieChart as PieChartIcon, Scale } from 'lucide-react';
 import { api } from '../services/api';
 import { FoodCategory, FoodItem, FoodStats, MealEntry } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { WeightTrackingChart } from '../components/charts/WeightTrackingChart';
 
 export function MealsPage() {
   const { user } = useAuth();
@@ -800,6 +801,35 @@ export function MealsPage() {
               </ResponsiveContainer>
             </GlassCard>
           </div>
+
+          {/* Chart 4: Weight Tracking */}
+          {(isViewingAsTherapist && selectedPatient) || (!isViewingAsTherapist && user) ? (
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Scale className="h-5 w-5" />
+                Weight Tracking Progress
+              </h3>
+              <WeightTrackingChart
+                patient={isViewingAsTherapist && selectedPatient ? selectedPatient : {
+                  id: user?.id || 0,
+                  therapistId: 0,
+                  name: user?.name || '',
+                  isActive: true,
+                  height: 70, // TODO: Get from user profile
+                  heightUnit: 'in' as 'in' | 'cm',
+                  startingWeight: 180, // TODO: Get from user profile
+                  currentWeight: 175, // TODO: Get from latest vitals
+                  targetWeight: 165, // TODO: Get from user profile
+                  weightUnit: 'lbs' as 'kg' | 'lbs',
+                  surgeryDate: '', // TODO: Get from user profile
+                  createdAt: '',
+                  updatedAt: ''
+                }}
+                weightEntries={[]} // TODO: Fetch weight entries from vitals
+                showTargetStar={true}
+              />
+            </GlassCard>
+          ) : null}
         </>
       )}
 

@@ -298,6 +298,12 @@ export interface Patient {
   surgeryDate?: string;
   notes?: string;
   isActive: boolean;
+  height?: number;          // Height in inches or cm
+  heightUnit?: 'in' | 'cm'; // Unit of measurement
+  startingWeight?: number;  // Weight at start of therapy
+  currentWeight?: number;   // Most recent weight
+  targetWeight?: number;    // Goal weight
+  weightUnit?: 'kg' | 'lbs'; // Unit of measurement
   createdAt: string;
   updatedAt: string;
 }

@@ -55,6 +55,12 @@ export const addPatient = async (req: Request, res: Response) => {
     if (sanitizedData.zoomHandle === '') sanitizedData.zoomHandle = null;
     if (sanitizedData.surgeryDate === '') sanitizedData.surgeryDate = null;
     if (sanitizedData.notes === '') sanitizedData.notes = null;
+    if (sanitizedData.height === '') sanitizedData.height = null;
+    if (sanitizedData.heightUnit === '') sanitizedData.heightUnit = null;
+    if (sanitizedData.startingWeight === '') sanitizedData.startingWeight = null;
+    if (sanitizedData.currentWeight === '') sanitizedData.currentWeight = null;
+    if (sanitizedData.targetWeight === '') sanitizedData.targetWeight = null;
+    if (sanitizedData.weightUnit === '') sanitizedData.weightUnit = null;
 
     let userId = null;
 
@@ -155,6 +161,12 @@ export const updatePatient = async (req: Request, res: Response) => {
     if (sanitizedData.zoomHandle === '') sanitizedData.zoomHandle = null;
     if (sanitizedData.surgeryDate === '') sanitizedData.surgeryDate = null;
     if (sanitizedData.notes === '') sanitizedData.notes = null;
+    if (sanitizedData.height === '') sanitizedData.height = null;
+    if (sanitizedData.heightUnit === '') sanitizedData.heightUnit = null;
+    if (sanitizedData.startingWeight === '') sanitizedData.startingWeight = null;
+    if (sanitizedData.currentWeight === '') sanitizedData.currentWeight = null;
+    if (sanitizedData.targetWeight === '') sanitizedData.targetWeight = null;
+    if (sanitizedData.weightUnit === '') sanitizedData.weightUnit = null;
 
     // If therapist wants to create a user account for this patient (and patient doesn't have one)
     if (createUserAccount && password && sanitizedData.email && !patient.userId) {
