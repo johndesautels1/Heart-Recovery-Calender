@@ -483,14 +483,14 @@ export function MealsPage() {
                 />
               </div>
 
-              {/* Category Filter */}
-              <div className="flex flex-wrap gap-2">
+              {/* Category Filter - Symmetrical Grid Layout */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 <button
                   onClick={() => setSelectedCategory(null)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                     selectedCategory === null
-                      ? 'bg-cobalt-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:border-cobalt-300'
+                      ? 'bg-cobalt-500 text-white shadow-lg scale-105'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-cobalt-400 hover:scale-105'
                   }`}
                 >
                   All Categories
@@ -499,10 +499,10 @@ export function MealsPage() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                       selectedCategory === category.id
-                        ? 'bg-cobalt-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:border-cobalt-300'
+                        ? 'bg-cobalt-500 text-white shadow-lg scale-105'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-cobalt-400 hover:scale-105'
                     }`}
                   >
                     {category.icon} {category.name}
@@ -510,44 +510,44 @@ export function MealsPage() {
                 ))}
               </div>
 
-              {/* Health Rating Filter */}
-              <div className="flex flex-wrap gap-2">
+              {/* Health Rating Filter - Symmetrical Grid Layout */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   onClick={() => setSelectedHealthRating(null)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                     selectedHealthRating === null
-                      ? 'bg-gray-700 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
+                      ? 'bg-gray-700 text-white shadow-lg scale-105'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:scale-105'
                   }`}
                 >
                   All Ratings
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('green')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                     selectedHealthRating === 'green'
-                      ? 'bg-green-600 text-white shadow-lg'
-                      : 'bg-white text-green-700 border border-green-300 hover:border-green-400'
+                      ? 'bg-green-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-green-700 border-2 border-green-300 hover:border-green-500 hover:scale-105'
                   }`}
                 >
                   💚 Heart-Healthy
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('yellow')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                     selectedHealthRating === 'yellow'
-                      ? 'bg-yellow-600 text-white shadow-lg'
-                      : 'bg-white text-yellow-700 border border-yellow-300 hover:border-yellow-400'
+                      ? 'bg-yellow-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-yellow-700 border-2 border-yellow-300 hover:border-yellow-500 hover:scale-105'
                   }`}
                 >
                   💛 Moderation
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('red')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
                     selectedHealthRating === 'red'
-                      ? 'bg-red-600 text-white shadow-lg'
-                      : 'bg-white text-red-700 border border-red-300 hover:border-red-400'
+                      ? 'bg-red-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-red-700 border-2 border-red-300 hover:border-red-500 hover:scale-105'
                   }`}
                 >
                   ❤️ Limit/Avoid

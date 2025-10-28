@@ -51,29 +51,47 @@
 }
 
 @layer components {
-  /* Premium glassmorphic card components - matching cardiac-recovery-pro */
+  /* Premium glassmorphic card components - THICK RAISED EFFECT */
   .glass {
     background: linear-gradient(135deg, var(--card), var(--card-light));
     border-radius: 16px;
     padding: 30px;
-    border: 2px solid rgba(96, 165, 250, 0.2);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    transition: all 0.3s ease;
+    border: 3px solid rgba(96, 165, 250, 0.3);
+    /* Multi-layered 3D shadow */
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.1),
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      0 16px 32px rgba(0, 0, 0, 0.3),
+      inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Raised edge effect */
+    border-top: 2px solid rgba(96, 165, 250, 0.4);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.3);
   }
 
   .glass:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px) scale(1.01);
     border-color: var(--accent);
-    box-shadow: 0 25px 70px rgba(96, 165, 250, 0.3);
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 12px 24px rgba(96, 165, 250, 0.2),
+      0 24px 48px rgba(96, 165, 250, 0.3),
+      inset 0 3px 0 rgba(255, 255, 255, 0.15);
   }
 
   .glass-dark {
     background: linear-gradient(135deg, var(--card-light), var(--card));
     border-radius: 16px;
     padding: 30px;
-    border: 2px solid rgba(96, 165, 250, 0.2);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-    transition: all 0.3s ease;
+    border: 3px solid rgba(96, 165, 250, 0.3);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 8px 16px rgba(0, 0, 0, 0.25),
+      0 16px 32px rgba(0, 0, 0, 0.35),
+      inset 0 2px 0 rgba(255, 255, 255, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-top: 2px solid rgba(96, 165, 250, 0.3);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.4);
   }
 
   .glass-button {
@@ -81,13 +99,32 @@
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     color: #ffffff;
     border: none;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    /* Thick raised effect */
+    box-shadow:
+      0 2px 4px rgba(139, 92, 246, 0.2),
+      0 6px 12px rgba(139, 92, 246, 0.3),
+      0 12px 24px rgba(139, 92, 246, 0.2),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.3);
   }
 
   .glass-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+      0 4px 8px rgba(139, 92, 246, 0.3),
+      0 10px 20px rgba(139, 92, 246, 0.4),
+      0 20px 40px rgba(139, 92, 246, 0.3),
+      inset 0 3px 0 rgba(255, 255, 255, 0.4);
     color: #22d3ee;
+  }
+
+  .glass-button:active {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+      0 1px 2px rgba(139, 92, 246, 0.3),
+      0 4px 8px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .glass-input {
@@ -97,6 +134,12 @@
     color: #1a1a1a;
     font-size: 1.1rem;
     min-height: 50px;
+    /* Thick raised effect for inputs */
+    box-shadow:
+      0 2px 4px rgba(96, 165, 250, 0.15),
+      0 4px 8px rgba(96, 165, 250, 0.1),
+      inset 0 2px 4px rgba(0, 0, 0, 0.08);
+    border-bottom-width: 4px;
   }
 
   .glass-input::placeholder {
@@ -105,7 +148,12 @@
 
   .glass-input:focus {
     border-color: var(--cyan);
-    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3);
+    box-shadow:
+      0 0 0 4px rgba(6, 182, 212, 0.3),
+      0 4px 8px rgba(6, 182, 212, 0.2),
+      0 8px 16px rgba(6, 182, 212, 0.15),
+      inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
   }
 
   /* Dropdown styling - cobalt blue text for select and options */
@@ -129,33 +177,70 @@
     box-shadow: 0 15px 50px rgba(59, 130, 246, 0.2);
   }
 
-  /* Premium button variants using CSS variables */
+  /* Premium button variants using CSS variables - THICK RAISED EFFECT */
   .btn-primary {
     @apply px-6 py-3 rounded-lg font-bold transition-all duration-300;
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     color: #ffffff;
     border: none;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    box-shadow:
+      0 2px 4px rgba(139, 92, 246, 0.2),
+      0 6px 12px rgba(139, 92, 246, 0.3),
+      0 12px 24px rgba(139, 92, 246, 0.2),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.3);
   }
 
   .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+      0 4px 8px rgba(139, 92, 246, 0.3),
+      0 10px 20px rgba(139, 92, 246, 0.4),
+      0 20px 40px rgba(139, 92, 246, 0.3),
+      inset 0 3px 0 rgba(255, 255, 255, 0.4);
     color: #22d3ee;
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+      0 1px 2px rgba(139, 92, 246, 0.3),
+      0 4px 8px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .btn-secondary {
     @apply px-6 py-3 rounded-lg font-bold transition-all duration-300;
     background: var(--card);
     color: var(--ink);
-    border: 2px solid var(--accent);
+    border: 3px solid var(--accent);
+    box-shadow:
+      0 2px 4px rgba(96, 165, 250, 0.15),
+      0 6px 12px rgba(96, 165, 250, 0.2),
+      0 12px 24px rgba(96, 165, 250, 0.15),
+      inset 0 2px 0 rgba(96, 165, 250, 0.2);
+    border-top-color: var(--accent);
+    border-bottom-width: 4px;
   }
 
   .btn-secondary:hover:not(:disabled) {
     background: var(--accent);
     color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+      0 4px 8px rgba(96, 165, 250, 0.25),
+      0 10px 20px rgba(96, 165, 250, 0.35),
+      0 20px 40px rgba(96, 165, 250, 0.25),
+      inset 0 3px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+      0 1px 2px rgba(96, 165, 250, 0.2),
+      0 4px 8px rgba(96, 165, 250, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   .btn-danger {
@@ -163,12 +248,30 @@
     background: linear-gradient(135deg, var(--bad), #dc2626);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    box-shadow:
+      0 2px 4px rgba(239, 68, 68, 0.2),
+      0 6px 12px rgba(239, 68, 68, 0.3),
+      0 12px 24px rgba(239, 68, 68, 0.2),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.3);
   }
 
   .btn-danger:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+      0 4px 8px rgba(239, 68, 68, 0.3),
+      0 10px 20px rgba(239, 68, 68, 0.4),
+      0 20px 40px rgba(239, 68, 68, 0.3),
+      inset 0 3px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-danger:active:not(:disabled) {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+      0 1px 2px rgba(239, 68, 68, 0.3),
+      0 4px 8px rgba(239, 68, 68, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .btn-success {
@@ -176,12 +279,30 @@
     background: linear-gradient(135deg, var(--good), #16a34a);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    box-shadow:
+      0 2px 4px rgba(34, 197, 94, 0.2),
+      0 6px 12px rgba(34, 197, 94, 0.3),
+      0 12px 24px rgba(34, 197, 94, 0.2),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.3);
   }
 
   .btn-success:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.5);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+      0 4px 8px rgba(34, 197, 94, 0.3),
+      0 10px 20px rgba(34, 197, 94, 0.4),
+      0 20px 40px rgba(34, 197, 94, 0.3),
+      inset 0 3px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-success:active:not(:disabled) {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+      0 1px 2px rgba(34, 197, 94, 0.3),
+      0 4px 8px rgba(34, 197, 94, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   /* Calendar event colors */
@@ -207,6 +328,133 @@
 
   .event-general {
     @apply bg-gray-500 text-white;
+  }
+
+  /* Premium FullCalendar event styling - THICK RAISED BUTTON EFFECT */
+  :root .fc-event {
+    border-left-width: 5px !important;
+    border-left-style: solid !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    margin-bottom: 3px !important;
+    cursor: pointer !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    /* Multi-layered shadow for deep 3D effect */
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.05),
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 8px 16px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    font-weight: 600 !important;
+    /* Subtle gradient for depth */
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.05)) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.2) !important;
+  }
+
+  :root .fc-event:hover {
+    transform: translateY(-4px) scale(1.03) !important;
+    /* Enhanced shadow on hover for "lifting" effect */
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 8px 16px rgba(0, 0, 0, 0.15),
+      0 16px 32px rgba(0, 0, 0, 0.15),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3) !important;
+  }
+
+  :root .fc-event:active {
+    transform: translateY(-1px) scale(1.01) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Event time text */
+  :root .fc-event-time {
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Event title text */
+  :root .fc-event-title {
+    font-weight: 600 !important;
+  }
+
+  /* Day cell hover effect */
+  :root .fc-daygrid-day:hover {
+    background-color: rgba(96, 165, 250, 0.05) !important;
+    transition: background-color 0.2s ease !important;
+  }
+
+  /* Today highlight */
+  :root .fc-day-today {
+    background-color: rgba(96, 165, 250, 0.08) !important;
+  }
+
+  /* Event dot (for list view) */
+  :root .fc-list-event-dot {
+    border-width: 4px !important;
+  }
+
+  /* Universal thick raised effect for all buttons */
+  button:not(.fc-button):not([class*="unstyled"]) {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.1),
+      0 4px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    border-bottom-width: 3px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  button:not(.fc-button):not([class*="unstyled"]):hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.1),
+      inset 0 2px 0 rgba(255, 255, 255, 0.25) !important;
+  }
+
+  button:not(.fc-button):not([class*="unstyled"]):active:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Enhanced FullCalendar buttons */
+  :root .fc-button {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.1),
+      0 4px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    border-bottom-width: 3px !important;
+    transition: all 0.2s ease !important;
+    font-weight: 700 !important;
+  }
+
+  :root .fc-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.1),
+      inset 0 2px 0 rgba(255, 255, 255, 0.25) !important;
+  }
+
+  :root .fc-button:active {
+    transform: translateY(0px) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  }
+
+  :root .fc-button-primary {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  }
+
+  :root .fc-button-primary:hover {
+    background: linear-gradient(135deg, #9c6bff, #8d4afe) !important;
   }
 }
 

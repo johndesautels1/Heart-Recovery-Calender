@@ -68,8 +68,14 @@ export function PatientCalendarView() {
 
   useEffect(() => {
     loadPatientData();
-    loadCalendarEvents();
   }, [patientId]);
+
+  // Load events when patient data is available
+  useEffect(() => {
+    if (patient) {
+      loadCalendarEvents();
+    }
+  }, [patient]);
 
   const loadPatientData = async () => {
     try {
@@ -93,60 +99,84 @@ export function PatientCalendarView() {
   };
 
   const loadCalendarEvents = async () => {
-    // TODO: Replace with real API call
-    // Mock data for demonstration
-    const mockEvents: CalendarEvent[] = [
-      {
-        id: 1,
-        date: format(new Date(), 'yyyy-MM-dd'),
-        title: 'Cardio Session',
-        status: 'upcoming',
-      },
-      {
-        id: 2,
-        date: format(new Date(Date.now() - 86400000), 'yyyy-MM-dd'),
-        title: 'Therapy Appointment',
-        status: 'completed',
-        notes: 'Patient arrived on time, completed all exercises, food diary up to date',
-        metrics: {
-          attendedOnTime: true,
-          homeworkCompleted: true,
-          foodDiaryMaintained: true,
-          medsCompliant: true,
-          vitalsNormal: true,
-        }
-      },
-      {
-        id: 3,
-        date: format(new Date(Date.now() - 2 * 86400000), 'yyyy-MM-dd'),
-        title: 'Follow-up Session',
-        status: 'warning',
-        notes: 'Patient arrived 15 minutes late. Homework partially completed. Reported skipping one meal.',
-        metrics: {
-          attendedOnTime: false,
-          homeworkCompleted: false,
-          foodDiaryMaintained: true,
-          medsCompliant: true,
-          vitalsNormal: true,
-        }
-      },
-      {
-        id: 4,
-        date: format(new Date(Date.now() - 3 * 86400000), 'yyyy-MM-dd'),
-        title: 'Physical Therapy',
-        status: 'missed',
-        notes: 'Patient did not show up. No call. Food diary not maintained. Medication compliance unclear.',
-        metrics: {
-          attendedOnTime: false,
-          homeworkCompleted: false,
-          foodDiaryMaintained: false,
-          medsCompliant: false,
-          vitalsNormal: false,
-        }
-      },
-    ];
+    try {
+      const token = localStorage.getItem('token');
 
-    setEvents(mockEvents);
+      if (!patient?.userId) {
+        console.log('[PatientCalendarView] Patient has no linked user account');
+        setEvents([]);
+        return;
+      }
+
+      // Fetch the patient's calendar(s)
+      const calendarsResponse = await fetch(`/api/calendars?userId=${patient.userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!calendarsResponse.ok) {
+        throw new Error('Failed to fetch calendars');
+      }
+
+      const calendarsData = await calendarsResponse.json();
+      const calendars = calendarsData.data || calendarsData;
+
+      if (!calendars || calendars.length === 0) {
+        console.log('[PatientCalendarView] No calendars found for patient');
+        setEvents([]);
+        return;
+      }
+
+      // Fetch events for all of the patient's calendars
+      const calendarIds = calendars.map((cal: any) => cal.id);
+      const eventsPromises = calendarIds.map((calId: number) =>
+        fetch(`/api/events?calendarId=${calId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }).then(res => res.json())
+      );
+
+      const eventsResponses = await Promise.all(eventsPromises);
+
+      // Combine all events from all calendars
+      const allEvents = eventsResponses.flatMap(response => response.data || []);
+
+      // Map backend events to our CalendarEvent interface
+      const mappedEvents: CalendarEvent[] = allEvents.map((event: any) => {
+        // Determine status based on event status and time
+        let status: EventStatus = 'upcoming';
+        const eventDate = new Date(event.startTime);
+        const now = new Date();
+
+        if (event.status === 'completed') {
+          status = 'completed';
+        } else if (event.status === 'cancelled') {
+          status = 'missed';
+        } else if (eventDate < now && event.status !== 'completed') {
+          status = 'missed';
+        } else {
+          status = 'upcoming';
+        }
+
+        return {
+          id: event.id,
+          date: format(new Date(event.startTime), 'yyyy-MM-dd'),
+          title: event.title,
+          status,
+          notes: event.description || event.notes,
+          // Metrics would need to be added to backend event model
+          // For now, we don't have this data
+        };
+      });
+
+      setEvents(mappedEvents);
+    } catch (error) {
+      console.error('[PatientCalendarView] Error loading events:', error);
+      toast.error('Failed to load calendar events');
+      setEvents([]);
+    }
   };
 
   const getStatusColor = (status: EventStatus) => {
