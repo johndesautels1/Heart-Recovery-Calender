@@ -98,36 +98,43 @@ export function PatientsPage() {
 
       const data = await response.json();
 
-      // Enhance patients with mock compliance data
-      // TODO: Replace with real data from backend
-      const enhancedPatients: PatientWithCompliance[] = (data.data || []).map((patient: Patient) => {
-        // Mock compliance calculation
-        const random = Math.random();
-        let complianceStatus: ComplianceStatus;
-        let completionRate: number;
+      // Enhance patients with real compliance data from backend
+      const enhancedPatients: PatientWithCompliance[] = await Promise.all(
+        (data.data || []).map(async (patient: Patient) => {
+          try {
+            // Fetch real metrics from backend API
+            const metricsResponse = await fetch(`/api/patients/${patient.id}/metrics`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
 
-        if (random > 0.7) {
-          complianceStatus = 'excellent';
-          completionRate = 85 + Math.random() * 15;
-        } else if (random > 0.4) {
-          complianceStatus = 'warning';
-          completionRate = 60 + Math.random() * 25;
-        } else if (random > 0.2) {
-          complianceStatus = 'poor';
-          completionRate = 30 + Math.random() * 30;
-        } else {
-          complianceStatus = 'unknown';
-          completionRate = 0;
-        }
+            if (!metricsResponse.ok) {
+              throw new Error('Failed to fetch patient metrics');
+            }
 
-        return {
-          ...patient,
-          complianceStatus,
-          completionRate: Math.round(completionRate),
-          recentEvents: Math.floor(Math.random() * 10) + 1,
-          nextAppointment: patient.surgeryDate ? format(new Date(), 'yyyy-MM-dd') : undefined,
-        };
-      });
+            const metrics = await metricsResponse.json();
+
+            return {
+              ...patient,
+              complianceStatus: metrics.complianceStatus || 'unknown',
+              completionRate: metrics.completionRate || 0,
+              recentEvents: metrics.recentEvents || 0,
+              nextAppointment: patient.surgeryDate ? format(new Date(), 'yyyy-MM-dd') : undefined,
+            };
+          } catch (error) {
+            console.error(`Error fetching metrics for patient ${patient.id}:`, error);
+            // Fallback to unknown status if API call fails
+            return {
+              ...patient,
+              complianceStatus: 'unknown' as ComplianceStatus,
+              completionRate: 0,
+              recentEvents: 0,
+              nextAppointment: patient.surgeryDate ? format(new Date(), 'yyyy-MM-dd') : undefined,
+            };
+          }
+        })
+      );
 
       setPatients(enhancedPatients);
 

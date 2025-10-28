@@ -130,6 +130,7 @@ router.put('/patients/:id', patientsController.updatePatient);
 router.delete('/patients/:id', patientsController.deletePatient);
 router.patch('/patients/:id/toggle-active', patientsController.toggleActive);
 router.get('/patients/:id/post-op-week', patientsController.getPostOpWeek);
+router.get('/patients/:id/metrics', patientsController.getPatientMetrics);
 
 // ========== EXERCISES ROUTES ==========
 router.get('/exercises', exercisesController.getExercises);

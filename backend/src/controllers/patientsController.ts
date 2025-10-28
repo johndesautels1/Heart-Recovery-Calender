@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import Patient from '../models/Patient';
 import User from '../models/User';
+import CalendarEvent from '../models/CalendarEvent';
+import Calendar from '../models/Calendar';
+import MedicationLog from '../models/MedicationLog';
+import sequelize from '../models/database';
+import { Op, QueryTypes } from 'sequelize';
 import bcrypt from 'bcrypt';
 
 // GET /api/patients - Get all patients for the logged-in therapist
@@ -294,6 +299,118 @@ export const getPostOpWeek = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error calculating post-op week:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET /api/patients/:id/metrics - Get patient compliance metrics
+export const getPatientMetrics = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const therapistId = req.user?.id;
+
+    if (!therapistId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const patient = await Patient.findOne({
+      where: { id, therapistId },
+    });
+
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    // If patient doesn't have a linked user account, return unknown status
+    if (!patient.userId) {
+      return res.json({
+        complianceStatus: 'unknown',
+        completionRate: 0,
+        recentEvents: 0,
+        message: 'Patient does not have a linked user account'
+      });
+    }
+
+    // Calculate metrics based on last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Use raw SQL queries to bypass TypeScript/Sequelize type limitations
+    // Count total events in last 30 days
+    const totalEventsResult = await sequelize.query<{ count: string }>(
+      `SELECT COUNT(*) as count
+       FROM calendar_events ce
+       INNER JOIN calendars c ON ce."calendarId" = c.id
+       WHERE c."userId" = :userId
+         AND ce."startTime" >= :thirtyDaysAgo`,
+      {
+        replacements: { userId: patient.userId, thirtyDaysAgo },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    // Count completed events in last 30 days
+    const completedEventsResult = await sequelize.query<{ count: string }>(
+      `SELECT COUNT(*) as count
+       FROM calendar_events ce
+       INNER JOIN calendars c ON ce."calendarId" = c.id
+       WHERE c."userId" = :userId
+         AND ce."startTime" >= :thirtyDaysAgo
+         AND ce."status" = 'completed'`,
+      {
+        replacements: { userId: patient.userId, thirtyDaysAgo },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    // Count recent events (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentEventsResult = await sequelize.query<{ count: string }>(
+      `SELECT COUNT(*) as count
+       FROM calendar_events ce
+       INNER JOIN calendars c ON ce."calendarId" = c.id
+       WHERE c."userId" = :userId
+         AND ce."startTime" >= :sevenDaysAgo`,
+      {
+        replacements: { userId: patient.userId, sevenDaysAgo },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    // Extract count values from query results
+    const totalEventsCount = parseInt(totalEventsResult[0]?.count || '0', 10);
+    const completedEventsCount = parseInt(completedEventsResult[0]?.count || '0', 10);
+    const recentEventsCount = parseInt(recentEventsResult[0]?.count || '0', 10);
+
+    let completionRate = 0;
+    if (totalEventsCount > 0) {
+      completionRate = Math.round((completedEventsCount / totalEventsCount) * 100);
+    }
+
+    // Determine compliance status based on completion rate
+    let complianceStatus: 'excellent' | 'warning' | 'poor' | 'unknown';
+    if (totalEventsCount === 0) {
+      complianceStatus = 'unknown';
+    } else if (completionRate >= 85) {
+      complianceStatus = 'excellent';
+    } else if (completionRate >= 60) {
+      complianceStatus = 'warning';
+    } else {
+      complianceStatus = 'poor';
+    }
+
+    res.json({
+      complianceStatus,
+      completionRate,
+      recentEvents: recentEventsCount,
+      totalEvents: totalEventsCount,
+      completedEvents: completedEventsCount,
+      calculationPeriod: '30 days'
+    });
+  } catch (error) {
+    console.error('Error calculating patient metrics:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
