@@ -1,6 +1,6 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
-import logoImage from '../data/John E. Desautels & Associates AI Division.png';
+import logoImage from '../data/AI_Division_logo_TRANSPARENT.png';
 
 export function Footer() {
   return (
