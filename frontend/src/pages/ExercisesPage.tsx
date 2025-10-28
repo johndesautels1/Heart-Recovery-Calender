@@ -63,6 +63,8 @@ interface Exercise {
   maxPostOpWeek?: number;
   contraindications?: string;
   instructions?: string;
+  formTips?: string;
+  modifications?: string;
   recoveryBenefit?: string;
   defaultSets?: number;
   defaultReps?: number;
@@ -112,6 +114,8 @@ interface CreateExerciseInput {
   maxPostOpWeek?: number;
   contraindications?: string;
   instructions?: string;
+  formTips?: string;
+  modifications?: string;
   defaultSets?: number;
   defaultReps?: number;
   defaultDuration?: number;
@@ -399,6 +403,8 @@ export function ExercisesPage() {
       maxPostOpWeek: exercise.maxPostOpWeek,
       contraindications: exercise.contraindications || '',
       instructions: exercise.instructions || '',
+      formTips: exercise.formTips || '',
+      modifications: exercise.modifications || '',
       defaultSets: exercise.defaultSets,
       defaultReps: exercise.defaultReps,
       defaultDuration: exercise.defaultDuration,
@@ -462,6 +468,8 @@ export function ExercisesPage() {
       maxPostOpWeek: undefined,
       contraindications: '',
       instructions: '',
+      formTips: '',
+      modifications: '',
       defaultSets: undefined,
       defaultReps: undefined,
       defaultDuration: undefined,
