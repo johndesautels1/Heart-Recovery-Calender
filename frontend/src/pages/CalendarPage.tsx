@@ -142,8 +142,12 @@ export function CalendarPage() {
       const userId = selectedPatient?.userId ? selectedPatient.userId : undefined;
       console.log('[CalendarPage] Loading data for userId:', userId, 'selectedPatient:', selectedPatient);
 
+      // For admin/therapist viewing all calendars, don't pass userId to getCalendars
+      // This will load all calendars (own + patients')
+      const shouldLoadAllCalendars = !userId && (user?.role === 'admin' || user?.role === 'therapist');
+
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
-        api.getCalendars(userId),
+        api.getCalendars(shouldLoadAllCalendars ? undefined : userId),
         api.getEvents(userId),
         api.getMeals({ startDate, endDate, userId }),
         api.getMedications(false, userId),

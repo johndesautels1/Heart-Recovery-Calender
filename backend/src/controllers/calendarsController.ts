@@ -2,17 +2,23 @@ import { Request, Response } from 'express';
 import Calendar from '../models/Calendar';
 import CalendarEvent from '../models/CalendarEvent';
 
-// GET /api/calendars - Get all calendars for user
+// GET /api/calendars - Get all calendars for user (or all calendars if admin/therapist)
 export const getCalendars = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
+    const userRole = req.user?.role;
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Admin and therapist can see all calendars, patients only see their own
+    const whereClause = (userRole === 'admin' || userRole === 'therapist')
+      ? {}
+      : { userId };
+
     const calendars = await Calendar.findAll({
-      where: { userId },
+      where: whereClause,
       order: [['name', 'ASC']]
     });
 
@@ -100,9 +106,15 @@ export const deleteCalendar = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    // Admin and therapist can delete any calendar, patients only their own
+    const whereClause = (userRole === 'admin' || userRole === 'therapist')
+      ? { id }
+      : { id, userId };
 
     const calendar = await Calendar.findOne({
-      where: { id, userId }
+      where: whereClause
     });
 
     if (!calendar) {
