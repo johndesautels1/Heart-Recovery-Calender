@@ -12,7 +12,8 @@ import {
   Trophy,
   Award,
   User,
-  AlertCircle
+  AlertCircle,
+  Flame
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -601,6 +602,126 @@ export function SleepPage() {
                   </p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-400" />
+              </div>
+            </GlassCard>
+          )}
+
+          {/* NEW: Sleep Logging Streak */}
+          {sleepLogs.length > 0 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Logging Streak</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const sortedLogs = [...sleepLogs].sort((a, b) =>
+                      new Date(b.date).getTime() - new Date(a.date).getTime()
+                    );
+
+                    let streak = 0;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    for (let i = 0; i < sortedLogs.length; i++) {
+                      const logDate = new Date(sortedLogs[i].date);
+                      logDate.setHours(0, 0, 0, 0);
+
+                      const expectedDate = new Date(today);
+                      expectedDate.setDate(today.getDate() - i);
+                      expectedDate.setHours(0, 0, 0, 0);
+
+                      if (logDate.getTime() === expectedDate.getTime()) {
+                        streak++;
+                      } else {
+                        break;
+                      }
+                    }
+
+                    return streak >= 7 ? 'text-green-400' : streak >= 3 ? 'text-yellow-400' : 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      const sortedLogs = [...sleepLogs].sort((a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                      );
+
+                      let streak = 0;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      for (let i = 0; i < sortedLogs.length; i++) {
+                        const logDate = new Date(sortedLogs[i].date);
+                        logDate.setHours(0, 0, 0, 0);
+
+                        const expectedDate = new Date(today);
+                        expectedDate.setDate(today.getDate() - i);
+                        expectedDate.setHours(0, 0, 0, 0);
+
+                        if (logDate.getTime() === expectedDate.getTime()) {
+                          streak++;
+                        } else {
+                          break;
+                        }
+                      }
+
+                      return streak;
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">
+                    {(() => {
+                      const sortedLogs = [...sleepLogs].sort((a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                      );
+
+                      let streak = 0;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      for (let i = 0; i < sortedLogs.length; i++) {
+                        const logDate = new Date(sortedLogs[i].date);
+                        logDate.setHours(0, 0, 0, 0);
+
+                        const expectedDate = new Date(today);
+                        expectedDate.setDate(today.getDate() - i);
+                        expectedDate.setHours(0, 0, 0, 0);
+
+                        if (logDate.getTime() === expectedDate.getTime()) {
+                          streak++;
+                        } else {
+                          break;
+                        }
+                      }
+
+                      if (streak === 0) return 'No current streak';
+                      if (streak === 1) return 'consecutive day';
+                      return 'consecutive days';
+                    })()}
+                  </p>
+                </div>
+                <Flame className={`h-8 w-8 ${(() => {
+                  const sortedLogs = [...sleepLogs].sort((a, b) =>
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                  );
+
+                  let streak = 0;
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+
+                  for (let i = 0; i < sortedLogs.length; i++) {
+                    const logDate = new Date(sortedLogs[i].date);
+                    logDate.setHours(0, 0, 0, 0);
+
+                    const expectedDate = new Date(today);
+                    expectedDate.setDate(today.getDate() - i);
+                    expectedDate.setHours(0, 0, 0, 0);
+
+                    if (logDate.getTime() === expectedDate.getTime()) {
+                      streak++;
+                    } else {
+                      break;
+                    }
+                  }
+
+                  return streak >= 7 ? 'text-orange-500' : streak >= 3 ? 'text-yellow-400' : 'text-gray-400';
+                })()}`} />
               </div>
             </GlassCard>
           )}

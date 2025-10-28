@@ -566,6 +566,126 @@ export function VitalsPage() {
         </GlassCard>
       )}
 
+      {/* NEW: Average Body Temperature */}
+      {vitals.length > 0 && vitals.filter(v => v.temperature).length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">Average Body Temperature</p>
+              <p className={`text-3xl font-bold ${(() => {
+                const temps = vitals.filter(v => v.temperature).map(v => v.temperature!);
+                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                if (avg >= 99.5) return 'text-red-400';
+                if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
+                return 'text-yellow-400';
+              })()}`}>
+                {(() => {
+                  const temps = vitals.filter(v => v.temperature).map(v => v.temperature!);
+                  const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                  return avg.toFixed(1);
+                })()}°F
+              </p>
+              <p className="text-xs mt-1">
+                Based on {vitals.filter(v => v.temperature).length} readings
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Thermometer className={`h-8 w-8 ${(() => {
+                const temps = vitals.filter(v => v.temperature).map(v => v.temperature!);
+                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                if (avg >= 99.5) return 'text-red-400';
+                if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
+                return 'text-yellow-400';
+              })()}`} />
+              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                const temps = vitals.filter(v => v.temperature).map(v => v.temperature!);
+                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                if (avg >= 99.5) return 'bg-red-500 text-white';
+                if (avg >= 98.0 && avg <= 99.0) return 'bg-green-500 text-white';
+                return 'bg-yellow-500 text-black';
+              })()}`}>
+                {(() => {
+                  const temps = vitals.filter(v => v.temperature).map(v => v.temperature!);
+                  const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                  if (avg >= 99.5) return 'Elevated';
+                  if (avg >= 98.0 && avg <= 99.0) return 'Normal';
+                  return 'Low';
+                })()}
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* NEW: Blood Pressure Variability */}
+      {vitals.length >= 3 && vitals.filter(v => v.bloodPressureSystolic).length >= 3 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">Blood Pressure Variability</p>
+              <p className={`text-3xl font-bold ${(() => {
+                const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                const stdDev = Math.sqrt(variance);
+                if (stdDev <= 10) return 'text-green-400';
+                if (stdDev <= 15) return 'text-yellow-400';
+                return 'text-red-400';
+              })()}`}>
+                {(() => {
+                  const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                  const stdDev = Math.sqrt(variance);
+                  if (stdDev <= 10) return 'Low';
+                  if (stdDev <= 15) return 'Moderate';
+                  return 'High';
+                })()}
+              </p>
+              <p className="text-xs mt-1">
+                {(() => {
+                  const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                  const stdDev = Math.sqrt(variance);
+                  return `±${stdDev.toFixed(1)} mmHg variation`;
+                })()}
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Activity className={`h-8 w-8 ${(() => {
+                const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                const stdDev = Math.sqrt(variance);
+                if (stdDev <= 10) return 'text-green-400';
+                if (stdDev <= 15) return 'text-yellow-400';
+                return 'text-red-400';
+              })()}`} />
+              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                const stdDev = Math.sqrt(variance);
+                if (stdDev <= 10) return 'bg-green-500 text-white';
+                if (stdDev <= 15) return 'bg-yellow-500 text-black';
+                return 'bg-red-500 text-white';
+              })()}`}>
+                {(() => {
+                  const readings = vitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                  const stdDev = Math.sqrt(variance);
+                  if (stdDev <= 10) return 'Consistent';
+                  if (stdDev <= 15) return 'Variable';
+                  return 'Very Variable';
+                })()}
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* Chart Controls */}
       <GlassCard>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

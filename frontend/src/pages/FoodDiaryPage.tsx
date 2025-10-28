@@ -385,6 +385,113 @@ export function FoodDiaryPage() {
         </div>
       </GlassCard>
 
+      {/* NEW: Protein Goal Achievement */}
+      <GlassCard>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-bold mb-2" style={{ color: 'var(--muted)' }}>Protein Goal Achievement</p>
+            <div className="w-full bg-gray-700 rounded-full h-4">
+              <div
+                className={`h-4 rounded-full transition-all ${(() => {
+                  const PROTEIN_GOAL = 60; // 60g daily goal for heart health
+                  const percentage = (totals.protein / PROTEIN_GOAL) * 100;
+                  if (percentage >= 100) return 'bg-green-500';
+                  if (percentage >= 75) return 'bg-yellow-500';
+                  return 'bg-red-500';
+                })()}`}
+                style={{ width: `${Math.min((totals.protein / 60) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+              Goal: 60g daily for heart health
+            </p>
+          </div>
+          <div className="ml-4 text-right">
+            <p className="text-3xl font-bold" style={{ color: (() => {
+              const PROTEIN_GOAL = 60;
+              const percentage = (totals.protein / PROTEIN_GOAL) * 100;
+              if (percentage >= 100) return '#22c55e';
+              if (percentage >= 75) return '#eab308';
+              return '#ef4444';
+            })() }}>
+              {Math.round((totals.protein / 60) * 100)}%
+            </p>
+            <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${(() => {
+              const PROTEIN_GOAL = 60;
+              const percentage = (totals.protein / PROTEIN_GOAL) * 100;
+              if (percentage >= 100) return 'bg-green-500 text-white';
+              if (percentage >= 75) return 'bg-yellow-500 text-black';
+              return 'bg-red-500 text-white';
+            })()}`}>
+              {(() => {
+                const PROTEIN_GOAL = 60;
+                const percentage = (totals.protein / PROTEIN_GOAL) * 100;
+                if (percentage >= 100) return 'Goal Met!';
+                if (percentage >= 75) return 'Almost There';
+                return 'Needs More';
+              })()}
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+              {totals.protein}g / 60g
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* NEW: Calories vs Daily Goal */}
+      <GlassCard>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-bold mb-2" style={{ color: 'var(--muted)' }}>Calories vs Daily Goal</p>
+            <div className="w-full bg-gray-700 rounded-full h-4">
+              <div
+                className={`h-4 rounded-full transition-all ${(() => {
+                  const CALORIE_GOAL = 2000; // 2000 cal daily goal
+                  const percentage = (totals.calories / CALORIE_GOAL) * 100;
+                  if (percentage >= 90 && percentage <= 110) return 'bg-green-500';
+                  if (percentage >= 75 && percentage < 130) return 'bg-yellow-500';
+                  return 'bg-red-500';
+                })()}`}
+                style={{ width: `${Math.min((totals.calories / 2000) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+              Target: 2000 calories daily
+            </p>
+          </div>
+          <div className="ml-4 text-right">
+            <p className="text-3xl font-bold" style={{ color: (() => {
+              const CALORIE_GOAL = 2000;
+              const percentage = (totals.calories / CALORIE_GOAL) * 100;
+              if (percentage >= 90 && percentage <= 110) return '#22c55e';
+              if (percentage >= 75 && percentage < 130) return '#eab308';
+              return '#ef4444';
+            })() }}>
+              {totals.calories}
+            </p>
+            <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${(() => {
+              const CALORIE_GOAL = 2000;
+              const percentage = (totals.calories / CALORIE_GOAL) * 100;
+              if (percentage >= 90 && percentage <= 110) return 'bg-green-500 text-white';
+              if (percentage >= 75 && percentage < 130) return 'bg-yellow-500 text-black';
+              return 'bg-red-500 text-white';
+            })()}`}>
+              {(() => {
+                const CALORIE_GOAL = 2000;
+                const percentage = (totals.calories / CALORIE_GOAL) * 100;
+                if (percentage >= 90 && percentage <= 110) return 'On Target';
+                if (percentage < 75) return 'Too Low';
+                if (percentage >= 130) return 'Too High';
+                return 'Close';
+              })()}
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+              {Math.round((totals.calories / 2000) * 100)}% of goal
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* NEW: Meals Within Spec */}
       {meals.length > 0 && (
         <GlassCard>
