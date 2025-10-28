@@ -1004,21 +1004,6 @@ export function DashboardPage() {
           </GlassCard>
         </div>
 
-        {/* Weight Tracking Chart - Show for selected patient */}
-        {selectedPatient && selectedPatient.height && (selectedPatient.startingWeight || selectedPatient.currentWeight || selectedPatient.targetWeight) ? (
-          <GlassCard>
-            <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-yellow-400" />
-              Weight Progress: {selectedPatient.name}
-            </h2>
-            <WeightTrackingChart
-              patient={selectedPatient}
-              weightEntries={[]} // TODO: Fetch weight entries from vitals for this patient
-              showTargetStar={true}
-            />
-          </GlassCard>
-        ) : null}
-
         {/* Active Patients with Metrics */}
         <GlassCard>
           <div className="flex items-center justify-between mb-4">
@@ -1431,6 +1416,21 @@ export function DashboardPage() {
                 </div>
               </GlassCard>
             </div>
+
+            {/* Weight Tracking Chart - Show for selected patient */}
+            {selectedPatient && selectedPatient.height && (selectedPatient.startingWeight || selectedPatient.currentWeight || selectedPatient.targetWeight) ? (
+              <GlassCard>
+                <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-yellow-400" />
+                  Weight Progress: {selectedPatient.name}
+                </h2>
+                <WeightTrackingChart
+                  patient={selectedPatient}
+                  weightEntries={[]} // TODO: Fetch weight entries from vitals for this patient
+                  showTargetStar={true}
+                />
+              </GlassCard>
+            ) : null}
 
             {/* 4-Category Summary Tabs */}
             <GlassCard className="relative overflow-hidden">
