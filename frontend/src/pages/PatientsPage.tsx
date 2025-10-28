@@ -636,82 +636,82 @@ export function PatientsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="glass rounded-xl p-6 border border-white/10">
-              <h2 className="text-2xl font-bold mb-4">Edit Patient: {editingPatient.name}</h2>
+              <h2 className="text-2xl font-bold mb-4 text-cyan-400">Edit Patient: {editingPatient.name}</h2>
               <form onSubmit={handleUpdatePatient} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Patient Name *</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Patient Name *</label>
                   <input
                     type="text"
                     required
                     value={editPatientForm.name}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="Enter patient's full name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Email</label>
                   <input
                     type="email"
                     value={editPatientForm.email}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, email: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="patient@example.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Phone</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Phone</label>
                   <input
                     type="tel"
                     value={editPatientForm.phone}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, phone: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="(555) 123-4567"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Address</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Address</label>
                   <input
                     type="text"
                     value={editPatientForm.address}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, address: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="Street address"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Surgery Date</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Surgery Date</label>
                   <input
                     type="date"
                     value={editPatientForm.surgeryDate}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, surgeryDate: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                   />
                 </div>
 
                 {/* Height Field */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Height</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Height</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       step="0.1"
                       value={editPatientForm.height}
                       onChange={(e) => setEditPatientForm({ ...editPatientForm, height: e.target.value })}
-                      className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="70"
                     />
                     <select
                       value={editPatientForm.heightUnit}
                       onChange={(e) => setEditPatientForm({ ...editPatientForm, heightUnit: e.target.value as 'in' | 'cm' })}
-                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="px-3 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                     >
-                      <option value="in">inches</option>
-                      <option value="cm">cm</option>
+                      <option value="in" className="bg-gray-800 text-white">inches</option>
+                      <option value="cm" className="bg-gray-800 text-white">cm</option>
                     </select>
                   </div>
                 </div>
@@ -719,58 +719,58 @@ export function PatientsPage() {
                 {/* Weight Tracking Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Starting Weight</label>
+                    <label className="block text-sm font-bold mb-2 text-cyan-300">Starting Weight</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         step="0.1"
                         value={editPatientForm.startingWeight}
                         onChange={(e) => setEditPatientForm({ ...editPatientForm, startingWeight: e.target.value })}
-                        className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                        className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                         placeholder="165.5"
                       />
                       <select
                         value={editPatientForm.weightUnit}
                         onChange={(e) => setEditPatientForm({ ...editPatientForm, weightUnit: e.target.value as 'kg' | 'lbs' })}
-                        className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                        className="px-3 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                       >
-                        <option value="lbs">lbs</option>
-                        <option value="kg">kg</option>
+                        <option value="lbs" className="bg-gray-800 text-white">lbs</option>
+                        <option value="kg" className="bg-gray-800 text-white">kg</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Current Weight</label>
+                    <label className="block text-sm font-bold mb-2 text-cyan-300">Current Weight</label>
                     <input
                       type="number"
                       step="0.1"
                       value={editPatientForm.currentWeight}
                       onChange={(e) => setEditPatientForm({ ...editPatientForm, currentWeight: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="165.5"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Target Weight</label>
+                    <label className="block text-sm font-bold mb-2 text-cyan-300">Target Weight</label>
                     <input
                       type="number"
                       step="0.1"
                       value={editPatientForm.targetWeight}
                       onChange={(e) => setEditPatientForm({ ...editPatientForm, targetWeight: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="155.0"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Notes</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Notes</label>
                   <textarea
                     value={editPatientForm.notes}
                     onChange={(e) => setEditPatientForm({ ...editPatientForm, notes: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     rows={3}
                     placeholder="Additional notes about the patient..."
                   />
@@ -778,33 +778,33 @@ export function PatientsPage() {
 
                 {/* Create User Account Section - Only show if patient doesn't have userId */}
                 {!editingPatient?.userId && (
-                  <div className="pt-4 border-t border-white/10">
+                  <div className="pt-4 border-t border-cyan-400/20">
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={editPatientForm.createUserAccount}
                         onChange={(e) => setEditPatientForm({ ...editPatientForm, createUserAccount: e.target.checked, password: e.target.checked ? editPatientForm.password : '' })}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                        className="w-5 h-5 rounded border-cyan-400/30 bg-white/10 checked:bg-cyan-500 focus:ring-2 focus:ring-cyan-500/50"
                       />
                       <div>
-                        <span className="text-sm font-medium">Create user account for this patient</span>
-                        <p className="text-xs opacity-60">Allow patient to log in and manage their own data</p>
+                        <span className="text-sm font-bold text-cyan-300">Create user account for this patient</span>
+                        <p className="text-xs text-gray-400">Allow patient to log in and manage their own data</p>
                       </div>
                     </label>
 
                     {editPatientForm.createUserAccount && (
                       <div className="mt-4">
-                        <label className="block text-sm font-medium mb-2">Initial Password *</label>
+                        <label className="block text-sm font-bold mb-2 text-cyan-300">Initial Password *</label>
                         <input
                           type="password"
                           required={editPatientForm.createUserAccount}
                           value={editPatientForm.password}
                           onChange={(e) => setEditPatientForm({ ...editPatientForm, password: e.target.value })}
-                          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                          className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                           placeholder="Enter password for patient"
                           minLength={6}
                         />
-                        <p className="text-xs opacity-60 mt-1">Patient can change this password after first login</p>
+                        <p className="text-xs text-gray-400 mt-1">Patient can change this password after first login</p>
                       </div>
                     )}
                   </div>
@@ -832,82 +832,82 @@ export function PatientsPage() {
       {patientSubTab === 'add-new' && (
         <div className="max-w-2xl mx-auto">
           <div className="glass rounded-xl p-8 border border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Add New Patient</h2>
+            <h2 className="text-2xl font-bold mb-6 text-cyan-400">Add New Patient</h2>
             <form onSubmit={handleNewPatientSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Patient Name *</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Patient Name *</label>
                 <input
                   type="text"
                   required
                   value={newPatientForm.name}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, name: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   placeholder="Enter patient's full name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Email</label>
                 <input
                   type="email"
                   value={newPatientForm.email}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, email: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   placeholder="patient@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Phone</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Phone</label>
                 <input
                   type="tel"
                   value={newPatientForm.phone}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, phone: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   placeholder="(555) 123-4567"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Address</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Address</label>
                 <input
                   type="text"
                   value={newPatientForm.address}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, address: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   placeholder="Street address"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Surgery Date</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Surgery Date</label>
                 <input
                   type="date"
                   value={newPatientForm.surgeryDate}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, surgeryDate: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                 />
               </div>
 
               {/* Height Field */}
               <div>
-                <label className="block text-sm font-medium mb-2">Height</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Height</label>
                 <div className="flex gap-2">
                   <input
                     type="number"
                     step="0.1"
                     value={newPatientForm.height}
                     onChange={(e) => setNewPatientForm({ ...newPatientForm, height: e.target.value })}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="70"
                   />
                   <select
                     value={newPatientForm.heightUnit}
                     onChange={(e) => setNewPatientForm({ ...newPatientForm, heightUnit: e.target.value as 'in' | 'cm' })}
-                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="px-3 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                   >
-                    <option value="in">inches</option>
-                    <option value="cm">cm</option>
+                    <option value="in" className="bg-gray-800 text-white">inches</option>
+                    <option value="cm" className="bg-gray-800 text-white">cm</option>
                   </select>
                 </div>
               </div>
@@ -915,91 +915,91 @@ export function PatientsPage() {
               {/* Weight Tracking Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Starting Weight</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Starting Weight</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       step="0.1"
                       value={newPatientForm.startingWeight}
                       onChange={(e) => setNewPatientForm({ ...newPatientForm, startingWeight: e.target.value })}
-                      className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="165.5"
                     />
                     <select
                       value={newPatientForm.weightUnit}
                       onChange={(e) => setNewPatientForm({ ...newPatientForm, weightUnit: e.target.value as 'kg' | 'lbs' })}
-                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="px-3 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                     >
-                      <option value="lbs">lbs</option>
-                      <option value="kg">kg</option>
+                      <option value="lbs" className="bg-gray-800 text-white">lbs</option>
+                      <option value="kg" className="bg-gray-800 text-white">kg</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Current Weight</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Current Weight</label>
                   <input
                     type="number"
                     step="0.1"
                     value={newPatientForm.currentWeight}
                     onChange={(e) => setNewPatientForm({ ...newPatientForm, currentWeight: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="165.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Target Weight</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Target Weight</label>
                   <input
                     type="number"
                     step="0.1"
                     value={newPatientForm.targetWeight}
                     onChange={(e) => setNewPatientForm({ ...newPatientForm, targetWeight: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="155.0"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Notes</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Notes</label>
                 <textarea
                   value={newPatientForm.notes}
                   onChange={(e) => setNewPatientForm({ ...newPatientForm, notes: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   rows={3}
                   placeholder="Additional notes about the patient..."
                 />
               </div>
 
               {/* Create User Account Section */}
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-cyan-400/20">
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={newPatientForm.createUserAccount}
                     onChange={(e) => setNewPatientForm({ ...newPatientForm, createUserAccount: e.target.checked, password: e.target.checked ? newPatientForm.password : '' })}
-                    className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-blue-500 focus:ring-2 focus:ring-blue-500/50"
+                    className="w-5 h-5 rounded border-cyan-400/30 bg-white/10 checked:bg-cyan-500 focus:ring-2 focus:ring-cyan-500/50"
                   />
                   <div>
-                    <span className="text-sm font-medium">Create user account for this patient</span>
-                    <p className="text-xs opacity-60">Allow patient to log in and manage their own data</p>
+                    <span className="text-sm font-bold text-cyan-300">Create user account for this patient</span>
+                    <p className="text-xs text-gray-400">Allow patient to log in and manage their own data</p>
                   </div>
                 </label>
 
                 {newPatientForm.createUserAccount && (
                   <div className="mt-4">
-                    <label className="block text-sm font-medium mb-2">Initial Password *</label>
+                    <label className="block text-sm font-bold mb-2 text-cyan-300">Initial Password *</label>
                     <input
                       type="password"
                       required={newPatientForm.createUserAccount}
                       value={newPatientForm.password}
                       onChange={(e) => setNewPatientForm({ ...newPatientForm, password: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="Enter password for patient"
                       minLength={6}
                     />
-                    <p className="text-xs opacity-60 mt-1">Patient can change this password after first login</p>
+                    <p className="text-xs text-gray-400 mt-1">Patient can change this password after first login</p>
                   </div>
                 )}
               </div>
@@ -1064,10 +1064,10 @@ export function PatientsPage() {
       {patientSubTab === 'add-calendar' && (
         <div className="max-w-2xl mx-auto">
           <div className="glass rounded-xl p-8 border border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Add New Patient Calendar</h2>
+            <h2 className="text-2xl font-bold mb-6 text-cyan-400">Add New Patient Calendar</h2>
             <form onSubmit={handleSubmitCalendar} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Select Patient *</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Select Patient *</label>
                 <select
                   required
                   value={calendarPatient?.id || ''}
@@ -1078,9 +1078,9 @@ export function PatientsPage() {
                       setCalendarFormData({ ...calendarFormData, name: `${patient.name}'s Calendar` });
                     }
                   }}
-                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                 >
-                  <option value="">-- Select a Patient --</option>
+                  <option value="" className="bg-gray-800 text-white">-- Select a Patient --</option>
                   {patients.map(patient => (
                     <option key={patient.id} value={patient.id} className="bg-gray-800 text-white">
                       {patient.name}
@@ -1090,23 +1090,23 @@ export function PatientsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Calendar Name *</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Name *</label>
                 <input
                   type="text"
                   required
                   value={calendarFormData.name}
                   onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                   placeholder="Patient's Calendar"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Calendar Type *</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Type *</label>
                 <select
                   value={calendarFormData.type}
                   onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                 >
                   <option value="general" className="bg-gray-800 text-white">General</option>
                   <option value="vitals" className="bg-gray-800 text-white">Vitals</option>
@@ -1120,19 +1120,19 @@ export function PatientsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Calendar Color *</label>
+                <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Color *</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={calendarFormData.color}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                    className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer bg-white/10"
+                    className="h-12 w-20 rounded border-2 border-cyan-400/30 cursor-pointer"
                   />
                   <input
                     type="text"
                     value={calendarFormData.color}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-white/40 focus:outline-none transition-colors"
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="#607d8b"
                     pattern="^#[0-9A-Fa-f]{6}$"
                   />
@@ -1181,55 +1181,52 @@ export function PatientsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="glass rounded-xl p-6 border border-white/10">
-              <h2 className="text-2xl font-bold mb-4">Create Calendar for {calendarPatient.name}</h2>
+              <h2 className="text-2xl font-bold mb-4 text-cyan-400">Create Calendar for {calendarPatient.name}</h2>
               <form onSubmit={handleSubmitCalendar} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-white">Calendar Name *</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Name *</label>
                   <input
                     type="text"
                     required
                     value={calendarFormData.name}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
-                    style={{ color: '#1e40af' }}
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                     placeholder="My Calendar"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-white">Calendar Type *</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Type *</label>
                   <select
                     value={calendarFormData.type}
                     onChange={(e) => setCalendarFormData({ ...calendarFormData, type: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
-                    style={{ color: '#1e40af' }}
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors"
                   >
-                    <option value="general" style={{ color: '#1e40af', fontWeight: 700 }}>General</option>
-                    <option value="vitals" style={{ color: '#1e40af', fontWeight: 700 }}>Vitals</option>
-                    <option value="medications" style={{ color: '#1e40af', fontWeight: 700 }}>Medications</option>
-                    <option value="meals" style={{ color: '#1e40af', fontWeight: 700 }}>Meals</option>
-                    <option value="diet" style={{ color: '#1e40af', fontWeight: 700 }}>Food Diary</option>
-                    <option value="sleep" style={{ color: '#1e40af', fontWeight: 700 }}>Sleep Journal</option>
-                    <option value="exercise" style={{ color: '#1e40af', fontWeight: 700 }}>Exercise & Activities</option>
-                    <option value="appointments" style={{ color: '#1e40af', fontWeight: 700 }}>Appointments</option>
+                    <option value="general" className="bg-gray-800 text-white">General</option>
+                    <option value="vitals" className="bg-gray-800 text-white">Vitals</option>
+                    <option value="medications" className="bg-gray-800 text-white">Medications</option>
+                    <option value="meals" className="bg-gray-800 text-white">Meals</option>
+                    <option value="diet" className="bg-gray-800 text-white">Food Diary</option>
+                    <option value="sleep" className="bg-gray-800 text-white">Sleep Journal</option>
+                    <option value="exercise" className="bg-gray-800 text-white">Exercise & Activities</option>
+                    <option value="appointments" className="bg-gray-800 text-white">Appointments</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-white">Calendar Color *</label>
+                  <label className="block text-sm font-bold mb-2 text-cyan-300">Calendar Color *</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="h-12 w-20 rounded border-2 border-white/20 cursor-pointer"
+                      className="h-12 w-20 rounded border-2 border-cyan-400/30 cursor-pointer"
                     />
                     <input
                       type="text"
                       value={calendarFormData.color}
                       onChange={(e) => setCalendarFormData({ ...calendarFormData, color: e.target.value })}
-                      className="flex-1 px-4 py-2 rounded-lg bg-white border-2 border-white/30 font-bold focus:border-blue-500 focus:outline-none transition-colors"
-                      style={{ color: '#1e40af' }}
+                      className="flex-1 px-4 py-2 rounded-lg bg-white/10 border-2 border-cyan-400/30 text-white font-medium focus:border-cyan-400 focus:outline-none transition-colors placeholder-gray-400"
                       placeholder="#607d8b"
                       pattern="^#[0-9A-Fa-f]{6}$"
                     />
