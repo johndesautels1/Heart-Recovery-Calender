@@ -188,6 +188,94 @@
     box-shadow: 0 15px 50px rgba(59, 130, 246, 0.2);
   }
 
+  /* COMPREHENSIVE LIGHT MODE TEXT FIXES - Force readable colors without touching dark mode */
+  body.light-mode {
+    /* Override all headings */
+    h1, h2, h3, h4, h5, h6 {
+      color: #1f2937 !important;
+    }
+
+    /* Override all paragraph and span text */
+    p, span, div, label, a {
+      color: #1f2937;
+    }
+
+    /* Override table text */
+    table, th, td {
+      color: #1f2937 !important;
+    }
+
+    /* Override button text (except those with explicit white text on colored backgrounds) */
+    button:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.glass-button) {
+      color: #1f2937 !important;
+    }
+
+    /* Override input labels */
+    label {
+      color: #1f2937 !important;
+    }
+
+    /* Override list items */
+    li {
+      color: #1f2937 !important;
+    }
+
+    /* Override small text */
+    small {
+      color: #4b5563 !important;
+    }
+
+    /* Override muted text to be visible but lighter */
+    .text-muted, [class*="muted"] {
+      color: #6b7280 !important;
+    }
+
+    /* Override any white text */
+    [style*="color: #ffffff"], [style*="color: #fff"], [style*="color: white"],
+    [style*="color: rgb(255, 255, 255)"], [style*="color:rgb(255,255,255)"] {
+      color: #1f2937 !important;
+    }
+
+    /* Override specific shades that are too light */
+    [style*="color: #d1d5db"], [style*="color: #e5e7eb"], [style*="color: #f3f4f6"] {
+      color: #1f2937 !important;
+    }
+
+    /* Override card text */
+    .glass *, .glass-dark * {
+      color: #1f2937;
+    }
+
+    /* Exception: Keep colored text colored (accent colors should remain) */
+    [style*="color: #3b82f6"], [style*="color: #60a5fa"],
+    [style*="color: #ef4444"], [style*="color: #f87171"],
+    [style*="color: #10b981"], [style*="color: #4ade80"],
+    [style*="color: #f59e0b"], [style*="color: #fbbf24"],
+    [style*="color: #8b5cf6"], [style*="color: #a855f7"] {
+      /* These stay as-is, they're accent colors */
+      opacity: 1;
+    }
+
+    /* Override any remaining white or very light text */
+    * {
+      &[style*="color"] {
+        &:not([style*="rgb"]):not([style*="#3b82f6"]):not([style*="#60a5fa"]):not([style*="#ef4444"]):not([style*="#f87171"]):not([style*="#10b981"]):not([style*="#4ade80"]):not([style*="#f59e0b"]):not([style*="#fbbf24"]):not([style*="#8b5cf6"]):not([style*="#a855f7"]) {
+          filter: contrast(10) brightness(0.3);
+        }
+      }
+    }
+
+    /* Chart text */
+    .recharts-text, .recharts-label, .recharts-legend-item-text {
+      fill: #1f2937 !important;
+    }
+
+    /* Tooltip text */
+    .recharts-tooltip-wrapper * {
+      color: #1f2937 !important;
+    }
+  }
+
   /* Premium button variants using CSS variables - THICK RAISED EFFECT */
   .btn-primary {
     @apply px-6 py-3 rounded-lg font-bold transition-all duration-300;
