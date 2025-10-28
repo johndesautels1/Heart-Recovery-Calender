@@ -11,7 +11,8 @@ import {
   BarChart3,
   Trophy,
   Award,
-  User
+  User,
+  AlertCircle
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -533,6 +534,105 @@ export function SleepPage() {
               </div>
             </GlassCard>
           </div>
+
+          {/* NEW: Sleep Quality Breakdown */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-xs text-white opacity-70 mb-1">Poor Sleep</p>
+                <p className="text-3xl font-bold text-red-400">
+                  {sleepLogs.filter(log => log.sleepQuality === 'poor').length}
+                </p>
+                <p className="text-xs text-white opacity-50 mt-1">nights</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-xs text-white opacity-70 mb-1">Fair Sleep</p>
+                <p className="text-3xl font-bold text-yellow-400">
+                  {sleepLogs.filter(log => log.sleepQuality === 'fair').length}
+                </p>
+                <p className="text-xs text-white opacity-50 mt-1">nights</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-xs text-white opacity-70 mb-1">Good Sleep</p>
+                <p className="text-3xl font-bold text-blue-400">
+                  {sleepLogs.filter(log => log.sleepQuality === 'good').length}
+                </p>
+                <p className="text-xs text-white opacity-50 mt-1">nights</p>
+              </div>
+            </GlassCard>
+            <GlassCard>
+              <div className="text-center">
+                <p className="text-xs text-white opacity-70 mb-1">Excellent Sleep</p>
+                <p className="text-3xl font-bold text-green-400">
+                  {sleepLogs.filter(log => log.sleepQuality === 'excellent').length}
+                </p>
+                <p className="text-xs text-white opacity-50 mt-1">nights</p>
+              </div>
+            </GlassCard>
+          </div>
+
+          {/* NEW: Best/Worst Sleep This Week */}
+          {sleepLogs.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <GlassCard>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-bold mb-1">Best Sleep This Week</p>
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                      if (recentLogs.length === 0) return <p className="text-xl text-white">--</p>;
+                      const best = recentLogs.reduce((max, log) =>
+                        parseFloat(log.hoursSlept.toString()) > parseFloat(max.hoursSlept.toString()) ? log : max
+                      );
+                      return (
+                        <>
+                          <p className="text-2xl font-bold text-green-400">
+                            {parseFloat(best.hoursSlept.toString()).toFixed(1)} hrs
+                          </p>
+                          <p className="text-xs text-white opacity-70 mt-1">
+                            {format(parseISO(best.date), 'MMM d')}
+                            {best.sleepQuality && ` • ${best.sleepQuality}`}
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <Trophy className="h-8 w-8 text-green-400" />
+                </div>
+              </GlassCard>
+
+              <GlassCard>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-bold mb-1">Worst Sleep This Week</p>
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                      if (recentLogs.length === 0) return <p className="text-xl text-white">--</p>;
+                      const worst = recentLogs.reduce((min, log) =>
+                        parseFloat(log.hoursSlept.toString()) < parseFloat(min.hoursSlept.toString()) ? log : min
+                      );
+                      return (
+                        <>
+                          <p className="text-2xl font-bold text-red-400">
+                            {parseFloat(worst.hoursSlept.toString()).toFixed(1)} hrs
+                          </p>
+                          <p className="text-xs text-white opacity-70 mt-1">
+                            {format(parseISO(worst.date), 'MMM d')}
+                            {worst.sleepQuality && ` • ${worst.sleepQuality}`}
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <AlertCircle className="h-8 w-8 text-red-400" />
+                </div>
+              </GlassCard>
+            </div>
+          )}
         </>
       )}
 

@@ -357,6 +357,37 @@ export function VitalsPage() {
             <Droplet className="h-8 w-8 text-blue-500" />
           </div>
         </GlassCard>
+
+        {/* NEW: Oxygen Saturation */}
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">O₂ Saturation</p>
+              <p className="text-2xl font-bold font-bold">
+                {latestVitals?.oxygenSaturation || '--'} <span className="text-sm">%</span>
+              </p>
+              <p className={`text-sm font-bold mt-1 ${
+                !latestVitals?.oxygenSaturation
+                  ? 'text-yellow-500'
+                  : latestVitals.oxygenSaturation < 90
+                  ? 'text-red-500'
+                  : latestVitals.oxygenSaturation < 95
+                  ? 'text-yellow-500'
+                  : 'text-white'
+              }`}>
+                {!latestVitals?.oxygenSaturation
+                  ? 'Unknown'
+                  : latestVitals.oxygenSaturation < 90
+                  ? 'Critical'
+                  : latestVitals.oxygenSaturation < 95
+                  ? 'Low'
+                  : 'Normal'}
+              </p>
+              <p className="text-xs mt-1">Normal: 95-100%</p>
+            </div>
+            <Wind className="h-8 w-8 text-cyan-500" />
+          </div>
+        </GlassCard>
       </div>
 
       {/* Chart Controls */}

@@ -261,6 +261,27 @@ export function MedicationsPage() {
             )}
           </div>
 
+          {/* NEW: Days Remaining */}
+          {medication.endDate && medication.isActive && (
+            <div className="flex items-center">
+              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                const daysLeft = Math.ceil((new Date(medication.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                if (daysLeft < 0) return 'bg-gray-600 text-white';
+                if (daysLeft <= 7) return 'bg-red-500 text-white';
+                if (daysLeft <= 14) return 'bg-yellow-500 text-black';
+                return 'bg-green-500 text-white';
+              })()}`}>
+                {(() => {
+                  const daysLeft = Math.ceil((new Date(medication.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                  if (daysLeft < 0) return 'Expired';
+                  if (daysLeft === 0) return 'Ends today';
+                  if (daysLeft === 1) return '1 day left';
+                  return `${daysLeft} days left`;
+                })()}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center">
             {medication.reminderEnabled ? (
               <div className="flex items-center font-bold" style={{ color: '#ffffff' }}>

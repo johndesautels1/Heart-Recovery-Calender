@@ -260,7 +260,8 @@ export function FoodDiaryPage() {
       protein: (totals.protein || 0) + (meal.protein || 0),
       carbs: (totals.carbohydrates || 0) + (meal.carbohydrates || 0),
       fat: (totals.totalFat || 0) + (meal.totalFat || 0),
-    }), { calories: 0, sodium: 0, protein: 0, carbs: 0, fat: 0 });
+      fiber: (totals.fiber || 0) + (meal.fiber || 0),
+    }), { calories: 0, sodium: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
   };
 
   const totals = getTotalNutrition();
@@ -360,6 +361,26 @@ export function FoodDiaryPage() {
               })()}⭐
             </div>
             <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Avg Rating</div>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* NEW: Fiber Intake Card */}
+      <GlassCard>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold" style={{ color: 'var(--muted)' }}>Total Fiber Intake</p>
+            <p className="text-3xl font-bold" style={{ color: '#22c55e' }}>{totals.fiber}g</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Recommended: 25-30g daily</p>
+          </div>
+          <div className={`text-xs font-bold px-4 py-2 rounded-full ${
+            totals.fiber >= 25 ? 'bg-green-500 text-white' :
+            totals.fiber >= 15 ? 'bg-yellow-500 text-black' :
+            'bg-red-500 text-white'
+          }`}>
+            {totals.fiber >= 25 ? '✓ Great!' :
+             totals.fiber >= 15 ? 'Good' :
+             'Low'}
           </div>
         </div>
       </GlassCard>
