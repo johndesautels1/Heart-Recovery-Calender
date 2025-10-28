@@ -359,9 +359,9 @@ export function FoodDiaryPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
+              <div className="text-center py-8" style={{ color: 'var(--muted)' }}>Loading...</div>
             ) : sectionMeals.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8" style={{ color: 'var(--muted)' }}>
                 No {section.label.toLowerCase()} recorded for this day
               </div>
             ) : (
@@ -371,14 +371,19 @@ export function FoodDiaryPage() {
                   return (
                     <div
                       key={meal.id}
-                      className={`bg-white rounded-lg border-2 p-4 ${
-                        isUnhealthy ? 'border-red-500' : 'border-gray-200'
-                      }`}
+                      className="rounded-lg border-2 p-4"
+                      style={{
+                        backgroundColor: 'var(--card)',
+                        borderColor: isUnhealthy ? 'var(--bad)' : 'var(--card-light)'
+                      }}
                     >
                       {/* Red Warning Banner for Unhealthy Foods */}
                       {isUnhealthy && (
-                        <div className="mb-3 p-2 bg-red-600 rounded-lg flex items-center gap-2">
-                          <span className="text-white font-bold text-sm">
+                        <div
+                          className="mb-3 p-2 rounded-lg flex items-center gap-2"
+                          style={{ backgroundColor: 'var(--bad)' }}
+                        >
+                          <span className="font-bold text-sm" style={{ color: 'white' }}>
                             🚨 UNHEALTHY FOOD - HEART PATIENT SHOULD AVOID
                           </span>
                         </div>
@@ -386,10 +391,13 @@ export function FoodDiaryPage() {
 
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <div className={`font-bold ${isUnhealthy ? 'text-red-700' : 'text-gray-800'}`}>
+                          <div
+                            className="font-bold"
+                            style={{ color: isUnhealthy ? 'var(--bad)' : 'var(--ink)' }}
+                          >
                             {meal.foodItems}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm" style={{ color: 'var(--muted)' }}>
                             {new Date(meal.timestamp).toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit'
@@ -398,32 +406,41 @@ export function FoodDiaryPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {meal.withinSpec !== null && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              meal.withinSpec
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
+                            <span
+                              className="px-2 py-1 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: meal.withinSpec
+                                  ? 'rgba(74, 222, 128, 0.2)'
+                                  : 'rgba(248, 113, 113, 0.2)',
+                                color: meal.withinSpec ? 'var(--good)' : 'var(--bad)'
+                              }}
+                            >
                               {meal.withinSpec ? '✓ Within Goals' : '⚠ Over Limit'}
                             </span>
                           )}
                           <button
                             onClick={() => handleEditClick(meal)}
-                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors hover:opacity-70"
+                            style={{ backgroundColor: 'var(--card-light)' }}
                             title="Edit meal"
                           >
-                            <Edit className="h-4 w-4 text-blue-600" />
+                            <Edit className="h-4 w-4" style={{ color: 'var(--accent)' }} />
                           </button>
                           <button
                             onClick={() => handleDeleteMeal(meal.id)}
-                            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors hover:opacity-70"
+                            style={{ backgroundColor: 'var(--card-light)' }}
                             title="Delete meal"
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            <Trash2 className="h-4 w-4" style={{ color: 'var(--bad)' }} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-gray-600 mt-2">
+                      <div
+                        className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs mt-2"
+                        style={{ color: 'var(--muted)' }}
+                      >
                         {meal.calories !== null && <div>Cal: {meal.calories}</div>}
                         {meal.protein !== null && <div>Protein: {meal.protein}g</div>}
                         {meal.carbohydrates !== null && <div>Carbs: {meal.carbohydrates}g</div>}
@@ -433,8 +450,13 @@ export function FoodDiaryPage() {
                       </div>
 
                       {meal.notes && (
-                        <div className="mt-2 pt-2 border-t border-gray-100">
-                          <p className="text-sm text-gray-600 italic">{meal.notes}</p>
+                        <div
+                          className="mt-2 pt-2 border-t"
+                          style={{ borderColor: 'var(--card-light)' }}
+                        >
+                          <p className="text-sm italic" style={{ color: 'var(--muted)' }}>
+                            {meal.notes}
+                          </p>
                         </div>
                       )}
                     </div>

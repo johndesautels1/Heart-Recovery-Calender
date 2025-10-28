@@ -1111,7 +1111,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleDeleteTodayEvents}
-            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500 text-white whitespace-nowrap"
+            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500 whitespace-nowrap"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete Today
@@ -1120,7 +1120,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleDeleteHistoricEvents}
-            className="bg-red-500/20 hover:bg-red-500/30 border border-red-500 text-white whitespace-nowrap"
+            className="bg-red-500/20 hover:bg-red-500/30 border border-red-500 whitespace-nowrap"
           >
             <AlertTriangle className="h-4 w-4 mr-1" />
             Delete Historic
@@ -1130,7 +1130,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleExportToGoogle}
-            className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400 text-white whitespace-nowrap"
+            className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400 whitespace-nowrap"
             title="Export to Google Calendar"
           >
             <Download className="h-4 w-4 mr-1" />
@@ -1140,7 +1140,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleExportToApple}
-            className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400 text-white whitespace-nowrap"
+            className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400 whitespace-nowrap"
             title="Export to Apple Calendar"
           >
             <Download className="h-4 w-4 mr-1" />
@@ -1150,7 +1150,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleExportToCalendly}
-            className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400 text-white whitespace-nowrap"
+            className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400 whitespace-nowrap"
             title="Export for Calendly"
           >
             <Share2 className="h-4 w-4 mr-1" />
@@ -1160,7 +1160,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handlePrintCalendar}
-            className="bg-green-500/20 hover:bg-green-500/30 border border-green-400 text-white whitespace-nowrap"
+            className="bg-green-500/20 hover:bg-green-500/30 border border-green-400 whitespace-nowrap"
             title="Print Calendar"
           >
             <Printer className="h-4 w-4 mr-1" />
@@ -1170,7 +1170,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleBackupAsJSON}
-            className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400 text-white whitespace-nowrap"
+            className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400 whitespace-nowrap"
             title="Backup as JSON"
           >
             <FileJson className="h-4 w-4 mr-1" />
@@ -1180,7 +1180,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleExportFullJSON}
-            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400 text-white whitespace-nowrap"
+            className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400 whitespace-nowrap"
             title="Export Full Calendar Data as JSON"
           >
             <FileJson className="h-4 w-4 mr-1" />
@@ -1190,7 +1190,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleShareQRCode}
-            className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400 text-white whitespace-nowrap"
+            className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400 whitespace-nowrap"
             title="Share via QR Code"
           >
             <QrCode className="h-4 w-4 mr-1" />
@@ -1200,7 +1200,7 @@ See browser console for full configuration details.
             size="sm"
             variant="glass"
             onClick={handleShowIntegrationInfo}
-            className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400 text-white whitespace-nowrap"
+            className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400 whitespace-nowrap"
             title="Integration Setup Info"
           >
             🔧 API Setup
@@ -1516,7 +1516,7 @@ See browser console for full configuration details.
           <div className="space-y-4">
             <div>
               <h3 className="font-medium text-green-500">{selectedEvent.title}</h3>
-              <p className="text-sm text-white font-bold mt-1 bg-gray-800 px-3 py-2 rounded-lg">
+              <p className="text-sm font-bold mt-1 bg-gray-800 px-3 py-2 rounded-lg">
                 {format(new Date(selectedEvent.startTime), 'PPP p')} -
                 {format(new Date(selectedEvent.endTime), 'p')}
               </p>
@@ -1567,7 +1567,7 @@ See browser console for full configuration details.
                   size="sm"
                   onClick={handleUpdateSleepHours}
                   disabled={isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                  className="bg-blue-600 hover:bg-blue-700 font-bold"
                 >
                   Save Sleep
                 </Button>
@@ -1604,7 +1604,7 @@ See browser console for full configuration details.
                     size="sm"
                     onClick={handleUpdatePerformanceScore}
                     disabled={isLoading}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                    className="bg-purple-600 hover:bg-purple-700 font-bold"
                   >
                     Save Score
                   </Button>
@@ -1667,16 +1667,16 @@ See browser console for full configuration details.
             )}
 
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-white font-bold">Status:</span>
+              <span className="text-sm font-bold">Status:</span>
               <span
                 className={`px-2 py-1 text-xs font-bold rounded-full ${
                   selectedEvent.status === 'completed'
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-green-600'
                     : selectedEvent.status === 'missed'
-                    ? 'bg-red-600 text-white'
+                    ? 'bg-red-600'
                     : selectedEvent.status === 'cancelled'
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-blue-600 text-white'
+                    ? 'bg-gray-600'
+                    : 'bg-blue-600'
                 }`}
               >
                 {selectedEvent.status}
@@ -1745,7 +1745,7 @@ See browser console for full configuration details.
               <div className="space-y-4">
                 {/* Step 1: Select Person */}
                 <div>
-                  <label className="block text-sm font-bold mb-2 text-white">1. Select Calendar Owner</label>
+                  <label className="block text-sm font-bold mb-2">1. Select Calendar Owner</label>
                   <select
                     value={selectedPatientForCalendar === null ? 'admin' : selectedPatientForCalendar || ''}
                     onChange={(e) => {
@@ -1791,7 +1791,7 @@ See browser console for full configuration details.
                 {/* Step 2: Select Specific Calendar (only shown after Step 1 selection) */}
                 {selectedPatientForCalendar !== undefined && (
                   <div>
-                    <label className="block text-sm font-bold mb-2 text-white">
+                    <label className="block text-sm font-bold mb-2">
                       2. Select Calendar
                     </label>
                     <select
@@ -2001,7 +2001,7 @@ See browser console for full configuration details.
               {/* Calendar Edit/Create Form */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold mb-2 text-white">
+                  <label className="block text-sm font-bold mb-2">
                     Calendar Name
                   </label>
                   <input
@@ -2017,7 +2017,7 @@ See browser console for full configuration details.
                 {/* Patient Selector - Only for therapists */}
                 {isViewingAsTherapist && patients.length > 0 && (
                   <div>
-                    <label className="block text-sm font-bold mb-2 text-white">
+                    <label className="block text-sm font-bold mb-2">
                       Assign To Patient (Optional)
                     </label>
                     <select
@@ -2033,14 +2033,14 @@ See browser console for full configuration details.
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-white/60 mt-1">
+                    <p className="text-xs/60 mt-1">
                       Select a patient to create a calendar for them, or leave as "My Own Calendar" to create one for yourself
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-bold mb-2 text-white">
+                  <label className="block text-sm font-bold mb-2">
                     Calendar Type
                   </label>
                   <select
@@ -2061,7 +2061,7 @@ See browser console for full configuration details.
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold mb-2 text-white">
+                  <label className="block text-sm font-bold mb-2">
                     Calendar Color
                   </label>
                   <div className="flex items-center gap-3">

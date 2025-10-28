@@ -6,7 +6,10 @@ import { Toaster } from 'react-hot-toast';
 
 export function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: 'var(--bg)' }}
+    >
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <Outlet />

@@ -4,7 +4,13 @@ import logoImage from '../data/AI_Division_logo_TRANSPARENT.png';
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-gray-800 bg-gradient-to-b from-gray-900 to-black">
+    <footer
+      className="mt-auto border-t"
+      style={{
+        borderColor: 'var(--card-light)',
+        background: 'linear-gradient(to bottom, var(--card), var(--bg))'
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         {/* Main Footer Content */}
         <div className="text-center mb-6">
@@ -14,14 +20,14 @@ export function Footer() {
               Cardiac Recovery Pro™
             </h3>
           </div>
-          <p className="text-lg font-semibold text-cyan-400 mb-2">
+          <p className="text-lg font-semibold mb-2" style={{ color: 'var(--cyan)' }}>
             Complete Recovery Tracking & Analytics System
           </p>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-purple-400">
-              Powered by our exclusive <span className="font-bold text-purple-300">PULSE Technology™</span>
+            <p className="text-sm font-medium" style={{ color: 'var(--purple)' }}>
+              Powered by our exclusive <span className="font-bold" style={{ color: 'var(--purple)' }}>PULSE Technology™</span>
             </p>
-            <p className="text-xs italic text-purple-300">
+            <p className="text-xs italic" style={{ color: 'var(--purple)' }}>
               Personal Universal Life Support Engine
             </p>
           </div>
@@ -33,25 +39,28 @@ export function Footer() {
             href="https://heartbeat-claude-code.vercel.app/disclosures.html#privacy-policy"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+            className="transition-colors font-medium hover:opacity-80"
+            style={{ color: 'var(--cyan)' }}
           >
             Privacy Policy
           </a>
-          <span className="text-gray-600">|</span>
+          <span style={{ color: 'var(--muted)' }}>|</span>
           <a
             href="https://heartbeat-claude-code.vercel.app/disclosures.html#terms-of-service"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+            className="transition-colors font-medium hover:opacity-80"
+            style={{ color: 'var(--cyan)' }}
           >
             Terms of Service
           </a>
-          <span className="text-gray-600">|</span>
+          <span style={{ color: 'var(--muted)' }}>|</span>
           <a
             href="https://heartbeat-claude-code.vercel.app/disclosures.html#contact"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+            className="transition-colors font-medium hover:opacity-80"
+            style={{ color: 'var(--cyan)' }}
           >
             Contact Support
           </a>
@@ -67,12 +76,18 @@ export function Footer() {
         </div>
 
         {/* Medical Disclaimer */}
-        <div className="mb-6 p-4 bg-red-950 bg-opacity-30 border border-red-800 rounded-lg">
+        <div
+          className="mb-6 p-4 border rounded-lg"
+          style={{
+            backgroundColor: 'rgba(127, 29, 29, 0.2)',
+            borderColor: 'var(--bad)'
+          }}
+        >
           <div className="flex items-start gap-2">
-            <span className="text-red-400 font-bold text-lg mt-0.5">⚕️</span>
+            <span className="font-bold text-lg mt-0.5" style={{ color: 'var(--bad)' }}>⚕️</span>
             <div>
-              <h4 className="font-bold text-red-400 mb-2">Medical Disclaimer</h4>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h4 className="font-bold mb-2" style={{ color: 'var(--bad)' }}>Medical Disclaimer</h4>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--ink)' }}>
                 This application is for informational and fitness tracking purposes only. It is not intended to diagnose,
                 treat, cure, or prevent any disease. Always consult with a qualified healthcare professional regarding any
                 medical condition or treatment. In case of a medical emergency, call 911 immediately.
@@ -82,16 +97,16 @@ export function Footer() {
         </div>
 
         {/* Copyright & Legal */}
-        <div className="text-center space-y-2 text-xs text-gray-400">
+        <div className="text-center space-y-2 text-xs" style={{ color: 'var(--muted)' }}>
           <p>
-            © 2025 <span className="font-semibold text-gray-300">Heartbeat Health Technologies</span>. All rights reserved.
+            © 2025 <span className="font-semibold" style={{ color: 'var(--ink)' }}>Heartbeat Health Technologies</span>. All rights reserved.
           </p>
           <p>
-            <span className="font-medium text-purple-400">Cardiac Recovery Pro™</span>,
-            <span className="font-medium text-purple-400"> PULSE Technology™</span>, and associated logos are trademarks of
-            <span className="font-semibold text-gray-300"> Heartbeat Health Technologies</span>.
+            <span className="font-medium" style={{ color: 'var(--purple)' }}>Cardiac Recovery Pro™</span>,
+            <span className="font-medium" style={{ color: 'var(--purple)' }}> PULSE Technology™</span>, and associated logos are trademarks of
+            <span className="font-semibold" style={{ color: 'var(--ink)' }}> Heartbeat Health Technologies</span>.
           </p>
-          <p className="text-yellow-600 font-medium">
+          <p className="font-medium" style={{ color: 'var(--warn)' }}>
             Patents pending. Unauthorized reproduction or distribution is prohibited.
           </p>
         </div>

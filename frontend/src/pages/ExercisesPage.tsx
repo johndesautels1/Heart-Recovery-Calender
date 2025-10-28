@@ -685,11 +685,13 @@ export function ExercisesPage() {
         <button
           onClick={() => setMainTab('exercises')}
           className={`px-6 py-3 rounded-lg font-medium transition-all ${
-            mainTab === 'exercises'
-              ? 'glass text-white'
-              : 'bg-white/5 hover:bg-white/10'
+            mainTab === 'exercises' ? 'glass' : ''
           }`}
-          style={mainTab === 'exercises' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+          style={
+            mainTab === 'exercises'
+              ? { color: 'var(--accent)' }
+              : { color: 'var(--ink)', backgroundColor: 'var(--card-light)' }
+          }
         >
           <Dumbbell className="inline h-5 w-5 mr-2" />
           Exercises
@@ -697,11 +699,13 @@ export function ExercisesPage() {
         <button
           onClick={() => setMainTab('activities')}
           className={`px-6 py-3 rounded-lg font-medium transition-all ${
-            mainTab === 'activities'
-              ? 'glass text-white'
-              : 'bg-white/5 hover:bg-white/10'
+            mainTab === 'activities' ? 'glass' : ''
           }`}
-          style={mainTab === 'activities' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+          style={
+            mainTab === 'activities'
+              ? { color: 'var(--accent)' }
+              : { color: 'var(--ink)', backgroundColor: 'var(--card-light)' }
+          }
         >
           <Activity className="inline h-5 w-5 mr-2" />
           Activities
@@ -709,11 +713,13 @@ export function ExercisesPage() {
         <button
           onClick={() => setMainTab('stats')}
           className={`px-6 py-3 rounded-lg font-medium transition-all ${
-            mainTab === 'stats'
-              ? 'glass text-white'
-              : 'bg-white/5 hover:bg-white/10'
+            mainTab === 'stats' ? 'glass' : ''
           }`}
-          style={mainTab === 'stats' ? { color: 'var(--accent)' } : { color: 'var(--ink)' }}
+          style={
+            mainTab === 'stats'
+              ? { color: 'var(--accent)' }
+              : { color: 'var(--ink)', backgroundColor: 'var(--card-light)' }
+          }
         >
           <CheckCircle2 className="inline h-5 w-5 mr-2" />
           Stats & Progress
@@ -897,7 +903,13 @@ export function ExercisesPage() {
                         {exercise.difficulty}
                       </span>
                       <span
-                        className={'text-xs px-2 py-1 rounded-full ' + (exercise.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700')}
+                        className="text-xs px-2 py-1 rounded-full"
+                        style={{
+                          backgroundColor: exercise.isActive
+                            ? 'rgba(74, 222, 128, 0.2)'
+                            : 'rgba(209, 213, 219, 0.3)',
+                          color: exercise.isActive ? 'var(--good)' : 'var(--muted)'
+                        }}
                       >
                         {exercise.isActive ? 'Active' : 'Inactive'}
                       </span>

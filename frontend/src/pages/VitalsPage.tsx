@@ -132,7 +132,7 @@ export function VitalsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white font-bold">Vitals Tracking</h1>
+        <h1 className="text-3xl font-bold font-bold">Vitals Tracking</h1>
         <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="h-5 w-5 mr-2" />
           Record Vitals
@@ -144,13 +144,13 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Blood Pressure</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Blood Pressure</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.bloodPressureSystolic || '--'}/
                 {latestVitals?.bloodPressureDiastolic || '--'}
               </p>
               <p className={`text-sm font-bold mt-1 ${bpStatus.className}`}>{bpStatus.status}</p>
-              <p className="text-xs text-white mt-1">Normal: &lt;120/80</p>
+              <p className="text-xs mt-1">Normal: &lt;120/80</p>
             </div>
             <Heart className="h-8 w-8 text-red-500" />
           </div>
@@ -159,8 +159,8 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Heart Rate</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Heart Rate</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.heartRate || '--'} <span className="text-sm">bpm</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${
@@ -178,7 +178,7 @@ export function VitalsPage() {
                   ? 'High'
                   : 'Normal'}
               </p>
-              <p className="text-xs text-white mt-1">Normal: 60-100</p>
+              <p className="text-xs mt-1">Normal: 60-100</p>
             </div>
             <Activity className="h-8 w-8 text-red-500" />
           </div>
@@ -187,8 +187,8 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Temperature</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Temperature</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.temperature ? `${latestVitals.temperature.toFixed(1)}` : '--'} <span className="text-sm">°F</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${
@@ -206,7 +206,7 @@ export function VitalsPage() {
                   ? 'High'
                   : 'Normal'}
               </p>
-              <p className="text-xs text-white mt-1">Normal: 97-99°F</p>
+              <p className="text-xs mt-1">Normal: 97-99°F</p>
             </div>
             <Thermometer className="h-8 w-8 text-orange-500" />
           </div>
@@ -215,14 +215,14 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Weight</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Weight</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.weight || '--'} <span className="text-sm">lbs</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${!latestVitals?.weight ? 'text-yellow-500' : 'text-white'}`}>
                 {!latestVitals?.weight ? 'Unknown' : 'Recorded'}
               </p>
-              <p className="text-xs text-white mt-1">Track trends</p>
+              <p className="text-xs mt-1">Track trends</p>
             </div>
             <Weight className="h-8 w-8 text-blue-500" />
           </div>
@@ -231,8 +231,8 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Blood Sugar</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Blood Sugar</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.bloodSugar || '--'} <span className="text-sm">mg/dL</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${
@@ -252,7 +252,7 @@ export function VitalsPage() {
                   ? 'Pre-diabetic'
                   : 'High'}
               </p>
-              <p className="text-xs text-white mt-1">Normal: 70-100</p>
+              <p className="text-xs mt-1">Normal: 70-100</p>
             </div>
             <Droplet className="h-8 w-8 text-red-500" />
           </div>
@@ -261,8 +261,8 @@ export function VitalsPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Hydration</p>
-              <p className="text-2xl font-bold text-white font-bold">
+              <p className="text-sm font-bold mb-1">Hydration</p>
+              <p className="text-2xl font-bold font-bold">
                 {latestVitals?.hydrationStatus || '--'} <span className="text-sm">%</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${
@@ -282,7 +282,7 @@ export function VitalsPage() {
                   ? 'Low'
                   : 'Good'}
               </p>
-              <p className="text-xs text-white mt-1">Target: 70-100%</p>
+              <p className="text-xs mt-1">Target: 70-100%</p>
             </div>
             <Droplet className="h-8 w-8 text-blue-500" />
           </div>
@@ -297,8 +297,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('bp')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'bp' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-blue-500' 
+                  : 'glass-button font-bold'
               }`}
             >
               Blood Pressure
@@ -307,8 +307,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('hr')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'hr' 
-                  ? 'bg-red-500 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-red-500' 
+                  : 'glass-button font-bold'
               }`}
             >
               Heart Rate
@@ -317,8 +317,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('weight')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'weight' 
-                  ? 'bg-green-500 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-green-500' 
+                  : 'glass-button font-bold'
               }`}
             >
               Weight
@@ -327,8 +327,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('sugar')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'sugar'
-                  ? 'bg-orange-500 text-white'
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-orange-500'
+                  : 'glass-button font-bold'
               }`}
             >
               Blood Sugar
@@ -337,8 +337,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('temp')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'temp'
-                  ? 'bg-orange-600 text-white'
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-orange-600'
+                  : 'glass-button font-bold'
               }`}
             >
               Temperature
@@ -347,8 +347,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('hydration')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'hydration'
-                  ? 'bg-blue-600 text-white'
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-blue-600'
+                  : 'glass-button font-bold'
               }`}
             >
               Hydration
@@ -357,8 +357,8 @@ export function VitalsPage() {
               onClick={() => setSelectedMetric('o2')}
               className={`px-4 py-2 rounded-lg transition-all ${
                 selectedMetric === 'o2'
-                  ? 'bg-cyan-500 text-white'
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-cyan-500'
+                  : 'glass-button font-bold'
               }`}
             >
               O₂ Sat
@@ -370,8 +370,8 @@ export function VitalsPage() {
               onClick={() => setDateRange('7d')}
               className={`px-3 py-1 rounded-lg text-sm transition-all ${
                 dateRange === '7d' 
-                  ? 'bg-gray-700 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-gray-700' 
+                  : 'glass-button font-bold'
               }`}
             >
               7 days
@@ -380,8 +380,8 @@ export function VitalsPage() {
               onClick={() => setDateRange('30d')}
               className={`px-3 py-1 rounded-lg text-sm transition-all ${
                 dateRange === '30d' 
-                  ? 'bg-gray-700 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-gray-700' 
+                  : 'glass-button font-bold'
               }`}
             >
               30 days
@@ -390,8 +390,8 @@ export function VitalsPage() {
               onClick={() => setDateRange('90d')}
               className={`px-3 py-1 rounded-lg text-sm transition-all ${
                 dateRange === '90d' 
-                  ? 'bg-gray-700 text-white' 
-                  : 'glass-button text-white font-bold'
+                  ? 'bg-gray-700' 
+                  : 'glass-button font-bold'
               }`}
             >
               90 days
@@ -538,9 +538,9 @@ export function VitalsPage() {
               )}
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-full text-white font-bold">
+            <div className="flex items-center justify-center h-full font-bold">
               <div className="text-center">
-                <Activity className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
+                <Activity className="h-12 w-12 mx-auto mb-3 font-bold" />
                 <p>No vitals data available for this period</p>
               </div>
             </div>
@@ -550,20 +550,20 @@ export function VitalsPage() {
 
       {/* Recent Vitals Table */}
       <GlassCard>
-        <h2 className="text-xl font-semibold text-white font-bold mb-4">Recent Readings</h2>
+        <h2 className="text-xl font-semibold font-bold mb-4">Recent Readings</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Date</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">BP</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">HR</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Temp</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Weight</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">O₂</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Sugar</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Hydration</th>
-                <th className="text-left py-2 px-2 text-sm font-medium text-white font-bold">Notes</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Date</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">BP</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">HR</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Temp</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Weight</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">O₂</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -583,13 +583,13 @@ export function VitalsPage() {
                   <td className="py-2 px-2 text-sm">{vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
-                  <td className="py-2 px-2 text-sm text-white font-bold">{vital.notes || '--'}</td>
+                  <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {vitals.length === 0 && (
-            <p className="text-center py-8 text-white font-bold">No vitals recorded yet</p>
+            <p className="text-center py-8 font-bold">No vitals recorded yet</p>
           )}
         </div>
       </GlassCard>
@@ -607,7 +607,7 @@ export function VitalsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
-              <h3 className="font-medium text-white font-bold">Blood Pressure</h3>
+              <h3 className="font-medium font-bold">Blood Pressure</h3>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   label="Systolic"
@@ -642,7 +642,7 @@ export function VitalsPage() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-medium text-white font-bold">Other Metrics</h3>
+              <h3 className="font-medium font-bold">Other Metrics</h3>
               
               <Input
                 label="Temperature (°F)"
@@ -680,7 +680,7 @@ export function VitalsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-white font-bold">
+            <label className="block text-sm font-medium font-bold">
               Symptoms (optional)
             </label>
             <textarea
@@ -692,7 +692,7 @@ export function VitalsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-white font-bold">
+            <label className="block text-sm font-medium font-bold">
               Notes (optional)
             </label>
             <textarea
@@ -710,7 +710,7 @@ export function VitalsPage() {
               className="rounded border-gray-300"
               {...register('medicationsTaken')}
             />
-            <label htmlFor="medicationsTaken" className="text-sm text-white font-bold">
+            <label htmlFor="medicationsTaken" className="text-sm font-bold">
               Medications taken as prescribed
             </label>
           </div>

@@ -631,7 +631,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Heart className="h-12 w-12 text-red-500 animate-pulse mx-auto mb-4" />
-          <p className="text-white font-bold">Loading your health data...</p>
+          <p className="font-bold" style={{ color: 'var(--ink)' }}>Loading your health data...</p>
         </div>
       </div>
     );
@@ -643,10 +643,10 @@ export function DashboardPage() {
       <div className="space-y-6">
         {/* Welcome Header */}
         <div>
-          <h1 className="text-3xl font-bold text-white font-bold">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>
             {getGreeting()}, {user?.name || 'Admin'}!
           </h1>
-          <p className="text-white font-bold mt-2">
+          <p className="font-bold mt-2" style={{ color: 'var(--ink)' }}>
             Admin Dashboard for {format(new Date(), 'EEEE, MMMM d')}
           </p>
         </div>
@@ -657,11 +657,11 @@ export function DashboardPage() {
           <GlassCard>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white font-bold mb-1">Completing Therapy</p>
-                <p className="text-3xl font-bold text-white font-bold">{adminStats.completingTherapyPatients.length}</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Completing Therapy</p>
+                <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{adminStats.completingTherapyPatients.length}</p>
                 <div className="flex items-center mt-2">
                   <CheckCircle className="h-4 w-4 text-blue-500 mr-1" />
-                  <span className="text-sm text-white font-bold">10-14 weeks post-op</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>10-14 weeks post-op</span>
                 </div>
               </div>
               <div className="p-3 rounded-full bg-blue-100">
@@ -674,11 +674,11 @@ export function DashboardPage() {
           <GlassCard>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white font-bold mb-1">New Patients</p>
-                <p className="text-3xl font-bold text-white font-bold">{adminStats.newPatients.length}</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>New Patients</p>
+                <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{adminStats.newPatients.length}</p>
                 <div className="flex items-center mt-2">
                   <UserPlus className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-white font-bold">Last 7 days</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Last 7 days</span>
                 </div>
               </div>
               <div className="p-3 rounded-full bg-green-100">
@@ -691,11 +691,11 @@ export function DashboardPage() {
           <GlassCard>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white font-bold mb-1">Active Patients</p>
-                <p className="text-3xl font-bold text-white font-bold">{adminStats.activePatients.length}</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Active Patients</p>
+                <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{adminStats.activePatients.length}</p>
                 <div className="flex items-center mt-2">
                   <Users className="h-4 w-4 text-orange-500 mr-1" />
-                  <span className="text-sm text-white font-bold">In treatment</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>In treatment</span>
                 </div>
               </div>
               <div className="p-3 rounded-full bg-orange-100">
@@ -708,11 +708,11 @@ export function DashboardPage() {
           <GlassCard>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white font-bold mb-1">Today's Events</p>
-                <p className="text-3xl font-bold text-white font-bold">{adminStats.todayAllEvents.length}</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Today's Events</p>
+                <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{adminStats.todayAllEvents.length}</p>
                 <div className="flex items-center mt-2">
                   <Calendar className="h-4 w-4 text-purple-500 mr-1" />
-                  <span className="text-sm text-white font-bold">All patients</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>All patients</span>
                 </div>
               </div>
               <div className="p-3 rounded-full bg-purple-100">
@@ -727,7 +727,7 @@ export function DashboardPage() {
           {/* New Patients Details */}
           <GlassCard>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white font-bold">New Patients (Last 7 Days)</h2>
+              <h2 className="text-xl font-semibold font-bold" style={{ color: 'var(--ink)' }}>New Patients (Last 7 Days)</h2>
               <Link to="/patients" className="text-blue-600 hover:text-blue-700 flex items-center">
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
@@ -743,12 +743,12 @@ export function DashboardPage() {
                   >
                     <UserPlus className="h-5 w-5 text-green-500 mt-1" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white font-bold truncate">{patient.name}</p>
-                      <p className="text-sm text-white font-bold">
+                      <p className="font-medium font-bold truncate" style={{ color: 'var(--ink)' }}>{patient.name}</p>
+                      <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                         Added {format(new Date(patient.createdAt), 'MMM d, yyyy')}
                       </p>
                       {patient.surgeryDate && (
-                        <p className="text-xs text-white font-bold mt-1">
+                        <p className="text-xs font-bold mt-1" style={{ color: 'var(--ink)' }}>
                           Surgery: {format(new Date(patient.surgeryDate), 'MMM d, yyyy')}
                         </p>
                       )}
@@ -757,7 +757,7 @@ export function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-white font-bold">
+              <div className="text-center py-8 font-bold" style={{ color: 'var(--ink)' }}>
                 <UserPlus className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
                 <p>No new patients in the last 7 days</p>
               </div>
@@ -1118,7 +1118,7 @@ export function DashboardPage() {
         {/* Active Patients with Metrics */}
         <GlassCard>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white font-bold">Active Patients</h2>
+            <h2 className="text-xl font-semibold font-bold" style={{ color: 'var(--ink)' }}>Active Patients</h2>
             <Link to="/patients" className="text-blue-600 hover:text-blue-700 flex items-center">
               Manage <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
@@ -1138,7 +1138,7 @@ export function DashboardPage() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white font-bold truncate">{patient.name}</p>
+                        <p className="font-medium font-bold truncate" style={{ color: 'var(--ink)' }}>{patient.name}</p>
                         {weeksPostOp !== null && (
                           <p className="text-sm text-white font-bold mt-1">Week {weeksPostOp} post-op</p>
                         )}
@@ -1146,7 +1146,7 @@ export function DashboardPage() {
                           <p className="text-xs text-white font-bold mt-1 truncate">{patient.email}</p>
                         )}
                         {patient.phone && (
-                          <p className="text-xs text-white font-bold mt-1">{patient.phone}</p>
+                          <p className="text-xs font-bold mt-1" style={{ color: 'var(--ink)' }}>{patient.phone}</p>
                         )}
                         {/* View Progress Metrics Button */}
                         <button
@@ -1164,7 +1164,7 @@ export function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-white font-bold">
+            <div className="text-center py-8 font-bold" style={{ color: 'var(--ink)' }}>
               <Users className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
               <p>No active patients</p>
               <Link to="/patients" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
@@ -1813,7 +1813,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white font-bold">
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>
           {getGreeting()}, {user?.name || 'Patient'}!
         </h1>
         <p className="text-white font-bold mt-2">
@@ -1827,8 +1827,8 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Weekly Compliance</p>
-              <p className="text-3xl font-bold text-white font-bold">{stats.weeklyCompliance}%</p>
+              <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Weekly Compliance</p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{stats.weeklyCompliance}%</p>
               <div className="flex items-center mt-2">
                 {stats.weeklyCompliance >= 80 ? (
                   <>
@@ -1853,11 +1853,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Today's Events</p>
-              <p className="text-3xl font-bold text-white font-bold">{stats.todayEvents.length}</p>
+              <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Today's Events</p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{stats.todayEvents.length}</p>
               <div className="flex items-center mt-2">
                 <Clock className="h-4 w-4 text-blue-500 mr-1" />
-                <span className="text-sm text-white font-bold">
+                <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                   {stats.todayEvents.filter(e => e.status === 'scheduled').length} pending
                 </span>
               </div>
@@ -1872,11 +1872,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Active Medications</p>
-              <p className="text-3xl font-bold text-white font-bold">{stats.activeMedications.length}</p>
+              <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Active Medications</p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{stats.activeMedications.length}</p>
               <div className="flex items-center mt-2">
                 <Pill className="h-4 w-4 text-purple-500 mr-1" />
-                <span className="text-sm text-white font-bold">Daily reminders on</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Daily reminders on</span>
               </div>
             </div>
             <div className="p-3 rounded-full bg-purple-100">
@@ -1889,11 +1889,11 @@ export function DashboardPage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white font-bold mb-1">Meals Logged</p>
-              <p className="text-3xl font-bold text-white font-bold">{stats.todayMeals.length}/4</p>
+              <p className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>Meals Logged</p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{stats.todayMeals.length}/4</p>
               <div className="flex items-center mt-2">
                 <UtensilsCrossed className="h-4 w-4 text-orange-500 mr-1" />
-                <span className="text-sm text-white font-bold">
+                <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                   {stats.todayMeals.filter(m => m.withinSpec).length} within limits
                 </span>
               </div>
@@ -1910,7 +1910,7 @@ export function DashboardPage() {
         {/* Latest Vitals */}
         <GlassCard className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white font-bold">Latest Vitals</h2>
+            <h2 className="text-xl font-semibold font-bold" style={{ color: 'var(--ink)' }}>Latest Vitals</h2>
             <Link to="/vitals" className="text-blue-600 hover:text-blue-700 flex items-center">
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
@@ -1920,7 +1920,7 @@ export function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">Blood Pressure</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Blood Pressure</span>
                   <Heart className="h-4 w-4 text-red-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -1931,7 +1931,7 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">Heart Rate</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Heart Rate</span>
                   <Activity className="h-4 w-4 text-red-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -1948,7 +1948,7 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">Weight</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Weight</span>
                   <TrendingUp className="h-4 w-4 text-blue-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -1959,7 +1959,7 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">Blood Sugar</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Blood Sugar</span>
                   <Activity className="h-4 w-4 text-orange-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -1976,7 +1976,7 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">O₂ Saturation</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>O₂ Saturation</span>
                   <Activity className="h-4 w-4 text-blue-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -1991,7 +1991,7 @@ export function DashboardPage() {
 
               <div className="p-4 bg-white/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white font-bold">Temperature</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>Temperature</span>
                   <Activity className="h-4 w-4 text-green-500" />
                 </div>
                 <p className="text-2xl font-bold text-white font-bold">
@@ -2001,7 +2001,7 @@ export function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-white font-bold">
+            <div className="text-center py-8 font-bold" style={{ color: 'var(--ink)' }}>
               <Activity className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
               <p>No vitals recorded yet</p>
               <Link to="/vitals" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
@@ -2014,7 +2014,7 @@ export function DashboardPage() {
         {/* Today's Schedule */}
         <GlassCard>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white font-bold">Today's Schedule</h2>
+            <h2 className="text-xl font-semibold font-bold" style={{ color: 'var(--ink)' }}>Today's Schedule</h2>
             <Link to="/calendar" className="text-blue-600 hover:text-blue-700">
               <Calendar className="h-5 w-5" />
             </Link>
@@ -2029,8 +2029,8 @@ export function DashboardPage() {
                 >
                   <div className={`w-2 h-2 rounded-full mt-2 bg-${event.calendar?.type || 'general'}-500`} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white font-bold truncate">{event.title}</p>
-                    <p className="text-sm text-white font-bold">
+                    <p className="font-medium font-bold truncate" style={{ color: 'var(--ink)' }}>{event.title}</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                       {format(new Date(event.startTime), 'h:mm a')}
                       {event.location && ` • ${event.location}`}
                     </p>
@@ -2050,7 +2050,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-white font-bold">
+            <div className="text-center py-8 font-bold" style={{ color: 'var(--ink)' }}>
               <Calendar className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
               <p>No events scheduled for today</p>
               <Link to="/calendar" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
@@ -2064,7 +2064,7 @@ export function DashboardPage() {
       {/* Active Medications List */}
       <GlassCard>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white font-bold">Active Medications</h2>
+          <h2 className="text-xl font-semibold font-bold" style={{ color: 'var(--ink)' }}>Active Medications</h2>
           <Link to="/medications" className="text-blue-600 hover:text-blue-700 flex items-center">
             Manage <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
@@ -2081,7 +2081,7 @@ export function DashboardPage() {
                   <div>
                     <p className="font-medium text-white font-bold">{med.name}</p>
                     <p className="text-sm text-white font-bold mt-1">{med.dosage}</p>
-                    <p className="text-xs text-white font-bold mt-1">{med.frequency}</p>
+                    <p className="text-xs font-bold mt-1" style={{ color: 'var(--ink)' }}>{med.frequency}</p>
                   </div>
                   <Pill className="h-5 w-5 text-purple-500" />
                 </div>
@@ -2095,7 +2095,7 @@ export function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-white font-bold">
+          <div className="text-center py-8 font-bold" style={{ color: 'var(--ink)' }}>
             <Pill className="h-12 w-12 mx-auto mb-3 text-white font-bold" />
             <p>No active medications</p>
             <Link to="/medications" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">

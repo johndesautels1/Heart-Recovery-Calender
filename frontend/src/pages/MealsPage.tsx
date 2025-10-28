@@ -473,7 +473,10 @@ export function MealsPage() {
 
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5"
+                  style={{ color: 'var(--muted)' }}
+                />
                 <input
                   type="text"
                   placeholder="Search foods..."
@@ -487,11 +490,20 @@ export function MealsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 <button
                   onClick={() => setSelectedCategory(null)}
-                  className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                  className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                     selectedCategory === null
                       ? 'bg-cobalt-500 text-white shadow-lg scale-105'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-cobalt-400 hover:scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={
+                    selectedCategory !== null
+                      ? {
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--ink)',
+                          borderColor: 'var(--card-light)'
+                        }
+                      : undefined
+                  }
                 >
                   All Categories
                 </button>
@@ -499,11 +511,20 @@ export function MealsPage() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                       selectedCategory === category.id
                         ? 'bg-cobalt-500 text-white shadow-lg scale-105'
-                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-cobalt-400 hover:scale-105'
+                        : 'hover:scale-105'
                     }`}
+                    style={
+                      selectedCategory !== category.id
+                        ? {
+                            backgroundColor: 'var(--card)',
+                            color: 'var(--ink)',
+                            borderColor: 'var(--card-light)'
+                          }
+                        : undefined
+                    }
                   >
                     {category.icon} {category.name}
                   </button>
@@ -514,41 +535,77 @@ export function MealsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   onClick={() => setSelectedHealthRating(null)}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                     selectedHealthRating === null
-                      ? 'bg-gray-700 text-white shadow-lg scale-105'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:scale-105'
+                      ? 'shadow-lg scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={
+                    selectedHealthRating === null
+                      ? { backgroundColor: 'var(--card-light)', color: 'white' }
+                      : {
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--ink)',
+                          borderColor: 'var(--card-light)'
+                        }
+                  }
                 >
                   All Ratings
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('green')}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                     selectedHealthRating === 'green'
                       ? 'bg-green-600 text-white shadow-lg scale-105'
-                      : 'bg-white text-green-700 border-2 border-green-300 hover:border-green-500 hover:scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={
+                    selectedHealthRating !== 'green'
+                      ? {
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--good)',
+                          borderColor: 'rgba(74, 222, 128, 0.3)'
+                        }
+                      : undefined
+                  }
                 >
                   💚 Heart-Healthy
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('yellow')}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                     selectedHealthRating === 'yellow'
                       ? 'bg-yellow-600 text-white shadow-lg scale-105'
-                      : 'bg-white text-yellow-700 border-2 border-yellow-300 hover:border-yellow-500 hover:scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={
+                    selectedHealthRating !== 'yellow'
+                      ? {
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--warn)',
+                          borderColor: 'rgba(251, 191, 36, 0.3)'
+                        }
+                      : undefined
+                  }
                 >
                   💛 Moderation
                 </button>
                 <button
                   onClick={() => setSelectedHealthRating('red')}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center ${
+                  className={`px-6 py-3 rounded-lg font-bold text-sm transition-all text-center border-2 ${
                     selectedHealthRating === 'red'
                       ? 'bg-red-600 text-white shadow-lg scale-105'
-                      : 'bg-white text-red-700 border-2 border-red-300 hover:border-red-500 hover:scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={
+                    selectedHealthRating !== 'red'
+                      ? {
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--bad)',
+                          borderColor: 'rgba(248, 113, 113, 0.3)'
+                        }
+                      : undefined
+                  }
                 >
                   ❤️ Limit/Avoid
                 </button>
@@ -561,16 +618,19 @@ export function MealsPage() {
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cobalt-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading foods...</p>
+                <p className="mt-4" style={{ color: 'var(--muted)' }}>Loading foods...</p>
               </div>
             ) : error ? (
               <div className="text-center py-12">
-                <p className="text-red-600">Error: {error}</p>
+                <p style={{ color: 'var(--bad)' }}>Error: {error}</p>
               </div>
             ) : foodItems.length === 0 ? (
               <div className="text-center py-12">
-                <UtensilsCrossed className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600">No foods found matching your criteria.</p>
+                <UtensilsCrossed
+                  className="h-16 w-16 mx-auto mb-4"
+                  style={{ color: 'var(--muted)' }}
+                />
+                <p style={{ color: 'var(--muted)' }}>No foods found matching your criteria.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -585,19 +645,22 @@ export function MealsPage() {
                     <div
                       key={item.id}
                       onClick={() => handleFoodClick(item)}
-                      className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-3 border-gray-200 p-5 cursor-pointer group overflow-hidden relative
+                      className="rounded-xl border-3 p-5 cursor-pointer group overflow-hidden relative
                                  transition-all duration-300 hover:scale-105
                                  shadow-lg hover:shadow-2xl
                                  hover:border-cobalt-400"
                       style={{
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.08), inset 0 2px 0 rgba(255,255,255,0.8)',
-                        borderBottom: '4px solid rgba(0,0,0,0.1)',
-                        borderTop: '2px solid rgba(255,255,255,0.8)'
+                        background: `linear-gradient(to bottom right, var(--card), var(--card-light))`,
+                        borderColor: 'var(--card-light)',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.08)'
                       }}
                     >
                       {/* Premium header with gradient backdrop */}
                       <div className="flex items-start justify-between mb-4 relative z-10">
-                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-cobalt-600 transition-colors">
+                        <h3
+                          className="font-bold text-lg group-hover:text-cobalt-600 transition-colors"
+                          style={{ color: 'var(--ink)' }}
+                        >
                           {item.name}
                         </h3>
                         <span
@@ -610,20 +673,33 @@ export function MealsPage() {
                       </div>
 
                       {item.category && (
-                        <div className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <div
+                          className="text-sm font-semibold mb-3 flex items-center gap-2"
+                          style={{ color: 'var(--ink)' }}
+                        >
                           <span className="text-lg">{item.category.icon}</span>
                           <span>{item.category.name}</span>
                         </div>
                       )}
 
                       {item.servingSize && (
-                        <div className="text-sm font-medium text-gray-600 mb-3 bg-gray-100 rounded-lg px-3 py-2 border border-gray-200">
-                          <span className="font-bold text-gray-800">Serving:</span> {item.servingSize}
+                        <div
+                          className="text-sm font-medium mb-3 rounded-lg px-3 py-2 border"
+                          style={{
+                            color: 'var(--muted)',
+                            backgroundColor: 'var(--card-light)',
+                            borderColor: 'var(--card-light)'
+                          }}
+                        >
+                          <span className="font-bold" style={{ color: 'var(--ink)' }}>Serving:</span> {item.servingSize}
                         </div>
                       )}
 
                       {/* Premium nutrition grid with enhanced styling */}
-                      <div className="grid grid-cols-2 gap-3 text-sm mt-4 pt-4 border-t-2 border-gray-200">
+                      <div
+                        className="grid grid-cols-2 gap-3 text-sm mt-4 pt-4 border-t-2"
+                        style={{ borderColor: 'var(--card-light)' }}
+                      >
                         {item.calories !== undefined && (
                           <div className="bg-blue-50 rounded-lg px-3 py-2 border border-blue-200">
                             <span className="font-bold text-blue-900">Cal:</span>
@@ -669,8 +745,18 @@ export function MealsPage() {
                       </div>
 
                       {item.notes && (
-                        <div className="mt-4 pt-4 border-t-2 border-gray-200">
-                          <p className="text-sm text-gray-700 italic font-medium leading-relaxed bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                        <div
+                          className="mt-4 pt-4 border-t-2"
+                          style={{ borderColor: 'var(--card-light)' }}
+                        >
+                          <p
+                            className="text-sm italic font-medium leading-relaxed rounded-lg px-3 py-2 border"
+                            style={{
+                              color: 'var(--ink)',
+                              backgroundColor: 'var(--card-light)',
+                              borderColor: 'var(--card-light)'
+                            }}
+                          >
                             💡 {item.notes}
                           </p>
                         </div>
@@ -726,26 +812,29 @@ export function MealsPage() {
 
           {/* Chart 1: Daily Meal Quality */}
           <GlassCard>
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center gap-2"
+              style={{ color: 'var(--ink)' }}
+            >
               <BarChart3 className="h-5 w-5" />
               Daily Meal Quality Score
             </h3>
             <div className="mb-2 flex flex-wrap gap-3 text-xs">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-                <span className="text-white font-semibold">0 pts - All Bad</span>
+                <span className="font-semibold" style={{ color: 'var(--ink)' }}>0 pts - All Bad</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
-                <span className="text-white font-semibold">1 pt - One Good</span>
+                <span className="font-semibold" style={{ color: 'var(--ink)' }}>1 pt - One Good</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
-                <span className="text-white font-semibold">2 pts - Two Good</span>
+                <span className="font-semibold" style={{ color: 'var(--ink)' }}>2 pts - Two Good</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
-                <span className="text-white font-semibold">3 pts - Perfect Day!</span>
+                <span className="font-semibold" style={{ color: 'var(--ink)' }}>3 pts - Perfect Day!</span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -820,11 +909,14 @@ export function MealsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 2: Food Group Distribution */}
             <GlassCard>
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <h3
+                className="text-xl font-bold mb-4 flex items-center gap-2"
+                style={{ color: 'var(--ink)' }}
+              >
                 <PieChartIcon className="h-6 w-6 text-emerald-400" />
                 Food Group Distribution
               </h3>
-              <div className="mb-3 text-sm text-white/90 font-medium">
+              <div className="mb-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg"></div>
                   <span>Outer Ring: Your Actual Intake</span>
@@ -1048,18 +1140,21 @@ export function MealsPage() {
 
             {/* Chart 3: Calorie Tracking */}
             <GlassCard>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h3
+                className="text-lg font-semibold mb-4 flex items-center gap-2"
+                style={{ color: 'var(--ink)' }}
+              >
                 <TrendingUp className="h-5 w-5" />
                 Daily Calorie Tracking
               </h3>
               <div className="mb-2 flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-white font-semibold">Your Calories</span>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Your Calories</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-white font-semibold">Recommended (2000 cal)</span>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Recommended (2000 cal)</span>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -1117,7 +1212,10 @@ export function MealsPage() {
           {/* Chart 4: Weight Tracking */}
           {(isViewingAsTherapist && selectedPatient) || (!isViewingAsTherapist && user) ? (
             <GlassCard>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h3
+                className="text-lg font-semibold mb-4 flex items-center gap-2"
+                style={{ color: 'var(--ink)' }}
+              >
                 <Scale className="h-5 w-5" />
                 Weight Tracking Progress
               </h3>
