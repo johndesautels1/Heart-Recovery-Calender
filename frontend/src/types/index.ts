@@ -70,6 +70,7 @@ export interface MealEntry {
   carbohydrates?: number;
   withinSpec: boolean;
   notes?: string;
+  satisfactionRating?: number; // NEW: 1-5 scale for how satisfying the meal was
   createdAt: string;
   updatedAt: string;
 }

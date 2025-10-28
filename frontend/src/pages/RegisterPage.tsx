@@ -29,10 +29,39 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
+
+  // NEW: Watch password for strength indicator
+  const password = watch('password', '');
+
+  // NEW: Calculate password strength
+  const getPasswordStrength = (pwd: string): { strength: number; label: string; color: string } => {
+    if (!pwd) return { strength: 0, label: '', color: '' };
+
+    let strength = 0;
+
+    // Length check
+    if (pwd.length >= 8) strength += 25;
+    if (pwd.length >= 12) strength += 10;
+
+    // Complexity checks
+    if (/[a-z]/.test(pwd)) strength += 15; // lowercase
+    if (/[A-Z]/.test(pwd)) strength += 15; // uppercase
+    if (/[0-9]/.test(pwd)) strength += 15; // numbers
+    if (/[^a-zA-Z0-9]/.test(pwd)) strength += 20; // special chars
+
+    // Determine label and color
+    if (strength < 40) return { strength, label: 'Weak', color: 'bg-red-500' };
+    if (strength < 60) return { strength, label: 'Fair', color: 'bg-orange-500' };
+    if (strength < 80) return { strength, label: 'Good', color: 'bg-yellow-500' };
+    return { strength: 100, label: 'Strong', color: 'bg-green-500' };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -137,14 +166,43 @@ export function RegisterPage() {
               {...register('email')}
             />
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              icon={<Lock className="h-5 w-5" />}
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                icon={<Lock className="h-5 w-5" />}
+                error={errors.password?.message}
+                {...register('password')}
+              />
+              {/* NEW: Password Strength Indicator */}
+              {password && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium" style={{ color: 'var(--ink)' }}>
+                      Password Strength: {passwordStrength.label}
+                    </span>
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                      {passwordStrength.strength}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${passwordStrength.color} transition-all duration-300`}
+                      style={{ width: `${passwordStrength.strength}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={password.length >= 8 ? 'text-green-600' : ''}>✓ 8+ chars</span>
+                      <span className={/[A-Z]/.test(password) ? 'text-green-600' : ''}>✓ uppercase</span>
+                      <span className={/[0-9]/.test(password) ? 'text-green-600' : ''}>✓ number</span>
+                      <span className={/[^a-zA-Z0-9]/.test(password) ? 'text-green-600' : ''}>✓ special</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Input
               label="Confirm Password"

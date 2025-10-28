@@ -27,6 +27,7 @@ export function FoodDiaryPage() {
     fiber: '',
     notes: '',
     isUnhealthy: false,
+    satisfactionRating: 0, // NEW: 0 = not rated, 1-5 = star rating
   });
 
   useEffect(() => {
@@ -119,6 +120,7 @@ export function FoodDiaryPage() {
         totalFat: newMeal.fat ? Number(newMeal.fat) : undefined,
         fiber: newMeal.fiber ? Number(newMeal.fiber) : undefined,
         notes: newMeal.notes || undefined,
+        satisfactionRating: newMeal.satisfactionRating > 0 ? newMeal.satisfactionRating : undefined, // NEW
       });
 
       // Reset form
@@ -133,6 +135,7 @@ export function FoodDiaryPage() {
         fiber: '',
         notes: '',
         isUnhealthy: false,
+        satisfactionRating: 0,
       });
 
       setShowAddDialog(false);
@@ -163,6 +166,7 @@ export function FoodDiaryPage() {
       fiber: meal.fiber?.toString() || '',
       notes: meal.notes || '',
       isUnhealthy,
+      satisfactionRating: meal.satisfactionRating || 0, // NEW
     });
 
     setEditingMeal(meal);
@@ -192,6 +196,7 @@ export function FoodDiaryPage() {
         totalFat: newMeal.fat ? Number(newMeal.fat) : undefined,
         fiber: newMeal.fiber ? Number(newMeal.fiber) : undefined,
         notes: newMeal.notes || undefined,
+        satisfactionRating: newMeal.satisfactionRating > 0 ? newMeal.satisfactionRating : undefined, // NEW
       });
 
       // Reset form
@@ -206,6 +211,7 @@ export function FoodDiaryPage() {
         fiber: '',
         notes: '',
         isUnhealthy: false,
+        satisfactionRating: 0,
       });
 
       setEditingMeal(null);
@@ -459,6 +465,25 @@ export function FoodDiaryPage() {
                           </p>
                         </div>
                       )}
+
+                      {/* NEW: Satisfaction Rating Display */}
+                      {meal.satisfactionRating && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
+                            Satisfaction:
+                          </span>
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={star <= meal.satisfactionRating! ? 'text-yellow-400' : 'text-gray-400'}
+                              >
+                                ⭐
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -668,6 +693,39 @@ export function FoodDiaryPage() {
                 </div>
               </div>
 
+              {/* NEW: Satisfaction Rating */}
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
+                  Satisfaction Rating (Optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewMeal({ ...newMeal, satisfactionRating: star })}
+                      className="text-3xl transition-transform hover:scale-110"
+                    >
+                      <span className={star <= newMeal.satisfactionRating ? 'text-yellow-400' : 'text-gray-300'}>
+                        ⭐
+                      </span>
+                    </button>
+                  ))}
+                  {newMeal.satisfactionRating > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setNewMeal({ ...newMeal, satisfactionRating: 0 })}
+                      className="ml-2 text-xs font-bold text-red-600 hover:text-red-700 underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs mt-1" style={{ color: '#6b7280' }}>
+                  How satisfying was this meal?
+                </p>
+              </div>
+
               {/* Notes */}
               <div>
                 <label className="block text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>
@@ -701,6 +759,7 @@ export function FoodDiaryPage() {
                     fiber: '',
                     notes: '',
                     isUnhealthy: false,
+                    satisfactionRating: 0,
                   });
                 }}
                 className="flex-1 px-4 py-3 border border-gray-300 font-bold rounded-lg hover:bg-gray-50 transition-colors"

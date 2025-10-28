@@ -41,6 +41,10 @@ const medicationSchema = z.object({
   instructions: z.string().optional(),
   sideEffects: z.string().optional(),
   reminderEnabled: z.boolean().optional(),
+  // NEW: Additional tracking fields
+  effectiveness: z.number().min(1).max(5).optional(),
+  isOTC: z.boolean().optional(),
+  monthlyCost: z.number().min(0).optional(),
 });
 
 type MedicationFormData = z.infer<typeof medicationSchema>;
@@ -1025,6 +1029,55 @@ export function MedicationsPage() {
               placeholder="e.g., May cause dizziness, nausea"
               {...register('sideEffects')}
             />
+          </div>
+
+          {/* NEW: Effectiveness Rating */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold" style={{ color: '#ffffff' }}>
+              Effectiveness Rating (optional)
+            </label>
+            <div className="flex items-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <label key={star} className="cursor-pointer">
+                  <input
+                    type="radio"
+                    value={star}
+                    {...register('effectiveness', { valueAsNumber: true })}
+                    className="sr-only peer"
+                  />
+                  <span className="text-2xl peer-checked:text-yellow-400 text-gray-400 hover:text-yellow-300">
+                    ⭐
+                  </span>
+                </label>
+              ))}
+              <span className="text-xs ml-2" style={{ color: '#ffffff', opacity: 0.7 }}>
+                How well is it working?
+              </span>
+            </div>
+          </div>
+
+          {/* NEW: Monthly Cost */}
+          <Input
+            label="Monthly Cost (optional)"
+            type="number"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            hint="Track medication expenses"
+            {...register('monthlyCost', { valueAsNumber: true })}
+          />
+
+          {/* NEW: OTC/Supplement Toggle */}
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="isOTC"
+              className="rounded border-gray-300"
+              {...register('isOTC')}
+            />
+            <label htmlFor="isOTC" className="text-sm font-bold" style={{ color: '#ffffff' }}>
+              This is an over-the-counter medication or supplement
+            </label>
           </div>
 
           <div className="flex items-center space-x-2">
