@@ -385,6 +385,49 @@ export function FoodDiaryPage() {
         </div>
       </GlassCard>
 
+      {/* NEW: Meals Within Spec */}
+      {meals.length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold" style={{ color: 'var(--muted)' }}>Meals Within Goals</p>
+              <p className="text-3xl font-bold" style={{ color: '#3b82f6' }}>
+                {(() => {
+                  const withSpec = meals.filter(m => m.withinSpec !== null);
+                  if (withSpec.length === 0) return '--';
+                  const withinCount = withSpec.filter(m => m.withinSpec === true).length;
+                  return Math.round((withinCount / withSpec.length) * 100);
+                })()}%
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                {(() => {
+                  const withSpec = meals.filter(m => m.withinSpec !== null);
+                  const withinCount = withSpec.filter(m => m.withinSpec === true).length;
+                  return `${withinCount} of ${withSpec.length} meals`;
+                })()}
+              </p>
+            </div>
+            <div className={`text-xs font-bold px-4 py-2 rounded-full ${(() => {
+              const withSpec = meals.filter(m => m.withinSpec !== null);
+              if (withSpec.length === 0) return 'bg-gray-500 text-white';
+              const percentage = (withSpec.filter(m => m.withinSpec === true).length / withSpec.length) * 100;
+              if (percentage >= 80) return 'bg-green-500 text-white';
+              if (percentage >= 60) return 'bg-yellow-500 text-black';
+              return 'bg-red-500 text-white';
+            })()}`}>
+              {(() => {
+                const withSpec = meals.filter(m => m.withinSpec !== null);
+                if (withSpec.length === 0) return 'No data';
+                const percentage = (withSpec.filter(m => m.withinSpec === true).length / withSpec.length) * 100;
+                if (percentage >= 80) return 'Excellent';
+                if (percentage >= 60) return 'Good';
+                return 'Needs work';
+              })()}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* Meal Sections */}
       {mealSections.map(section => {
         const sectionMeals = getMealsByType(section.type);

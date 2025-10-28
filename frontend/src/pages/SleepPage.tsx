@@ -575,6 +575,47 @@ export function SleepPage() {
             </GlassCard>
           </div>
 
+          {/* NEW: Sleep Consistency Score */}
+          {sleepLogs.length >= 3 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Sleep Consistency</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                    const hours = recentLogs.map(log => parseFloat(log.hoursSlept.toString()));
+                    const avg = hours.reduce((sum, h) => sum + h, 0) / hours.length;
+                    const variance = hours.reduce((sum, h) => sum + Math.pow(h - avg, 2), 0) / hours.length;
+                    const stdDev = Math.sqrt(variance);
+                    return stdDev <= 1 ? 'text-green-400' : stdDev <= 2 ? 'text-yellow-400' : 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                      const hours = recentLogs.map(log => parseFloat(log.hoursSlept.toString()));
+                      const avg = hours.reduce((sum, h) => sum + h, 0) / hours.length;
+                      const variance = hours.reduce((sum, h) => sum + Math.pow(h - avg, 2), 0) / hours.length;
+                      const stdDev = Math.sqrt(variance);
+                      if (stdDev <= 1) return 'Excellent';
+                      if (stdDev <= 2) return 'Good';
+                      return 'Irregular';
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">
+                    {(() => {
+                      const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                      const hours = recentLogs.map(log => parseFloat(log.hoursSlept.toString()));
+                      const avg = hours.reduce((sum, h) => sum + h, 0) / hours.length;
+                      const variance = hours.reduce((sum, h) => sum + Math.pow(h - avg, 2), 0) / hours.length;
+                      const stdDev = Math.sqrt(variance);
+                      return `±${stdDev.toFixed(1)}h variation`;
+                    })()}
+                  </p>
+                </div>
+                <Award className="h-8 w-8 text-yellow-400" />
+              </div>
+            </GlassCard>
+          )}
+
           {/* NEW: Best/Worst Sleep This Week */}
           {sleepLogs.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

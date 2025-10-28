@@ -636,6 +636,42 @@ export function MedicationsPage() {
         </GlassCard>
       )}
 
+      {/* NEW: Average Effectiveness */}
+      {activeMeds.filter(m => m.effectiveness).length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>Average Medication Effectiveness</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>
+                {(() => {
+                  const rated = activeMeds.filter(m => m.effectiveness);
+                  const avg = rated.reduce((sum, m) => sum + (m.effectiveness || 0), 0) / rated.length;
+                  return avg.toFixed(1);
+                })()}⭐
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                Based on {activeMeds.filter(m => m.effectiveness).length} rated medication(s)
+              </p>
+            </div>
+            <div className={`text-xs font-bold px-4 py-2 rounded-full ${(() => {
+              const rated = activeMeds.filter(m => m.effectiveness);
+              const avg = rated.reduce((sum, m) => sum + (m.effectiveness || 0), 0) / rated.length;
+              if (avg >= 4) return 'bg-green-500 text-white';
+              if (avg >= 3) return 'bg-yellow-500 text-black';
+              return 'bg-red-500 text-white';
+            })()}`}>
+              {(() => {
+                const rated = activeMeds.filter(m => m.effectiveness);
+                const avg = rated.reduce((sum, m) => sum + (m.effectiveness || 0), 0) / rated.length;
+                if (avg >= 4) return 'Very Effective';
+                if (avg >= 3) return 'Moderately Effective';
+                return 'Low Effectiveness';
+              })()}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* View Mode Tabs */}
       <div className="flex space-x-2">
         <button

@@ -390,6 +390,108 @@ export function VitalsPage() {
         </GlassCard>
       </div>
 
+      {/* NEW: 7-Day Average Heart Rate */}
+      {vitals.length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
+              <p className="text-3xl font-bold font-bold">
+                {(() => {
+                  const recentVitals = vitals.slice(-7);
+                  const validHRs = recentVitals.filter(v => v.heartRate);
+                  if (validHRs.length === 0) return '--';
+                  const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                  return Math.round(avg);
+                })()} <span className="text-sm">bpm</span>
+              </p>
+              <p className={`text-sm font-bold mt-1 ${(() => {
+                const recentVitals = vitals.slice(-7);
+                const validHRs = recentVitals.filter(v => v.heartRate);
+                if (validHRs.length === 0) return 'text-yellow-500';
+                const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                return avg < 60 || avg > 100 ? 'text-red-500' : 'text-white';
+              })()}`}>
+                {(() => {
+                  const recentVitals = vitals.slice(-7);
+                  const validHRs = recentVitals.filter(v => v.heartRate);
+                  if (validHRs.length === 0) return 'No data';
+                  const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                  if (avg < 60) return 'Below normal';
+                  if (avg > 100) return 'Above normal';
+                  return 'Normal range';
+                })()}
+              </p>
+              <p className="text-xs mt-1">Last {(() => {
+                const recentVitals = vitals.slice(-7);
+                return recentVitals.filter(v => v.heartRate).length;
+              })()} readings</p>
+            </div>
+            <Activity className="h-8 w-8 text-red-500" />
+          </div>
+        </GlassCard>
+      )}
+
+      {/* NEW: Blood Pressure Trend */}
+      {vitals.length >= 7 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">Blood Pressure Trend</p>
+              <p className={`text-3xl font-bold ${(() => {
+                const recentVitals = vitals.slice(-7);
+                const olderVitals = vitals.slice(-14, -7);
+                const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                if (validRecent.length === 0 || validOlder.length === 0) return 'text-white';
+                const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                const diff = recentAvg - olderAvg;
+                return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
+              })()}`}>
+                {(() => {
+                  const recentVitals = vitals.slice(-7);
+                  const olderVitals = vitals.slice(-14, -7);
+                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  if (validRecent.length === 0 || validOlder.length === 0) return 'No data';
+                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                  const diff = recentAvg - olderAvg;
+                  if (diff < -5) return 'Improving';
+                  if (diff > 5) return 'Rising';
+                  return 'Stable';
+                })()}
+              </p>
+              <p className="text-xs mt-1">
+                {(() => {
+                  const recentVitals = vitals.slice(-7);
+                  const olderVitals = vitals.slice(-14, -7);
+                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  if (validRecent.length === 0 || validOlder.length === 0) return 'Need more data';
+                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                  const diff = recentAvg - olderAvg;
+                  return `${diff > 0 ? '+' : ''}${diff.toFixed(0)} mmHg vs last week`;
+                })()}
+              </p>
+            </div>
+            <TrendingUp className={`h-8 w-8 ${(() => {
+              const recentVitals = vitals.slice(-7);
+              const olderVitals = vitals.slice(-14, -7);
+              const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+              const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+              if (validRecent.length === 0 || validOlder.length === 0) return 'text-gray-500';
+              const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+              const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+              const diff = recentAvg - olderAvg;
+              return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
+            })()}`} />
+          </div>
+        </GlassCard>
+      )}
+
       {/* Chart Controls */}
       <GlassCard>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
