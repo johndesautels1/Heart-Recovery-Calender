@@ -129,7 +129,9 @@ export function DashboardPage() {
     },
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [progressPhotos, setProgressPhotos] = useState<string[]>([]);
+  const [progressPhotos, setProgressPhotos] = useState<Record<number, Record<number, string>>>({});
+  const [selectedPhotoPatient, setSelectedPhotoPatient] = useState<number | null>(null);
+  const [selectedPhotoWeek, setSelectedPhotoWeek] = useState<number>(1);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
@@ -153,6 +155,15 @@ export function DashboardPage() {
       }
     }
   }, []);
+
+  // Set default patient for photos when admin loads patients
+  useEffect(() => {
+    if (isAdmin && adminStats.activePatients.length > 0 && selectedPhotoPatient === null) {
+      setSelectedPhotoPatient(adminStats.activePatients[0].id);
+    } else if (!isAdmin && user?.id && selectedPhotoPatient === null) {
+      setSelectedPhotoPatient(user.id);
+    }
+  }, [isAdmin, adminStats.activePatients, user, selectedPhotoPatient]);
 
   const loadDashboardData = async () => {
     try {
@@ -407,8 +418,9 @@ export function DashboardPage() {
     stats.latestVitals?.bloodPressureDiastolic
   );
 
-  // Handle photo upload
-  const handlePhotoUpload = () => {
+  // Handle photo upload for specific week
+  const handlePhotoUpload = (week: number) => {
+    setSelectedPhotoWeek(week);
     fileInputRef.current?.click();
   };
 
@@ -417,6 +429,11 @@ export function DashboardPage() {
     if (!files || files.length === 0) return;
 
     const file = files[0];
+
+    if (!selectedPhotoPatient) {
+      alert('Please select a patient first');
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -434,7 +451,11 @@ export function DashboardPage() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = e.target?.result as string;
-      const newPhotos = [...progressPhotos, base64];
+      const newPhotos = { ...progressPhotos };
+      if (!newPhotos[selectedPhotoPatient]) {
+        newPhotos[selectedPhotoPatient] = {};
+      }
+      newPhotos[selectedPhotoPatient][selectedPhotoWeek] = base64;
       setProgressPhotos(newPhotos);
       localStorage.setItem('progressPhotos', JSON.stringify(newPhotos));
     };
@@ -444,10 +465,15 @@ export function DashboardPage() {
     event.target.value = '';
   };
 
-  const handleDeletePhoto = (index: number) => {
-    const newPhotos = progressPhotos.filter((_, i) => i !== index);
-    setProgressPhotos(newPhotos);
-    localStorage.setItem('progressPhotos', JSON.stringify(newPhotos));
+  const handleDeletePhoto = (week: number) => {
+    if (!selectedPhotoPatient) return;
+
+    const newPhotos = { ...progressPhotos };
+    if (newPhotos[selectedPhotoPatient] && newPhotos[selectedPhotoPatient][week]) {
+      delete newPhotos[selectedPhotoPatient][week];
+      setProgressPhotos(newPhotos);
+      localStorage.setItem('progressPhotos', JSON.stringify(newPhotos));
+    }
   };
 
   if (isLoading) {
@@ -853,7 +879,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              {/* Before/After Photos Upload */}
+              {/* 12-Week Progress Photos */}
               <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-400/30">
                 <input
                   ref={fileInputRef}
@@ -865,48 +891,72 @@ export function DashboardPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Camera className="h-5 w-5 text-teal-400" />
-                    <h3 className="text-sm font-bold text-teal-400">Patient Progress Photos</h3>
+                    <h3 className="text-sm font-bold text-teal-400">12-Week Recovery Progress Photos</h3>
                   </div>
-                  <button
-                    onClick={handlePhotoUpload}
-                    className="px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg text-xs text-teal-300 font-bold transition-all"
-                  >
-                    Upload Photos
-                  </button>
                 </div>
-                <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
-                  {/* Display uploaded photos */}
-                  {progressPhotos.map((photo, index) => (
-                    <div key={index} className="relative aspect-square rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
-                      <img
-                        src={photo}
-                        alt={`Progress ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => handleDeletePhoto(index)}
-                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {/* Empty slots to add more photos */}
-                  {Array.from({ length: Math.max(0, 6 - progressPhotos.length) }).map((_, i) => (
-                    <div
-                      key={`empty-${i}`}
-                      onClick={handlePhotoUpload}
-                      className="aspect-square rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
-                      style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
+
+                {/* Patient Selector - Admin Only */}
+                {isAdmin && adminStats.activePatients.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-teal-300 mb-2">Select Patient:</label>
+                    <select
+                      value={selectedPhotoPatient || ''}
+                      onChange={(e) => setSelectedPhotoPatient(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-lg border border-teal-400/30 bg-white/10 text-white font-semibold focus:outline-none focus:border-teal-400"
                     >
-                      <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
-                    </div>
-                  ))}
+                      {adminStats.activePatients
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((patient) => (
+                          <option key={patient.id} value={patient.id} style={{ color: '#1e40af' }}>
+                            {patient.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* 12-Week Photo Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 gap-2">
+                  {Array.from({ length: 12 }).map((_, index) => {
+                    const week = index + 1;
+                    const photo = selectedPhotoPatient && progressPhotos[selectedPhotoPatient]?.[week];
+
+                    return (
+                      <div key={week} className="flex flex-col gap-1">
+                        <div className="text-center">
+                          <span className="text-xs font-bold text-teal-300">Week {week}</span>
+                        </div>
+                        {photo ? (
+                          <div className="relative aspect-square rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
+                            <img
+                              src={photo}
+                              alt={`Week ${week}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => handleDeletePhoto(week)}
+                              className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => handlePhotoUpload(week)}
+                            className="aspect-square rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
+                            style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
+                          >
+                            <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-xs text-teal-300 mt-2">
-                  {progressPhotos.length > 0
-                    ? `${progressPhotos.length} photo${progressPhotos.length > 1 ? 's' : ''} uploaded. Click photos to view, hover to delete.`
-                    : 'Upload before/after photos to track patient progress visually (max 5MB per photo)'
+                <p className="text-xs text-teal-300 mt-3">
+                  {selectedPhotoPatient
+                    ? `Upload photos for each week of recovery. Click empty slots to add photos, hover over photos to delete (max 5MB per photo).`
+                    : 'Select a patient above to manage their 12-week progress photos.'
                   }
                 </p>
               </div>
@@ -1306,6 +1356,62 @@ export function DashboardPage() {
           weightEntries={[]} // TODO: Fetch weight history from vitals
           showTargetStar={true}
         />
+      </GlassCard>
+
+      {/* 12-Week Progress Photos - Patient View */}
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
+          <Camera className="h-6 w-6 text-teal-400" />
+          My 12-Week Recovery Progress Photos
+        </h2>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        {/* 12-Week Photo Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 gap-2">
+          {Array.from({ length: 12 }).map((_, index) => {
+            const week = index + 1;
+            const photo = selectedPhotoPatient && progressPhotos[selectedPhotoPatient]?.[week];
+
+            return (
+              <div key={week} className="flex flex-col gap-1">
+                <div className="text-center">
+                  <span className="text-xs font-bold text-teal-300">Week {week}</span>
+                </div>
+                {photo ? (
+                  <div className="relative aspect-square rounded-lg border-2 border-solid border-teal-400/30 overflow-hidden group" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
+                    <img
+                      src={photo}
+                      alt={`Week ${week}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => handleDeletePhoto(week)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => handlePhotoUpload(week)}
+                    className="aspect-square rounded-lg border-2 border-dashed border-teal-400/30 hover:border-teal-400/50 flex items-center justify-center cursor-pointer transition-all group"
+                    style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
+                  >
+                    <Camera className="h-6 w-6 text-teal-400/50 group-hover:text-teal-400 transition-colors" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs text-teal-300 mt-3">
+          Upload photos for each week of your recovery journey. Click empty slots to add photos, hover over photos to delete (max 5MB per photo).
+        </p>
       </GlassCard>
     </div>
   );
