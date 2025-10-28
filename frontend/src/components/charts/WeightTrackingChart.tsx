@@ -112,12 +112,13 @@ export const WeightTrackingChart: React.FC<WeightTrackingChartProps> = ({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload as WeightEntry;
-      const bmi = calculateBMI(data.weight, heightInInches);
+      const weight = Number(data.weight);
+      const bmi = calculateBMI(weight, heightInInches);
 
       return (
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-lg">
           <p className="text-white font-bold">{data.date}</p>
-          <p className="text-white">Weight: {data.weight.toFixed(1)} {patient.weightUnit || 'lbs'}</p>
+          <p className="text-white">Weight: {weight.toFixed(1)} {patient.weightUnit || 'lbs'}</p>
           <p className="text-white">BMI: {bmi.toFixed(1)}</p>
           <p style={{ color: getCategoryColor(data.bmiCategory) }} className="font-semibold">
             {getCategoryLabel(data.bmiCategory)}
