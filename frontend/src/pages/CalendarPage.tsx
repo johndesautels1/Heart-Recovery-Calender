@@ -206,6 +206,31 @@ export function CalendarPage() {
     }
   };
 
+  const handleSelect = async (selectInfo: any) => {
+    // When a time range is selected (click and drag on time slot), open event creation modal
+    const startTime = selectInfo.start;
+    const endTime = selectInfo.end;
+    const isAllDay = selectInfo.allDay;
+
+    // Pre-fill form with selected time range
+    const defaultCalendar = calendars.find(c => c.type === 'general') || calendars[0];
+
+    reset({
+      title: '',
+      calendarId: defaultCalendar?.id || 0,
+      startTime: startTime.toISOString().slice(0, 16),
+      endTime: endTime.toISOString().slice(0, 16),
+      isAllDay: isAllDay,
+      location: '',
+      description: '',
+      reminderMinutes: 30,
+      status: 'scheduled',
+    });
+
+    setEditingEvent(null);
+    setIsEventModalOpen(true);
+  };
+
   const handleEventClick = async (arg: any) => {
     // Check if it's a medication event
     if (arg.event.extendedProps.isMedicationEvent) {
@@ -313,8 +338,14 @@ export function CalendarPage() {
     setEditingEvent(event);
     setValue('title', event.title);
     setValue('calendarId', event.calendarId);
-    setValue('startTime', format(new Date(event.startTime), "yyyy-MM-dd'T'HH:mm"));
-    setValue('endTime', format(new Date(event.endTime), "yyyy-MM-dd'T'HH:mm"));
+    // Format dates based on whether it's an all-day event
+    if (event.isAllDay) {
+      setValue('startTime', format(new Date(event.startTime), 'yyyy-MM-dd'));
+      setValue('endTime', format(new Date(event.endTime), 'yyyy-MM-dd'));
+    } else {
+      setValue('startTime', format(new Date(event.startTime), "yyyy-MM-dd'T'HH:mm"));
+      setValue('endTime', format(new Date(event.endTime), "yyyy-MM-dd'T'HH:mm"));
+    }
     setValue('isAllDay', event.isAllDay);
     setValue('location', event.location || '');
     setValue('description', event.description || '');
@@ -721,19 +752,22 @@ See browser console for full configuration details.
           const isPast = eventDateTime < now;
 
           // Color coding based on status
-          let backgroundColor, textColor, title;
+          let backgroundColor, textColor, title, classNames;
           if (status === 'taken') {
             backgroundColor = '#10b981'; // green
             textColor = '#ffffff';
             title = `✓ ${med.name}`;
+            classNames = ['font-bold', 'cursor-pointer'];
           } else if (status === 'missed' || (isPast && status === 'scheduled')) {
             backgroundColor = '#dc2626'; // red
             textColor = '#ffffff';
             title = `⚠ ${med.name} - MISSED`;
+            classNames = ['font-bold', 'cursor-pointer', 'missed-medication'];
           } else {
             backgroundColor = '#fefce8'; // light yellow
             textColor = '#1e40af'; // cobalt blue
             title = `💊 ${med.name}`;
+            classNames = ['font-bold', 'cursor-pointer'];
           }
 
           medEvents.push({
@@ -743,7 +777,7 @@ See browser console for full configuration details.
             backgroundColor,
             borderColor: status === 'missed' || (isPast && status === 'scheduled') ? '#991b1b' : backgroundColor,
             textColor,
-            classNames: ['font-bold', 'cursor-pointer'],
+            classNames,
             extendedProps: {
               isMedicationEvent: true,
               medication: med,
@@ -935,6 +969,7 @@ See browser console for full configuration details.
           allDay: event.isAllDay,
           backgroundColor: calendar?.color || '#607d8b',
           borderColor: calendar?.color || '#607d8b',
+          textColor: '#ffffff',
           extendedProps: {
             ...event,
             calendarType: calendar?.type,
@@ -955,10 +990,10 @@ See browser console for full configuration details.
       title: `🍽️ ${meals.length} meal${meals.length > 1 ? 's' : ''}`,
       start: date,
       allDay: true,
-      backgroundColor: '#fefce8',
-      borderColor: '#fef08a',
-      textColor: '#1e40af',
-      classNames: ['font-bold'],
+      backgroundColor: '#f0f9ff',
+      borderColor: '#bae6fd',
+      textColor: '#800020',
+      classNames: ['font-bold', 'meal-indicator'],
       display: 'background',
       extendedProps: {
         isMealEvent: true,
@@ -1175,15 +1210,145 @@ See browser console for full configuration details.
       <GlassCard className="p-6">
         <style>
           {`
+            /* LARGER Event text sizing for better visibility */
             .fc-event-title,
             .fc-event-time {
-              font-size: 0.72em !important;
+              font-size: 14px !important;
+              line-height: 1.3 !important;
             }
             .fc-daygrid-event {
-              font-size: 11.8px !important;
+              font-size: 13px !important;
             }
             .fc-timegrid-event {
-              font-size: 13px !important;
+              font-size: 14px !important;
+              min-height: 25px !important;
+            }
+
+            /* FORCE all event text to be visible - white bold text */
+            .fc-event,
+            .fc-event *,
+            .fc-event-main,
+            .fc-event-main *,
+            .fc-event-title,
+            .fc-event-time,
+            .fc-timegrid-event,
+            .fc-timegrid-event *,
+            .fc-timegrid-event .fc-event-main,
+            .fc-timegrid-event .fc-event-main *,
+            .fc-timegrid-event .fc-event-title,
+            .fc-timegrid-event .fc-event-time,
+            .fc-daygrid-event,
+            .fc-daygrid-event *,
+            .fc-daygrid-event .fc-event-main,
+            .fc-daygrid-event .fc-event-title,
+            .fc-h-event,
+            .fc-h-event *,
+            .fc-h-event .fc-event-main,
+            .fc-h-event .fc-event-title {
+              color: #ffffff !important;
+              font-weight: 700 !important;
+              opacity: 1 !important;
+              visibility: visible !important;
+              display: block !important;
+            }
+
+            /* Prevent text overflow and ensure padding */
+            .fc-event-main {
+              position: relative !important;
+              z-index: 10 !important;
+              padding: 3px 5px !important;
+              overflow: visible !important;
+              white-space: normal !important;
+            }
+
+            .fc-event-title,
+            .fc-event-time {
+              text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+              overflow: visible !important;
+              white-space: normal !important;
+              word-wrap: break-word !important;
+            }
+
+            /* Ensure events have minimum height */
+            .fc-timegrid-event-harness {
+              min-height: 30px !important;
+            }
+
+            /* Meal indicator styling - Bold Burgundy text with silver emoji */
+            .meal-indicator,
+            .meal-indicator .fc-event-title,
+            .meal-indicator .fc-event-main {
+              color: #800020 !important;
+              font-weight: 900 !important;
+              font-size: 14px !important;
+              text-shadow: 0px 0px 1px rgba(255,255,255,0.8) !important;
+            }
+
+            /* Make the emoji appear bright silver/metallic */
+            .meal-indicator .fc-event-title::first-letter,
+            .meal-indicator::first-letter {
+              filter: brightness(1.5) contrast(1.2) saturate(0) !important;
+              font-size: 16px !important;
+              text-shadow: 0px 0px 3px rgba(192,192,192,1), 0px 0px 5px rgba(255,255,255,0.8) !important;
+            }
+
+            /* Bright yellow and red warning triangle for missed medications */
+            .missed-medication .fc-event-title::first-letter,
+            .missed-medication::first-letter {
+              filter: brightness(2) saturate(3) hue-rotate(-10deg) !important;
+              font-size: 18px !important;
+              text-shadow: 0px 0px 4px rgba(255,215,0,1), 0px 0px 8px rgba(255,69,0,0.8), 0px 0px 12px rgba(255,0,0,0.6) !important;
+              font-weight: 900 !important;
+            }
+
+            /* ========== ALL CALENDAR ICON/EMOJI STYLING ========== */
+
+            /* Scheduled Medication Pill 💊 - Bright Blue/Purple */
+            .fc-event:not(.missed-medication):not(.meal-indicator) .fc-event-title::first-letter {
+              filter: brightness(1.5) saturate(2) hue-rotate(10deg) !important;
+              font-size: 16px !important;
+              text-shadow: 0px 0px 3px rgba(147,51,234,1), 0px 0px 6px rgba(99,102,241,0.8) !important;
+            }
+
+            /* Unhealthy Food Siren 🚨 - Bright Red Alert */
+            .fc-event[style*="background: rgb(220, 38, 38)"] .fc-event-title::first-letter,
+            .fc-event[style*="background-color: rgb(220, 38, 38)"] .fc-event-title::first-letter {
+              filter: brightness(2) saturate(3) !important;
+              font-size: 18px !important;
+              text-shadow: 0px 0px 5px rgba(255,0,0,1), 0px 0px 10px rgba(255,69,0,1) !important;
+              animation: pulse-glow 2s ease-in-out infinite !important;
+            }
+
+            /* Sleep Bed Icon 🛏️ - Warm Golden/Brown */
+            .fc-daygrid-day div[title*="sleep"] span {
+              filter: brightness(1.8) saturate(2) hue-rotate(-15deg) !important;
+              text-shadow: 0px 0px 3px rgba(139,69,19,0.8), 0px 0px 5px rgba(205,133,63,0.6) !important;
+              font-size: 10px !important;
+            }
+
+            /* Exercise Weight Icon 🏋️ - Bright Silver/Steel */
+            span:has(+ *):contains("🏋️"),
+            .fc-event-title:contains("🏋️")::first-letter {
+              filter: brightness(1.8) saturate(0) contrast(1.3) !important;
+              text-shadow: 0px 0px 3px rgba(192,192,192,1), 0px 0px 6px rgba(169,169,169,0.8) !important;
+            }
+
+            /* Taken Medication Checkmark ✓ - Bright Green */
+            .fc-event[style*="background: rgb(16, 185, 129)"] .fc-event-title::first-letter,
+            .fc-event[style*="background-color: rgb(16, 185, 129)"] .fc-event-title::first-letter {
+              filter: brightness(2) saturate(2) !important;
+              font-size: 18px !important;
+              text-shadow: 0px 0px 4px rgba(34,197,94,1), 0px 0px 8px rgba(74,222,128,0.8) !important;
+              font-weight: 900 !important;
+            }
+
+            @keyframes pulse-glow {
+              0%, 100% {
+                filter: brightness(2) saturate(3);
+              }
+              50% {
+                filter: brightness(2.5) saturate(4);
+              }
             }
           `}
         </style>
@@ -1198,6 +1363,7 @@ See browser console for full configuration details.
           }}
           events={calendarEvents}
           dateClick={handleDateClick}
+          select={handleSelect}
           eventClick={handleEventClick}
           dayCellContent={renderDayCellContent}
           editable={true}
@@ -1221,6 +1387,27 @@ See browser console for full configuration details.
         title={editingEvent ? 'Edit Event' : 'Create Event'}
         size="md"
       >
+        <style>
+          {`
+            /* Ensure all input fields have visible dark text */
+            .glass-input,
+            input[type="text"],
+            input[type="datetime-local"],
+            input[type="date"],
+            input[type="number"],
+            select.glass-input,
+            textarea.glass-input {
+              color: #1e40af !important;
+              font-weight: 700 !important;
+              background: #ffffff !important;
+            }
+
+            /* Make labels visible */
+            label {
+              color: var(--ink) !important;
+            }
+          `}
+        </style>
         <form onSubmit={handleSubmit(onSubmitEvent)} className="space-y-4">
           <Input
             label="Event Title"
