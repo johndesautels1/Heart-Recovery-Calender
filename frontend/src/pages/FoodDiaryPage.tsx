@@ -316,7 +316,7 @@ export function FoodDiaryPage() {
       {/* Daily Totals */}
       <GlassCard>
         <h3 className="text-lg font-bold text-bright mb-4" style={{ color: 'var(--ink-bright)' }}>Daily Totals</h3>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-cobalt-600">{totals.calories}</div>
             <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Calories</div>
@@ -341,6 +341,25 @@ export function FoodDiaryPage() {
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{meals.length}</div>
             <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Meals Logged</div>
+          </div>
+          {/* NEW: Unhealthy Meals Count */}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {meals.filter(m => m.foodItems.includes('⚠️')).length}
+            </div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Unhealthy</div>
+          </div>
+          {/* NEW: Average Satisfaction */}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-500">
+              {(() => {
+                const ratedMeals = meals.filter(m => m.satisfactionRating);
+                if (ratedMeals.length === 0) return '--';
+                const avg = ratedMeals.reduce((sum, m) => sum + (m.satisfactionRating || 0), 0) / ratedMeals.length;
+                return avg.toFixed(1);
+              })()}⭐
+            </div>
+            <div className="text-sm font-bold text-gold" style={{ color: 'var(--ink-gold)' }}>Avg Rating</div>
           </div>
         </div>
       </GlassCard>

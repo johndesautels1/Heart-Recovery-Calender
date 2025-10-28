@@ -382,7 +382,7 @@ export function SleepPage() {
       {/* Stats Cards */}
       {stats && stats.totalLogs > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <GlassCard>
               <div className="flex items-center justify-between">
                 <div>
@@ -417,6 +417,32 @@ export function SleepPage() {
                   stats.trend === 'improving' ? 'text-green-400' :
                   stats.trend === 'declining' ? 'text-red-400' : 'text-gray-400'
                 }`} />
+              </div>
+            </GlassCard>
+
+            {/* NEW: Days Since Last Log */}
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Last Log</p>
+                  <p className={`text-2xl font-bold ${(() => {
+                    if (sleepLogs.length === 0) return 'text-white';
+                    const lastLog = sleepLogs[0];
+                    const daysSince = differenceInDays(new Date(), parseISO(lastLog.date));
+                    return daysSince === 0 ? 'text-green-400' : daysSince === 1 ? 'text-yellow-400' : 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      if (sleepLogs.length === 0) return 'Never';
+                      const lastLog = sleepLogs[0];
+                      const daysSince = differenceInDays(new Date(), parseISO(lastLog.date));
+                      if (daysSince === 0) return 'Today';
+                      if (daysSince === 1) return '1 day ago';
+                      return `${daysSince} days ago`;
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">since last entry</p>
+                </div>
+                <Clock className="h-8 w-8 text-indigo-400" />
               </div>
             </GlassCard>
           </div>

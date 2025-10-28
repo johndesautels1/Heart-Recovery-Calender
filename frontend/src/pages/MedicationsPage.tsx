@@ -14,7 +14,8 @@ import {
   BellOff,
   BarChart3,
   Trophy,
-  Award
+  Award,
+  DollarSign
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -519,7 +520,7 @@ export function MedicationsPage() {
       {activeTab === 'medications' && (
         <>
           {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
@@ -564,7 +565,55 @@ export function MedicationsPage() {
             <Award className="h-8 w-8 text-orange-500" />
           </div>
         </GlassCard>
+
+        {/* NEW: Monthly Cost */}
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>Monthly Cost</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>
+                ${activeMeds.reduce((sum, med) => sum + (med.monthlyCost || 0), 0).toFixed(0)}
+              </p>
+            </div>
+            <DollarSign className="h-8 w-8 text-green-400" />
+          </div>
+        </GlassCard>
       </div>
+
+      {/* NEW: Prescription vs OTC Split */}
+      {activeMeds.length > 0 && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Pill className="h-5 w-5 text-blue-400" />
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>Prescription</p>
+                  <p className="text-2xl font-bold" style={{ color: '#ffffff' }}>
+                    {activeMeds.filter(m => !m.isOTC).length}
+                  </p>
+                </div>
+              </div>
+              <div className="h-12 w-px bg-gray-600"></div>
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-orange-400" />
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>OTC/Supplements</p>
+                  <p className="text-2xl font-bold" style={{ color: '#ffffff' }}>
+                    {activeMeds.filter(m => m.isOTC).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="text-sm font-bold px-4 py-2 rounded-full" style={{
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              color: 'var(--accent)'
+            }}>
+              {((activeMeds.filter(m => !m.isOTC).length / activeMeds.length) * 100).toFixed(0)}% Prescription
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       {/* View Mode Tabs */}
       <div className="flex space-x-2">
