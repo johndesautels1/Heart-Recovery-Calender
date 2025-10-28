@@ -116,11 +116,25 @@ export const WeightTrackingChart: React.FC<WeightTrackingChartProps> = ({
       const bmi = calculateBMI(weight, heightInInches);
 
       return (
-        <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-lg">
-          <p className="text-white font-bold">{data.date}</p>
-          <p className="text-white">Weight: {weight.toFixed(1)} {patient.weightUnit || 'lbs'}</p>
-          <p className="text-white">BMI: {bmi.toFixed(1)}</p>
-          <p style={{ color: getCategoryColor(data.bmiCategory) }} className="font-semibold">
+        <div
+          className="rounded-xl p-4 border-2"
+          style={{
+            background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+            borderColor: getCategoryColor(data.bmiCategory),
+            boxShadow: `0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px ${getCategoryColor(data.bmiCategory)}40, inset 0 2px 0 rgba(255, 255, 255, 0.1)`,
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <p className="text-white font-bold text-lg mb-2 font-display">{data.date}</p>
+          <p className="text-white font-semibold">Weight: {weight.toFixed(1)} {patient.weightUnit || 'lbs'}</p>
+          <p className="text-white font-semibold">BMI: {bmi.toFixed(1)}</p>
+          <p
+            style={{
+              color: getCategoryColor(data.bmiCategory),
+              textShadow: `0 0 10px ${getCategoryColor(data.bmiCategory)}80`
+            }}
+            className="font-bold mt-2 text-lg"
+          >
             {getCategoryLabel(data.bmiCategory)}
           </p>
         </div>
@@ -161,6 +175,7 @@ export const WeightTrackingChart: React.FC<WeightTrackingChartProps> = ({
       <ResponsiveContainer width="100%" height={400}>
         <ComposedChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <defs>
+            {/* Enhanced gradient for line with depth */}
             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
               {processedData.map((entry, index) => (
                 <stop
@@ -170,41 +185,102 @@ export const WeightTrackingChart: React.FC<WeightTrackingChartProps> = ({
                 />
               ))}
             </linearGradient>
+
+            {/* 3D Bar gradients with depth for each color category */}
+            <linearGradient id="barGradientGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#34d399" stopOpacity={1}/>
+              <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
+              <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+            </linearGradient>
+            <linearGradient id="barGradientBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#60a5fa" stopOpacity={1}/>
+              <stop offset="50%" stopColor="#3b82f6" stopOpacity={1}/>
+              <stop offset="100%" stopColor="#2563eb" stopOpacity={1}/>
+            </linearGradient>
+            <linearGradient id="barGradientOrange" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity={1}/>
+              <stop offset="50%" stopColor="#f59e0b" stopOpacity={1}/>
+              <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+            </linearGradient>
+            <linearGradient id="barGradientRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f87171" stopOpacity={1}/>
+              <stop offset="50%" stopColor="#ef4444" stopOpacity={1}/>
+              <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+            </linearGradient>
+
+            {/* Shadow and glow filters */}
+            <filter id="barShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+              <feOffset dx="0" dy="4" result="offsetblur"/>
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="0.5"/>
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+
+            <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
           <XAxis
             dataKey="date"
             stroke="#9ca3af"
-            tick={{ fill: '#9ca3af', fontSize: 12 }}
+            tick={{ fill: '#d1d5db', fontSize: 13, fontWeight: 600 }}
+            tickLine={{ stroke: '#6b7280' }}
           />
           <YAxis
             stroke="#9ca3af"
             domain={[0, 320]}
-            tick={{ fill: '#9ca3af', fontSize: 12 }}
-            label={{ value: `Weight (${patient.weightUnit || 'lbs'})`, angle: -90, position: 'insideLeft', style: { fill: '#9ca3af' } }}
+            tick={{ fill: '#d1d5db', fontSize: 13, fontWeight: 600 }}
+            tickLine={{ stroke: '#6b7280' }}
+            label={{ value: `Weight (${patient.weightUnit || 'lbs'})`, angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontWeight: 600 } }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(96, 165, 250, 0.1)' }} />
           <Legend
             wrapperStyle={{ paddingTop: '20px' }}
             iconType="circle"
           />
 
-          {/* Bar Chart */}
-          <Bar dataKey="weight" name="Weight" radius={[8, 8, 0, 0]} barSize={40}>
-            {processedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getCategoryColor(entry.bmiCategory)} />
-            ))}
+          {/* 3D Bar Chart with gradients */}
+          <Bar dataKey="weight" name="Weight" radius={[8, 8, 0, 0]} barSize={40} filter="url(#barShadow)">
+            {processedData.map((entry, index) => {
+              const gradientId = entry.bmiCategory === 'green' ? 'barGradientGreen' :
+                                 entry.bmiCategory === 'blue' ? 'barGradientBlue' :
+                                 entry.bmiCategory === 'orange' ? 'barGradientOrange' :
+                                 'barGradientRed';
+              return (
+                <Cell key={`cell-${index}`} fill={`url(#${gradientId})`} stroke={getCategoryColor(entry.bmiCategory)} strokeWidth={2} />
+              );
+            })}
           </Bar>
 
-          {/* Line Chart with gradient */}
+          {/* Enhanced Line Chart with glow */}
           <Line
             type="monotone"
             dataKey="weight"
             stroke="url(#lineGradient)"
-            strokeWidth={3}
-            dot={{ r: 6, strokeWidth: 2, fill: '#fff' }}
-            activeDot={{ r: 8 }}
+            strokeWidth={5}
+            dot={{
+              r: 7,
+              strokeWidth: 3,
+              fill: '#fff',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+            }}
+            activeDot={{
+              r: 10,
+              strokeWidth: 4,
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))'
+            }}
             name="Weight Trend"
+            filter="url(#lineGlow)"
           />
 
           {/* Target Weight Star */}
@@ -212,11 +288,12 @@ export const WeightTrackingChart: React.FC<WeightTrackingChartProps> = ({
             <ReferenceDot
               x={targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               y={patient.targetWeight}
-              r={10}
+              r={12}
               fill="#fbbf24"
               stroke="#fff"
-              strokeWidth={2}
+              strokeWidth={3}
               shape={<Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />}
+              filter="drop-shadow(0 4px 8px rgba(251, 191, 36, 0.6))"
             />
           )}
         </ComposedChart>

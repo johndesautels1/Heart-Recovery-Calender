@@ -152,6 +152,14 @@ export function DashboardPage() {
   const [selectedPhotoPatient, setSelectedPhotoPatient] = useState<number | null>(null);
   const [selectedPhotoWeek, setSelectedPhotoWeek] = useState<number>(1);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [weeklyProgressData, setWeeklyProgressData] = useState<Array<{
+    week: string;
+    exercise: number;
+    meals: number;
+    medications: number;
+    sleep: number;
+    weight: number;
+  }>>([]);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
 
@@ -184,6 +192,99 @@ export function DashboardPage() {
     }
   }, [isAdmin, adminStats.activePatients, user, selectedPhotoPatient]);
 
+  // Calculate 12-week historical progress from real patient data
+  const calculate12WeekProgress = async (userId?: number) => {
+    try {
+      const today = new Date();
+      const weeklyData = [];
+
+      for (let weekNum = 1; weekNum <= 12; weekNum++) {
+        const weekEndDate = subDays(today, (12 - weekNum) * 7);
+        const weekStartDate = subDays(weekEndDate, 7);
+        const startStr = format(weekStartDate, 'yyyy-MM-dd');
+        const endStr = format(weekEndDate, 'yyyy-MM-dd');
+
+        // Fetch all data for this week
+        const [events, meals, sleepLogs, medLogs, vitals] = await Promise.all([
+          api.getEvents(userId, startStr, endStr).catch(() => []),
+          api.getMeals({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
+          api.getSleepLogs({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
+          api.getMedicationLogs({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
+          api.getVitals({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
+        ]);
+
+        // Calculate Exercise Score (0-100)
+        const exerciseEvents = events.filter(e =>
+          e.calendar?.type === 'exercise' || e.title.toLowerCase().includes('exercise')
+        );
+        const completedExercise = exerciseEvents.filter(e => e.status === 'completed').length;
+        const exerciseScore = exerciseEvents.length > 0
+          ? Math.round((completedExercise / exerciseEvents.length) * 100)
+          : 0;
+
+        // Calculate Meals Score (0-100) - based on meal quality
+        const mealsScore = meals.length > 0
+          ? Math.round(meals.reduce((sum, meal) => {
+              const qualityScore = meal.heartHealthRating === 'green' ? 100
+                : meal.heartHealthRating === 'yellow' ? 60
+                : 30;
+              return sum + qualityScore;
+            }, 0) / meals.length)
+          : 0;
+
+        // Calculate Medications Score (0-100) - adherence rate
+        const takenMeds = medLogs.filter(log => log.status === 'taken').length;
+        const medicationsScore = medLogs.length > 0
+          ? Math.round((takenMeds / medLogs.length) * 100)
+          : 0;
+
+        // Calculate Sleep Score (0-100) - based on hours (7-9 hours = optimal)
+        const sleepScore = sleepLogs.length > 0
+          ? Math.round(sleepLogs.reduce((sum, log) => {
+              const hours = parseFloat(log.hoursSlept.toString());
+              const score = hours >= 7 && hours <= 9 ? 100
+                : hours >= 6 && hours < 7 ? 80
+                : hours >= 5 && hours < 6 ? 60
+                : hours >= 9 && hours <= 10 ? 80
+                : 40;
+              return sum + score;
+            }, 0) / sleepLogs.length)
+          : 0;
+
+        // Calculate Weight Score (0-100) - based on weight trend
+        const weightScore = vitals.length > 0 && vitals[0].weight
+          ? (() => {
+              const weekWeight = vitals[vitals.length - 1].weight; // Latest weight in week
+              const patient = isAdmin ? selectedPatient : user;
+              if (!patient || !patient.startingWeight || !patient.targetWeight) return 0;
+
+              const weightLoss = (patient.startingWeight || 0) - (weekWeight || 0);
+              const goalWeightLoss = (patient.startingWeight || 0) - (patient.targetWeight || 0);
+
+              if (goalWeightLoss <= 0) return 0;
+              const progress = Math.min(100, Math.round((weightLoss / goalWeightLoss) * 100));
+              return Math.max(0, progress);
+            })()
+          : 0;
+
+        weeklyData.push({
+          week: `Week ${weekNum}`,
+          exercise: exerciseScore,
+          meals: mealsScore,
+          medications: medicationsScore,
+          sleep: sleepScore,
+          weight: weightScore,
+        });
+      }
+
+      setWeeklyProgressData(weeklyData);
+    } catch (error) {
+      console.error('Failed to calculate 12-week progress:', error);
+      // Set empty data on error
+      setWeeklyProgressData([]);
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -208,6 +309,9 @@ export function DashboardPage() {
         todayMeals: meals,
         weeklyCompliance: Math.round(compliance),
       });
+
+      // Load 12-week progress data
+      await calculate12WeekProgress();
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -282,6 +386,13 @@ export function DashboardPage() {
         allEvents,
         allVitals,
       });
+
+      // Load 12-week progress data for selected patient or aggregated
+      if (selectedPatient?.userId) {
+        await calculate12WeekProgress(selectedPatient.userId);
+      } else {
+        await calculate12WeekProgress();
+      }
     } catch (error) {
       console.error('Failed to load admin dashboard data:', error);
     } finally {
@@ -1251,55 +1362,103 @@ export function DashboardPage() {
                   </h3>
 
                   <ResponsiveContainer width="100%" height={400}>
-                    <AreaChart data={[
-                      { week: 'Week 1', exercise: 45, meals: 60, medications: 75, sleep: 50, weight: 20 },
-                      { week: 'Week 2', exercise: 52, meals: 65, medications: 78, sleep: 55, weight: 30 },
-                      { week: 'Week 3', exercise: 58, meals: 70, medications: 80, sleep: 60, weight: 40 },
-                      { week: 'Week 4', exercise: 65, meals: 72, medications: 85, sleep: 65, weight: 50 },
-                      { week: 'Week 6', exercise: 70, meals: 78, medications: 88, sleep: 68, weight: 60 },
-                      { week: 'Week 8', exercise: 75, meals: 80, medications: 90, sleep: 72, weight: 66 },
-                      { week: 'Week 10', exercise: 78, meals: 85, medications: 92, sleep: 75, weight: 75 },
-                      { week: 'Week 12', exercise: weeklyMetrics.completionRate || 80, meals: weeklyMetrics.completionRate || 85, medications: weeklyMetrics.completionRate || 95, sleep: weeklyMetrics.completionRate || 78, weight: calculateWeightScore(selectedPatient) || 80 }
-                    ]}>
+                    <LineChart
+                      data={weeklyProgressData.length > 0 ? weeklyProgressData : [
+                        { week: 'Week 1', exercise: 0, meals: 0, medications: 0, sleep: 0, weight: 0 },
+                        { week: 'Week 12', exercise: 0, meals: 0, medications: 0, sleep: 0, weight: 0 }
+                      ]}
+                      margin={{ top: 10, right: 40, left: 10, bottom: 10 }}
+                    >
                       <defs>
-                        <linearGradient id="exerciseGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                        </linearGradient>
-                        <linearGradient id="mealsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                        </linearGradient>
-                        <linearGradient id="medicationsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#a855f7" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#a855f7" stopOpacity={0.1}/>
-                        </linearGradient>
-                        <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#f97316" stopOpacity={0.1}/>
-                        </linearGradient>
+                        {/* Glow filter for lines */}
+                        <filter id="progressLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="week" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis
+                        dataKey="week"
+                        tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                        tickLine={{ stroke: '#6b7280' }}
+                        padding={{ left: 30, right: 30 }}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                        tickLine={{ stroke: '#6b7280' }}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1f2937',
-                          border: '1px solid #4b5563',
-                          borderRadius: '8px',
-                          color: '#fff'
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #3b82f6',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.3)',
+                          backdropFilter: 'blur(10px)'
                         }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                        cursor={{ fill: 'rgba(59, 130, 246, 0.1)', stroke: '#3b82f6', strokeWidth: 2 }}
                       />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Area type="monotone" dataKey="exercise" stroke="#3b82f6" fillOpacity={1} fill="url(#exerciseGradient)" name="Exercise" />
-                      <Area type="monotone" dataKey="meals" stroke="#10b981" fillOpacity={1} fill="url(#mealsGradient)" name="Meals" />
-                      <Area type="monotone" dataKey="medications" stroke="#a855f7" fillOpacity={1} fill="url(#medicationsGradient)" name="Medications" />
-                      <Area type="monotone" dataKey="weight" stroke="#f97316" fillOpacity={1} fill="url(#weightGradient)" name="Weight Loss" />
-                    </AreaChart>
+                      <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
+                      {/* 5 distinct lines for each metric */}
+                      <Line
+                        type="monotone"
+                        dataKey="exercise"
+                        stroke="#3b82f6"
+                        strokeWidth={4}
+                        dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name="Exercise"
+                        filter="url(#progressLineGlow)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="meals"
+                        stroke="#10b981"
+                        strokeWidth={4}
+                        dot={{ r: 6, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name="Meals"
+                        filter="url(#progressLineGlow)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="medications"
+                        stroke="#a855f7"
+                        strokeWidth={4}
+                        dot={{ r: 6, fill: '#a855f7', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name="Medications"
+                        filter="url(#progressLineGlow)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="sleep"
+                        stroke="#f59e0b"
+                        strokeWidth={4}
+                        dot={{ r: 6, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name="Sleep"
+                        filter="url(#progressLineGlow)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="weight"
+                        stroke="#f97316"
+                        strokeWidth={4}
+                        dot={{ r: 6, fill: '#f97316', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name="Weight Loss"
+                        filter="url(#progressLineGlow)"
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
 
                   <p className="text-xs text-center text-white/60 mt-2">
-                    Stacked area chart showing cumulative progress across recovery timeline
+                    Multi-line chart tracking progress trends across all recovery categories over 12 weeks
                   </p>
                 </div>
               </GlassCard>
@@ -1315,54 +1474,117 @@ export function DashboardPage() {
                   </h3>
 
                   <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={[
-                      {
-                        category: 'Exercise',
-                        current: weeklyMetrics.completionRate || 0,
-                        target: 85,
-                        average: 75
-                      },
-                      {
-                        category: 'Meals',
-                        current: weeklyMetrics.completionRate || 0,
-                        target: 90,
-                        average: 80
-                      },
-                      {
-                        category: 'Medications',
-                        current: weeklyMetrics.completionRate || 0,
-                        target: 95,
-                        average: 88
-                      },
-                      {
-                        category: 'Sleep',
-                        current: weeklyMetrics.completionRate || 0,
-                        target: 80,
-                        average: 70
-                      },
-                      {
-                        category: 'Weight',
-                        current: calculateWeightScore(selectedPatient),
-                        target: 100,
-                        average: 65
-                      }
-                    ]}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="category" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                    <ComposedChart data={(() => {
+                      // Calculate real averages from 12-week data
+                      const avgExercise = weeklyProgressData.length > 0
+                        ? Math.round(weeklyProgressData.reduce((sum, w) => sum + w.exercise, 0) / weeklyProgressData.length)
+                        : 0;
+                      const avgMeals = weeklyProgressData.length > 0
+                        ? Math.round(weeklyProgressData.reduce((sum, w) => sum + w.meals, 0) / weeklyProgressData.length)
+                        : 0;
+                      const avgMedications = weeklyProgressData.length > 0
+                        ? Math.round(weeklyProgressData.reduce((sum, w) => sum + w.medications, 0) / weeklyProgressData.length)
+                        : 0;
+                      const avgSleep = weeklyProgressData.length > 0
+                        ? Math.round(weeklyProgressData.reduce((sum, w) => sum + w.sleep, 0) / weeklyProgressData.length)
+                        : 0;
+                      const avgWeight = weeklyProgressData.length > 0
+                        ? Math.round(weeklyProgressData.reduce((sum, w) => sum + w.weight, 0) / weeklyProgressData.length)
+                        : 0;
+
+                      // Get current week data (last item in array)
+                      const currentWeek = weeklyProgressData[weeklyProgressData.length - 1];
+
+                      return [
+                        {
+                          category: 'Exercise',
+                          current: currentWeek?.exercise || 0,
+                          target: 85,
+                          average: avgExercise
+                        },
+                        {
+                          category: 'Meals',
+                          current: currentWeek?.meals || 0,
+                          target: 90,
+                          average: avgMeals
+                        },
+                        {
+                          category: 'Medications',
+                          current: currentWeek?.medications || 0,
+                          target: 95,
+                          average: avgMedications
+                        },
+                        {
+                          category: 'Sleep',
+                          current: currentWeek?.sleep || 0,
+                          target: 80,
+                          average: avgSleep
+                        },
+                        {
+                          category: 'Weight',
+                          current: currentWeek?.weight || 0,
+                          target: 100,
+                          average: avgWeight
+                        }
+                      ];
+                    })()}>
+                      <defs>
+                        {/* 3D Bar gradients */}
+                        <linearGradient id="dashBarGradientGray" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#9ca3af" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#6b7280" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#4b5563" stopOpacity={1}/>
+                        </linearGradient>
+                        <linearGradient id="dashBarGradientTeal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#5eead4" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#14b8a6" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#0d9488" stopOpacity={1}/>
+                        </linearGradient>
+                        <linearGradient id="dashBarGradientGreen" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#34d399" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                        </linearGradient>
+                        {/* 3D shadow filter */}
+                        <filter id="dashBarShadow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                          <feOffset dx="0" dy="4" result="offsetblur"/>
+                          <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.5"/>
+                          </feComponentTransfer>
+                          <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                        {/* Line glow filter */}
+                        <filter id="dashLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="category" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                      <YAxis domain={[0, 100]} tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1f2937',
-                          border: '1px solid #4b5563',
-                          borderRadius: '8px',
-                          color: '#fff'
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #10b981',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                          backdropFilter: 'blur(10px)'
                         }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                        cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                       />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Bar dataKey="target" fill="#6b7280" name="Target" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="average" fill="#14b8a6" name="Average" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="current" fill="#10b981" name="Current" radius={[8, 8, 0, 0]} />
-                      <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} name="Target Line" />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
+                      <Bar dataKey="target" fill="url(#dashBarGradientGray)" stroke="#6b7280" strokeWidth={2} name="Target" radius={[8, 8, 0, 0]} barSize={40} filter="url(#dashBarShadow)" />
+                      <Bar dataKey="average" fill="url(#dashBarGradientTeal)" stroke="#14b8a6" strokeWidth={2} name="Average" radius={[8, 8, 0, 0]} barSize={40} filter="url(#dashBarShadow)" />
+                      <Bar dataKey="current" fill="url(#dashBarGradientGreen)" stroke="#10b981" strokeWidth={2} name="Current" radius={[8, 8, 0, 0]} barSize={40} filter="url(#dashBarShadow)" />
+                      <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 9, strokeWidth: 3 }} name="Target Line" filter="url(#dashLineGlow)" />
                     </ComposedChart>
                   </ResponsiveContainer>
 
@@ -1392,21 +1614,34 @@ export function DashboardPage() {
                       { day: 'Sat', completed: 6, scheduled: 8, missed: 2 },
                       { day: 'Sun', completed: 5, scheduled: 7, missed: 2 }
                     ]}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                      <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <defs>
+                        {/* Glow filter for lines */}
+                        <filter id="dashActivityLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="day" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                      <YAxis tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1f2937',
-                          border: '1px solid #4b5563',
-                          borderRadius: '8px',
-                          color: '#fff'
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #6366f1',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.3)',
+                          backdropFilter: 'blur(10px)'
                         }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                        cursor={{ fill: 'rgba(99, 102, 241, 0.1)', stroke: '#6366f1', strokeWidth: 2 }}
                       />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Line type="monotone" dataKey="scheduled" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} name="Scheduled" />
-                      <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} name="Completed" />
-                      <Line type="monotone" dataKey="missed" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} name="Missed" />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
+                      <Line type="monotone" dataKey="scheduled" stroke="#6366f1" strokeWidth={4} dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 9, strokeWidth: 3 }} name="Scheduled" filter="url(#dashActivityLineGlow)" />
+                      <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={4} dot={{ r: 6, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 9, strokeWidth: 3 }} name="Completed" filter="url(#dashActivityLineGlow)" />
+                      <Line type="monotone" dataKey="missed" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 9, strokeWidth: 3 }} name="Missed" filter="url(#dashActivityLineGlow)" />
                     </LineChart>
                   </ResponsiveContainer>
 

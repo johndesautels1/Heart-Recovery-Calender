@@ -406,44 +406,93 @@ export function VitalsPage() {
               {selectedMetric === 'bp' ? (
                 <AreaChart data={chartData}>
                   <defs>
+                    {/* Enhanced 3D gradients for blood pressure */}
                     <linearGradient id="systolic" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
+                      <stop offset="0%" stopColor="#f87171" stopOpacity={0.9}/>
+                      <stop offset="50%" stopColor="#ef4444" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
                     </linearGradient>
                     <linearGradient id="diastolic" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.9}/>
+                      <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#2563eb" stopOpacity={0.1}/>
                     </linearGradient>
+                    {/* Glow filter for areas */}
+                    <filter id="vitalsAreaGlow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="date" />
-                  <YAxis domain={[60, 180]} />
-                  <Tooltip />
-                  <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="systolic" 
-                    stroke="#ef4444" 
-                    fillOpacity={1} 
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                  <YAxis domain={[60, 180]} stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #60a5fa',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                    cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
+                  />
+                  <Legend iconType="circle" />
+                  <Area
+                    type="monotone"
+                    dataKey="systolic"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    fillOpacity={1}
                     fill="url(#systolic)"
                     name="Systolic"
+                    filter="url(#vitalsAreaGlow)"
+                    dot={{ r: 5, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 7, strokeWidth: 3 }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="diastolic" 
-                    stroke="#3b82f6" 
-                    fillOpacity={1} 
+                  <Area
+                    type="monotone"
+                    dataKey="diastolic"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    fillOpacity={1}
                     fill="url(#diastolic)"
                     name="Diastolic"
+                    filter="url(#vitalsAreaGlow)"
+                    dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 7, strokeWidth: 3 }}
                   />
                 </AreaChart>
               ) : (
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
+                  <defs>
+                    {/* Glow filter for lines */}
+                    <filter id="vitalsLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                  <YAxis stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #60a5fa',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                    cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
+                  />
+                  <Legend iconType="circle" />
                   <Line
                     type="monotone"
                     dataKey={
@@ -462,8 +511,19 @@ export function VitalsPage() {
                       selectedMetric === 'hydration' ? '#3b82f6' :
                       '#06b6d4'
                     }
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
+                    strokeWidth={4}
+                    dot={{
+                      r: 6,
+                      strokeWidth: 2,
+                      stroke: '#fff',
+                      fill: selectedMetric === 'hr' ? '#ef4444' :
+                            selectedMetric === 'weight' ? '#10b981' :
+                            selectedMetric === 'sugar' ? '#f97316' :
+                            selectedMetric === 'temp' ? '#ea580c' :
+                            selectedMetric === 'hydration' ? '#3b82f6' :
+                            '#06b6d4'
+                    }}
+                    activeDot={{ r: 9, strokeWidth: 3 }}
                     name={
                       selectedMetric === 'hr' ? 'Heart Rate (bpm)' :
                       selectedMetric === 'weight' ? 'Weight (lbs)' :
@@ -472,6 +532,7 @@ export function VitalsPage() {
                       selectedMetric === 'hydration' ? 'Hydration (%)' :
                       'O₂ Saturation (%)'
                     }
+                    filter="url(#vitalsLineGlow)"
                   />
                 </LineChart>
               )}

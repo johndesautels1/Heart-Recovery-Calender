@@ -580,17 +580,28 @@ export function MealsPage() {
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {foodItems.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => handleFoodClick(item)}
-                      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-cobalt-300 transition-all cursor-pointer group"
+                      className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-3 border-gray-200 p-5 cursor-pointer group overflow-hidden relative
+                                 transition-all duration-300 hover:scale-105
+                                 shadow-lg hover:shadow-2xl
+                                 hover:border-cobalt-400"
+                      style={{
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.08), inset 0 2px 0 rgba(255,255,255,0.8)',
+                        borderBottom: '4px solid rgba(0,0,0,0.1)',
+                        borderTop: '2px solid rgba(255,255,255,0.8)'
+                      }}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800">{item.name}</h3>
+                      {/* Premium header with gradient backdrop */}
+                      <div className="flex items-start justify-between mb-4 relative z-10">
+                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-cobalt-600 transition-colors">
+                          {item.name}
+                        </h3>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthRatingColor(
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 shadow-md ${getHealthRatingColor(
                             item.healthRating
                           )}`}
                         >
@@ -599,30 +610,74 @@ export function MealsPage() {
                       </div>
 
                       {item.category && (
-                        <div className="text-sm text-gray-600 mb-3">
-                          {item.category.icon} {item.category.name}
+                        <div className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <span className="text-lg">{item.category.icon}</span>
+                          <span>{item.category.name}</span>
                         </div>
                       )}
 
                       {item.servingSize && (
-                        <div className="text-sm text-gray-500 mb-2">Serving: {item.servingSize}</div>
+                        <div className="text-sm font-medium text-gray-600 mb-3 bg-gray-100 rounded-lg px-3 py-2 border border-gray-200">
+                          <span className="font-bold text-gray-800">Serving:</span> {item.servingSize}
+                        </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-3 pt-3 border-t border-gray-100">
-                        {item.calories !== undefined && <div>Cal: {item.calories}</div>}
-                        {item.protein !== undefined && <div>Protein: {item.protein}g</div>}
-                        {item.carbs !== undefined && <div>Carbs: {item.carbs}g</div>}
-                        {item.fat !== undefined && <div>Fat: {item.fat}g</div>}
-                        {item.fiber !== undefined && <div>Fiber: {item.fiber}g</div>}
-                        {item.sugar !== undefined && <div>Sugar: {item.sugar}g</div>}
-                        {item.sodium !== undefined && <div>Sodium: {item.sodium}mg</div>}
+                      {/* Premium nutrition grid with enhanced styling */}
+                      <div className="grid grid-cols-2 gap-3 text-sm mt-4 pt-4 border-t-2 border-gray-200">
+                        {item.calories !== undefined && (
+                          <div className="bg-blue-50 rounded-lg px-3 py-2 border border-blue-200">
+                            <span className="font-bold text-blue-900">Cal:</span>
+                            <span className="ml-1 text-blue-800">{item.calories}</span>
+                          </div>
+                        )}
+                        {item.protein !== undefined && (
+                          <div className="bg-green-50 rounded-lg px-3 py-2 border border-green-200">
+                            <span className="font-bold text-green-900">Protein:</span>
+                            <span className="ml-1 text-green-800">{item.protein}g</span>
+                          </div>
+                        )}
+                        {item.carbs !== undefined && (
+                          <div className="bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
+                            <span className="font-bold text-amber-900">Carbs:</span>
+                            <span className="ml-1 text-amber-800">{item.carbs}g</span>
+                          </div>
+                        )}
+                        {item.fat !== undefined && (
+                          <div className="bg-orange-50 rounded-lg px-3 py-2 border border-orange-200">
+                            <span className="font-bold text-orange-900">Fat:</span>
+                            <span className="ml-1 text-orange-800">{item.fat}g</span>
+                          </div>
+                        )}
+                        {item.fiber !== undefined && (
+                          <div className="bg-purple-50 rounded-lg px-3 py-2 border border-purple-200">
+                            <span className="font-bold text-purple-900">Fiber:</span>
+                            <span className="ml-1 text-purple-800">{item.fiber}g</span>
+                          </div>
+                        )}
+                        {item.sugar !== undefined && (
+                          <div className="bg-pink-50 rounded-lg px-3 py-2 border border-pink-200">
+                            <span className="font-bold text-pink-900">Sugar:</span>
+                            <span className="ml-1 text-pink-800">{item.sugar}g</span>
+                          </div>
+                        )}
+                        {item.sodium !== undefined && (
+                          <div className="bg-red-50 rounded-lg px-3 py-2 border border-red-200 col-span-2">
+                            <span className="font-bold text-red-900">Sodium:</span>
+                            <span className="ml-1 text-red-800">{item.sodium}mg</span>
+                          </div>
+                        )}
                       </div>
 
                       {item.notes && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs text-gray-600 italic">{item.notes}</p>
+                        <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                          <p className="text-sm text-gray-700 italic font-medium leading-relaxed bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                            💡 {item.notes}
+                          </p>
                         </div>
                       )}
+
+                      {/* Hover indicator */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cobalt-400 via-cobalt-500 to-cobalt-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
                     </div>
                   ))}
                 </div>
@@ -695,17 +750,66 @@ export function MealsPage() {
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={dailyMealQualityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" domain={[0, 3]} />
+                <defs>
+                  {/* 3D Bar gradients for meal quality */}
+                  <linearGradient id="mealBarGradientRed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f87171" stopOpacity={1}/>
+                    <stop offset="50%" stopColor="#ef4444" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="mealBarGradientOrange" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity={1}/>
+                    <stop offset="50%" stopColor="#f59e0b" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="mealBarGradientBlue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" stopOpacity={1}/>
+                    <stop offset="50%" stopColor="#3b82f6" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="mealBarGradientGreen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity={1}/>
+                    <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                  </linearGradient>
+                  {/* 3D shadow filter */}
+                  <filter id="mealBarShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                    <feOffset dx="0" dy="4" result="offsetblur"/>
+                    <feComponentTransfer>
+                      <feFuncA type="linear" slope="0.5"/>
+                    </feComponentTransfer>
+                    <feMerge>
+                      <feMergeNode/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                <YAxis stroke="#9ca3af" domain={[0, 3]} tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                  labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  contentStyle={{
+                    background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                    border: '2px solid #10b981',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                  labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                  cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                 />
-                <Bar dataKey="points" name="Daily Points" radius={[8, 8, 0, 0]}>
-                  {dailyMealQualityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
+                <Bar dataKey="points" name="Daily Points" radius={[8, 8, 0, 0]} barSize={35} filter="url(#mealBarShadow)">
+                  {dailyMealQualityData.map((entry, index) => {
+                    const points = entry.points;
+                    const gradientId = points === 3 ? 'mealBarGradientGreen' :
+                                       points === 2 ? 'mealBarGradientBlue' :
+                                       points === 1 ? 'mealBarGradientOrange' :
+                                       'mealBarGradientRed';
+                    return (
+                      <Cell key={`cell-${index}`} fill={`url(#${gradientId})`} stroke={entry.fill} strokeWidth={2} />
+                    );
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -731,6 +835,20 @@ export function MealsPage() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
+                  <defs>
+                    {/* 3D shadow for pie */}
+                    <filter id="mealPieShadow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+                      <feOffset dx="0" dy="4" result="offsetblur"/>
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.4"/>
+                      </feComponentTransfer>
+                      <feMerge>
+                        <feMergeNode/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
                   {/* Recommended (inner circle) */}
                   <Pie
                     data={foodGroupRecommended}
@@ -740,10 +858,11 @@ export function MealsPage() {
                     outerRadius={60}
                     fill="#8884d8"
                     dataKey="value"
-                    opacity={0.4}
+                    opacity={0.5}
+                    strokeWidth={2}
                   >
                     {foodGroupRecommended.map((entry, index) => (
-                      <Cell key={`rec-${index}`} fill={entry.fill} />
+                      <Cell key={`rec-${index}`} fill={entry.fill} stroke={entry.fill} />
                     ))}
                   </Pie>
                   {/* Actual (outer circle) */}
@@ -756,13 +875,21 @@ export function MealsPage() {
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    paddingAngle={2}
+                    filter="url(#mealPieShadow)"
                   >
                     {foodGroupActual.map((entry, index) => (
-                      <Cell key={`act-${index}`} fill={entry.fill} />
+                      <Cell key={`act-${index}`} fill={entry.fill} stroke={entry.fill} strokeWidth={3} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #10b981',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                      backdropFilter: 'blur(10px)'
+                    }}
                     labelStyle={{ color: '#fff', fontWeight: 'bold' }}
                   />
                 </PieChart>
@@ -787,16 +914,51 @@ export function MealsPage() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={calorieData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <defs>
+                    {/* Glow filter for lines */}
+                    <filter id="mealLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                  <YAxis stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #10b981',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                    cursor={{ fill: 'rgba(16, 185, 129, 0.1)', stroke: '#10b981', strokeWidth: 2 }}
                   />
-                  <Legend />
-                  <Line type="monotone" dataKey="calories" stroke="#3b82f6" strokeWidth={3} name="Your Calories" dot={{ fill: '#3b82f6', r: 4 }} />
-                  <Line type="monotone" dataKey="average" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" name="Recommended" />
+                  <Legend iconType="circle" />
+                  <Line
+                    type="monotone"
+                    dataKey="calories"
+                    stroke="#3b82f6"
+                    strokeWidth={4}
+                    name="Your Calories"
+                    dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 9, strokeWidth: 3 }}
+                    filter="url(#mealLineGlow)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="average"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    name="Recommended"
+                    dot={{ fill: '#ef4444', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 8, strokeWidth: 3 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </GlassCard>

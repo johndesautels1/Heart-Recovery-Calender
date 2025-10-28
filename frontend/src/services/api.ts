@@ -211,10 +211,11 @@ class ApiService {
   }
 
   // ==================== VITALS ENDPOINTS ====================
-  async getVitals(filters?: { startDate?: string; endDate?: string }): Promise<VitalsSample[]> {
+  async getVitals(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<VitalsSample[]> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
 
     const response = await this.api.get<ApiResponse<VitalsSample[]>>(`vitals?${params.toString()}`);
     return response.data.data;

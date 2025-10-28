@@ -709,12 +709,54 @@ export function MedicationsPage() {
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="date" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" domain={[0, 100]} />
+                    <defs>
+                      {/* 3D Bar gradients for adherence */}
+                      <linearGradient id="medBarGradientGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity={1}/>
+                        <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                      </linearGradient>
+                      <linearGradient id="medBarGradientYellow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fde047" stopOpacity={1}/>
+                        <stop offset="50%" stopColor="#facc15" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#eab308" stopOpacity={1}/>
+                      </linearGradient>
+                      <linearGradient id="medBarGradientOrange" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fbbf24" stopOpacity={1}/>
+                        <stop offset="50%" stopColor="#f59e0b" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                      </linearGradient>
+                      <linearGradient id="medBarGradientRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f87171" stopOpacity={1}/>
+                        <stop offset="50%" stopColor="#ef4444" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                      </linearGradient>
+                      {/* 3D shadow filter */}
+                      <filter id="medBarShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                        <feComponentTransfer>
+                          <feFuncA type="linear" slope="0.5"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                          <feMergeNode/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                    <YAxis stroke="#9ca3af" domain={[0, 100]} tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                      labelStyle={{ color: '#fff' }}
+                      contentStyle={{
+                        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                        border: '2px solid #a855f7',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(168, 85, 247, 0.3)',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                      cursor={{ fill: 'rgba(168, 85, 247, 0.1)' }}
                       formatter={(value, name, props: any) => {
                         if (name === 'adherenceRate') {
                           const entry = props.payload;
@@ -723,10 +765,17 @@ export function MedicationsPage() {
                         return [value, name];
                       }}
                     />
-                    <Bar dataKey="adherenceRate" name="Adherence" radius={[8, 8, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
+                    <Bar dataKey="adherenceRate" name="Adherence" radius={[8, 8, 0, 0]} barSize={35} filter="url(#medBarShadow)">
+                      {chartData.map((entry, index) => {
+                        const rate = entry.adherenceRate;
+                        const gradientId = rate >= 80 ? 'medBarGradientGreen' :
+                                           rate >= 50 ? 'medBarGradientYellow' :
+                                           rate >= 1 ? 'medBarGradientOrange' :
+                                           'medBarGradientRed';
+                        return (
+                          <Cell key={`cell-${index}`} fill={`url(#${gradientId})`} stroke={entry.fill} strokeWidth={2} />
+                        );
+                      })}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -737,21 +786,78 @@ export function MedicationsPage() {
                   <h3 className="text-lg font-semibold text-white mb-4">Adherence Distribution</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
+                      <defs>
+                        {/* 3D pie slice gradients */}
+                        <radialGradient id="medPieGradientGreen">
+                          <stop offset="0%" stopColor="#34d399" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                        </radialGradient>
+                        <radialGradient id="medPieGradientYellow">
+                          <stop offset="0%" stopColor="#fde047" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#eab308" stopOpacity={1}/>
+                        </radialGradient>
+                        <radialGradient id="medPieGradientOrange">
+                          <stop offset="0%" stopColor="#fbbf24" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                        </radialGradient>
+                        <radialGradient id="medPieGradientRed">
+                          <stop offset="0%" stopColor="#f87171" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                        </radialGradient>
+                        {/* 3D shadow for pie */}
+                        <filter id="medPieShadow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+                          <feOffset dx="0" dy="4" result="offsetblur"/>
+                          <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.4"/>
+                          </feComponentTransfer>
+                          <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
                       <Pie
                         data={adherenceCategoryData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={{
+                          stroke: '#9ca3af',
+                          strokeWidth: 2
+                        }}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
+                        outerRadius={90}
+                        innerRadius={20}
                         fill="#8884d8"
                         dataKey="value"
+                        paddingAngle={2}
+                        filter="url(#medPieShadow)"
                       >
-                        {adherenceCategoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                        {adherenceCategoryData.map((entry, index) => {
+                          const gradientId = entry.name.includes('Fully') ? 'medPieGradientGreen' :
+                                             entry.name.includes('Mostly') ? 'medPieGradientYellow' :
+                                             entry.name.includes('Partially') ? 'medPieGradientOrange' :
+                                             'medPieGradientRed';
+                          return (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={`url(#${gradientId})`}
+                              stroke={entry.color}
+                              strokeWidth={3}
+                            />
+                          );
+                        })}
                       </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #a855f7',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(168, 85, 247, 0.3)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </GlassCard>
