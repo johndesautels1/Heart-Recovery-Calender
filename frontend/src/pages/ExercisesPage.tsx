@@ -993,13 +993,22 @@ export function ExercisesPage() {
                   </div>
                 )}
                 {(exercise.defaultSets || exercise.defaultReps || exercise.defaultDuration) && (
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {exercise.defaultSets && (exercise.defaultSets + ' sets')}
-                      {exercise.defaultReps && (' × ' + exercise.defaultReps + ' reps')}
-                      {exercise.defaultDuration && (' • ' + exercise.defaultDuration + ' min')}
-                    </span>
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {exercise.defaultSets && (exercise.defaultSets + ' sets')}
+                        {exercise.defaultReps && (' × ' + exercise.defaultReps + ' reps')}
+                        {exercise.defaultDuration && (' • ' + exercise.defaultDuration + ' min')}
+                      </span>
+                    </div>
+                    {/* NEW: Exercise Volume & 1RM Estimator */}
+                    {exercise.defaultSets && exercise.defaultReps && (
+                      <div className="text-xs pl-5 space-y-0.5" style={{ color: 'var(--accent)' }}>
+                        <div>📊 Volume (@ 50lb): {exercise.defaultSets * exercise.defaultReps * 50} lbs</div>
+                        <div>💪 Est. 1RM (@ 8 reps): {Math.round(50 * (1 + 8 / 30))} lbs</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

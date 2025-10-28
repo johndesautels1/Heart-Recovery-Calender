@@ -1209,7 +1209,87 @@ export function MealsPage() {
             </GlassCard>
           </div>
 
-          {/* Chart 4: Weight Tracking */}
+          {/* NEW: Chart 4: Macro Ratio Pie Chart */}
+          <GlassCard>
+            <h3
+              className="text-xl font-bold mb-4 flex items-center gap-2"
+              style={{ color: 'var(--ink)' }}
+            >
+              <PieChartIcon className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+              Macro Nutrient Breakdown
+            </h3>
+            <div className="mb-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                <span>Protein</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+                <span>Carbohydrates</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                <span>Fat</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    {
+                      name: 'Protein',
+                      value: dailyMealQualityData.reduce((sum, day) => {
+                        // Assuming 4 cal/g for protein
+                        return sum + (day.protein || 0);
+                      }, 0),
+                      color: '#3b82f6'
+                    },
+                    {
+                      name: 'Carbs',
+                      value: dailyMealQualityData.reduce((sum, day) => {
+                        // Assuming 4 cal/g for carbs
+                        return sum + (day.carbs || 0);
+                      }, 0),
+                      color: '#eab308'
+                    },
+                    {
+                      name: 'Fat',
+                      value: dailyMealQualityData.reduce((sum, day) => {
+                        // Assuming 9 cal/g for fat
+                        return sum + (day.fat || 0);
+                      }, 0),
+                      color: '#ef4444'
+                    }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {[
+                    { color: '#3b82f6' },
+                    { color: '#eab308' },
+                    { color: '#ef4444' }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px'
+                  }}
+                  labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </GlassCard>
+
+          {/* Chart 5: Weight Tracking */}
           {(isViewingAsTherapist && selectedPatient) || (!isViewingAsTherapist && user) ? (
             <GlassCard>
               <h3

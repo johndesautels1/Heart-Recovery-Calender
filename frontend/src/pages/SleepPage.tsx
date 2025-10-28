@@ -381,44 +381,109 @@ export function SleepPage() {
 
       {/* Stats Cards */}
       {stats && stats.totalLogs > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-white font-bold mb-1">Average Sleep</p>
-                <p className="text-2xl font-bold text-white">
-                  {stats.averageHours.toFixed(1)} hrs
-                </p>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Average Sleep</p>
+                  <p className="text-2xl font-bold text-white">
+                    {stats.averageHours.toFixed(1)} hrs
+                  </p>
+                </div>
+                <Moon className="h-8 w-8 text-blue-400" />
               </div>
-              <Moon className="h-8 w-8 text-blue-400" />
-            </div>
-          </GlassCard>
+            </GlassCard>
 
-          <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-white font-bold mb-1">Total Logs</p>
-                <p className="text-2xl font-bold text-white">{stats.totalLogs}</p>
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Total Logs</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalLogs}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-purple-400" />
               </div>
-              <Calendar className="h-8 w-8 text-purple-400" />
-            </div>
-          </GlassCard>
+            </GlassCard>
 
-          <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-white font-bold mb-1">Trend</p>
-                <p className="text-2xl font-bold text-white capitalize">
-                  {stats.trend.replace('_', ' ')}
-                </p>
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Trend</p>
+                  <p className="text-2xl font-bold text-white capitalize">
+                    {stats.trend.replace('_', ' ')}
+                  </p>
+                </div>
+                <TrendingUp className={`h-8 w-8 ${
+                  stats.trend === 'improving' ? 'text-green-400' :
+                  stats.trend === 'declining' ? 'text-red-400' : 'text-gray-400'
+                }`} />
               </div>
-              <TrendingUp className={`h-8 w-8 ${
-                stats.trend === 'improving' ? 'text-green-400' :
-                stats.trend === 'declining' ? 'text-red-400' : 'text-gray-400'
-              }`} />
-            </div>
-          </GlassCard>
-        </div>
+            </GlassCard>
+          </div>
+
+          {/* NEW: Sleep Debt & Efficiency Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Sleep Debt</p>
+                  <p className={`text-2xl font-bold ${(() => {
+                    const TARGET_HOURS = 8;
+                    const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                    return debt > 10 ? 'text-red-400' : debt > 5 ? 'text-yellow-400' : 'text-green-400';
+                  })()}`}>
+                    {(() => {
+                      const TARGET_HOURS = 8;
+                      const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      return Math.abs(debt).toFixed(1);
+                    })()} hrs {(() => {
+                      const TARGET_HOURS = 8;
+                      const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      return debt > 0 ? 'deficit' : 'surplus';
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">vs 8h/night target</p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-400" />
+              </div>
+            </GlassCard>
+
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">Sleep Efficiency</p>
+                  <p className="text-2xl font-bold text-white">
+                    {(() => {
+                      // Calculate efficiency for logs with both bed/wake times
+                      const logsWithTimes = sleepLogs.filter(log => log.bedTime && log.wakeTime);
+                      if (logsWithTimes.length === 0) return 'N/A';
+
+                      const avgEfficiency = logsWithTimes.reduce((sum, log) => {
+                        const bedTime = new Date(`2000-01-01T${log.bedTime}`);
+                        let wakeTime = new Date(`2000-01-01T${log.wakeTime}`);
+
+                        // Handle wake time next day
+                        if (wakeTime < bedTime) {
+                          wakeTime = new Date(`2000-01-02T${log.wakeTime}`);
+                        }
+
+                        const timeInBed = (wakeTime.getTime() - bedTime.getTime()) / (1000 * 60 * 60); // hours
+                        const hoursSlept = parseFloat(log.hoursSlept.toString());
+                        const efficiency = (hoursSlept / timeInBed) * 100;
+
+                        return sum + efficiency;
+                      }, 0) / logsWithTimes.length;
+
+                      return `${avgEfficiency.toFixed(0)}%`;
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">time asleep / time in bed</p>
+                </div>
+                <Trophy className="h-8 w-8 text-purple-400" />
+              </div>
+            </GlassCard>
+          </div>
+        </>
       )}
 
       {/* Charts */}
