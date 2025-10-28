@@ -421,8 +421,8 @@ export function SleepPage() {
             </GlassCard>
           </div>
 
-          {/* NEW: Sleep Debt & Efficiency Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* NEW: Sleep Debt, Efficiency & Average Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <GlassCard>
               <div className="flex items-center justify-between">
                 <div>
@@ -480,6 +480,30 @@ export function SleepPage() {
                   <p className="text-xs text-white opacity-70 mt-1">time asleep / time in bed</p>
                 </div>
                 <Trophy className="h-8 w-8 text-purple-400" />
+              </div>
+            </GlassCard>
+
+            {/* NEW: 7-Day Average */}
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white font-bold mb-1">7-Day Average</p>
+                  <p className={`text-2xl font-bold ${(() => {
+                    if (sleepLogs.length === 0) return 'text-white';
+                    const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                    const avg = recentLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / recentLogs.length;
+                    return avg >= 7 ? 'text-green-400' : avg >= 6 ? 'text-yellow-400' : 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      if (sleepLogs.length === 0) return '--';
+                      const recentLogs = sleepLogs.slice(0, Math.min(7, sleepLogs.length));
+                      const avg = recentLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / recentLogs.length;
+                      return `${avg.toFixed(1)} hrs`;
+                    })()}
+                  </p>
+                  <p className="text-xs text-white opacity-70 mt-1">last {Math.min(7, sleepLogs.length)} nights</p>
+                </div>
+                <Moon className="h-8 w-8 text-blue-400" />
               </div>
             </GlassCard>
           </div>

@@ -519,7 +519,7 @@ export function MedicationsPage() {
       {activeTab === 'medications' && (
         <>
           {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
@@ -549,6 +549,19 @@ export function MedicationsPage() {
               </p>
             </div>
             <Bell className="h-8 w-8 text-blue-500" />
+          </div>
+        </GlassCard>
+
+        {/* NEW: OTC Medications Count */}
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1" style={{ color: '#ffffff' }}>OTC/Supplements</p>
+              <p className="text-3xl font-bold" style={{ color: '#ffffff' }}>
+                {medications.filter(m => m.isOTC).length}
+              </p>
+            </div>
+            <Award className="h-8 w-8 text-orange-500" />
           </div>
         </GlassCard>
       </div>
