@@ -82,7 +82,7 @@ interface WeeklyMetrics {
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const { selectedPatient } = usePatientSelection();
+  const { selectedPatient, setSelectedPatient } = usePatientSelection();
   const [stats, setStats] = useState<DashboardStats>({
     todayEvents: [],
     activeMedications: [],
@@ -417,6 +417,26 @@ export function DashboardPage() {
     stats.latestVitals?.bloodPressureSystolic,
     stats.latestVitals?.bloodPressureDiastolic
   );
+
+  // Calculate weight score (0-100 points)
+  const calculateWeightScore = (patient: Patient | null): number => {
+    if (!patient || !patient.startingWeight || !patient.targetWeight) return 0;
+
+    const currentWeight = patient.currentWeight || patient.startingWeight;
+    const weightLoss = patient.startingWeight - currentWeight;
+    const goalWeightLoss = patient.startingWeight - patient.targetWeight;
+
+    if (goalWeightLoss <= 0) return 0; // No goal set or invalid goal
+    if (weightLoss <= 0) return 0; // No weight loss
+
+    const percentageAchieved = (weightLoss / goalWeightLoss) * 100;
+
+    if (percentageAchieved >= 100) return 100; // Goal achieved or exceeded
+    if (percentageAchieved >= 66) return 66; // 66-100% of goal
+    if (percentageAchieved >= 33) return Math.round(percentageAchieved); // 33-66% of goal
+
+    return Math.round(percentageAchieved); // Less than 33%
+  };
 
   // Handle photo upload for specific week
   const handlePhotoUpload = (week: number) => {
@@ -998,7 +1018,7 @@ export function DashboardPage() {
                 return (
                   <div
                     key={patient.id}
-                    className="p-4 rounded-lg hover:bg-[#2d3a57] transition-colors"
+                    className="p-4 rounded-lg hover:bg-[#2d3a57] transition-colors relative group"
                     style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}
                   >
                     <div className="flex items-start justify-between">
@@ -1013,6 +1033,14 @@ export function DashboardPage() {
                         {patient.phone && (
                           <p className="text-xs text-white font-bold mt-1">{patient.phone}</p>
                         )}
+                        {/* View Progress Metrics Button */}
+                        <button
+                          onClick={() => setSelectedPatient(patient)}
+                          className="mt-3 px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-400/30 hover:border-purple-400/50 rounded-lg text-xs text-purple-300 font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <BarChart3 className="h-3.5 w-3.5" />
+                          View Progress Metrics
+                        </button>
                       </div>
                       <Users className="h-5 w-5 text-orange-500" />
                     </div>
@@ -1030,6 +1058,247 @@ export function DashboardPage() {
             </div>
           )}
         </GlassCard>
+
+        {/* Comprehensive Patient Metrics - Shows when patient selected */}
+        {selectedPatient && (
+          <>
+            {/* 5-Category Point Chart */}
+            <GlassCard className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/10 to-red-500/10 pointer-events-none" />
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-white font-bold flex items-center gap-2">
+                    <Award className="h-7 w-7 text-yellow-400" />
+                    {selectedPatient.name}'s Progress Scores
+                  </h2>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-yellow-400">
+                      {(calculateWeightScore(selectedPatient) +
+                        (weeklyMetrics.completionRate || 0) +
+                        (weeklyMetrics.completionRate || 0) +
+                        (weeklyMetrics.completionRate || 0) +
+                        (weeklyMetrics.completionRate || 0))
+                      } / 500
+                    </div>
+                    <div className="text-xs text-white/60">Total Points</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Exercise Score */}
+                  <div className="relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30">
+                    <div className="text-center">
+                      <Activity className="h-8 w-8 text-blue-400 mx-auto mb-3" />
+                      <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.completionRate || 0}</div>
+                      <div className="text-xs font-bold text-blue-300 mb-1">Exercise</div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-400 to-cyan-400"
+                          style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-white/60 mt-2">out of 100</div>
+                    </div>
+                  </div>
+
+                  {/* Meals Score */}
+                  <div className="relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30">
+                    <div className="text-center">
+                      <UtensilsCrossed className="h-8 w-8 text-green-400 mx-auto mb-3" />
+                      <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.completionRate || 0}</div>
+                      <div className="text-xs font-bold text-green-300 mb-1">Meals</div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-400 to-emerald-400"
+                          style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-white/60 mt-2">out of 100</div>
+                    </div>
+                  </div>
+
+                  {/* Medications Score */}
+                  <div className="relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30">
+                    <div className="text-center">
+                      <Pill className="h-8 w-8 text-purple-400 mx-auto mb-3" />
+                      <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.completionRate || 0}</div>
+                      <div className="text-xs font-bold text-purple-300 mb-1">Medications</div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-400 to-pink-400"
+                          style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-white/60 mt-2">out of 100</div>
+                    </div>
+                  </div>
+
+                  {/* Sleep Score */}
+                  <div className="relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-400/30">
+                    <div className="text-center">
+                      <Clock className="h-8 w-8 text-indigo-400 mx-auto mb-3" />
+                      <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.completionRate || 0}</div>
+                      <div className="text-xs font-bold text-indigo-300 mb-1">Sleep</div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-indigo-400 to-violet-400"
+                          style={{ width: `${weeklyMetrics.completionRate || 0}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-white/60 mt-2">out of 100</div>
+                    </div>
+                  </div>
+
+                  {/* Weight Score */}
+                  <div className="relative overflow-hidden rounded-xl p-5 bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-400/30">
+                    <div className="text-center">
+                      <TrendingUp className="h-8 w-8 text-orange-400 mx-auto mb-3" />
+                      <div className="text-4xl font-bold text-white mb-2">{calculateWeightScore(selectedPatient)}</div>
+                      <div className="text-xs font-bold text-orange-300 mb-1">Weight Loss</div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-orange-400 to-red-400"
+                          style={{ width: `${calculateWeightScore(selectedPatient)}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-white/60 mt-2">out of 100</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* Holistic Dashboard Visuals */}
+            <GlassCard className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 pointer-events-none" />
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-white font-bold flex items-center gap-2">
+                    <BarChart3 className="h-7 w-7 text-cyan-400" />
+                    Comprehensive Health Overview
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Overall Wellness Score */}
+                  <div className="col-span-full lg:col-span-2 p-6 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-cyan-300 mb-2">Overall Wellness</div>
+                        <div className="text-5xl font-bold text-white">
+                          {Math.round(((calculateWeightScore(selectedPatient) +
+                            (weeklyMetrics.completionRate * 4)) / 500) * 100)}%
+                        </div>
+                        <div className="text-xs text-white/60 mt-2">Combined Health Score</div>
+                      </div>
+                      <Heart className="h-20 w-20 text-cyan-400/30" />
+                    </div>
+                    <div className="mt-4 h-3 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 animate-pulse"
+                        style={{ width: `${Math.round(((calculateWeightScore(selectedPatient) + (weeklyMetrics.completionRate * 4)) / 500) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Recovery Progress */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30">
+                    <CheckCircle className="h-6 w-6 text-green-400 mb-3" />
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {differenceInWeeks(new Date(), new Date(selectedPatient.surgeryDate || new Date()))}
+                    </div>
+                    <div className="text-xs text-green-300">Weeks Post-Op</div>
+                    <div className="mt-3 text-xs text-white/60">
+                      Target: 12 weeks
+                    </div>
+                  </div>
+
+                  {/* Goals Achieved */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-yellow-500/20 to-amber-500/20 border border-yellow-400/30">
+                    <Star className="h-6 w-6 text-yellow-400 mb-3" />
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {Math.round((calculateWeightScore(selectedPatient) + (weeklyMetrics.completionRate * 4)) / 100)} / 5
+                    </div>
+                    <div className="text-xs text-yellow-300">Goals Achieved</div>
+                    <div className="mt-3 text-xs text-white/60">
+                      Major milestones
+                    </div>
+                  </div>
+
+                  {/* Activity Summary */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/30">
+                    <Zap className="h-6 w-6 text-blue-400 mb-3" />
+                    <div className="text-sm font-bold text-white mb-2">Weekly Activity</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Events</span>
+                        <span className="text-blue-300 font-bold">{weeklyMetrics.totalAppointments}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Completion</span>
+                        <span className="text-blue-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vitals Trend */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30">
+                    <Heart className="h-6 w-6 text-red-400 mb-3" />
+                    <div className="text-sm font-bold text-white mb-2">Vitals Status</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">BP Status</span>
+                        <span className={`font-bold text-${bpStatus.color}-400`}>{bpStatus.status}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Improvement</span>
+                        <span className="text-green-300 font-bold">+{weeklyMetrics.clinicalImprovements.avgVitalsImprovement.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Medication Adherence */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 border border-purple-400/30">
+                    <Pill className="h-6 w-6 text-purple-400 mb-3" />
+                    <div className="text-sm font-bold text-white mb-2">Medication</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Adherence</span>
+                        <span className="text-purple-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Reduced</span>
+                        <span className="text-purple-300 font-bold">{weeklyMetrics.clinicalImprovements.medicationReductionCount}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nutrition Compliance */}
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-green-500/20 to-teal-500/20 border border-green-400/30">
+                    <UtensilsCrossed className="h-6 w-6 text-green-400 mb-3" />
+                    <div className="text-sm font-bold text-white mb-2">Nutrition</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Compliance</span>
+                        <span className="text-green-300 font-bold">{weeklyMetrics.completionRate}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">Weight Lost</span>
+                        <span className="text-green-300 font-bold">
+                          {selectedPatient.startingWeight && selectedPatient.currentWeight
+                            ? `${(selectedPatient.startingWeight - selectedPatient.currentWeight).toFixed(1)} lbs`
+                            : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </>
+        )}
       </div>
     );
   }
