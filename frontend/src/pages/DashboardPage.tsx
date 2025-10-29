@@ -207,7 +207,7 @@ export function DashboardPage() {
 
         // Fetch all data for this week
         const [events, meals, sleepLogs, medLogs, vitals] = await Promise.all([
-          api.getEvents(userId, startStr, endStr).catch(() => []),
+          api.getEvents(userId, startStr, endStr, { usePatientId: !!userId }).catch(() => []),
           api.getMeals({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
           api.getSleepLogs({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
           api.getMedicationLogs({ startDate: startStr, endDate: endStr, userId }).catch(() => []),
@@ -216,7 +216,7 @@ export function DashboardPage() {
 
         // Calculate Exercise Score (0-100)
         const exerciseEvents = events.filter(e =>
-          e.calendar?.type === 'exercise' || e.title.toLowerCase().includes('exercise')
+          e.calendar?.type === 'exercise' || e.exerciseId || e.title.toLowerCase().includes('exercise')
         );
         const completedExercise = exerciseEvents.filter(e => e.status === 'completed').length;
         const exerciseScore = exerciseEvents.length > 0
@@ -291,8 +291,11 @@ export function DashboardPage() {
       setIsLoading(true);
       const today = new Date().toISOString().split('T')[0];
 
+      // Get patient's userId for filtering
+      const patientUserId = user?.id;
+
       const [events, medications, vitals, meals] = await Promise.all([
-        api.getEvents(undefined, today, today),
+        api.getEvents(patientUserId, today, today, { usePatientId: true }),
         api.getMedications(true),
         api.getLatestVital(),
         api.getMeals(today, today),
@@ -311,8 +314,8 @@ export function DashboardPage() {
         weeklyCompliance: Math.round(compliance),
       });
 
-      // Load 12-week progress data
-      await calculate12WeekProgress();
+      // Load 12-week progress data for this patient
+      await calculate12WeekProgress(patientUserId);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
