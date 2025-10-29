@@ -138,9 +138,21 @@ export function CalendarPage() {
       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
 
-      // If a patient is selected, load that patient's data
-      const userId = selectedPatient?.userId ? selectedPatient.userId : undefined;
-      console.log('[CalendarPage] Loading data for userId:', userId, 'selectedPatient:', selectedPatient);
+      // Determine which user's data to load
+      // For admin/therapist: use selectedPatient if set, otherwise load all
+      // For patients: always load their own data
+      let userId: number | undefined;
+
+      if (user?.role === 'patient') {
+        // Patients always see their own calendar
+        userId = user.id;
+      } else if (selectedPatient?.userId) {
+        // Admin/therapist viewing a specific patient
+        userId = selectedPatient.userId;
+      }
+      // Otherwise userId remains undefined (admin viewing all calendars)
+
+      console.log('[CalendarPage] Loading data for userId:', userId, 'user role:', user?.role, 'selectedPatient:', selectedPatient);
 
       // For admin/therapist viewing all calendars, don't pass userId to getCalendars
       // This will load all calendars (own + patients')
