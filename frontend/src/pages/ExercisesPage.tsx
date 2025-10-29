@@ -516,12 +516,16 @@ export function ExercisesPage() {
       const startDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
       const endDateTime = new Date(startDateTime.getTime() + scheduleDuration * 60000);
 
+      // Get selected patient info to use their userId
+      const selectedPatient = patients.find(p => p.id === parseInt(schedulePatientId));
+      const patientUserId = selectedPatient?.userId || parseInt(schedulePatientId);
+
       // Fetch user's calendars and patient's calendars
       const [therapistCalResponse, patientCalResponse] = await Promise.all([
         fetch('/api/calendars', {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`/api/calendars?userId=${schedulePatientId}`, {
+        fetch(`/api/calendars?userId=${patientUserId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ]);
@@ -559,7 +563,7 @@ export function ExercisesPage() {
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            userId: parseInt(schedulePatientId),
+            userId: patientUserId,
             name: 'Exercise Calendar',
             type: 'exercise',
             color: '#10b981',
@@ -568,8 +572,6 @@ export function ExercisesPage() {
         patientCalendar = await createResponse.json();
       }
 
-      // Create event ONLY on patient's calendar
-      const selectedPatient = patients.find(p => p.id === parseInt(schedulePatientId));
       const patientName = selectedPatient?.name || 'Patient';
 
       // Event for patient's calendar
