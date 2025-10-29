@@ -1827,28 +1827,32 @@ export function DashboardPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         {/* Blood Pressure */}
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-white/70">BP</span>
-                            <Activity className="h-4 w-4 text-red-400" />
+                        {(stats.latestVitals.bloodPressureSystolic && stats.latestVitals.bloodPressureDiastolic) && (
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-white/70">BP</span>
+                              <Activity className="h-4 w-4 text-red-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                              {stats.latestVitals.bloodPressureSystolic}/{stats.latestVitals.bloodPressureDiastolic}
+                            </div>
+                            <div className="text-xs text-white/60 mt-1">mmHg</div>
                           </div>
-                          <div className="text-2xl font-bold text-white">
-                            {stats.latestVitals.systolicBP}/{stats.latestVitals.diastolicBP}
-                          </div>
-                          <div className="text-xs text-white/60 mt-1">mmHg</div>
-                        </div>
+                        )}
 
                         {/* Heart Rate */}
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-pink-400/30">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-white/70">HR</span>
-                            <Heart className="h-4 w-4 text-pink-400" />
+                        {stats.latestVitals.heartRate && (
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-pink-400/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-white/70">HR</span>
+                              <Heart className="h-4 w-4 text-pink-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                              {stats.latestVitals.heartRate}
+                            </div>
+                            <div className="text-xs text-white/60 mt-1">bpm</div>
                           </div>
-                          <div className="text-2xl font-bold text-white">
-                            {stats.latestVitals.heartRate}
-                          </div>
-                          <div className="text-xs text-white/60 mt-1">bpm</div>
-                        </div>
+                        )}
 
                         {/* Weight */}
                         {stats.latestVitals.weight && (
@@ -1879,9 +1883,11 @@ export function DashboardPage() {
                         )}
                       </div>
 
-                      <div className="text-xs text-center text-white/60 mt-4">
-                        Last updated: {format(new Date(stats.latestVitals.date), 'MMM d, yyyy')}
-                      </div>
+                      {stats.latestVitals.createdAt && (
+                        <div className="text-xs text-center text-white/60 mt-4">
+                          Last updated: {format(new Date(stats.latestVitals.createdAt), 'MMM d, yyyy')}
+                        </div>
+                      )}
                     </div>
                   </GlassCard>
                 )}
