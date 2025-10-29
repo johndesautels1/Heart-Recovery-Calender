@@ -403,8 +403,8 @@ export function DashboardPage() {
       for (const patient of activePatients) {
         if (patient.userId) {
           try {
-            // Get all events from the last 7 days for metrics
-            const events = await api.getEvents(patient.userId, sevenDaysAgo, undefined, { usePatientId: true });
+            // Get ALL events for total recovery progress (no date filter)
+            const events = await api.getEvents(patient.userId, undefined, undefined, { usePatientId: true });
             allEvents.push(...events);
 
             // Get today's events separately
@@ -771,9 +771,10 @@ export function DashboardPage() {
     // Calculate category-specific metrics
     const categoryMetrics = {
       exercise: {
-        // Calculate exercise points based on performanceScore
+        // Calculate exercise points based on performanceScore - USE ALL EVENTS for total progress
         completionRate: (() => {
-          const exerciseEvents = weekEvents.filter(e =>
+          // Use ALL events, not just this week's events, to show total recovery progress
+          const exerciseEvents = allEvents.filter(e =>
             e.calendar?.type === 'exercise' || e.exerciseId || e.title.toLowerCase().includes('exercise')
           );
 
@@ -782,12 +783,10 @@ export function DashboardPage() {
             return sum + (e.performanceScore || 0);
           }, 0);
 
-          // For weekly view: typical expectation is 3 workouts (12/month ÷ 4)
-          // Max points = 3 workouts × 8 points each = 24 points
-          // Scale to 100: (actual / 24) × 100, but cap at 100
-          const expectedWeeklyMax = 24;
+          // Monthly expectation: 12 workouts × 8 points = 96 points + 4 bonus = 100 max
+          const monthlyMax = 100;
           const scaledScore = exerciseEvents.length > 0
-            ? Math.min(100, Math.round((totalPoints / expectedWeeklyMax) * 100))
+            ? Math.min(100, Math.round((totalPoints / monthlyMax) * 100))
             : 0;
 
           return scaledScore;
@@ -1554,7 +1553,7 @@ export function DashboardPage() {
                     <div className="text-center">
                       <Activity className="h-8 w-8 text-blue-400 mx-auto mb-3" />
                       <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.categoryMetrics.exercise.completionRate || 0}</div>
-                      <div className="text-xs font-bold text-blue-300 mb-1">Exercise</div>
+                      <div className="text-xs font-bold text-blue-300 mb-1">Exercise Points</div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-blue-400 to-cyan-400"
@@ -1562,6 +1561,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="text-xs text-white/60 mt-2">out of 100</div>
+                      <div className="text-xs text-white/50 mt-1">Cumulative total recovery progress</div>
+                      <div className="text-xs text-white/50">0=No Show, 4=Done, 6=Met, 8=Exceeded</div>
                     </div>
                   </div>
 
@@ -1570,7 +1571,7 @@ export function DashboardPage() {
                     <div className="text-center">
                       <UtensilsCrossed className="h-8 w-8 text-green-400 mx-auto mb-3" />
                       <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.categoryMetrics.meals.complianceRate || 0}</div>
-                      <div className="text-xs font-bold text-green-300 mb-1">Meals</div>
+                      <div className="text-xs font-bold text-green-300 mb-1">Meals Compliance</div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-green-400 to-emerald-400"
@@ -1578,6 +1579,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="text-xs text-white/60 mt-2">out of 100</div>
+                      <div className="text-xs text-white/50 mt-1">% of meals within diet specs</div>
+                      <div className="text-xs text-white/50">Low sodium, heart-healthy</div>
                     </div>
                   </div>
 
@@ -1586,7 +1589,7 @@ export function DashboardPage() {
                     <div className="text-center">
                       <Pill className="h-8 w-8 text-purple-400 mx-auto mb-3" />
                       <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.categoryMetrics.medications.adherenceRate || 0}</div>
-                      <div className="text-xs font-bold text-purple-300 mb-1">Medications</div>
+                      <div className="text-xs font-bold text-purple-300 mb-1">Medication Adherence</div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-purple-400 to-pink-400"
@@ -1594,6 +1597,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="text-xs text-white/60 mt-2">out of 100</div>
+                      <div className="text-xs text-white/50 mt-1">% of prescribed doses taken</div>
+                      <div className="text-xs text-white/50">On-time compliance rate</div>
                     </div>
                   </div>
 
@@ -1602,7 +1607,7 @@ export function DashboardPage() {
                     <div className="text-center">
                       <Clock className="h-8 w-8 text-indigo-400 mx-auto mb-3" />
                       <div className="text-4xl font-bold text-white mb-2">{weeklyMetrics.categoryMetrics.sleep.qualityScore || 0}</div>
-                      <div className="text-xs font-bold text-indigo-300 mb-1">Sleep</div>
+                      <div className="text-xs font-bold text-indigo-300 mb-1">Sleep Quality</div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-indigo-400 to-violet-400"
@@ -1610,6 +1615,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="text-xs text-white/60 mt-2">out of 100</div>
+                      <div className="text-xs text-white/50 mt-1">7-9 hrs nightly target</div>
+                      <div className="text-xs text-white/50">Consistency & duration</div>
                     </div>
                   </div>
 
@@ -1618,7 +1625,7 @@ export function DashboardPage() {
                     <div className="text-center">
                       <TrendingUp className="h-8 w-8 text-orange-400 mx-auto mb-3" />
                       <div className="text-4xl font-bold text-white mb-2">{calculateWeightScore(selectedPatient)}</div>
-                      <div className="text-xs font-bold text-orange-300 mb-1">Weight Loss</div>
+                      <div className="text-xs font-bold text-orange-300 mb-1">Weight Progress</div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-orange-400 to-red-400"
@@ -1626,6 +1633,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <div className="text-xs text-white/60 mt-2">out of 100</div>
+                      <div className="text-xs text-white/50 mt-1">Progress toward weight goal</div>
+                      <div className="text-xs text-white/50">Since surgery date</div>
                     </div>
                   </div>
                 </div>
