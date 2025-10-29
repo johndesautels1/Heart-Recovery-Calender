@@ -13,9 +13,13 @@ import {
   Award,
   User,
   AlertCircle,
-  Flame
+  Flame,
+  Target,
+  Zap,
+  Activity,
+  Sun
 } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -300,6 +304,145 @@ export function SleepPage() {
       color,
     };
   });
+
+  // ==================== NEW SLEEP VISUALIZATION DATA ====================
+
+  // 1. Radial Sleep Quality Clock Data
+  const qualityDistribution = {
+    poor: sleepLogs.filter(log => log.sleepQuality === 'poor').length,
+    fair: sleepLogs.filter(log => log.sleepQuality === 'fair').length,
+    good: sleepLogs.filter(log => log.sleepQuality === 'good').length,
+    excellent: sleepLogs.filter(log => log.sleepQuality === 'excellent').length,
+  };
+  const totalQualityLogs = qualityDistribution.poor + qualityDistribution.fair + qualityDistribution.good + qualityDistribution.excellent;
+
+  // 2. Sleep Heatmap Calendar Data - Current month
+  const heatmapSleepData = (() => {
+    const now = new Date();
+    const daysInMonth = getDaysInMonth(now);
+    const monthStart = startOfMonth(now);
+    const data = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(monthStart);
+      date.setDate(day);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayLog = sleepLogs.find(log => log.date === dateStr);
+      const hours = dayLog ? parseFloat(dayLog.hoursSlept.toString()) : null;
+
+      data.push({
+        day,
+        date: format(date, 'MMM d'),
+        hours,
+        quality: dayLog?.sleepQuality || null,
+        dayOfWeek: format(date, 'EEE'),
+      });
+    }
+    return data;
+  })();
+
+  // 3. Sleep Debt Wave Data
+  const sleepDebtData = (() => {
+    const TARGET_HOURS = 8;
+    let cumulativeDebt = 0;
+
+    return sleepLogs
+      .slice()
+      .reverse()
+      .map((log, index) => {
+        const hours = parseFloat(log.hoursSlept.toString());
+        cumulativeDebt += (TARGET_HOURS - hours);
+
+        return {
+          date: format(parseISO(log.date), 'MMM d'),
+          debt: cumulativeDebt,
+          actualHours: hours,
+        };
+      });
+  })();
+
+  // 4. Sleep Target Achievement Percentage
+  const nightsInTarget = sleepLogs.filter(log => {
+    const hours = parseFloat(log.hoursSlept.toString());
+    return hours >= 7 && hours <= 9;
+  }).length;
+
+  const targetAchievementPercentage = sleepLogs.length > 0
+    ? (nightsInTarget / sleepLogs.length) * 100
+    : 0;
+
+  // 5. Bed/Wake Time Scatter Data
+  const bedWakeScatterData = sleepLogs
+    .filter(log => log.bedTime && log.wakeTime)
+    .map(log => {
+      const bedHour = parseInt(log.bedTime!.split(':')[0]) + parseInt(log.bedTime!.split(':')[1]) / 60;
+      const wakeHour = parseInt(log.wakeTime!.split(':')[0]) + parseInt(log.wakeTime!.split(':')[1]) / 60;
+      const hours = parseFloat(log.hoursSlept.toString());
+
+      return {
+        bedHour: bedHour >= 18 ? bedHour : bedHour + 24, // Normalize PM times
+        wakeHour: wakeHour,
+        hours,
+        quality: log.sleepQuality || 'unknown',
+        date: format(parseISO(log.date), 'MMM d'),
+      };
+    });
+
+  // 6. Sleep Streak Data (already calculated in JSX, extract here)
+  const calculateStreak = () => {
+    const sortedLogs = [...sleepLogs].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < sortedLogs.length; i++) {
+      const logDate = new Date(sortedLogs[i].date);
+      logDate.setHours(0, 0, 0, 0);
+
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      expectedDate.setHours(0, 0, 0, 0);
+
+      if (logDate.getTime() === expectedDate.getTime()) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+  const currentStreak = calculateStreak();
+
+  // 7. Sleep Phases Timeline Data - Last 7 nights
+  const phasesTimelineData = sleepLogs
+    .slice(0, 7)
+    .reverse()
+    .filter(log => log.bedTime && log.wakeTime)
+    .map(log => {
+      const bedHour = parseInt(log.bedTime!.split(':')[0]) + parseInt(log.bedTime!.split(':')[1]) / 60;
+      const wakeHour = parseInt(log.wakeTime!.split(':')[0]) + parseInt(log.wakeTime!.split(':')[1]) / 60;
+      const normalizedBedTime = bedHour >= 18 ? bedHour : bedHour + 24;
+      const normalizedWakeTime = wakeHour <= 12 ? wakeHour + 24 : wakeHour;
+
+      return {
+        date: format(parseISO(log.date), 'MMM d'),
+        bedTime: normalizedBedTime,
+        wakeTime: normalizedWakeTime,
+        duration: parseFloat(log.hoursSlept.toString()),
+        quality: log.sleepQuality || 'unknown',
+      };
+    });
+
+  // 8. 3D Pyramid Data (quality distribution for isometric view)
+  const pyramidData = [
+    { level: 'Excellent', count: qualityDistribution.excellent, color: '#10b981', layer: 4 },
+    { level: 'Good', count: qualityDistribution.good, color: '#3b82f6', layer: 3 },
+    { level: 'Fair', count: qualityDistribution.fair, color: '#f59e0b', layer: 2 },
+    { level: 'Poor', count: qualityDistribution.poor, color: '#ef4444', layer: 1 },
+  ].filter(item => item.count > 0);
 
   return (
     <div className="space-y-6">
@@ -1011,6 +1154,464 @@ export function SleepPage() {
             </GlassCard>
           )}
         </div>
+      )}
+
+      {/* NEW: 8 Advanced Sleep Visualizations */}
+      {sleepLogs.length > 0 && (
+        <>
+          {/* 1. Radial Sleep Quality Clock & 4. Sleep Target Radial Progress */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Radial Sleep Quality Clock */}
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Moon className="h-5 w-5 text-blue-400" />
+                Sleep Quality Distribution
+              </h3>
+              <div className="flex items-center justify-center" style={{ minHeight: 220 }}>
+                <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+                  <svg className="absolute inset-0" width="200" height="200">
+                    <defs>
+                      {/* Quality ring gradients */}
+                      <linearGradient id="qualityGradientPoor" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fca5a5" />
+                        <stop offset="50%" stopColor="#ef4444" />
+                        <stop offset="100%" stopColor="#b91c1c" />
+                      </linearGradient>
+                      <linearGradient id="qualityGradientFair" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fcd34d" />
+                        <stop offset="50%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#d97706" />
+                      </linearGradient>
+                      <linearGradient id="qualityGradientGood" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#93c5fd" />
+                        <stop offset="50%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#1e40af" />
+                      </linearGradient>
+                      <linearGradient id="qualityGradientExcellent" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#6ee7b7" />
+                        <stop offset="50%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#047857" />
+                      </linearGradient>
+                      <filter id="qualityRingGlow">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    {/* Concentric rings for each quality level */}
+                    {/* Excellent ring (outermost) */}
+                    <circle cx="100" cy="100" r="85" fill="none"
+                            stroke="url(#qualityGradientExcellent)"
+                            strokeWidth="14"
+                            strokeDasharray={`${2 * Math.PI * 85}`}
+                            strokeDashoffset={`${2 * Math.PI * 85 * (1 - (qualityDistribution.excellent / sleepLogs.length))}`}
+                            transform="rotate(-90 100 100)"
+                            filter="url(#qualityRingGlow)"
+                            opacity={qualityDistribution.excellent > 0 ? 1 : 0.2} />
+                    {/* Good ring */}
+                    <circle cx="100" cy="100" r="65" fill="none"
+                            stroke="url(#qualityGradientGood)"
+                            strokeWidth="12"
+                            strokeDasharray={`${2 * Math.PI * 65}`}
+                            strokeDashoffset={`${2 * Math.PI * 65 * (1 - (qualityDistribution.good / sleepLogs.length))}`}
+                            transform="rotate(-90 100 100)"
+                            filter="url(#qualityRingGlow)"
+                            opacity={qualityDistribution.good > 0 ? 1 : 0.2} />
+                    {/* Fair ring */}
+                    <circle cx="100" cy="100" r="47" fill="none"
+                            stroke="url(#qualityGradientFair)"
+                            strokeWidth="10"
+                            strokeDasharray={`${2 * Math.PI * 47}`}
+                            strokeDashoffset={`${2 * Math.PI * 47 * (1 - (qualityDistribution.fair / sleepLogs.length))}`}
+                            transform="rotate(-90 100 100)"
+                            filter="url(#qualityRingGlow)"
+                            opacity={qualityDistribution.fair > 0 ? 1 : 0.2} />
+                    {/* Poor ring (innermost) */}
+                    <circle cx="100" cy="100" r="31" fill="none"
+                            stroke="url(#qualityGradientPoor)"
+                            strokeWidth="8"
+                            strokeDasharray={`${2 * Math.PI * 31}`}
+                            strokeDashoffset={`${2 * Math.PI * 31 * (1 - (qualityDistribution.poor / sleepLogs.length))}`}
+                            transform="rotate(-90 100 100)"
+                            filter="url(#qualityRingGlow)"
+                            opacity={qualityDistribution.poor > 0 ? 1 : 0.2} />
+                  </svg>
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <Trophy className="h-6 w-6 mb-1 text-yellow-400" />
+                    <div className="text-xl font-bold text-white">{sleepLogs.length}</div>
+                    <div className="text-xs text-white opacity-70">nights</div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-red-400 to-red-700"></div>
+                  <span className="text-white">Poor: {qualityDistribution.poor}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-700"></div>
+                  <span className="text-white">Fair: {qualityDistribution.fair}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-700"></div>
+                  <span className="text-white">Good: {qualityDistribution.good}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-green-400 to-green-700"></div>
+                  <span className="text-white">Excellent: {qualityDistribution.excellent}</span>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* Sleep Target Radial Progress */}
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-400" />
+                Target Achievement
+              </h3>
+              <div className="flex items-center justify-center" style={{ minHeight: 220 }}>
+                <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
+                  <svg className="absolute inset-0" width="180" height="180">
+                    <defs>
+                      <linearGradient id="targetProgress" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={targetAchievementPercentage >= 80 ? '#10b981' : targetAchievementPercentage >= 60 ? '#3b82f6' : targetAchievementPercentage >= 40 ? '#fbbf24' : '#ef4444'} />
+                        <stop offset="100%" stopColor={targetAchievementPercentage >= 80 ? '#047857' : targetAchievementPercentage >= 60 ? '#1e40af' : targetAchievementPercentage >= 40 ? '#d97706' : '#b91c1c'} />
+                      </linearGradient>
+                      <filter id="targetGlow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <circle cx="90" cy="90" r="75" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="14" />
+                    <circle cx="90" cy="90" r="75" fill="none"
+                            stroke="url(#targetProgress)"
+                            strokeWidth="14"
+                            strokeLinecap="round"
+                            strokeDasharray={`${2 * Math.PI * 75}`}
+                            strokeDashoffset={`${2 * Math.PI * 75 * (1 - targetAchievementPercentage / 100)}`}
+                            transform="rotate(-90 90 90)"
+                            filter="url(#targetGlow)" />
+                  </svg>
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <Activity className="h-6 w-6 mb-1 text-purple-400" />
+                    <div className="text-3xl font-bold text-white">{Math.round(targetAchievementPercentage)}%</div>
+                    <div className="text-xs text-white opacity-70">7-9h nights</div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-center text-xs text-white opacity-70 mt-2">
+                {nightsInTarget} of {sleepLogs.length} nights achieved target
+              </div>
+            </GlassCard>
+          </div>
+
+          {/* 2. Sleep Heatmap Calendar */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-400" />
+              Monthly Sleep Heatmap
+            </h3>
+            <div className="grid grid-cols-7 gap-1">
+              {heatmapSleepData.map((day) => {
+                const hours = day.hours || 0;
+                const bgColor = hours === null ? 'bg-gray-800' :
+                                hours < 4 ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                                hours < 6 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                                hours < 7 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                                hours < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                                'bg-gradient-to-br from-green-400 to-green-600';
+                const opacity = hours === null ? 0.2 : 1;
+                return (
+                  <div key={day.day}
+                       className={`${bgColor} rounded-lg p-2 text-center transition-all duration-300 hover:scale-110 hover:shadow-lg`}
+                       style={{ opacity }}
+                       title={day.hours ? `${day.date}: ${day.hours}h (${day.quality})` : day.date}>
+                    <div className="text-xs font-bold text-white opacity-70">{day.dayOfWeek}</div>
+                    <div className="text-lg font-bold text-white">{day.day}</div>
+                    {day.hours && <div className="text-xs text-white opacity-90">{day.hours}h</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between items-center mt-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
+                <span className="text-white opacity-70">&lt;4h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
+                <span className="text-white opacity-70">4-6h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-yellow-600"></div>
+                <span className="text-white opacity-70">6-7h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                <span className="text-white opacity-70">7-9h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
+                <span className="text-white opacity-70">9+h</span>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* 3. Sleep Debt Wave Chart */}
+          {sleepDebtData.length > 0 && (
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-orange-400" />
+                Sleep Debt Accumulation
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={sleepDebtData}>
+                  <defs>
+                    <linearGradient id="debtGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                      <stop offset="50%" stopColor="#f97316" stopOpacity={0.6}/>
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.3}/>
+                    </linearGradient>
+                    <filter id="debtShadow">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                      <feOffset dx="0" dy="3" result="offsetblur"/>
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.4"/>
+                      </feComponentTransfer>
+                      <feMerge>
+                        <feMergeNode/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }} />
+                  <YAxis stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                         label={{ value: 'Cumulative Debt (hours)', angle: -90, position: 'insideLeft', fill: '#d1d5db', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #f59e0b',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  />
+                  <ReferenceLine y={0} stroke="#10b981" strokeDasharray="3 3" strokeWidth={2} />
+                  <Area type="monotone" dataKey="debt" stroke="#f59e0b" strokeWidth={3}
+                        fill="url(#debtGradient)" filter="url(#debtShadow)" />
+                </AreaChart>
+              </ResponsiveContainer>
+              <div className="text-xs text-center text-white opacity-70 mt-2">
+                Target: 8 hours per night. Positive values indicate sleep debt.
+              </div>
+            </GlassCard>
+          )}
+
+          {/* 5. Bed/Wake Time Scatter Plot */}
+          {bedWakeScatterData.length > 0 && (
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Sun className="h-5 w-5 text-yellow-400" />
+                Bed Time vs Wake Time
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <ScatterChart>
+                  <defs>
+                    <linearGradient id="scatterGradient" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.8}/>
+                    </linearGradient>
+                    <filter id="scatterGlow">
+                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis type="number" dataKey="bedHour" domain={[20, 32]}
+                         ticks={[20, 22, 24, 26, 28, 30, 32]}
+                         tickFormatter={(value) => {
+                           const hour = value % 24;
+                           return `${hour}:00`;
+                         }}
+                         stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                         label={{ value: 'Bed Time', position: 'insideBottom', offset: -5, fill: '#d1d5db', fontSize: 12 }} />
+                  <YAxis type="number" dataKey="wakeHour" domain={[5, 12]}
+                         stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                         label={{ value: 'Wake Time', angle: -90, position: 'insideLeft', fill: '#d1d5db', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                      border: '2px solid #60a5fa',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    formatter={(value: any, name: any, props: any) => {
+                      if (name === 'bedHour') {
+                        const hour = value % 24;
+                        return [`${hour}:00`, 'Bed Time'];
+                      }
+                      if (name === 'wakeHour') {
+                        return [`${value}:00`, 'Wake Time'];
+                      }
+                      return [value, name];
+                    }}
+                  />
+                  <Scatter name="Sleep Sessions" data={bedWakeScatterData} fill="url(#scatterGradient)"
+                           filter="url(#scatterGlow)" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </GlassCard>
+          )}
+
+          {/* 6. Sleep Streak Flame Meter */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              Logging Streak
+            </h3>
+            <div className="flex items-center justify-center py-6">
+              <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
+                <svg className="absolute inset-0" width="160" height="160">
+                  <defs>
+                    <linearGradient id="streakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor={currentStreak >= 30 ? '#fbbf24' : currentStreak >= 14 ? '#f59e0b' : currentStreak >= 7 ? '#f97316' : '#6b7280'} />
+                      <stop offset="100%" stopColor={currentStreak >= 30 ? '#d97706' : currentStreak >= 14 ? '#ea580c' : currentStreak >= 7 ? '#dc2626' : '#374151'} />
+                    </linearGradient>
+                    <filter id="streakFlameGlow">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="10" />
+                  <circle cx="80" cy="80" r="70" fill="none"
+                          stroke="url(#streakGradient)"
+                          strokeWidth="10"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 70}`}
+                          strokeDashoffset={`${2 * Math.PI * 70 * (1 - Math.min(currentStreak / 30, 1))}`}
+                          transform="rotate(-90 80 80)"
+                          filter="url(#streakFlameGlow)" />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <Flame className={`h-8 w-8 mb-1 ${currentStreak >= 7 ? 'text-orange-500 animate-pulse' : 'text-gray-400'}`} />
+                  <div className="text-3xl font-bold text-white">{currentStreak}</div>
+                  <div className="text-xs text-white opacity-70">{currentStreak === 1 ? 'day' : 'days'}</div>
+                </div>
+              </div>
+            </div>
+            <div className="text-center text-xs text-white opacity-70">
+              {currentStreak >= 30 ? '🏆 Master Logger!' :
+               currentStreak >= 14 ? '🔥 On Fire!' :
+               currentStreak >= 7 ? '💪 Keep Going!' :
+               '📅 Start your streak!'}
+            </div>
+          </GlassCard>
+
+          {/* 7. Sleep Phases Timeline */}
+          {phasesTimelineData.length > 0 && (
+            <GlassCard>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-cyan-400" />
+                Recent Sleep Timeline
+              </h3>
+              <div className="space-y-2">
+                {phasesTimelineData.map((day, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="text-xs text-white opacity-70 w-20">{day.date}</div>
+                    <div className="flex-1 relative h-8 rounded-lg overflow-hidden"
+                         style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div className="absolute inset-0 flex">
+                        {/* Awake before bed */}
+                        <div style={{
+                          width: `${(day.bedHour / 24) * 100}%`,
+                          background: 'linear-gradient(90deg, rgba(107, 114, 128, 0.3), rgba(75, 85, 99, 0.3))'
+                        }}></div>
+                        {/* Sleep period */}
+                        <div style={{
+                          width: `${(day.sleepDuration / 24) * 100}%`,
+                          background: day.quality === 'excellent' ? 'linear-gradient(90deg, #10b981, #059669)' :
+                                     day.quality === 'good' ? 'linear-gradient(90deg, #3b82f6, #1e40af)' :
+                                     day.quality === 'fair' ? 'linear-gradient(90deg, #fbbf24, #d97706)' :
+                                     'linear-gradient(90deg, #ef4444, #b91c1c)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                        }} className="flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">{day.hours}h</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-white opacity-70 w-16">{day.wakeTime}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center mt-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-green-500 to-green-700"></div>
+                  <span className="text-white opacity-70">Excellent</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-blue-700"></div>
+                  <span className="text-white opacity-70">Good</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-yellow-500 to-yellow-700"></div>
+                  <span className="text-white opacity-70">Fair</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-red-500 to-red-700"></div>
+                  <span className="text-white opacity-70">Poor</span>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* 8. 3D Sleep Quality Pyramid */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-400" />
+              Sleep Quality Pyramid
+            </h3>
+            <div className="flex flex-col items-center justify-center py-6 space-y-2">
+              {pyramidData.map((level, index) => {
+                const width = 60 + (pyramidData.length - index) * 40;
+                const height = 40;
+                return (
+                  <div key={index}
+                       className="relative transition-all duration-300 hover:scale-105"
+                       style={{ width: `${width}px` }}>
+                    <div className={`${level.gradient} rounded-lg shadow-lg border-2 ${level.border} flex items-center justify-center`}
+                         style={{
+                           height: `${height}px`,
+                           boxShadow: `0 4px 16px ${level.color}40, inset 0 2px 8px rgba(255,255,255,0.1)`
+                         }}>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-white">{level.count}</div>
+                        <div className="text-xs text-white opacity-90">{level.label}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center text-xs text-white opacity-70 mt-2">
+              Distribution across {sleepLogs.length} nights
+            </div>
+          </GlassCard>
+        </>
       )}
 
       {/* Sleep Logs List */}

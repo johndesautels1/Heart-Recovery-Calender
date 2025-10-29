@@ -15,7 +15,11 @@ import {
   BarChart3,
   Trophy,
   Award,
-  DollarSign
+  DollarSign,
+  Activity,
+  TrendingUp,
+  Target,
+  Zap
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +33,7 @@ import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth } f
 import { MedicationAutocomplete } from '../components/MedicationAutocomplete';
 import { SideEffectWarnings } from '../components/SideEffectWarnings';
 import { type MedicationInfo, STANDARD_FREQUENCIES, STANDARD_TIMES_OF_DAY } from '../data/medicationDatabase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 const medicationSchema = z.object({
   name: z.string().min(1, 'Medication name is required'),
@@ -220,7 +224,12 @@ export function MedicationsPage() {
     viewMode === 'inactive' ? inactiveMeds :
     medications;
 
-  const MedicationCard = ({ medication }: { medication: Medication }) => (
+  const MedicationCard = ({ medication }: { medication: Medication }) => {
+    // 7. Get sparkline data for this medication
+    const sparklineData = activeTab === 'medications' ? getSparklineData(medication.id) : [];
+    const hasSparklineData = sparklineData.length > 0;
+
+    return (
     <GlassCard className="relative">
       {!medication.isActive && (
         <div className="absolute top-3 right-3">
@@ -232,9 +241,30 @@ export function MedicationsPage() {
 
       <div className="space-y-3">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <h3 className="text-lg font-bold" style={{ color: '#ffffff' }}>{medication.name}</h3>
             <p className="font-bold" style={{ color: '#ffffff' }}>{medication.dosage}</p>
+            {/* 7. Mini Sparkline */}
+            {hasSparklineData && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex-1 h-6 flex items-end gap-0.5">
+                  {sparklineData.map((point, idx) => (
+                    <div
+                      key={idx}
+                      className="flex-1 rounded-t transition-all duration-200"
+                      style={{
+                        height: point.value === 1 ? '100%' : '20%',
+                        backgroundColor: point.value === 1 ? '#10b981' : '#ef4444',
+                        opacity: 0.8,
+                        boxShadow: point.value === 1 ? '0 0 4px rgba(16, 185, 129, 0.6)' : 'none'
+                      }}
+                      title={point.value === 1 ? 'Taken' : 'Missed'}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-gray-400">Last 7</span>
+              </div>
+            )}
           </div>
           <Pill className="h-8 w-8 text-purple-500" />
         </div>
@@ -341,7 +371,8 @@ export function MedicationsPage() {
         </div>
       </div>
     </GlassCard>
-  );
+    );
+  };
 
   // ==================== MEDICATION ADHERENCE SCORING ====================
   // Group medication logs by date
@@ -471,6 +502,157 @@ export function MedicationsPage() {
       name: category,
       value: count,
       color,
+    };
+  });
+
+  // ==================== NEW VISUALIZATION DATA ====================
+
+  // 1. Radial Progress Data - Overall adherence percentage
+  const overallAdherencePercentage = adherenceScore.maxPossibleScore > 0
+    ? (adherenceScore.totalScore / adherenceScore.maxPossibleScore) * 100
+    : 0;
+
+  // 2. Medication Timeline Data - Gantt chart data
+  const timelineData = medications.map(med => {
+    const start = new Date(med.startDate);
+    const end = med.endDate ? new Date(med.endDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now if no end
+    const now = new Date();
+    const totalDuration = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+    const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+
+    return {
+      id: med.id,
+      name: med.name,
+      startDate: med.startDate,
+      endDate: med.endDate,
+      start,
+      end,
+      progress,
+      isActive: med.isActive,
+      isOTC: med.isOTC,
+    };
+  }).sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  // 3. Cost Trend Data - Monthly costs over last 6 months
+  const generateCostTrendData = () => {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = subDays(new Date(), i * 30);
+      const monthStr = format(date, 'MMM yyyy');
+      const monthCost = activeMeds.reduce((sum, med) => {
+        const medStart = new Date(med.startDate);
+        if (medStart <= date) {
+          return sum + (med.monthlyCost || 0);
+        }
+        return sum;
+      }, 0);
+      months.push({ month: monthStr, cost: monthCost });
+    }
+    return months;
+  };
+  const costTrendData = generateCostTrendData();
+
+  // 4. Stacked Area Chart Data - Individual medication adherence over time
+  const stackedAdherenceData = (() => {
+    // Group logs by medication ID and date
+    const medLogs: Record<number, Record<string, { taken: number; total: number }>> = {};
+
+    medicationLogs.forEach(log => {
+      if (!medLogs[log.medicationId]) medLogs[log.medicationId] = {};
+      const dateStr = format(parseISO(log.scheduledTime), 'MMM d');
+      if (!medLogs[log.medicationId][dateStr]) {
+        medLogs[log.medicationId][dateStr] = { taken: 0, total: 0 };
+      }
+      medLogs[log.medicationId][dateStr].total++;
+      if (log.status === 'taken') medLogs[log.medicationId][dateStr].taken++;
+    });
+
+    // Get all unique dates
+    const allDates = Array.from(new Set(medicationLogs.map(log => format(parseISO(log.scheduledTime), 'MMM d'))));
+
+    return allDates.sort().slice(-14).map(date => {
+      const dayData: any = { date };
+      activeMeds.slice(0, 5).forEach(med => { // Limit to 5 meds for readability
+        const logs = medLogs[med.id]?.[date];
+        dayData[med.name] = logs ? (logs.taken / logs.total) * 100 : 0;
+      });
+      return dayData;
+    });
+  })();
+
+  // 5. Heatmap Calendar Data - Daily adherence for current month
+  const heatmapData = (() => {
+    const now = new Date();
+    const daysInMonth = getDaysInMonth(now);
+    const monthStart = startOfMonth(now);
+    const data = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(monthStart);
+      date.setDate(day);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayLogs = logsByDate[dateStr] || [];
+      const totalDoses = dayLogs.length;
+      const takenDoses = dayLogs.filter(log => log.status === 'taken').length;
+      const adherenceRate = totalDoses > 0 ? (takenDoses / totalDoses) * 100 : null;
+
+      data.push({
+        day,
+        date: format(date, 'MMM d'),
+        adherenceRate,
+        takenCount: takenDoses,
+        totalCount: totalDoses,
+        dayOfWeek: format(date, 'EEE'),
+      });
+    }
+    return data;
+  })();
+
+  // 6. Effectiveness Radar Data - Multi-dimensional medication performance
+  const radarData = activeMeds
+    .filter(med => med.effectiveness)
+    .slice(0, 3) // Show top 3 medications
+    .map(med => {
+      // Calculate adherence for this specific medication
+      const medLogs = medicationLogs.filter(log => log.medicationId === med.id);
+      const takenCount = medLogs.filter(log => log.status === 'taken').length;
+      const adherence = medLogs.length > 0 ? (takenCount / medLogs.length) * 100 : 0;
+
+      return {
+        medication: med.name.length > 15 ? med.name.substring(0, 15) + '...' : med.name,
+        effectiveness: (med.effectiveness || 0) * 20, // Scale to 100
+        adherence: adherence,
+        costValue: 100 - Math.min(100, ((med.monthlyCost || 0) / 100) * 100), // Inverse: lower cost = higher score
+        sideEffects: med.sideEffects ? 30 : 100, // Inverse: fewer side effects = higher score
+      };
+    });
+
+  // 7. Per-Medication Sparkline Data
+  const getSparklineData = (medicationId: number) => {
+    const medLogs = medicationLogs
+      .filter(log => log.medicationId === medicationId)
+      .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime())
+      .slice(-7); // Last 7 doses
+
+    return medLogs.map(log => ({
+      value: log.status === 'taken' ? 1 : 0,
+    }));
+  };
+
+  // 8. Circular Progress Rings Data - Per medication adherence
+  const medicationRingsData = activeMeds.slice(0, 6).map(med => {
+    const medLogs = medicationLogs.filter(log => log.medicationId === med.id);
+    const takenCount = medLogs.filter(log => log.status === 'taken').length;
+    const adherence = medLogs.length > 0 ? (takenCount / medLogs.length) * 100 : 0;
+
+    return {
+      id: med.id,
+      name: med.name.length > 12 ? med.name.substring(0, 12) + '...' : med.name,
+      adherence,
+      takenCount,
+      totalCount: medLogs.length,
+      color: adherence >= 90 ? '#10b981' : adherence >= 75 ? '#3b82f6' : adherence >= 50 ? '#f59e0b' : '#ef4444',
     };
   });
 
@@ -800,7 +982,63 @@ export function MedicationsPage() {
       {activeTab === 'adherence' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <div></div>
+            {/* 1. NEW: Radial Progress "Adherence Clock" */}
+            <GlassCard className="flex items-center justify-center p-6">
+              <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
+                {/* Background Circle */}
+                <svg className="absolute inset-0" width="160" height="160">
+                  <defs>
+                    <linearGradient id="radialBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#374151" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#1f2937" stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="radialProgress" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor={overallAdherencePercentage >= 90 ? '#10b981' : overallAdherencePercentage >= 75 ? '#3b82f6' : overallAdherencePercentage >= 50 ? '#f59e0b' : '#ef4444'} stopOpacity={1} />
+                      <stop offset="100%" stopColor={overallAdherencePercentage >= 90 ? '#059669' : overallAdherencePercentage >= 75 ? '#2563eb' : overallAdherencePercentage >= 50 ? '#d97706' : '#dc2626'} stopOpacity={1} />
+                    </linearGradient>
+                    <filter id="radialGlow">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  {/* Background ring */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    fill="none"
+                    stroke="url(#radialBg)"
+                    strokeWidth="12"
+                  />
+                  {/* Progress ring */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    fill="none"
+                    stroke="url(#radialProgress)"
+                    strokeWidth="12"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 70}`}
+                    strokeDashoffset={`${2 * Math.PI * 70 * (1 - overallAdherencePercentage / 100)}`}
+                    transform="rotate(-90 80 80)"
+                    filter="url(#radialGlow)"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                {/* Center content */}
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <Target className="h-6 w-6 mb-1 text-purple-400" />
+                  <div className="text-2xl font-bold text-white">
+                    {Math.round(overallAdherencePercentage)}%
+                  </div>
+                  <div className="text-xs text-gray-300 mt-1">Adherence</div>
+                </div>
+              </div>
+            </GlassCard>
 
             {/* Medication Score Card */}
             <div className={`${scoreColor.bg} ${scoreColor.text} rounded-xl p-4 shadow-lg border-2 ${scoreColor.border} transform hover:scale-105 transition-transform duration-300`}>
@@ -829,7 +1067,46 @@ export function MedicationsPage() {
               </div>
             </div>
 
-            <div></div>
+            {/* 8. NEW: Circular Progress Rings - Per Medication Adherence */}
+            <GlassCard className="p-4">
+              <h4 className="text-sm font-bold text-white mb-3 text-center">Current Month by Medication</h4>
+              <div className="flex flex-wrap gap-3 justify-center">
+                {medicationRingsData.slice(0, 3).map(med => (
+                  <div key={med.id} className="flex flex-col items-center">
+                    <div className="relative flex items-center justify-center" style={{ width: 60, height: 60 }}>
+                      <svg className="absolute inset-0" width="60" height="60">
+                        <circle
+                          cx="30"
+                          cy="30"
+                          r="25"
+                          fill="none"
+                          stroke="#374151"
+                          strokeWidth="5"
+                          opacity={0.3}
+                        />
+                        <circle
+                          cx="30"
+                          cy="30"
+                          r="25"
+                          fill="none"
+                          stroke={med.color}
+                          strokeWidth="5"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 25}`}
+                          strokeDashoffset={`${2 * Math.PI * 25 * (1 - med.adherence / 100)}`}
+                          transform="rotate(-90 30 30)"
+                          className="transition-all duration-500"
+                        />
+                      </svg>
+                      <div className="absolute text-xs font-bold text-white">
+                        {Math.round(med.adherence)}%
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-300 mt-1 text-center max-w-[60px] truncate">{med.name}</div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
           </div>
 
           {/* Date Range Selector */}
@@ -1044,6 +1321,278 @@ export function MedicationsPage() {
               </div>
             </GlassCard>
           )}
+
+          {/* ========== NEW VISUALIZATIONS ========== */}
+
+          {/* 3. Cost Trend Line Chart & 4. Stacked Area Chart */}
+          {chartData.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 3. Cost Trend */}
+              {costTrendData.some(d => d.cost > 0) && (
+                <GlassCard>
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5 text-green-400" />
+                    <h3 className="text-lg font-semibold text-white">Monthly Medication Costs</h3>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={costTrendData}>
+                      <defs>
+                        <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <filter id="costShadow">
+                          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                          <feOffset dx="0" dy="2" result="offsetblur"/>
+                          <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.5"/>
+                          </feComponentTransfer>
+                          <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="month" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 600 }} />
+                      <YAxis stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #10b981',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                        formatter={(value: any) => [`$${value}`, 'Cost']}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="cost"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{ r: 7 }}
+                        filter="url(#costShadow)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </GlassCard>
+              )}
+
+              {/* 4. Stacked Area Chart - Multi-Med Adherence */}
+              {stackedAdherenceData.length > 0 && activeMeds.length > 1 && (
+                <GlassCard>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity className="h-5 w-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold text-white">Adherence by Medication</h3>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={stackedAdherenceData}>
+                      <defs>
+                        {activeMeds.slice(0, 5).map((med, idx) => {
+                          const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+                          return (
+                            <linearGradient key={med.id} id={`areaGradient${idx}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={colors[idx]} stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor={colors[idx]} stopOpacity={0.1}/>
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }} />
+                      <YAxis stroke="#9ca3af" domain={[0, 100]} tick={{ fill: '#d1d5db', fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #a855f7',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                        formatter={(value: any) => [`${value.toFixed(0)}%`, '']}
+                      />
+                      {activeMeds.slice(0, 5).map((med, idx) => {
+                        const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+                        return (
+                          <Area
+                            key={med.id}
+                            type="monotone"
+                            dataKey={med.name}
+                            stackId="1"
+                            stroke={colors[idx]}
+                            fill={`url(#areaGradient${idx})`}
+                            strokeWidth={2}
+                          />
+                        );
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </GlassCard>
+              )}
+            </div>
+          )}
+
+          {/* 5. Heatmap Calendar - Daily Adherence */}
+          {heatmapData.some(d => d.adherenceRate !== null) && (
+            <GlassCard>
+              <div className="flex items-center gap-2 mb-4">
+                <Calendar className="h-5 w-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">Monthly Adherence Calendar</h3>
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {heatmapData.map((day) => {
+                  const getColor = (rate: number | null) => {
+                    if (rate === null) return 'rgba(55, 65, 81, 0.3)'; // No data
+                    if (rate >= 100) return '#10b981'; // Perfect
+                    if (rate >= 75) return '#3b82f6';  // Good
+                    if (rate >= 50) return '#f59e0b';  // Fair
+                    return '#ef4444'; // Poor
+                  };
+
+                  return (
+                    <div
+                      key={day.day}
+                      className="relative aspect-square rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 hover:shadow-lg group"
+                      style={{
+                        backgroundColor: getColor(day.adherenceRate),
+                        boxShadow: day.adherenceRate !== null ? '0 0 10px rgba(0,0,0,0.3)' : 'none'
+                      }}
+                      title={`${day.date}: ${day.adherenceRate !== null ? `${day.adherenceRate.toFixed(0)}% (${day.takenCount}/${day.totalCount})` : 'No data'}`}
+                    >
+                      <span className="text-xs font-bold text-white">{day.day}</span>
+                      {day.adherenceRate === 100 && (
+                        <Zap className="h-3 w-3 text-yellow-300 animate-pulse absolute -top-1 -right-1" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                  <span className="text-gray-300">Poor (&lt;50%)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                  <span className="text-gray-300">Fair (50-74%)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                  <span className="text-gray-300">Good (75-99%)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                  <span className="text-gray-300">Perfect (100%)</span>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* 2. Medication Timeline & 6. Effectiveness Radar */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 2. Medication Timeline (Horizontal Gantt) */}
+            {timelineData.length > 0 && (
+              <GlassCard>
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="h-5 w-5 text-yellow-400" />
+                  <h3 className="text-lg font-semibold text-white">Medication Timeline</h3>
+                </div>
+                <div className="space-y-3">
+                  {timelineData.slice(0, 6).map((med) => (
+                    <div key={med.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold text-white truncate flex-1">{med.name}</span>
+                        <span className="text-gray-400 text-xs">
+                          {format(med.start, 'MMM yyyy')} - {med.endDate ? format(med.end, 'MMM yyyy') : 'Ongoing'}
+                        </span>
+                      </div>
+                      <div className="relative h-6 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${med.progress}%`,
+                            background: med.isActive
+                              ? 'linear-gradient(90deg, #8b5cf6, #a855f7)'
+                              : 'linear-gradient(90deg, #6b7280, #9ca3af)',
+                            boxShadow: med.isActive ? '0 0 10px rgba(168, 85, 247, 0.5)' : 'none'
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
+                        </div>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                          {Math.round(med.progress)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+
+            {/* 6. Effectiveness Radar Chart */}
+            {radarData.length > 0 && (
+              <GlassCard>
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="h-5 w-5 text-yellow-400" />
+                  <h3 className="text-lg font-semibold text-white">Medication Performance</h3>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={[
+                    { subject: 'Effectiveness', A: radarData[0]?.effectiveness || 0, B: radarData[1]?.effectiveness || 0, C: radarData[2]?.effectiveness || 0 },
+                    { subject: 'Adherence', A: radarData[0]?.adherence || 0, B: radarData[1]?.adherence || 0, C: radarData[2]?.adherence || 0 },
+                    { subject: 'Value', A: radarData[0]?.costValue || 0, B: radarData[1]?.costValue || 0, C: radarData[2]?.costValue || 0 },
+                    { subject: 'Tolerability', A: radarData[0]?.sideEffects || 0, B: radarData[1]?.sideEffects || 0, C: radarData[2]?.sideEffects || 0 },
+                  ]}>
+                    <defs>
+                      <linearGradient id="radarGradient1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.2}/>
+                      </linearGradient>
+                      <linearGradient id="radarGradient2">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                      </linearGradient>
+                      <linearGradient id="radarGradient3">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.2}/>
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="#374151" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af' }} />
+                    {radarData[0] && <Radar name={radarData[0].medication} dataKey="A" stroke="#8b5cf6" fill="url(#radarGradient1)" strokeWidth={2} />}
+                    {radarData[1] && <Radar name={radarData[1].medication} dataKey="B" stroke="#3b82f6" fill="url(#radarGradient2)" strokeWidth={2} />}
+                    {radarData[2] && <Radar name={radarData[2].medication} dataKey="C" stroke="#10b981" fill="url(#radarGradient3)" strokeWidth={2} />}
+                    <Tooltip
+                      contentStyle={{
+                        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                        border: '2px solid #a855f7',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap gap-2 justify-center mt-2 text-xs">
+                  {radarData.map((med, idx) => {
+                    const colors = ['#8b5cf6', '#3b82f6', '#10b981'];
+                    return (
+                      <div key={idx} className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: colors[idx] }}></div>
+                        <span className="text-gray-300">{med.medication}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            )}
+          </div>
         </>
       )}
 
