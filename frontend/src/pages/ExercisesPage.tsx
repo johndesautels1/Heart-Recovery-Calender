@@ -569,7 +569,8 @@ export function ExercisesPage() {
       }
 
       // Create event ONLY on patient's calendar
-      const patientName = patients.find(p => p.id === parseInt(schedulePatientId))?.name || 'Patient';
+      const selectedPatient = patients.find(p => p.id === parseInt(schedulePatientId));
+      const patientName = selectedPatient?.name || 'Patient';
 
       // Event for patient's calendar
       const eventData = {
@@ -579,7 +580,7 @@ export function ExercisesPage() {
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
         exerciseId: schedulingExercise.id,
-        patientId: parseInt(schedulePatientId),
+        patientId: selectedPatient?.userId || parseInt(schedulePatientId), // Use userId for proper calendar filtering
         status: 'scheduled',
       };
 
