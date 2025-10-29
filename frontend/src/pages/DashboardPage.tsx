@@ -1667,6 +1667,315 @@ export function DashboardPage() {
               </GlassCard>
             ) : null}
 
+            {/* ===== ADVANCED HEALTH ANALYTICS SECTION ===== */}
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <Zap className="h-8 w-8 text-yellow-400" />
+                Advanced Health Analytics
+              </h2>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. Weekly Compliance Radial Progress */}
+                <GlassCard className="relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 pointer-events-none" />
+
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                      <CheckCircle className="h-6 w-6 text-green-400" />
+                      Weekly Compliance Overview
+                    </h3>
+
+                    <div className="flex items-center justify-center py-6">
+                      <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+                        <svg className="absolute inset-0" width="220" height="220">
+                          <defs>
+                            <linearGradient id="dashCompliance" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor={stats.weeklyCompliance >= 90 ? '#10b981' : stats.weeklyCompliance >= 70 ? '#3b82f6' : stats.weeklyCompliance >= 50 ? '#fbbf24' : '#ef4444'} />
+                              <stop offset="100%" stopColor={stats.weeklyCompliance >= 90 ? '#047857' : stats.weeklyCompliance >= 70 ? '#1e40af' : stats.weeklyCompliance >= 50 ? '#d97706' : '#b91c1c'} />
+                            </linearGradient>
+                            <filter id="dashComplianceGlow">
+                              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                              <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          <circle cx="110" cy="110" r="95" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="18" />
+                          <circle cx="110" cy="110" r="95" fill="none"
+                                  stroke="url(#dashCompliance)"
+                                  strokeWidth="18"
+                                  strokeLinecap="round"
+                                  strokeDasharray={`${2 * Math.PI * 95}`}
+                                  strokeDashoffset={`${2 * Math.PI * 95 * (1 - stats.weeklyCompliance / 100)}`}
+                                  transform="rotate(-90 110 110)"
+                                  filter="url(#dashComplianceGlow)" />
+                        </svg>
+                        <div className="absolute flex flex-col items-center justify-center text-center">
+                          <Trophy className="h-10 w-10 mb-2 text-yellow-400" />
+                          <div className="text-4xl font-bold text-white">{Math.round(stats.weeklyCompliance)}%</div>
+                          <div className="text-sm text-white opacity-70 mt-1">This Week</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center text-sm text-white opacity-70">
+                      {stats.weeklyCompliance >= 90 ? '🏆 Excellent adherence!' :
+                       stats.weeklyCompliance >= 70 ? '💪 Good progress!' :
+                       stats.weeklyCompliance >= 50 ? '📈 Keep improving!' :
+                       '🎯 Focus on consistency'}
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {/* 2. Today's Activity Summary Radial */}
+                <GlassCard className="relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 pointer-events-none" />
+
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                      <Activity className="h-6 w-6 text-blue-400" />
+                      Today's Activity Status
+                    </h3>
+
+                    <div className="flex items-center justify-center py-4">
+                      <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+                        <svg className="absolute inset-0" width="200" height="200">
+                          <defs>
+                            <linearGradient id="dashMedsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#ef4444" />
+                              <stop offset="100%" stopColor="#dc2626" />
+                            </linearGradient>
+                            <linearGradient id="dashMealsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#fbbf24" />
+                              <stop offset="100%" stopColor="#f59e0b" />
+                            </linearGradient>
+                            <linearGradient id="dashEventsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#3b82f6" />
+                              <stop offset="100%" stopColor="#2563eb" />
+                            </linearGradient>
+                            <filter id="dashActivityGlow">
+                              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                              <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          {/* Events ring (outer) */}
+                          <circle cx="100" cy="100" r="85" fill="none"
+                                  stroke="url(#dashEventsGrad)"
+                                  strokeWidth="12"
+                                  strokeDasharray={`${2 * Math.PI * 85}`}
+                                  strokeDashoffset={`${2 * Math.PI * 85 * (1 - (stats.todayEvents.length > 0 ? 100 : 0) / 100)}`}
+                                  transform="rotate(-90 100 100)"
+                                  filter="url(#dashActivityGlow)" />
+                          {/* Meals ring (middle) */}
+                          <circle cx="100" cy="100" r="65" fill="none"
+                                  stroke="url(#dashMealsGrad)"
+                                  strokeWidth="10"
+                                  strokeDasharray={`${2 * Math.PI * 65}`}
+                                  strokeDashoffset={`${2 * Math.PI * 65 * (1 - (stats.todayMeals.length > 0 ? 100 : 0) / 100)}`}
+                                  transform="rotate(-90 100 100)"
+                                  filter="url(#dashActivityGlow)" />
+                          {/* Medications ring (inner) */}
+                          <circle cx="100" cy="100" r="47" fill="none"
+                                  stroke="url(#dashMedsGrad)"
+                                  strokeWidth="8"
+                                  strokeDasharray={`${2 * Math.PI * 47}`}
+                                  strokeDashoffset={`${2 * Math.PI * 47 * (1 - (stats.activeMedications.length > 0 ? 100 : 0) / 100)}`}
+                                  transform="rotate(-90 100 100)"
+                                  filter="url(#dashActivityGlow)" />
+                        </svg>
+                        <div className="absolute flex flex-col items-center justify-center text-center">
+                          <Calendar className="h-8 w-8 mb-1 text-cyan-400" />
+                          <div className="text-2xl font-bold text-white">Today</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-red-400 to-red-600 mb-1"></div>
+                        <span className="text-white font-semibold">Meds</span>
+                        <span className="text-white opacity-70">{stats.activeMedications.length}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-1"></div>
+                        <span className="text-white font-semibold">Meals</span>
+                        <span className="text-white opacity-70">{stats.todayMeals.length}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 mb-1"></div>
+                        <span className="text-white font-semibold">Events</span>
+                        <span className="text-white opacity-70">{stats.todayEvents.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {/* 3. Latest Vitals Status Card */}
+                {stats.latestVitals && (
+                  <GlassCard className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-pink-500/10 to-rose-500/10 pointer-events-none" />
+
+                    <div className="relative z-10">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <Heart className="h-6 w-6 text-red-400" />
+                        Latest Vitals Snapshot
+                      </h3>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Blood Pressure */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white/70">BP</span>
+                            <Activity className="h-4 w-4 text-red-400" />
+                          </div>
+                          <div className="text-2xl font-bold text-white">
+                            {stats.latestVitals.systolicBP}/{stats.latestVitals.diastolicBP}
+                          </div>
+                          <div className="text-xs text-white/60 mt-1">mmHg</div>
+                        </div>
+
+                        {/* Heart Rate */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-pink-400/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white/70">HR</span>
+                            <Heart className="h-4 w-4 text-pink-400" />
+                          </div>
+                          <div className="text-2xl font-bold text-white">
+                            {stats.latestVitals.heartRate}
+                          </div>
+                          <div className="text-xs text-white/60 mt-1">bpm</div>
+                        </div>
+
+                        {/* Weight */}
+                        {stats.latestVitals.weight && (
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 border border-purple-400/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-white/70">Weight</span>
+                              <TrendingUp className="h-4 w-4 text-purple-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                              {stats.latestVitals.weight}
+                            </div>
+                            <div className="text-xs text-white/60 mt-1">lbs</div>
+                          </div>
+                        )}
+
+                        {/* SpO2 */}
+                        {stats.latestVitals.oxygenSaturation && (
+                          <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-white/70">SpO2</span>
+                              <Activity className="h-4 w-4 text-cyan-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                              {stats.latestVitals.oxygenSaturation}%
+                            </div>
+                            <div className="text-xs text-white/60 mt-1">oxygen</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-center text-white/60 mt-4">
+                        Last updated: {format(new Date(stats.latestVitals.date), 'MMM d, yyyy')}
+                      </div>
+                    </div>
+                  </GlassCard>
+                )}
+
+                {/* 4. Category Performance Mini Sparklines */}
+                {weeklyProgressData.length > 0 && (
+                  <GlassCard className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-fuchsia-500/10 to-pink-500/10 pointer-events-none" />
+
+                    <div className="relative z-10">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <TrendingUp className="h-6 w-6 text-violet-400" />
+                        12-Week Trend Sparklines
+                      </h3>
+
+                      <div className="space-y-6">
+                        {/* Exercise Trend */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white font-semibold flex items-center gap-2">
+                              <Activity className="h-4 w-4 text-blue-400" />
+                              Exercise
+                            </span>
+                            <span className="text-lg font-bold text-white">
+                              {weeklyProgressData[weeklyProgressData.length - 1]?.exercise || 0}%
+                            </span>
+                          </div>
+                          <ResponsiveContainer width="100%" height={40}>
+                            <AreaChart data={weeklyProgressData}>
+                              <defs>
+                                <linearGradient id="exerciseSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                                </linearGradient>
+                              </defs>
+                              <Area type="monotone" dataKey="exercise" stroke="#3b82f6" strokeWidth={2} fill="url(#exerciseSparkGrad)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Meals Trend */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white font-semibold flex items-center gap-2">
+                              <UtensilsCrossed className="h-4 w-4 text-yellow-400" />
+                              Meals
+                            </span>
+                            <span className="text-lg font-bold text-white">
+                              {weeklyProgressData[weeklyProgressData.length - 1]?.meals || 0}%
+                            </span>
+                          </div>
+                          <ResponsiveContainer width="100%" height={40}>
+                            <AreaChart data={weeklyProgressData}>
+                              <defs>
+                                <linearGradient id="mealsSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.8}/>
+                                  <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.1}/>
+                                </linearGradient>
+                              </defs>
+                              <Area type="monotone" dataKey="meals" stroke="#fbbf24" strokeWidth={2} fill="url(#mealsSparkGrad)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Medications Trend */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white font-semibold flex items-center gap-2">
+                              <Pill className="h-4 w-4 text-green-400" />
+                              Medications
+                            </span>
+                            <span className="text-lg font-bold text-white">
+                              {weeklyProgressData[weeklyProgressData.length - 1]?.medications || 0}%
+                            </span>
+                          </div>
+                          <ResponsiveContainer width="100%" height={40}>
+                            <AreaChart data={weeklyProgressData}>
+                              <defs>
+                                <linearGradient id="medsSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.1}/>
+                                </linearGradient>
+                              </defs>
+                              <Area type="monotone" dataKey="medications" stroke="#10b981" strokeWidth={2} fill="url(#medsSparkGrad)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+                )}
+              </div>
+            </div>
+
             {/* 4-Category Summary Tabs */}
             <GlassCard className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 pointer-events-none" />
