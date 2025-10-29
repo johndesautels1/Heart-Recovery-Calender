@@ -22,7 +22,8 @@ import {
   ThumbsUp,
   Star,
   Zap,
-  X
+  X,
+  Trophy
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -1982,7 +1983,7 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {/* 4-Category Summary Tabs */}
+            {/* === 4-Category Summary Tabs === */}
             <GlassCard className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 pointer-events-none" />
 
