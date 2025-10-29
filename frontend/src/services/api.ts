@@ -158,8 +158,9 @@ class ApiService {
       }
     }
 
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
+    // Backend expects 'start' and 'end', not 'startDate' and 'endDate'
+    if (startDate) params.append('start', startDate);
+    if (endDate) params.append('end', endDate);
 
     const response = await this.api.get<ApiResponse<CalendarEvent[]>>(`events?${params.toString()}`);
     return response.data.data;

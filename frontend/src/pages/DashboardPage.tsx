@@ -358,11 +358,11 @@ export function DashboardPage() {
         if (patient.userId) {
           try {
             // Get all events from the last 7 days for metrics
-            const events = await api.getEvents(patient.userId, sevenDaysAgo);
+            const events = await api.getEvents(patient.userId, sevenDaysAgo, undefined, { usePatientId: true });
             allEvents.push(...events);
 
             // Get today's events separately
-            const todayEvents = await api.getEvents(patient.userId, today, today);
+            const todayEvents = await api.getEvents(patient.userId, today, today, { usePatientId: true });
             todayAllEvents.push(...todayEvents);
 
             // Get vitals from the last 30 days for better analysis
