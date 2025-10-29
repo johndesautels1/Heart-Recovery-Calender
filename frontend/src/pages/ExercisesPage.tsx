@@ -1969,7 +1969,7 @@ export function ExercisesPage() {
 
                     <div className="relative z-10">
                       <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                        <CheckCircle className="h-6 w-6 text-green-400" />
+                        <CheckCircle2 className="h-6 w-6 text-green-400" />
                         Safety & Form Compliance
                       </h3>
 
