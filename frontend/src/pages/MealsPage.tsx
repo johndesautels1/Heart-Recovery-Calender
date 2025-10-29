@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Input } from '../components/ui';
-import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User, Trophy, Award, BarChart3, PieChart as PieChartIcon, Scale } from 'lucide-react';
+import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User, Trophy, Award, BarChart3, PieChart as PieChartIcon, Scale, Target, Flame, Activity, Clock, Calendar } from 'lucide-react';
 import { api } from '../services/api';
 import { FoodCategory, FoodItem, FoodStats, MealEntry } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { WeightTrackingChart } from '../components/charts/WeightTrackingChart';
 
@@ -343,6 +343,262 @@ export function MealsPage() {
   const dailyMealQualityData = getDailyMealQualityData();
   const { actualData: foodGroupActual, recommendedData: foodGroupRecommended } = getFoodGroupData();
   const calorieData = getCalorieData();
+
+  // ==================== NEW MEAL VISUALIZATION DATA ====================
+
+  // 1. Radial Meal Adherence Clock Data - Completion rates for each meal type
+  const mealAdherenceData = (() => {
+    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+    const totalDays = days;
+
+    const breakfastCount = new Set(
+      meals
+        .filter(m => m.mealType.toLowerCase() === 'breakfast')
+        .map(m => format(parseISO(m.timestamp), 'yyyy-MM-dd'))
+    ).size;
+
+    const lunchCount = new Set(
+      meals
+        .filter(m => m.mealType.toLowerCase() === 'lunch')
+        .map(m => format(parseISO(m.timestamp), 'yyyy-MM-dd'))
+    ).size;
+
+    const dinnerCount = new Set(
+      meals
+        .filter(m => m.mealType.toLowerCase() === 'dinner')
+        .map(m => format(parseISO(m.timestamp), 'yyyy-MM-dd'))
+    ).size;
+
+    return {
+      breakfast: (breakfastCount / totalDays) * 100,
+      lunch: (lunchCount / totalDays) * 100,
+      dinner: (dinnerCount / totalDays) * 100,
+      breakfastDays: breakfastCount,
+      lunchDays: lunchCount,
+      dinnerDays: dinnerCount,
+      totalDays,
+    };
+  })();
+
+  // 2. Monthly Meal Heatmap Calendar Data
+  const heatmapMealData = (() => {
+    const now = new Date();
+    const daysInMonth = getDaysInMonth(now);
+    const monthStart = startOfMonth(now);
+    const data = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(monthStart);
+      date.setDate(day);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateStr);
+      const points = getDayMealPoints(dayMeals);
+
+      data.push({
+        day,
+        date: format(date, 'MMM d'),
+        points,
+        dayOfWeek: format(date, 'EEE'),
+        mealsCount: dayMeals.length,
+      });
+    }
+    return data;
+  })();
+
+  // 3. Sodium Tracking Wave Data - Cumulative sodium over time
+  const sodiumWaveData = (() => {
+    const DAILY_LIMIT = 2300; // mg sodium per day recommended
+    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+    const startDate = subDays(new Date(), days);
+    const dateRange_dates = eachDayOfInterval({ start: startDate, end: new Date() });
+
+    return dateRange_dates.map(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateKey);
+      const totalSodium = dayMeals.reduce((sum, meal) => sum + (meal.sodium || 0), 0);
+
+      return {
+        date: format(date, 'MMM d'),
+        sodium: totalSodium,
+        limit: DAILY_LIMIT,
+        over: totalSodium > DAILY_LIMIT,
+      };
+    });
+  })();
+
+  // 4. Nutrient Target Radial Progress - Achievement percentages for key nutrients
+  const nutrientTargets = (() => {
+    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+    const startDate = subDays(new Date(), days);
+    const dateRange_dates = eachDayOfInterval({ start: startDate, end: new Date() });
+
+    let sodiumGoodDays = 0;
+    let cholesterolGoodDays = 0;
+    let fiberGoodDays = 0;
+    let proteinGoodDays = 0;
+
+    dateRange_dates.forEach(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateKey);
+
+      const dailySodium = dayMeals.reduce((sum, m) => sum + (m.sodium || 0), 0);
+      const dailyCholesterol = dayMeals.reduce((sum, m) => sum + (m.cholesterol || 0), 0);
+      const dailyFiber = dayMeals.reduce((sum, m) => sum + (m.fiber || 0), 0);
+      const dailyProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+      if (dailySodium <= 2300) sodiumGoodDays++;
+      if (dailyCholesterol <= 300) cholesterolGoodDays++;
+      if (dailyFiber >= 25) fiberGoodDays++;
+      if (dailyProtein >= 50) proteinGoodDays++;
+    });
+
+    const totalDays = dateRange_dates.length;
+    return {
+      sodium: (sodiumGoodDays / totalDays) * 100,
+      cholesterol: (cholesterolGoodDays / totalDays) * 100,
+      fiber: (fiberGoodDays / totalDays) * 100,
+      protein: (proteinGoodDays / totalDays) * 100,
+    };
+  })();
+
+  // 5. Meal Timing Scatter Plot Data - Plot meals by time of day
+  const mealTimingData = meals
+    .filter(m => m.timestamp)
+    .map(m => {
+      const time = parseISO(m.timestamp);
+      const hour = time.getHours() + time.getMinutes() / 60;
+
+      return {
+        hour,
+        mealType: m.mealType,
+        date: format(time, 'MMM d'),
+        calories: m.calories || 0,
+        displayTime: format(time, 'h:mm a'),
+      };
+    });
+
+  // 6. Meal Streak Data - Consecutive days with good meals
+  const calculateMealStreak = () => {
+    const mealsByDate: Record<string, MealEntry[]> = {};
+    meals.forEach(meal => {
+      const dateKey = format(parseISO(meal.timestamp), 'yyyy-MM-dd');
+      if (!mealsByDate[dateKey]) {
+        mealsByDate[dateKey] = [];
+      }
+      mealsByDate[dateKey].push(meal);
+    });
+
+    const sortedDates = Object.keys(mealsByDate).sort((a, b) =>
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      expectedDate.setHours(0, 0, 0, 0);
+      const expectedDateKey = format(expectedDate, 'yyyy-MM-dd');
+
+      if (sortedDates[i] === expectedDateKey) {
+        const dayMeals = mealsByDate[sortedDates[i]];
+        const points = getDayMealPoints(dayMeals);
+        if (points >= 2) { // At least 2 good meals
+          streak++;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  };
+  const currentMealStreak = calculateMealStreak();
+
+  // 7. Weekly Meal Pattern Timeline - Last 7 days meal distribution
+  const weeklyPatternData = (() => {
+    const last7Days = eachDayOfInterval({
+      start: subDays(new Date(), 6),
+      end: new Date()
+    });
+
+    return last7Days.map(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateKey);
+      const points = getDayMealPoints(dayMeals);
+
+      const breakfastCount = dayMeals.filter(m => m.mealType.toLowerCase() === 'breakfast').length;
+      const lunchCount = dayMeals.filter(m => m.mealType.toLowerCase() === 'lunch').length;
+      const dinnerCount = dayMeals.filter(m => m.mealType.toLowerCase() === 'dinner').length;
+      const snackCount = dayMeals.filter(m => m.mealType.toLowerCase() === 'snack').length;
+
+      return {
+        date: format(date, 'MMM d'),
+        points,
+        breakfast: breakfastCount,
+        lunch: lunchCount,
+        dinner: dinnerCount,
+        snacks: snackCount,
+        total: dayMeals.length,
+      };
+    });
+  })();
+
+  // 8. 3D Meal Quality Pyramid Data - Distribution of quality scores
+  const pyramidMealData = (() => {
+    const mealsByDate: Record<string, MealEntry[]> = {};
+    meals.forEach(meal => {
+      const dateKey = format(parseISO(meal.timestamp), 'yyyy-MM-dd');
+      if (!mealsByDate[dateKey]) {
+        mealsByDate[dateKey] = [];
+      }
+      mealsByDate[dateKey].push(meal);
+    });
+
+    const qualityCounts = { perfect: 0, good: 0, fair: 0, poor: 0 };
+    Object.values(mealsByDate).forEach(dayMeals => {
+      const points = getDayMealPoints(dayMeals);
+      if (points === 3) qualityCounts.perfect++;
+      else if (points === 2) qualityCounts.good++;
+      else if (points === 1) qualityCounts.fair++;
+      else qualityCounts.poor++;
+    });
+
+    return [
+      {
+        label: 'Perfect Days',
+        count: qualityCounts.perfect,
+        color: '#10b981',
+        gradient: 'bg-gradient-to-br from-green-400 to-green-600',
+        border: 'border-green-400'
+      },
+      {
+        label: 'Good Days',
+        count: qualityCounts.good,
+        color: '#3b82f6',
+        gradient: 'bg-gradient-to-br from-blue-400 to-blue-600',
+        border: 'border-blue-400'
+      },
+      {
+        label: 'Fair Days',
+        count: qualityCounts.fair,
+        color: '#f59e0b',
+        gradient: 'bg-gradient-to-br from-orange-400 to-orange-600',
+        border: 'border-orange-400'
+      },
+      {
+        label: 'Poor Days',
+        count: qualityCounts.poor,
+        color: '#ef4444',
+        gradient: 'bg-gradient-to-br from-red-400 to-red-600',
+        border: 'border-red-400'
+      },
+    ];
+  })();
 
   return (
     <div className="space-y-6">
@@ -1320,6 +1576,454 @@ export function MealsPage() {
               />
             </GlassCard>
           ) : null}
+
+          {/* NEW: 8 Advanced Meal Visualizations */}
+          {meals.length > 0 && (
+            <>
+              {/* 1. Radial Meal Adherence Clock & 4. Nutrient Target Radial Progress */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Radial Meal Adherence Clock */}
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                    Meal Completion Rates
+                  </h3>
+                  <div className="flex items-center justify-center" style={{ minHeight: 220 }}>
+                    <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+                      <svg className="absolute inset-0" width="200" height="200">
+                        <defs>
+                          <linearGradient id="breakfastGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#fcd34d" />
+                            <stop offset="50%" stopColor="#fbbf24" />
+                            <stop offset="100%" stopColor="#f59e0b" />
+                          </linearGradient>
+                          <linearGradient id="lunchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#60a5fa" />
+                            <stop offset="50%" stopColor="#3b82f6" />
+                            <stop offset="100%" stopColor="#2563eb" />
+                          </linearGradient>
+                          <linearGradient id="dinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#c084fc" />
+                            <stop offset="50%" stopColor="#a855f7" />
+                            <stop offset="100%" stopColor="#9333ea" />
+                          </linearGradient>
+                          <filter id="mealRingGlow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge>
+                              <feMergeNode in="coloredBlur"/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        {/* Dinner ring (outermost) */}
+                        <circle cx="100" cy="100" r="85" fill="none"
+                                stroke="url(#dinnerGradient)"
+                                strokeWidth="14"
+                                strokeDasharray={`${2 * Math.PI * 85}`}
+                                strokeDashoffset={`${2 * Math.PI * 85 * (1 - mealAdherenceData.dinner / 100)}`}
+                                transform="rotate(-90 100 100)"
+                                filter="url(#mealRingGlow)" />
+                        {/* Lunch ring */}
+                        <circle cx="100" cy="100" r="65" fill="none"
+                                stroke="url(#lunchGradient)"
+                                strokeWidth="12"
+                                strokeDasharray={`${2 * Math.PI * 65}`}
+                                strokeDashoffset={`${2 * Math.PI * 65 * (1 - mealAdherenceData.lunch / 100)}`}
+                                transform="rotate(-90 100 100)"
+                                filter="url(#mealRingGlow)" />
+                        {/* Breakfast ring (innermost) */}
+                        <circle cx="100" cy="100" r="47" fill="none"
+                                stroke="url(#breakfastGradient)"
+                                strokeWidth="10"
+                                strokeDasharray={`${2 * Math.PI * 47}`}
+                                strokeDashoffset={`${2 * Math.PI * 47 * (1 - mealAdherenceData.breakfast / 100)}`}
+                                transform="rotate(-90 100 100)"
+                                filter="url(#mealRingGlow)" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center text-center">
+                        <Trophy className="h-6 w-6 mb-1 text-yellow-400" />
+                        <div className="text-xl font-bold text-white">{mealAdherenceData.totalDays}</div>
+                        <div className="text-xs text-white opacity-70">days</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
+                    <div className="flex flex-col items-center">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-1"></div>
+                      <span className="text-white font-semibold">Breakfast</span>
+                      <span className="text-white opacity-70">{Math.round(mealAdherenceData.breakfast)}%</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 mb-1"></div>
+                      <span className="text-white font-semibold">Lunch</span>
+                      <span className="text-white opacity-70">{Math.round(mealAdherenceData.lunch)}%</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 mb-1"></div>
+                      <span className="text-white font-semibold">Dinner</span>
+                      <span className="text-white opacity-70">{Math.round(mealAdherenceData.dinner)}%</span>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {/* Nutrient Target Radial Progress */}
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-400" />
+                    Nutrient Goals
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Sodium */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-white font-semibold">Sodium ≤2300mg</span>
+                        <span className="text-white">{Math.round(nutrientTargets.sodium)}%</span>
+                      </div>
+                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-red-400 to-red-600"
+                             style={{ width: `${nutrientTargets.sodium}%`, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.5)' }}></div>
+                      </div>
+                    </div>
+                    {/* Cholesterol */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-white font-semibold">Cholesterol ≤300mg</span>
+                        <span className="text-white">{Math.round(nutrientTargets.cholesterol)}%</span>
+                      </div>
+                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600"
+                             style={{ width: `${nutrientTargets.cholesterol}%`, boxShadow: '0 2px 8px rgba(251, 146, 60, 0.5)' }}></div>
+                      </div>
+                    </div>
+                    {/* Fiber */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-white font-semibold">Fiber ≥25g</span>
+                        <span className="text-white">{Math.round(nutrientTargets.fiber)}%</span>
+                      </div>
+                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-green-400 to-green-600"
+                             style={{ width: `${nutrientTargets.fiber}%`, boxShadow: '0 2px 8px rgba(34, 197, 94, 0.5)' }}></div>
+                      </div>
+                    </div>
+                    {/* Protein */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-white font-semibold">Protein ≥50g</span>
+                        <span className="text-white">{Math.round(nutrientTargets.protein)}%</span>
+                      </div>
+                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
+                             style={{ width: `${nutrientTargets.protein}%`, boxShadow: '0 2px 8px rgba(59, 130, 246, 0.5)' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+
+              {/* 2. Monthly Meal Heatmap Calendar */}
+              <GlassCard>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-purple-400" />
+                  Monthly Meal Quality Heatmap
+                </h3>
+                <div className="grid grid-cols-7 gap-1">
+                  {heatmapMealData.map((day) => {
+                    const bgColor = day.points === 3 ? 'bg-gradient-to-br from-green-400 to-green-600' :
+                                    day.points === 2 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                                    day.points === 1 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                                    day.mealsCount > 0 ? 'bg-gradient-to-br from-red-400 to-red-600' :
+                                    'bg-gray-800';
+                    const opacity = day.mealsCount === 0 ? 0.2 : 1;
+                    return (
+                      <div key={day.day}
+                           className={`${bgColor} rounded-lg p-2 text-center transition-all duration-300 hover:scale-110 hover:shadow-lg`}
+                           style={{ opacity }}
+                           title={`${day.date}: ${day.points} pts (${day.mealsCount} meals)`}>
+                        <div className="text-xs font-bold text-white opacity-70">{day.dayOfWeek}</div>
+                        <div className="text-lg font-bold text-white">{day.day}</div>
+                        {day.mealsCount > 0 && <div className="text-xs text-white opacity-90">{day.points}pt</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between items-center mt-4 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
+                    <span className="text-white opacity-70">Perfect (3)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                    <span className="text-white opacity-70">Good (2)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
+                    <span className="text-white opacity-70">Fair (1)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-red-400 to-red-600"></div>
+                    <span className="text-white opacity-70">Poor (0)</span>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* 3. Sodium Tracking Wave Chart */}
+              {sodiumWaveData.length > 0 && (
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-red-400" />
+                    Daily Sodium Intake
+                  </h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={sodiumWaveData}>
+                      <defs>
+                        <linearGradient id="sodiumGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                          <stop offset="50%" stopColor="#ef4444" stopOpacity={0.6}/>
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity={0.3}/>
+                        </linearGradient>
+                        <filter id="sodiumShadow">
+                          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                          <feOffset dx="0" dy="3" result="offsetblur"/>
+                          <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.4"/>
+                          </feComponentTransfer>
+                          <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }} />
+                      <YAxis stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                             label={{ value: 'Sodium (mg)', angle: -90, position: 'insideLeft', fill: '#d1d5db', fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #ef4444',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                      />
+                      <ReferenceLine y={2300} stroke="#10b981" strokeDasharray="3 3" strokeWidth={2}
+                                     label={{ value: 'Limit: 2300mg', fill: '#10b981', fontSize: 12 }} />
+                      <Area type="monotone" dataKey="sodium" stroke="#ef4444" strokeWidth={3}
+                            fill="url(#sodiumGradient)" filter="url(#sodiumShadow)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  <div className="text-xs text-center text-white opacity-70 mt-2">
+                    Daily limit: 2300mg sodium (American Heart Association)
+                  </div>
+                </GlassCard>
+              )}
+
+              {/* 5. Meal Timing Scatter Plot */}
+              {mealTimingData.length > 0 && (
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-cyan-400" />
+                    Meal Timing Patterns
+                  </h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <ScatterChart>
+                      <defs>
+                        <linearGradient id="breakfastScatter" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="lunchScatter" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="dinnerScatter" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <filter id="scatterMealGlow">
+                          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis type="number" dataKey="hour" domain={[0, 24]} ticks={[0, 6, 12, 18, 24]}
+                             tickFormatter={(value) => `${value}:00`}
+                             stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                             label={{ value: 'Time of Day', position: 'insideBottom', offset: -5, fill: '#d1d5db', fontSize: 12 }} />
+                      <YAxis type="number" domain={[0, 1000]}
+                             stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
+                             label={{ value: 'Calories', angle: -90, position: 'insideLeft', fill: '#d1d5db', fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #60a5fa',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                      />
+                      <Scatter name="Meals" data={mealTimingData} fill="#60a5fa" filter="url(#scatterMealGlow)" />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </GlassCard>
+              )}
+
+              {/* 6. Meal Streak Flame Meter */}
+              <GlassCard>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  Good Eating Streak
+                </h3>
+                <div className="flex items-center justify-center py-6">
+                  <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
+                    <svg className="absolute inset-0" width="160" height="160">
+                      <defs>
+                        <linearGradient id="mealStreakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor={currentMealStreak >= 30 ? '#fbbf24' : currentMealStreak >= 14 ? '#f59e0b' : currentMealStreak >= 7 ? '#f97316' : '#6b7280'} />
+                          <stop offset="100%" stopColor={currentMealStreak >= 30 ? '#d97706' : currentMealStreak >= 14 ? '#ea580c' : currentMealStreak >= 7 ? '#dc2626' : '#374151'} />
+                        </linearGradient>
+                        <filter id="mealStreakGlow">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="10" />
+                      <circle cx="80" cy="80" r="70" fill="none"
+                              stroke="url(#mealStreakGradient)"
+                              strokeWidth="10"
+                              strokeLinecap="round"
+                              strokeDasharray={`${2 * Math.PI * 70}`}
+                              strokeDashoffset={`${2 * Math.PI * 70 * (1 - Math.min(currentMealStreak / 30, 1))}`}
+                              transform="rotate(-90 80 80)"
+                              filter="url(#mealStreakGlow)" />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                      <Flame className={`h-8 w-8 mb-1 ${currentMealStreak >= 7 ? 'text-orange-500 animate-pulse' : 'text-gray-400'}`} />
+                      <div className="text-3xl font-bold text-white">{currentMealStreak}</div>
+                      <div className="text-xs text-white opacity-70">{currentMealStreak === 1 ? 'day' : 'days'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center text-xs text-white opacity-70">
+                  {currentMealStreak >= 30 ? '🏆 Nutrition Master!' :
+                   currentMealStreak >= 14 ? '🔥 On Fire!' :
+                   currentMealStreak >= 7 ? '💪 Keep Going!' :
+                   '🍽️ Start your streak!'}
+                </div>
+              </GlassCard>
+
+              {/* 7. Weekly Meal Pattern Timeline */}
+              {weeklyPatternData.length > 0 && (
+                <GlassCard>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-400" />
+                    Weekly Meal Pattern
+                  </h3>
+                  <div className="space-y-2">
+                    {weeklyPatternData.map((day, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="text-xs text-white opacity-70 w-20">{day.date}</div>
+                        <div className="flex-1 relative h-8 rounded-lg overflow-hidden"
+                             style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <div className="absolute inset-0 flex gap-1 p-1">
+                            {/* Breakfast */}
+                            {day.breakfast > 0 && (
+                              <div className="h-full rounded bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center"
+                                   style={{ width: '30%', boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)' }}>
+                                <span className="text-xs font-bold text-white">B: {day.breakfast}</span>
+                              </div>
+                            )}
+                            {/* Lunch */}
+                            {day.lunch > 0 && (
+                              <div className="h-full rounded bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center"
+                                   style={{ width: '30%', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)' }}>
+                                <span className="text-xs font-bold text-white">L: {day.lunch}</span>
+                              </div>
+                            )}
+                            {/* Dinner */}
+                            {day.dinner > 0 && (
+                              <div className="h-full rounded bg-gradient-to-r from-purple-400 to-purple-600 flex items-center justify-center"
+                                   style={{ width: '30%', boxShadow: '0 2px 8px rgba(168, 85, 247, 0.3)' }}>
+                                <span className="text-xs font-bold text-white">D: {day.dinner}</span>
+                              </div>
+                            )}
+                            {/* Snacks */}
+                            {day.snacks > 0 && (
+                              <div className="h-full rounded bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center"
+                                   style={{ width: '10%', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' }}>
+                                <span className="text-xs font-bold text-white">{day.snacks}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-white opacity-70 w-16">{day.points}pts</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center mt-4 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-gradient-to-r from-yellow-400 to-yellow-600"></div>
+                      <span className="text-white opacity-70">Breakfast</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                      <span className="text-white opacity-70">Lunch</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-gradient-to-r from-purple-400 to-purple-600"></div>
+                      <span className="text-white opacity-70">Dinner</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded bg-gradient-to-r from-green-400 to-green-600"></div>
+                      <span className="text-white opacity-70">Snacks</span>
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
+
+              {/* 8. 3D Meal Quality Pyramid */}
+              <GlassCard>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-400" />
+                  Meal Quality Pyramid
+                </h3>
+                <div className="flex flex-col items-center justify-center py-6 space-y-2">
+                  {pyramidMealData.map((level, index) => {
+                    const width = 60 + (pyramidMealData.length - index) * 40;
+                    const height = 40;
+                    return (
+                      <div key={index}
+                           className="relative transition-all duration-300 hover:scale-105"
+                           style={{ width: `${width}px` }}>
+                        <div className={`${level.gradient} rounded-lg shadow-lg border-2 ${level.border} flex items-center justify-center`}
+                             style={{
+                               height: `${height}px`,
+                               boxShadow: `0 4px 16px ${level.color}40, inset 0 2px 8px rgba(255,255,255,0.1)`
+                             }}>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-white">{level.count}</div>
+                            <div className="text-xs text-white opacity-90">{level.label}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-center text-xs text-white opacity-70 mt-2">
+                  Distribution of meal quality across all logged days
+                </div>
+              </GlassCard>
+            </>
+          )}
         </>
       )}
 
