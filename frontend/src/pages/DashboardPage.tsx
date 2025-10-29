@@ -312,7 +312,7 @@ export function DashboardPage() {
           : 0;
 
         weeklyData.push({
-          week: `Week ${weekNum}`,
+          week: `${format(weekStartDate, 'M/d')}`,
           exercise: exerciseScore,
           meals: mealsScore,
           medications: medicationsScore,
@@ -1653,6 +1653,19 @@ export function DashboardPage() {
                     5-Category Performance Breakdown
                   </h3>
 
+                  <div className="text-xs text-white/70 mb-4 px-4">
+                    <div className="font-bold text-purple-300 mb-1">Current Week Performance</div>
+                    <div className="space-y-1">
+                      <div>• Each axis shows 0-100% for that category</div>
+                      <div>• Larger polygon = better overall wellness</div>
+                      <div>• Exercise: workout completion rate</div>
+                      <div>• Meals: diet compliance rate</div>
+                      <div>• Medications: adherence rate</div>
+                      <div>• Sleep: quality score (7-9 hrs target)</div>
+                      <div>• Weight: progress toward target weight</div>
+                    </div>
+                  </div>
+
                   <ResponsiveContainer width="100%" height={400}>
                     <RadarChart data={[
                       {
@@ -1703,7 +1716,7 @@ export function DashboardPage() {
                   </ResponsiveContainer>
 
                   <p className="text-xs text-center text-white/60 mt-2">
-                    Radar chart showing performance across all 5 wellness categories
+                    Balanced shape indicates consistent performance across all wellness categories
                   </p>
                 </div>
               </GlassCard>
@@ -1717,6 +1730,17 @@ export function DashboardPage() {
                     <TrendingUp className="h-6 w-6 text-cyan-400" />
                     12-Week Progress Trends
                   </h3>
+
+                  <div className="text-xs text-white/70 mb-4 px-4">
+                    <div className="font-bold text-cyan-300 mb-1">Weekly Performance Over 12-Week Recovery Period</div>
+                    <div className="space-y-1">
+                      <div>• X-axis shows calendar dates (week starting dates)</div>
+                      <div>• Y-axis shows 0-100% performance for each category</div>
+                      <div>• Track steady improvement or identify concerning declines</div>
+                      <div>• Optimal: Upward trends across all categories</div>
+                      <div>• Target: All lines above 80% by week 12</div>
+                    </div>
+                  </div>
 
                   <ResponsiveContainer width="100%" height={400}>
                     <LineChart
@@ -1829,6 +1853,17 @@ export function DashboardPage() {
                     <BarChart3 className="h-6 w-6 text-green-400" />
                     Category Comparison
                   </h3>
+
+                  <div className="text-xs text-white/70 mb-4 px-4">
+                    <div className="font-bold text-green-300 mb-1">Current vs Target vs 12-Week Average</div>
+                    <div className="space-y-1">
+                      <div>• <span className="text-gray-400">Gray bars:</span> Target goals for optimal recovery</div>
+                      <div>• <span className="text-teal-400">Teal bars:</span> Your 12-week average performance</div>
+                      <div>• <span className="text-green-400">Green bars:</span> Your current week performance</div>
+                      <div>• <span className="text-red-400">Red line:</span> Target threshold (aim to exceed)</div>
+                      <div>• Shows if you're meeting, exceeding, or falling short of goals</div>
+                    </div>
+                  </div>
 
                   <ResponsiveContainer width="100%" height={400}>
                     <ComposedChart data={(() => {
@@ -1961,6 +1996,17 @@ export function DashboardPage() {
                     Weekly Activity Timeline
                   </h3>
 
+                  <div className="text-xs text-white/70 mb-4 px-4">
+                    <div className="font-bold text-indigo-300 mb-1">Last 7 Days: Daily Event Tracking</div>
+                    <div className="space-y-1">
+                      <div>• <span className="text-indigo-400">Purple line:</span> Scheduled events per day</div>
+                      <div>• <span className="text-green-400">Green line:</span> Completed events per day</div>
+                      <div>• <span className="text-red-400">Red line:</span> Missed events per day</div>
+                      <div>• Monitors daily adherence to scheduled activities</div>
+                      <div>• Optimal: Green line matches or exceeds purple, red stays at 0</div>
+                    </div>
+                  </div>
+
                   <ResponsiveContainer width="100%" height={400}>
                     <LineChart data={(() => {
                       // Calculate real daily activity from last 7 days
@@ -2070,6 +2116,15 @@ export function DashboardPage() {
                       Weekly Compliance Overview
                     </h3>
 
+                    <div className="text-xs text-white/70 mb-2 px-4">
+                      <div className="font-bold text-green-300 mb-1">This Week's Overall Adherence</div>
+                      <div className="space-y-1">
+                        <div>• Percentage of all scheduled tasks completed</div>
+                        <div>• Combines all categories (exercise, meals, meds, sleep)</div>
+                        <div>• Color changes based on performance level</div>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-center py-6">
                       <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
                         <svg className="absolute inset-0" width="220" height="220">
@@ -2122,6 +2177,16 @@ export function DashboardPage() {
                       <Activity className="h-6 w-6 text-blue-400" />
                       Today's Activity Status
                     </h3>
+
+                    <div className="text-xs text-white/70 mb-2 px-4">
+                      <div className="font-bold text-blue-300 mb-1">Today's Tracked Activities</div>
+                      <div className="space-y-1">
+                        <div>• Three concentric rings show today's activity counts</div>
+                        <div>• Outer ring (blue): Calendar events scheduled</div>
+                        <div>• Middle ring (yellow): Meals logged</div>
+                        <div>• Inner ring (red): Medications tracked</div>
+                      </div>
+                    </div>
 
                     <div className="flex items-center justify-center py-4">
                       <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
@@ -2387,6 +2452,9 @@ export function DashboardPage() {
                       <div className="text-3xl font-bold text-white">{weeklyMetrics.categoryMetrics.exercise.completionRate || 0}</div>
                     </div>
                     <h3 className="text-lg font-bold text-blue-300 mb-3">Exercise</h3>
+                    <div className="text-xs text-blue-200 mb-3">
+                      This week's completion rate • Target: 12 workouts/month (85%+)
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Completion Rate</span>
@@ -2407,6 +2475,9 @@ export function DashboardPage() {
                         style={{ width: `${weeklyMetrics.categoryMetrics.exercise.completionRate || 0}%` }}
                       />
                     </div>
+                    <div className="text-xs text-white/50 mt-2">
+                      0=No Show, 4=Completed, 6=Met Goals, 8=Exceeded
+                    </div>
                   </div>
 
                   {/* Meals Summary */}
@@ -2416,6 +2487,9 @@ export function DashboardPage() {
                       <div className="text-3xl font-bold text-white">{weeklyMetrics.categoryMetrics.meals.complianceRate || 0}</div>
                     </div>
                     <h3 className="text-lg font-bold text-green-300 mb-3">Meals</h3>
+                    <div className="text-xs text-green-200 mb-3">
+                      % within diet specs • Target: 90%+ compliance
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Compliance</span>
@@ -2440,6 +2514,9 @@ export function DashboardPage() {
                         style={{ width: `${weeklyMetrics.categoryMetrics.meals.complianceRate || 0}%` }}
                       />
                     </div>
+                    <div className="text-xs text-white/50 mt-2">
+                      Low sodium, heart-healthy limits
+                    </div>
                   </div>
 
                   {/* Medications Summary */}
@@ -2449,6 +2526,9 @@ export function DashboardPage() {
                       <div className="text-3xl font-bold text-white">{weeklyMetrics.categoryMetrics.medications.adherenceRate || 0}</div>
                     </div>
                     <h3 className="text-lg font-bold text-purple-300 mb-3">Medications</h3>
+                    <div className="text-xs text-purple-200 mb-3">
+                      % of prescribed doses taken • Target: 95%+ adherence
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Adherence</span>
@@ -2469,6 +2549,9 @@ export function DashboardPage() {
                         style={{ width: `${weeklyMetrics.categoryMetrics.medications.adherenceRate || 0}%` }}
                       />
                     </div>
+                    <div className="text-xs text-white/50 mt-2">
+                      On-time compliance rate
+                    </div>
                   </div>
 
                   {/* Sleep Summary */}
@@ -2478,6 +2561,9 @@ export function DashboardPage() {
                       <div className="text-3xl font-bold text-white">{weeklyMetrics.categoryMetrics.sleep.qualityScore || 0}</div>
                     </div>
                     <h3 className="text-lg font-bold text-indigo-300 mb-3">Sleep</h3>
+                    <div className="text-xs text-indigo-200 mb-3">
+                      Overall sleep quality score • Target: 7-9 hrs nightly (80%+)
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Quality Score</span>
@@ -2501,6 +2587,9 @@ export function DashboardPage() {
                         className="h-full bg-gradient-to-r from-indigo-400 to-violet-400"
                         style={{ width: `${weeklyMetrics.categoryMetrics.sleep.qualityScore || 0}%` }}
                       />
+                    </div>
+                    <div className="text-xs text-white/50 mt-2">
+                      Consistency & duration tracked
                     </div>
                   </div>
                 </div>
