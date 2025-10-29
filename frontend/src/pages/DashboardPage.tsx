@@ -477,30 +477,196 @@ export function DashboardPage() {
       firstExerciseCount: weekEvents.filter(e =>
         e.calendar?.type === 'exercise' && e.status === 'completed'
       ).length,
-      medicationIndependenceCount: Math.floor(patients.length * 0.1), // Estimate 10%
+      // Real calculation: Count patients with fewer than 3 active medications (considered independent)
+      medicationIndependenceCount: patients.filter(p => {
+        const patientMedEvents = allEvents.filter(e =>
+          e.userId === p.userId &&
+          e.calendar?.type === 'medications' &&
+          e.status === 'completed'
+        );
+        // If patient has consistent med compliance and very few meds, consider independent
+        return patientMedEvents.length > 0 && patientMedEvents.length < 10; // Less than 10 doses per week suggests minimal meds
+      }).length,
     };
 
-    // Top performers
-    const topPerformers = {
-      biggestVitalsImprovement: patients.length > 0 ? {
-        name: patients[0].name,
-        improvement: 'BP improved 15%'
-      } : null,
-      perfectAttendance: patients.length > 1 ? {
-        name: patients[1].name,
-        days: 28
-      } : null,
-      bestOutcome: patients.length > 2 ? {
-        name: patients[2].name,
-        description: 'All goals met'
-      } : null,
-    };
+    // Top performers - Real calculations
+    const topPerformers = (() => {
+      // Calculate biggest vitals improvement (BP reduction)
+      let biggestVitalsImprovement: { name: string; improvement: string } | null = null;
+      let maxBPImprovement = 0;
 
-    // Clinical improvements
-    const avgVitalsImprovement = allVitals.length > 0 ? 8.5 : 0;
-    const improvingTrendsCount = Math.floor(patients.length * 0.6); // 60% showing improvement
-    const medicationReductionCount = Math.floor(patients.length * 0.25); // 25% reduced meds
-    const exerciseCapacityIncrease = 22;
+      patients.forEach(p => {
+        const patientVitals = allVitals
+          .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
+          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+
+        if (patientVitals.length >= 2) {
+          const firstBP = patientVitals[0].bloodPressureSystolic || 0;
+          const latestBP = patientVitals[patientVitals.length - 1].bloodPressureSystolic || 0;
+          const improvement = firstBP - latestBP; // Positive = improvement
+
+          if (improvement > maxBPImprovement) {
+            maxBPImprovement = improvement;
+            const improvementPercent = firstBP > 0 ? Math.round((improvement / firstBP) * 100) : 0;
+            biggestVitalsImprovement = {
+              name: p.name,
+              improvement: `BP improved ${improvementPercent}%`
+            };
+          }
+        }
+      });
+
+      // Calculate perfect attendance (highest completion rate)
+      let perfectAttendance: { name: string; days: number } | null = null;
+      let maxCompletions = 0;
+
+      patients.forEach(p => {
+        const patientEvents = allEvents.filter(e => e.userId === p.userId);
+        const completedCount = patientEvents.filter(e => e.status === 'completed').length;
+
+        if (completedCount > maxCompletions) {
+          maxCompletions = completedCount;
+          perfectAttendance = {
+            name: p.name,
+            days: completedCount
+          };
+        }
+      });
+
+      // Calculate best outcome (highest composite score: weight + exercise + vitals goals)
+      let bestOutcome: { name: string; description: string } | null = null;
+      let maxOutcomeScore = 0;
+
+      patients.forEach(p => {
+        let outcomeScore = 0;
+
+        // Weight goal achieved? +1
+        if (p.currentWeight && p.targetWeight && p.currentWeight <= p.targetWeight) {
+          outcomeScore += 1;
+        }
+
+        // Exercise completion > 80%? +1
+        const patientExercises = allEvents.filter(e =>
+          e.userId === p.userId && e.calendar?.type === 'exercise'
+        );
+        const exerciseCompletionRate = patientExercises.length > 0
+          ? patientExercises.filter(e => e.status === 'completed').length / patientExercises.length
+          : 0;
+        if (exerciseCompletionRate > 0.8) outcomeScore += 1;
+
+        // Vitals improving? +1
+        const patientVitals = allVitals
+          .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
+          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+        if (patientVitals.length >= 2) {
+          const firstBP = patientVitals[0].bloodPressureSystolic || 0;
+          const latestBP = patientVitals[patientVitals.length - 1].bloodPressureSystolic || 0;
+          if (latestBP < firstBP) outcomeScore += 1;
+        }
+
+        if (outcomeScore > maxOutcomeScore) {
+          maxOutcomeScore = outcomeScore;
+          const goalsText = outcomeScore === 3 ? 'All goals met' :
+                          outcomeScore === 2 ? '2 of 3 goals met' :
+                          outcomeScore === 1 ? '1 of 3 goals met' : 'In progress';
+          bestOutcome = {
+            name: p.name,
+            description: goalsText
+          };
+        }
+      });
+
+      return {
+        biggestVitalsImprovement,
+        perfectAttendance,
+        bestOutcome,
+      };
+    })();
+
+    // Clinical improvements - Real calculations
+    // Calculate average BP improvement across all patients
+    const avgVitalsImprovement = (() => {
+      let totalImprovement = 0;
+      let patientsWithImprovement = 0;
+
+      patients.forEach(p => {
+        const patientVitals = allVitals
+          .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
+          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+
+        if (patientVitals.length >= 2) {
+          const firstBP = patientVitals[0].bloodPressureSystolic || 0;
+          const latestBP = patientVitals[patientVitals.length - 1].bloodPressureSystolic || 0;
+          if (firstBP > 0) {
+            const improvementPercent = ((firstBP - latestBP) / firstBP) * 100;
+            totalImprovement += improvementPercent;
+            patientsWithImprovement++;
+          }
+        }
+      });
+
+      return patientsWithImprovement > 0 ? Math.round((totalImprovement / patientsWithImprovement) * 10) / 10 : 0;
+    })();
+
+    // Count patients with improving vitals trends
+    const improvingTrendsCount = patients.filter(p => {
+      const patientVitals = allVitals
+        .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
+        .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+
+      if (patientVitals.length >= 2) {
+        const firstBP = patientVitals[0].bloodPressureSystolic || 0;
+        const latestBP = patientVitals[patientVitals.length - 1].bloodPressureSystolic || 0;
+        return latestBP < firstBP; // Improving if BP decreased
+      }
+      return false;
+    }).length;
+
+    // Count patients with reduced medication events (comparing first half vs second half of period)
+    const medicationReductionCount = (() => {
+      let reducedCount = 0;
+
+      patients.forEach(p => {
+        const patientMedEvents = allEvents
+          .filter(e => e.userId === p.userId && e.calendar?.type === 'medications')
+          .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+        if (patientMedEvents.length >= 6) {
+          const midpoint = Math.floor(patientMedEvents.length / 2);
+          const firstHalf = patientMedEvents.slice(0, midpoint).length;
+          const secondHalf = patientMedEvents.slice(midpoint).length;
+          if (secondHalf < firstHalf * 0.8) reducedCount++; // 20% reduction
+        }
+      });
+
+      return reducedCount;
+    })();
+
+    // Calculate exercise capacity increase from performance scores
+    const exerciseCapacityIncrease = (() => {
+      let totalIncrease = 0;
+      let patientsWithIncrease = 0;
+
+      patients.forEach(p => {
+        const patientExercises = allEvents
+          .filter(e => e.userId === p.userId && e.calendar?.type === 'exercise' && e.performanceScore)
+          .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+        if (patientExercises.length >= 2) {
+          const firstScore = patientExercises[0].performanceScore || 0;
+          const latestScore = patientExercises[patientExercises.length - 1].performanceScore || 0;
+          if (firstScore > 0) {
+            const increasePercent = ((latestScore - firstScore) / firstScore) * 100;
+            if (increasePercent > 0) {
+              totalIncrease += increasePercent;
+              patientsWithIncrease++;
+            }
+          }
+        }
+      });
+
+      return patientsWithIncrease > 0 ? Math.round(totalIncrease / patientsWithIncrease) : 0;
+    })();
 
     // Upcoming focus areas
     const upcomingFocus = {
@@ -1606,15 +1772,43 @@ export function DashboardPage() {
                   </h3>
 
                   <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={[
-                      { day: 'Mon', completed: 8, scheduled: 10, missed: 2 },
-                      { day: 'Tue', completed: 9, scheduled: 10, missed: 1 },
-                      { day: 'Wed', completed: 7, scheduled: 10, missed: 3 },
-                      { day: 'Thu', completed: 10, scheduled: 10, missed: 0 },
-                      { day: 'Fri', completed: 8, scheduled: 9, missed: 1 },
-                      { day: 'Sat', completed: 6, scheduled: 8, missed: 2 },
-                      { day: 'Sun', completed: 5, scheduled: 7, missed: 2 }
-                    ]}>
+                    <LineChart data={(() => {
+                      // Calculate real daily activity from last 7 days
+                      const dailyData = [];
+                      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+                      for (let i = 6; i >= 0; i--) {
+                        const date = subDays(new Date(), i);
+                        const dayName = dayNames[date.getDay()];
+                        const dateStr = date.toISOString().split('T')[0];
+
+                        const dayEvents = (adminStats.allEvents || []).filter(e => {
+                          const eventDate = new Date(e.startTime).toISOString().split('T')[0];
+                          return eventDate === dateStr;
+                        });
+
+                        const scheduled = dayEvents.length;
+                        const completed = dayEvents.filter(e => e.status === 'completed').length;
+                        const missed = dayEvents.filter(e => e.status === 'missed').length;
+
+                        dailyData.push({
+                          day: dayName,
+                          completed,
+                          scheduled,
+                          missed
+                        });
+                      }
+
+                      return dailyData.length > 0 ? dailyData : [
+                        { day: 'Mon', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Tue', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Wed', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Thu', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Fri', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Sat', completed: 0, scheduled: 0, missed: 0 },
+                        { day: 'Sun', completed: 0, scheduled: 0, missed: 0 }
+                      ];
+                    })()}>
                       <defs>
                         {/* Glow filter for lines */}
                         <filter id="dashActivityLineGlow" x="-50%" y="-50%" width="200%" height="200%">
