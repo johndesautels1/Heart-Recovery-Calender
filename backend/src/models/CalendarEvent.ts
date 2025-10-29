@@ -21,6 +21,16 @@ interface CalendarEventAttributes {
   patientId?: number;
   exerciseId?: number;
   performanceScore?: number; // 0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals
+  exerciseIntensity?: number; // 1-10 scale
+  distanceMiles?: number;
+  laps?: number;
+  steps?: number;
+  elevationFeet?: number;
+  durationMinutes?: number;
+  heartRateAvg?: number;
+  heartRateMax?: number;
+  caloriesBurned?: number;
+  exerciseNotes?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -47,6 +57,16 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
   public patientId?: number;
   public exerciseId?: number;
   public performanceScore?: number;
+  public exerciseIntensity?: number;
+  public distanceMiles?: number;
+  public laps?: number;
+  public steps?: number;
+  public elevationFeet?: number;
+  public durationMinutes?: number;
+  public heartRateAvg?: number;
+  public heartRateMax?: number;
+  public caloriesBurned?: number;
+  public exerciseNotes?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -157,6 +177,56 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: '0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals',
+        },
+        exerciseIntensity: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Exercise intensity level (1-10 scale)',
+        },
+        distanceMiles: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          comment: 'Distance covered in miles',
+        },
+        laps: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Number of laps completed',
+        },
+        steps: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Number of steps taken',
+        },
+        elevationFeet: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Elevation gain in feet',
+        },
+        durationMinutes: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Actual exercise duration in minutes',
+        },
+        heartRateAvg: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Average heart rate during exercise',
+        },
+        heartRateMax: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Maximum heart rate during exercise',
+        },
+        caloriesBurned: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Estimated calories burned',
+        },
+        exerciseNotes: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'Additional notes about the exercise session',
         },
       },
       {

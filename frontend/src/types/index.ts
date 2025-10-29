@@ -48,6 +48,16 @@ export interface CalendarEvent {
   sleepHours?: number;
   exerciseId?: number;
   performanceScore?: number;
+  exerciseIntensity?: number; // 1-10 scale
+  distanceMiles?: number;
+  laps?: number;
+  steps?: number;
+  elevationFeet?: number;
+  durationMinutes?: number;
+  heartRateAvg?: number;
+  heartRateMax?: number;
+  caloriesBurned?: number;
+  exerciseNotes?: string;
   createdAt: string;
   updatedAt: string;
   calendar?: Calendar;  // Optional joined data

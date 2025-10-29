@@ -57,6 +57,16 @@ export function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [sleepHours, setSleepHours] = useState<string>('');
   const [performanceScore, setPerformanceScore] = useState<string>('');
+  const [exerciseIntensity, setExerciseIntensity] = useState<string>('');
+  const [distanceMiles, setDistanceMiles] = useState<string>('');
+  const [laps, setLaps] = useState<string>('');
+  const [steps, setSteps] = useState<string>('');
+  const [elevationFeet, setElevationFeet] = useState<string>('');
+  const [durationMinutes, setDurationMinutes] = useState<string>('');
+  const [heartRateAvg, setHeartRateAvg] = useState<string>('');
+  const [heartRateMax, setHeartRateMax] = useState<string>('');
+  const [caloriesBurned, setCaloriesBurned] = useState<string>('');
+  const [exerciseNotes, setExerciseNotes] = useState<string>('');
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -308,6 +318,16 @@ export function CalendarPage() {
       setSelectedEvent(event);
       setSleepHours(event.sleepHours?.toString() || '');
       setPerformanceScore(event.performanceScore?.toString() || '');
+      setExerciseIntensity(event.exerciseIntensity?.toString() || '');
+      setDistanceMiles(event.distanceMiles?.toString() || '');
+      setLaps(event.laps?.toString() || '');
+      setSteps(event.steps?.toString() || '');
+      setElevationFeet(event.elevationFeet?.toString() || '');
+      setDurationMinutes(event.durationMinutes?.toString() || '');
+      setHeartRateAvg(event.heartRateAvg?.toString() || '');
+      setHeartRateMax(event.heartRateMax?.toString() || '');
+      setCaloriesBurned(event.caloriesBurned?.toString() || '');
+      setExerciseNotes(event.exerciseNotes || '');
 
       // Load meals for this event's date
       const eventDate = new Date(event.startTime).toISOString().split('T')[0];
@@ -700,6 +720,41 @@ See browser console for full configuration details.
     } catch (error) {
       console.error('❌ Failed to update performance score:', error);
       toast.error('Failed to update performance score');
+    }
+  };
+
+  const handleUpdateExerciseMetrics = async () => {
+    if (!selectedEvent) {
+      toast.error('No event selected');
+      return;
+    }
+
+    try {
+      const updateData: any = {};
+
+      if (exerciseIntensity) updateData.exerciseIntensity = parseInt(exerciseIntensity);
+      if (distanceMiles) updateData.distanceMiles = parseFloat(distanceMiles);
+      if (laps) updateData.laps = parseInt(laps);
+      if (steps) updateData.steps = parseInt(steps);
+      if (elevationFeet) updateData.elevationFeet = parseInt(elevationFeet);
+      if (durationMinutes) updateData.durationMinutes = parseInt(durationMinutes);
+      if (heartRateAvg) updateData.heartRateAvg = parseInt(heartRateAvg);
+      if (heartRateMax) updateData.heartRateMax = parseInt(heartRateMax);
+      if (caloriesBurned) updateData.caloriesBurned = parseInt(caloriesBurned);
+      if (exerciseNotes) updateData.exerciseNotes = exerciseNotes;
+
+      if (Object.keys(updateData).length === 0) {
+        toast.error('No metrics to update');
+        return;
+      }
+
+      const updated = await api.updateEvent(selectedEvent.id, updateData);
+      setEvents(events.map(e => e.id === updated.id ? updated : e));
+      setSelectedEvent(updated);
+      toast.success('Exercise metrics updated successfully');
+    } catch (error) {
+      console.error('Failed to update exercise metrics:', error);
+      toast.error('Failed to update exercise metrics');
     }
   };
 
@@ -1520,6 +1575,16 @@ See browser console for full configuration details.
           setSelectedDateMeals([]);
           setSleepHours('');
           setPerformanceScore('');
+          setExerciseIntensity('');
+          setDistanceMiles('');
+          setLaps('');
+          setSteps('');
+          setElevationFeet('');
+          setDurationMinutes('');
+          setHeartRateAvg('');
+          setHeartRateMax('');
+          setCaloriesBurned('');
+          setExerciseNotes('');
         }}
         title="Event Details"
         size="lg"
@@ -1626,6 +1691,189 @@ See browser console for full configuration details.
                     Current: {selectedEvent.performanceScore} points
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Exercise Metrics Section - Only show for exercise events */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-teal-50 rounded-lg p-4 border-2 border-teal-300 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">📊</span>
+                    <p className="font-bold text-teal-800 text-lg">Exercise Metrics</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleUpdateExerciseMetrics}
+                    disabled={isLoading}
+                    className="bg-teal-600 hover:bg-teal-700 font-bold"
+                  >
+                    Save All Metrics
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Intensity */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Intensity (1-10)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={exerciseIntensity}
+                      onChange={(e) => setExerciseIntensity(e.target.value)}
+                      placeholder="e.g., 7"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.exerciseIntensity && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.exerciseIntensity}</p>
+                    )}
+                  </div>
+
+                  {/* Duration */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={durationMinutes}
+                      onChange={(e) => setDurationMinutes(e.target.value)}
+                      placeholder="e.g., 30"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.durationMinutes && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.durationMinutes} min</p>
+                    )}
+                  </div>
+
+                  {/* Distance */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Distance (miles)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={distanceMiles}
+                      onChange={(e) => setDistanceMiles(e.target.value)}
+                      placeholder="e.g., 2.5"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.distanceMiles && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.distanceMiles} mi</p>
+                    )}
+                  </div>
+
+                  {/* Steps */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Steps</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={steps}
+                      onChange={(e) => setSteps(e.target.value)}
+                      placeholder="e.g., 5000"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.steps && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.steps.toLocaleString()}</p>
+                    )}
+                  </div>
+
+                  {/* Laps */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Laps</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={laps}
+                      onChange={(e) => setLaps(e.target.value)}
+                      placeholder="e.g., 10"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.laps && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.laps}</p>
+                    )}
+                  </div>
+
+                  {/* Elevation */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Elevation (feet)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={elevationFeet}
+                      onChange={(e) => setElevationFeet(e.target.value)}
+                      placeholder="e.g., 250"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.elevationFeet && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.elevationFeet} ft</p>
+                    )}
+                  </div>
+
+                  {/* Heart Rate Average */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Avg Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={heartRateAvg}
+                      onChange={(e) => setHeartRateAvg(e.target.value)}
+                      placeholder="e.g., 120"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.heartRateAvg && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.heartRateAvg} bpm</p>
+                    )}
+                  </div>
+
+                  {/* Heart Rate Max */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Max Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={heartRateMax}
+                      onChange={(e) => setHeartRateMax(e.target.value)}
+                      placeholder="e.g., 150"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.heartRateMax && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.heartRateMax} bpm</p>
+                    )}
+                  </div>
+
+                  {/* Calories */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Calories Burned</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={caloriesBurned}
+                      onChange={(e) => setCaloriesBurned(e.target.value)}
+                      placeholder="e.g., 350"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    {selectedEvent.caloriesBurned && (
+                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.caloriesBurned} cal</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes - Full Width */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-teal-800 mb-1">Exercise Notes</label>
+                  <textarea
+                    value={exerciseNotes}
+                    onChange={(e) => setExerciseNotes(e.target.value)}
+                    placeholder="Add any additional notes about this exercise session..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none resize-none"
+                  />
+                  {selectedEvent.exerciseNotes && (
+                    <p className="text-xs text-teal-700 mt-1">Current notes: {selectedEvent.exerciseNotes}</p>
+                  )}
+                </div>
               </div>
             )}
 
