@@ -146,9 +146,18 @@ class ApiService {
   }
 
   // ==================== CALENDAR EVENT ENDPOINTS ====================
-  async getEvents(calendarId?: number, startDate?: string, endDate?: string): Promise<CalendarEvent[]> {
+  async getEvents(calendarIdOrUserId?: number, startDate?: string, endDate?: string, options?: { usePatientId?: boolean }): Promise<CalendarEvent[]> {
     const params = new URLSearchParams();
-    if (calendarId) params.append('calendarId', calendarId.toString());
+
+    // If options.usePatientId is true, treat first param as patientId instead of calendarId
+    if (calendarIdOrUserId) {
+      if (options?.usePatientId) {
+        params.append('patientId', calendarIdOrUserId.toString());
+      } else {
+        params.append('calendarId', calendarIdOrUserId.toString());
+      }
+    }
+
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
 

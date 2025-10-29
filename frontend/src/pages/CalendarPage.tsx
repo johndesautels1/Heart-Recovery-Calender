@@ -148,7 +148,7 @@ export function CalendarPage() {
 
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
         api.getCalendars(shouldLoadAllCalendars ? undefined : userId),
-        api.getEvents(userId),
+        api.getEvents(userId, undefined, undefined, { usePatientId: !!userId }),
         api.getMeals({ startDate, endDate, userId }),
         api.getMedications(false, userId),
         api.getSleepLogs({ startDate, endDate, userId }),
