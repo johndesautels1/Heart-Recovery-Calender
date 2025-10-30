@@ -32,13 +32,10 @@ router.get('/auth', authenticateToken, async (req: Request, res: Response) => {
 
 // OAuth callback handler
 console.log('⚡ DEFINING CALLBACK ROUTE NOW');
-router.get('/callback', (req: Request, res: Response) => {
+router.get('/callback', async (req: Request, res: Response) => {
   console.log('=== STRAVA CALLBACK HANDLER STARTED ===');
   console.log('Query params:', req.query);
-  res.json({ message: 'CALLBACK RECEIVED', query: req.query });
-  return;
 
-  /* TEMPORARILY DISABLED
   try {
     const { code, state, error, scope } = req.query;
     console.log('Parsed params - code:', code, 'state:', state, 'error:', error);
