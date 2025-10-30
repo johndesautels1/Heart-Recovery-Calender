@@ -1642,7 +1642,8 @@ See browser console for full configuration details.
             /* Base wrapper for event text with overflow handling */
             .event-text-wrapper {
               width: 100%;
-              height: 100%;
+              height: auto;
+              min-height: 100%;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -1651,28 +1652,43 @@ See browser console for full configuration details.
               line-height: 1.2;
               word-wrap: break-word;
               overflow-wrap: break-word;
+              white-space: normal;
               hyphens: auto;
+              overflow: hidden;
             }
 
             /* Short text - default size (0-15 characters) */
             .event-text-default {
               font-size: 13px !important;
+              line-height: 1.2 !important;
             }
 
             /* Medium text (16-25 characters) */
             .event-text-medium {
               font-size: 11px !important;
+              line-height: 1.2 !important;
             }
 
-            /* Long text (26-35 characters) */
+            /* Long text (26-35 characters) - allow wrapping */
             .event-text-long {
-              font-size: 9px !important;
+              font-size: 10px !important;
+              line-height: 1.15 !important;
             }
 
-            /* Very long text (36+ characters) */
+            /* Very long text (36+ characters) - allow multi-line wrapping */
             .event-text-very-long {
-              font-size: 8px !important;
-              line-height: 1.1;
+              font-size: 9px !important;
+              line-height: 1.15 !important;
+            }
+
+            /* Ensure FullCalendar event content can expand vertically */
+            .fc-event-main {
+              overflow: visible !important;
+            }
+
+            .fc-event-title {
+              white-space: normal !important;
+              overflow: visible !important;
             }
 
             @keyframes pulse-glow {
