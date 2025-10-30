@@ -8,17 +8,26 @@ import sequelize from '../models/database';
 import { Op, QueryTypes } from 'sequelize';
 import bcrypt from 'bcrypt';
 
-// GET /api/patients - Get all patients for the logged-in therapist
+// GET /api/patients - Get all patients for the logged-in therapist, or own record if patient
 export const getPatients = async (req: Request, res: Response) => {
   try {
-    const therapistId = req.user?.id;
-    const { active } = req.query;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+    const { active, userId: queryUserId } = req.query;
 
-    if (!therapistId) {
+    if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const where: any = { therapistId };
+    const where: any = {};
+
+    // If userId query parameter is provided (patient querying their own record)
+    if (queryUserId) {
+      where.userId = parseInt(queryUserId as string);
+    } else {
+      // Otherwise, filter by therapistId (therapist querying their patients)
+      where.therapistId = userId;
+    }
 
     if (active !== undefined) {
       where.isActive = active === 'true';

@@ -67,6 +67,21 @@ export function CalendarPage() {
   const [heartRateMax, setHeartRateMax] = useState<string>('');
   const [caloriesBurned, setCaloriesBurned] = useState<string>('');
   const [exerciseNotes, setExerciseNotes] = useState<string>('');
+
+  // Phase 1 Vitals Fields
+  const [preBpSystolic, setPreBpSystolic] = useState<string>('');
+  const [preBpDiastolic, setPreBpDiastolic] = useState<string>('');
+  const [preHeartRate, setPreHeartRate] = useState<string>('');
+  const [preOxygenSat, setPreOxygenSat] = useState<string>('');
+  const [duringBpSystolic, setDuringBpSystolic] = useState<string>('');
+  const [duringBpDiastolic, setDuringBpDiastolic] = useState<string>('');
+  const [postBpSystolic, setPostBpSystolic] = useState<string>('');
+  const [postBpDiastolic, setPostBpDiastolic] = useState<string>('');
+  const [postHeartRate, setPostHeartRate] = useState<string>('');
+  const [postOxygenSat, setPostOxygenSat] = useState<string>('');
+  const [perceivedExertion, setPerceivedExertion] = useState<string>('');
+  const [startedAt, setStartedAt] = useState<string>('');
+
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -328,6 +343,20 @@ export function CalendarPage() {
       setHeartRateMax(event.heartRateMax?.toString() || '');
       setCaloriesBurned(event.caloriesBurned?.toString() || '');
       setExerciseNotes(event.exerciseNotes || '');
+
+      // Initialize Phase 1 vitals fields (will be populated from exercise logs in Phase 3.3)
+      setPreBpSystolic('');
+      setPreBpDiastolic('');
+      setPreHeartRate('');
+      setPreOxygenSat('');
+      setDuringBpSystolic('');
+      setDuringBpDiastolic('');
+      setPostBpSystolic('');
+      setPostBpDiastolic('');
+      setPostHeartRate('');
+      setPostOxygenSat('');
+      setPerceivedExertion('');
+      setStartedAt('');
 
       // Load meals for this event's date
       const eventDate = new Date(event.startTime).toISOString().split('T')[0];
@@ -730,6 +759,7 @@ See browser console for full configuration details.
     }
 
     try {
+      // Step 1: Build calendar event update data (existing fields)
       const updateData: any = {};
 
       if (exerciseIntensity) updateData.exerciseIntensity = parseInt(exerciseIntensity);
@@ -748,9 +778,69 @@ See browser console for full configuration details.
         return;
       }
 
+      // Step 2: Update calendar event (existing behavior)
       const updated = await api.updateEvent(selectedEvent.id, updateData);
       setEvents(events.map(e => e.id === updated.id ? updated : e));
       setSelectedEvent(updated);
+
+      // Step 3: Create exercise log with Phase 1 vitals (NEW - dual storage)
+      if (selectedEvent.exerciseId && selectedEvent.prescriptionId) {
+        const exerciseLogData: any = {
+          prescriptionId: selectedEvent.prescriptionId,
+          completedAt: startedAt || new Date().toISOString(),
+
+          // Pre-exercise vitals
+          preBpSystolic: preBpSystolic ? parseInt(preBpSystolic) : undefined,
+          preBpDiastolic: preBpDiastolic ? parseInt(preBpDiastolic) : undefined,
+          preHeartRate: preHeartRate ? parseInt(preHeartRate) : undefined,
+          preOxygenSat: preOxygenSat ? parseInt(preOxygenSat) : undefined,
+
+          // During-exercise vitals
+          duringBpSystolic: duringBpSystolic ? parseInt(duringBpSystolic) : undefined,
+          duringBpDiastolic: duringBpDiastolic ? parseInt(duringBpDiastolic) : undefined,
+          duringHeartRateAvg: heartRateAvg ? parseInt(heartRateAvg) : undefined,
+          duringHeartRateMax: heartRateMax ? parseInt(heartRateMax) : undefined,
+
+          // Post-exercise vitals
+          postBpSystolic: postBpSystolic ? parseInt(postBpSystolic) : undefined,
+          postBpDiastolic: postBpDiastolic ? parseInt(postBpDiastolic) : undefined,
+          postHeartRate: postHeartRate ? parseInt(postHeartRate) : undefined,
+          postOxygenSat: postOxygenSat ? parseInt(postOxygenSat) : undefined,
+
+          // Activity metrics (from existing fields)
+          distanceMiles: distanceMiles ? parseFloat(distanceMiles) : undefined,
+          laps: laps ? parseInt(laps) : undefined,
+          steps: steps ? parseInt(steps) : undefined,
+          elevationFeet: elevationFeet ? parseInt(elevationFeet) : undefined,
+          caloriesBurned: caloriesBurned ? parseInt(caloriesBurned) : undefined,
+          durationMinutes: durationMinutes ? parseInt(durationMinutes) : undefined,
+
+          // Subjective measures
+          perceivedExertion: perceivedExertion ? parseInt(perceivedExertion) : undefined,
+          performanceScore: selectedEvent.performanceScore,
+          exerciseIntensity: exerciseIntensity || undefined,
+
+          // Notes
+          notes: exerciseNotes || undefined,
+        };
+
+        // Remove undefined fields
+        Object.keys(exerciseLogData).forEach(key => {
+          if (exerciseLogData[key] === undefined) {
+            delete exerciseLogData[key];
+          }
+        });
+
+        try {
+          await api.createExerciseLog(exerciseLogData);
+          console.log('✅ Exercise log created successfully');
+        } catch (logError) {
+          console.error('⚠️ Failed to create exercise log:', logError);
+          // Don't fail the entire operation if log creation fails
+          toast.error('Metrics saved to calendar, but failed to create detailed log');
+        }
+      }
+
       toast.success('Exercise metrics updated successfully');
     } catch (error) {
       console.error('Failed to update exercise metrics:', error);
@@ -1873,6 +1963,225 @@ See browser console for full configuration details.
                   {selectedEvent.exerciseNotes && (
                     <p className="text-xs text-teal-700 mt-1">Current notes: {selectedEvent.exerciseNotes}</p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Pre-Exercise Vitals Section - Phase 1 */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300 mt-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-2xl">🩺</span>
+                  <p className="font-bold text-blue-800 text-lg">Pre-Exercise Vitals</p>
+                </div>
+                <p className="text-sm text-blue-700 mb-3">Record vitals before starting exercise</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Pre-BP Systolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-800 mb-1">BP Systolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={preBpSystolic}
+                      onChange={(e) => setPreBpSystolic(e.target.value)}
+                      placeholder="e.g., 120"
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Pre-BP Diastolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-800 mb-1">BP Diastolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="150"
+                      value={preBpDiastolic}
+                      onChange={(e) => setPreBpDiastolic(e.target.value)}
+                      placeholder="e.g., 80"
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Pre-Heart Rate */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-800 mb-1">Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={preHeartRate}
+                      onChange={(e) => setPreHeartRate(e.target.value)}
+                      placeholder="e.g., 70"
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Pre-Oxygen Sat */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-800 mb-1">Oxygen Sat (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={preOxygenSat}
+                      onChange={(e) => setPreOxygenSat(e.target.value)}
+                      placeholder="e.g., 98"
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* During-Exercise Vitals Section - Phase 1 */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-300 mt-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-2xl">💓</span>
+                  <p className="font-bold text-indigo-800 text-lg">During-Exercise Vitals</p>
+                </div>
+                <p className="text-sm text-indigo-700 mb-3">Monitor vitals during activity</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* During-BP Systolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-indigo-800 mb-1">BP Systolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={duringBpSystolic}
+                      onChange={(e) => setDuringBpSystolic(e.target.value)}
+                      placeholder="e.g., 140"
+                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+
+                  {/* During-BP Diastolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-indigo-800 mb-1">BP Diastolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="150"
+                      value={duringBpDiastolic}
+                      onChange={(e) => setDuringBpDiastolic(e.target.value)}
+                      placeholder="e.g., 90"
+                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-indigo-600 mt-2 italic">Note: Avg/Max HR are in Exercise Metrics section above</p>
+              </div>
+            )}
+
+            {/* Post-Exercise Vitals Section - Phase 1 */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-emerald-50 rounded-lg p-4 border-2 border-emerald-300 mt-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-2xl">🏁</span>
+                  <p className="font-bold text-emerald-800 text-lg">Post-Exercise Vitals (Recovery)</p>
+                </div>
+                <p className="text-sm text-emerald-700 mb-3">Record vitals after exercise completion</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Post-BP Systolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-800 mb-1">BP Systolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={postBpSystolic}
+                      onChange={(e) => setPostBpSystolic(e.target.value)}
+                      placeholder="e.g., 125"
+                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Post-BP Diastolic */}
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-800 mb-1">BP Diastolic (mmHg)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="150"
+                      value={postBpDiastolic}
+                      onChange={(e) => setPostBpDiastolic(e.target.value)}
+                      placeholder="e.g., 82"
+                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Post-Heart Rate */}
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-800 mb-1">Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={postHeartRate}
+                      onChange={(e) => setPostHeartRate(e.target.value)}
+                      placeholder="e.g., 85"
+                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Post-Oxygen Sat */}
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-800 mb-1">Oxygen Sat (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={postOxygenSat}
+                      onChange={(e) => setPostOxygenSat(e.target.value)}
+                      placeholder="e.g., 97"
+                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Perceived Exertion & Timestamp Section - Phase 1 */}
+            {selectedEvent.exerciseId && (
+              <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-300 mt-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-2xl">💪</span>
+                  <p className="font-bold text-amber-800 text-lg">Subjective Measures</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Perceived Exertion (Borg RPE) */}
+                  <div>
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Perceived Exertion (Borg RPE 1-10)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={perceivedExertion}
+                      onChange={(e) => setPerceivedExertion(e.target.value)}
+                      placeholder="1=Very Easy, 10=Max Effort"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">1=Very Easy → 10=Maximum Effort</p>
+                  </div>
+
+                  {/* Started At Timestamp */}
+                  <div>
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Exercise Start Time</label>
+                    <input
+                      type="datetime-local"
+                      value={startedAt}
+                      onChange={(e) => setStartedAt(e.target.value)}
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">When did the exercise begin?</p>
+                  </div>
                 </div>
               </div>
             )}

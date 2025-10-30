@@ -85,6 +85,7 @@ interface Exercise {
 
 interface Patient {
   id: number;
+  userId: number;
   name: string;
   surgeryDate?: string;
   isActive: boolean;
@@ -215,6 +216,49 @@ export function ExercisesPage() {
     }
   }, [mainTab, statsPatientId, statsMonth, statsYear]);
 
+  // Auto-select patient for safety level calculations
+  useEffect(() => {
+    console.log('Auto-select useEffect triggered');
+    console.log('  user.role:', user?.role);
+    console.log('  user.id:', user?.id);
+    console.log('  patients.length:', patients.length);
+    console.log('  selectedPatientId:', selectedPatientId);
+
+    if (user?.role === 'patient' && !selectedPatientId) {
+      // For patients, we can fetch their own patient record
+      const loadOwnPatientRecord = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          // Query for patient record where userId matches current user
+          const response = await fetch(`/api/patients?userId=${user.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('  Own patient query response:', data);
+
+            if (data.data && data.data.length > 0) {
+              const myRecord = data.data[0];
+              console.log('  Found own patient record:', myRecord);
+              setSelectedPatientId(myRecord.id.toString());
+              // Also add to patients array if not already there
+              if (!patients.find(p => p.id === myRecord.id)) {
+                setPatients([...patients, myRecord]);
+              }
+            } else {
+              console.log('  ❌ No patient record found for this user');
+            }
+          }
+        } catch (error) {
+          console.error('  Error loading own patient record:', error);
+        }
+      };
+
+      loadOwnPatientRecord();
+    }
+  }, [user, selectedPatientId]);
+
   const loadExercises = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -248,7 +292,33 @@ export function ExercisesPage() {
       if (!response.ok) throw new Error('Failed to load patients');
 
       const data = await response.json();
-      setPatients(data.data || []);
+      let patientsData = data.data || [];
+
+      // If user is a patient and the list is empty, load their own patient record
+      if (user?.role === 'patient' && patientsData.length === 0) {
+        console.log('Patient role detected, loading own patient record via /api/patients?userId=');
+        try {
+          const meResponse = await fetch(`/api/patients?userId=${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (meResponse.ok) {
+            const meData = await meResponse.json();
+            console.log('Loaded own patient record:', meData);
+            // Add own patient record to the list (meData.data is an array)
+            if (meData.data && meData.data.length > 0) {
+              patientsData = meData.data;
+            }
+          }
+        } catch (meError) {
+          console.error('Failed to load own patient record:', meError);
+        }
+      }
+
+      setPatients(patientsData);
+      console.log('Final patients array:', patientsData);
     } catch (error) {
       console.error('Error loading patients:', error);
       toast.error('Failed to load patients');
@@ -303,18 +373,35 @@ export function ExercisesPage() {
     if (!selectedPatientId) return 'no-patient';
 
     const patient = patients.find(p => p.id === parseInt(selectedPatientId));
-    if (!patient || !patient.surgeryDate) return 'no-patient';
+    if (!patient) return 'no-patient';
+
+    // If no surgery date, classify based on minPostOpWeek only
+    if (!patient.surgeryDate) {
+      const minWeek = exercise.minPostOpWeek;
+
+      // If minPostOpWeek is not set, treat as universally safe
+      if (minWeek === null || minWeek === undefined) {
+        return 'safe';
+      }
+
+      // Exercises with no minimum week (0) are always safe
+      if (minWeek === 0) return 'safe';
+
+      // Exercises requiring 1-4 weeks are upcoming
+      if (minWeek >= 1 && minWeek <= 4) return 'upcoming';
+
+      // Exercises requiring 5+ weeks are not yet safe
+      if (minWeek >= 5) return 'not-safe';
+
+      // Fallback
+      return 'safe';
+    }
 
     const currentWeek = calculatePostOpWeek(patient.surgeryDate);
     const minWeek = exercise.minPostOpWeek || 0;
     const maxWeek = exercise.maxPostOpWeek;
 
-    // Check if exercise is past its max week
-    if (maxWeek !== null && maxWeek !== undefined && currentWeek > maxWeek) {
-      return 'not-safe';
-    }
-
-    // Check if exercise is safe for current week
+    // Check if exercise is safe for current week (including past max week - graduated exercises)
     if (currentWeek >= minWeek) {
       return 'safe';
     }
@@ -324,7 +411,7 @@ export function ExercisesPage() {
       return 'upcoming';
     }
 
-    // Exercise is not yet safe
+    // Exercise is not yet safe (too advanced)
     return 'not-safe';
   };
 
@@ -362,8 +449,40 @@ export function ExercisesPage() {
       filtered = filtered.filter(ex => ex.difficulty === selectedDifficulty);
     }
 
-    if (selectedSafetyLevel && selectedPatientId) {
+    if (selectedSafetyLevel) {
+      // Debug: Check patient selection
+      console.log('Selected Patient ID:', selectedPatientId);
+      console.log('User role:', user?.role);
+
+      // Debug: Count exercises by safety level
+      const safetyLevelCounts = {
+        safe: 0,
+        upcoming: 0,
+        'not-safe': 0,
+        'no-patient': 0
+      };
+
+      // Sample first 3 exercises to see their data
+      console.log('Sample exercises (first 3):');
+      exercises.slice(0, 3).forEach(ex => {
+        const level = getSafetyLevel(ex);
+        console.log(`  ${ex.name}: minPostOpWeek=${ex.minPostOpWeek}, level=${level}`);
+      });
+
+      exercises.forEach(ex => {
+        const level = getSafetyLevel(ex);
+        safetyLevelCounts[level]++;
+      });
+
+      console.log('Safety Level Distribution:');
+      console.log('  Safe:', safetyLevelCounts.safe);
+      console.log('  Upcoming:', safetyLevelCounts.upcoming);
+      console.log('  Not Safe:', safetyLevelCounts['not-safe']);
+      console.log('  No Patient:', safetyLevelCounts['no-patient']);
+      console.log('Filtering by:', selectedSafetyLevel);
+
       filtered = filtered.filter(ex => getSafetyLevel(ex) === selectedSafetyLevel);
+      console.log('Filtered count:', filtered.length);
     }
 
     setFilteredExercises(filtered);
@@ -489,7 +608,15 @@ export function ExercisesPage() {
 
   const handleScheduleExercise = (exercise: Exercise) => {
     setSchedulingExercise(exercise);
-    setSchedulePatientId(selectedPatientId || '');
+
+    // For patients, automatically use their own user ID
+    // For therapists, use the selected patient ID
+    if (user?.role === 'patient') {
+      setSchedulePatientId(user.id.toString());
+    } else {
+      setSchedulePatientId(selectedPatientId || '');
+    }
+
     // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -634,20 +761,8 @@ export function ExercisesPage() {
     return categories.find(c => c.value === category)?.icon || '🏃';
   };
 
-  // Only therapists and admins can access this page
-  if (user?.role !== 'therapist' && user?.role !== 'admin') {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="glass rounded-xl p-12 text-center">
-          <AlertTriangle className="h-16 w-16 mx-auto mb-4 text-yellow-500" />
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>Therapist/Admin Access Only</h3>
-          <p style={{ color: 'var(--ink)' }} className="opacity-70">
-            Only therapists and administrators can access the Exercise Library
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Patients can view exercises and add to calendar, but cannot create/edit/delete
+  const canManageExercises = user?.role === 'therapist' || user?.role === 'admin';
 
   if (loading) {
     return (
@@ -666,13 +781,18 @@ export function ExercisesPage() {
         <div>
           <h1 className="text-3xl font-bold text-gradient mb-2">Exercise Library</h1>
           <p style={{ color: 'var(--ink)' }} className="text-sm">
-            Manage exercises and create prescriptions for your patients
+            {user?.role === 'patient'
+              ? 'Browse exercises and add them to your calendar'
+              : 'Manage exercises and create prescriptions for your patients'
+            }
           </p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="h-5 w-5 mr-2" />
-          Add Exercise
-        </Button>
+        {canManageExercises && (
+          <Button onClick={handleAddNew}>
+            <Plus className="h-5 w-5 mr-2" />
+            Add Exercise
+          </Button>
+        )}
       </div>
 
       {/* Patient Selection Banner */}
@@ -744,44 +864,46 @@ export function ExercisesPage() {
         <div>
           {/* Filters */}
           <div className="glass rounded-xl p-6 mb-6">
-        {/* Patient Selector & Current Week Display */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-            Select Patient (for safety color-coding)
-          </label>
-          <div className="flex items-center space-x-4">
-            <select
-              className="glass-input flex-1"
-              value={selectedPatientId}
-              onChange={(e) => {
-                const patientId = e.target.value;
-                setSelectedPatientId(patientId);
-                // Update context to sync the "viewing exercises for" banner
-                if (patientId) {
-                  const patient = patients.find(p => p.id === parseInt(patientId));
-                  if (patient) {
-                    setSelectedPatient(patient);
+        {/* Patient Selector & Current Week Display - Therapist/Admin only */}
+        {canManageExercises && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+              Select Patient (for safety color-coding)
+            </label>
+            <div className="flex items-center space-x-4">
+              <select
+                className="glass-input flex-1"
+                value={selectedPatientId}
+                onChange={(e) => {
+                  const patientId = e.target.value;
+                  setSelectedPatientId(patientId);
+                  // Update context to sync the "viewing exercises for" banner
+                  if (patientId) {
+                    const patient = patients.find(p => p.id === parseInt(patientId));
+                    if (patient) {
+                      setSelectedPatient(patient);
+                    }
+                  } else {
+                    setSelectedPatient(null);
                   }
-                } else {
-                  setSelectedPatient(null);
-                }
-              }}
-            >
-              <option value="">No Patient Selected</option>
-              {patients.filter(p => p.isActive).map(patient => (
-                <option key={patient.id} value={patient.id}>{patient.name}</option>
-              ))}
-            </select>
-            {selectedPatientId && patients.find(p => p.id === parseInt(selectedPatientId))?.surgeryDate && (
-              <div className="flex items-center space-x-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' + '20' }}>
-                <Heart className="h-5 w-5" style={{ color: 'var(--accent)' }} />
-                <span className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
-                  Week {calculatePostOpWeek(patients.find(p => p.id === parseInt(selectedPatientId))!.surgeryDate!)} Post-Op
-                </span>
-              </div>
-            )}
+                }}
+              >
+                <option value="">No Patient Selected</option>
+                {patients.filter(p => p.isActive).map(patient => (
+                  <option key={patient.id} value={patient.id}>{patient.name}</option>
+                ))}
+              </select>
+              {selectedPatientId && patients.find(p => p.id === parseInt(selectedPatientId))?.surgeryDate && (
+                <div className="flex items-center space-x-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'var(--accent)' + '20' }}>
+                  <Heart className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+                  <span className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                    Week {calculatePostOpWeek(patients.find(p => p.id === parseInt(selectedPatientId))!.surgeryDate!)} Post-Op
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
@@ -830,12 +952,12 @@ export function ExercisesPage() {
               className="glass-input"
               value={selectedSafetyLevel}
               onChange={(e) => setSelectedSafetyLevel(e.target.value)}
-              disabled={!selectedPatientId}
             >
               <option value="">All Safety Levels</option>
               <option value="safe">✅ Safe Now</option>
               <option value="upcoming">⚠️ Upcoming</option>
               <option value="not-safe">🚫 Not Yet Safe</option>
+              <option value="no-patient">👤 Requires Patient Selection</option>
             </select>
           </div>
         </div>
@@ -937,20 +1059,25 @@ export function ExercisesPage() {
                   >
                     <Timer className="h-3.5 w-3.5 text-orange-500" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(exercise.id)}
-                    className="p-1 rounded-lg hover:bg-red-500/20 transition-colors"
-                    title="Delete exercise"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-red-600" />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(exercise)}
-                    className="p-1 rounded-lg hover:bg-white/20 transition-colors"
-                    title="Edit exercise"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
-                  </button>
+                  {/* Therapist/Admin only buttons */}
+                  {canManageExercises && (
+                    <>
+                      <button
+                        onClick={() => handleDelete(exercise.id)}
+                        className="p-1 rounded-lg hover:bg-red-500/20 transition-colors"
+                        title="Delete exercise"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-600" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(exercise)}
+                        className="p-1 rounded-lg hover:bg-white/20 transition-colors"
+                        title="Edit exercise"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => handleViewInfo(exercise)}
                     className="p-1 rounded-lg hover:bg-blue-500/20 transition-colors"
@@ -961,7 +1088,7 @@ export function ExercisesPage() {
                   <button
                     onClick={() => handleScheduleExercise(exercise)}
                     className="p-1 rounded-lg hover:bg-green-500/20 transition-colors"
-                    title="Schedule exercise for patient"
+                    title={user?.role === 'patient' ? 'Add to my calendar' : 'Schedule exercise for patient'}
                   >
                     <Calendar className="h-3.5 w-3.5" style={{ color: '#10b981' }} />
                   </button>
@@ -1015,8 +1142,12 @@ export function ExercisesPage() {
                         {exercise.defaultDuration && (' • ' + exercise.defaultDuration + ' min')}
                       </span>
                     </div>
-                    {/* NEW: Exercise Volume & 1RM Estimator */}
-                    {exercise.defaultSets && exercise.defaultReps && (
+                    {/* NEW: Exercise Volume & 1RM Estimator - Only for weighted exercises */}
+                    {exercise.defaultSets && exercise.defaultReps && exercise.equipmentNeeded &&
+                     (exercise.equipmentNeeded.toLowerCase().includes('dumbbell') ||
+                      exercise.equipmentNeeded.toLowerCase().includes('barbell') ||
+                      exercise.equipmentNeeded.toLowerCase().includes('weight') ||
+                      exercise.equipmentNeeded.toLowerCase().includes('kettlebell')) && (
                       <div className="text-xs pl-5 space-y-0.5" style={{ color: 'var(--accent)' }}>
                         <div>📊 Volume (@ 50lb): {exercise.defaultSets * exercise.defaultReps * 50} lbs</div>
                         <div>💪 Est. 1RM (@ 8 reps): {Math.round(50 * (1 + 8 / 30))} lbs</div>
@@ -2363,22 +2494,24 @@ export function ExercisesPage() {
         size="md"
       >
         <div className="space-y-4">
-          {/* Patient Selection */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
-              Patient *
-            </label>
-            <select
-              className="glass-input"
-              value={schedulePatientId}
-              onChange={(e) => setSchedulePatientId(e.target.value)}
-            >
-              <option value="">Select Patient</option>
-              {patients.filter(p => p.isActive).map(patient => (
-                <option key={patient.id} value={patient.id}>{patient.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* Patient Selection - Only show for therapists */}
+          {user?.role !== 'patient' && (
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#ffffff' }}>
+                Patient *
+              </label>
+              <select
+                className="glass-input"
+                value={schedulePatientId}
+                onChange={(e) => setSchedulePatientId(e.target.value)}
+              >
+                <option value="">Select Patient</option>
+                {patients.filter(p => p.isActive).map(patient => (
+                  <option key={patient.id} value={patient.id}>{patient.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Date */}
           <div>

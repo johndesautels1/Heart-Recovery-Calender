@@ -91,7 +91,7 @@ export function RegisterPage() {
         </div>
 
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Create Account</h2>
+          <h2 className="text-2xl font-semibold text-white mb-6">Create Account</h2>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input

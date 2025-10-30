@@ -15,10 +15,10 @@ export const getExerciseLogs = async (req: Request, res: Response) => {
 
     // If patient role, only show their own logs
     if (userRole === 'patient') {
-      where.userId = userId;
+      where.patientId = userId;
     } else if (queryUserId) {
       // Therapists can query specific patient's logs
-      where.userId = queryUserId;
+      where.patientId = queryUserId;
     }
 
     if (exerciseId) {
@@ -245,9 +245,9 @@ export const getExerciseLogStats = async (req: Request, res: Response) => {
 
     // Determine which user's stats to fetch
     if (userRole === 'patient') {
-      where.userId = userId;
+      where.patientId = userId;
     } else if (queryUserId) {
-      where.userId = queryUserId;
+      where.patientId = queryUserId;
     } else {
       return res.status(400).json({ error: 'userId query parameter required for therapists' });
     }
