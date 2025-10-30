@@ -1058,6 +1058,52 @@ See browser console for full configuration details.
     }
   };
 
+  // Get exercise category icon
+  const getExerciseIcon = (category: string): string => {
+    const iconMap: Record<string, string> = {
+      'upper_body': '💪',
+      'lower_body': '🦵',
+      'cardio': '❤️',
+      'flexibility': '🤸',
+      'balance': '⚖️',
+      'breathing': '🫁',
+      'core': '🎯',
+    };
+    return iconMap[category] || '🏋️';
+  };
+
+  // Custom event content renderer - shows icons for exercises
+  const renderEventContent = (eventInfo: any) => {
+    const event = eventInfo.event;
+    const extendedProps = event.extendedProps;
+
+    // For meal events, show default
+    if (extendedProps.isMealEvent) {
+      return { html: event.title };
+    }
+
+    // For exercise events, show icon instead of text
+    if (extendedProps.exerciseId && extendedProps.exercise) {
+      const exercise = extendedProps.exercise;
+      const icon = getExerciseIcon(exercise.category);
+      const isCompleted = extendedProps.status === 'completed';
+
+      return {
+        html: `
+          <div class="exercise-event ${isCompleted ? 'completed' : ''}"
+               style="display: flex; align-items: center; justify-content: center;
+                      width: 100%; height: 100%; padding: 2px;
+                      ${isCompleted ? 'opacity: 0.85; filter: brightness(1.1);' : ''}">
+            <span style="font-size: 16px; line-height: 1;">${icon}</span>
+          </div>
+        `
+      };
+    }
+
+    // Default for other events
+    return { html: event.title };
+  };
+
   // Custom day cell content to show sleep hours
   const renderDayCellContent = (arg: any) => {
     const dateStr = arg.date.toISOString().split('T')[0];
@@ -1540,6 +1586,28 @@ See browser console for full configuration details.
               font-weight: 900 !important;
             }
 
+            /* ========== COMPLETED EXERCISE STYLING ========== */
+            /* Depressed/inset appearance for completed exercises */
+            .fc-event .exercise-event.completed {
+              box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+              filter: brightness(1.2) !important;
+              opacity: 0.9 !important;
+              transform: scale(0.98) !important;
+              transition: all 0.2s ease !important;
+            }
+
+            /* Make completed exercise icons slightly brighter */
+            .exercise-event.completed span {
+              filter: brightness(1.3) saturate(1.1) !important;
+              text-shadow: 0px 0px 2px rgba(255,255,255,0.5) !important;
+            }
+
+            /* Category-specific icon brightness enhancements */
+            .exercise-event:not(.completed) span {
+              filter: brightness(1.4) saturate(1.2) drop-shadow(0 0 3px rgba(255,255,255,0.4)) !important;
+              font-size: 18px !important;
+            }
+
             @keyframes pulse-glow {
               0%, 100% {
                 filter: brightness(2) saturate(3);
@@ -1563,6 +1631,7 @@ See browser console for full configuration details.
           dateClick={handleDateClick}
           select={handleSelect}
           eventClick={handleEventClick}
+          eventContent={renderEventContent}
           dayCellContent={renderDayCellContent}
           editable={true}
           selectable={true}
