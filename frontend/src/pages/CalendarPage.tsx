@@ -251,15 +251,19 @@ export function CalendarPage() {
   };
 
   const handleDateClick = async (arg: any) => {
-    // When a date is clicked, navigate to the day view for that date
+    // When a date is clicked, open the day details modal
     const clickedDate = arg.dateStr;
     setSelectedDate(clickedDate);
 
-    // Get the calendar API and change to day view for the clicked date
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.changeView('timeGridDay', clickedDate);
-    }
+    // Filter meals for this date
+    const mealsForDate = allMeals.filter(meal => {
+      const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
+      return mealDate === clickedDate;
+    });
+    setSelectedDateMeals(mealsForDate);
+
+    // Open the modal
+    setShowDateDetailsModal(true);
   };
 
   const handleSelect = async (selectInfo: any) => {
@@ -3232,7 +3236,7 @@ See browser console for full configuration details.
         </div>
       </Modal>
 
-      {/* Date Details Modal (for dates with meals but no events) */}
+      {/* Day Details Modal - Shows all activities for a specific date */}
       <Modal
         isOpen={showDateDetailsModal}
         onClose={() => {
@@ -3240,69 +3244,255 @@ See browser console for full configuration details.
           setSelectedDateMeals([]);
           setSelectedDate(null);
         }}
-        title={selectedDate ? `Meals for ${format(new Date(selectedDate), 'PPP')}` : 'Date Details'}
-        size="lg"
+        title={selectedDate ? `${format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}` : 'Day Details'}
+        size="xl"
       >
-        <div className="space-y-4">
-          {selectedDateMeals.length > 0 && (
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <UtensilsCrossed className="h-5 w-5 text-green-600" />
-                <p className="font-bold text-gray-900">Meals for This Day</p>
-              </div>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {selectedDateMeals.map((meal) => (
-                  <div
-                    key={meal.id}
-                    className="bg-white rounded-lg border-2 border-gray-300 p-3"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-bold text-blue-900 capitalize">
-                            {meal.mealType}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-700">
-                            {new Date(meal.timestamp).toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-800 mt-1">{meal.foodItems}</p>
-                        <div className="flex items-center space-x-3 mt-1 text-xs font-semibold text-gray-600">
-                          {meal.calories && <span>{meal.calories} cal</span>}
-                          {meal.protein && <span>{meal.protein}g protein</span>}
-                          {meal.sodium && <span>{meal.sodium}mg sodium</span>}
-                        </div>
+        <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+          {(() => {
+            if (!selectedDate) return null;
+
+            // Get all activities for this date
+            const eventsForDate = events.filter(event => {
+              const eventDate = new Date(event.startTime).toISOString().split('T')[0];
+              return eventDate === selectedDate;
+            });
+
+            const mealsForDate = selectedDateMeals;
+
+            const sleepForDate = sleepLogs.find(sleep => {
+              const sleepDate = new Date(sleep.date).toISOString().split('T')[0];
+              return sleepDate === selectedDate;
+            });
+
+            const vitalsForDate = vitals.filter(vital => {
+              const vitalDate = new Date(vital.timestamp).toISOString().split('T')[0];
+              return vitalDate === selectedDate;
+            });
+
+            // Check if there's anything to display
+            const hasActivities = eventsForDate.length > 0 || mealsForDate.length > 0 || sleepForDate || vitalsForDate.length > 0;
+
+            if (!hasActivities) {
+              return (
+                <div className="text-center py-12 text-gray-500">
+                  <CalendarIcon className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg font-medium">No activities scheduled for this day</p>
+                  <p className="text-sm mt-2">Click on a time slot to create an event</p>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {/* Exercises & Events */}
+                {eventsForDate.length > 0 && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-blue-500 rounded-lg">
+                        <Clock className="h-5 w-5 text-white" />
                       </div>
-                      {meal.withinSpec !== null && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          meal.withinSpec
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {meal.withinSpec ? '✓' : '⚠'}
-                        </span>
+                      <h3 className="font-bold text-lg text-gray-900">Scheduled Events</h3>
+                      <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">{eventsForDate.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {eventsForDate.map((event) => (
+                        <div
+                          key={event.id}
+                          className="bg-white rounded-lg border-2 border-blue-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => handleEventClick({ event: { id: event.id, ...event } })}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-base font-bold text-blue-900">{event.title}</span>
+                                {event.status === 'completed' && (
+                                  <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">✓ Done</span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600 font-medium">
+                                {new Date(event.startTime).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit'
+                                })}
+                                {' - '}
+                                {new Date(event.endTime).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                              {event.location && (
+                                <div className="flex items-center space-x-1 mt-1 text-xs text-gray-500">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{event.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Meals */}
+                {mealsForDate.length > 0 && (
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-green-500 rounded-lg">
+                        <UtensilsCrossed className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900">Meals & Nutrition</h3>
+                      <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">{mealsForDate.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {mealsForDate.map((meal) => (
+                        <div
+                          key={meal.id}
+                          className="bg-white rounded-lg border-2 border-green-200 p-4 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-base font-bold text-green-900 capitalize">{meal.mealType}</span>
+                                <span className="text-sm text-gray-600 font-medium">
+                                  {new Date(meal.timestamp).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-700 mb-2">{meal.foodItems}</p>
+                              <div className="flex items-center space-x-4 text-xs font-semibold text-gray-600">
+                                {meal.calories && <span>{meal.calories} cal</span>}
+                                {meal.protein && <span>{meal.protein}g protein</span>}
+                                {meal.sodium && <span>{meal.sodium}mg sodium</span>}
+                              </div>
+                            </div>
+                            {meal.withinSpec !== null && (
+                              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                meal.withinSpec
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {meal.withinSpec ? '✓ On track' : '⚠ Review'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sleep */}
+                {sleepForDate && (
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-purple-500 rounded-lg">
+                        <Moon className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900">Sleep & Recovery</h3>
+                    </div>
+                    <div className="bg-white rounded-lg border-2 border-purple-200 p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600 font-medium">Hours Slept</p>
+                          <p className="text-2xl font-bold text-purple-900">{sleepForDate.hoursSlept}h</p>
+                        </div>
+                        {sleepForDate.quality && (
+                          <div>
+                            <p className="text-sm text-gray-600 font-medium">Quality</p>
+                            <p className="text-2xl font-bold text-purple-900 capitalize">{sleepForDate.quality}</p>
+                          </div>
+                        )}
+                      </div>
+                      {sleepForDate.notes && (
+                        <p className="text-sm text-gray-700 mt-3 italic">"{sleepForDate.notes}"</p>
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                )}
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              onClick={() => {
-                setShowDateDetailsModal(false);
-                setSelectedDateMeals([]);
-                setSelectedDate(null);
-              }}
-            >
-              Close
-            </Button>
-          </div>
+                {/* Vitals */}
+                {vitalsForDate.length > 0 && (
+                  <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-red-500 rounded-lg">
+                        <AlertTriangle className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900">Vital Signs</h3>
+                      <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">{vitalsForDate.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {vitalsForDate.map((vital, idx) => (
+                        <div key={vital.id || idx} className="bg-white rounded-lg border-2 border-red-200 p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            {vital.heartRate && (
+                              <div>
+                                <p className="text-gray-600 font-medium">Heart Rate</p>
+                                <p className="text-lg font-bold text-red-900">{vital.heartRate} bpm</p>
+                              </div>
+                            )}
+                            {vital.bloodPressureSystolic && vital.bloodPressureDiastolic && (
+                              <div>
+                                <p className="text-gray-600 font-medium">Blood Pressure</p>
+                                <p className="text-lg font-bold text-red-900">{vital.bloodPressureSystolic}/{vital.bloodPressureDiastolic}</p>
+                              </div>
+                            )}
+                            {vital.oxygenSaturation && (
+                              <div>
+                                <p className="text-gray-600 font-medium">O₂ Sat</p>
+                                <p className="text-lg font-bold text-red-900">{vital.oxygenSaturation}%</p>
+                              </div>
+                            )}
+                            {vital.temperature && (
+                              <div>
+                                <p className="text-gray-600 font-medium">Temperature</p>
+                                <p className="text-lg font-bold text-red-900">{vital.temperature}°F</p>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {new Date(vital.timestamp).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between pt-4 mt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowDateDetailsModal(false);
+              // Switch to day view for this date
+              if (calendarRef.current && selectedDate) {
+                const calendarApi = calendarRef.current.getApi();
+                calendarApi.changeView('timeGridDay', selectedDate);
+              }
+            }}
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Day View
+          </Button>
+          <Button
+            onClick={() => {
+              setShowDateDetailsModal(false);
+              setSelectedDateMeals([]);
+              setSelectedDate(null);
+            }}
+          >
+            Close
+          </Button>
         </div>
       </Modal>
 
