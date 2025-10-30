@@ -93,7 +93,7 @@ export function RestTimer({ onClose, defaultSeconds = 60 }: RestTimerProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
       <div className="glass rounded-2xl p-8 max-w-md w-full relative">
         {/* Close Button */}
         <button
