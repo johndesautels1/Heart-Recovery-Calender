@@ -319,6 +319,32 @@ export interface Patient {
   updatedAt: string;
 }
 
+export interface Provider {
+  id: number;
+  userId: number;
+  name: string;
+  specialty?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  nextAppointment?: string;
+  notes?: string;
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProviderInput {
+  name: string;
+  specialty?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  nextAppointment?: string;
+  notes?: string;
+  isPrimary?: boolean;
+}
+
 export interface CreatePatientInput {
   name: string;
   email?: string;

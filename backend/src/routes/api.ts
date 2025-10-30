@@ -12,6 +12,7 @@ import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
 import * as patientsController from '../controllers/patientsController';
+import * as providersController from '../controllers/providersController';
 import * as exercisesController from '../controllers/exercisesController';
 import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
 import * as eventTemplatesController from '../controllers/eventTemplatesController';
@@ -139,6 +140,14 @@ router.delete('/patients/:id', patientsController.deletePatient);
 router.patch('/patients/:id/toggle-active', patientsController.toggleActive);
 router.get('/patients/:id/post-op-week', patientsController.getPostOpWeek);
 router.get('/patients/:id/metrics', patientsController.getPatientMetrics);
+
+// ========== PROVIDERS ROUTES ==========
+router.get('/providers', providersController.getProviders);
+router.post('/providers', providersController.addProvider);
+router.get('/providers/upcoming', providersController.getUpcomingAppointments);
+router.get('/providers/:id', providersController.getProvider);
+router.put('/providers/:id', providersController.updateProvider);
+router.delete('/providers/:id', providersController.deleteProvider);
 
 // ========== EXERCISES ROUTES ==========
 router.get('/exercises', exercisesController.getExercises);

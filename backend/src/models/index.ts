@@ -26,6 +26,7 @@ import DailyScore from './DailyScore';
 import EventTemplate from './EventTemplate';
 import DeviceConnection from './DeviceConnection';
 import DeviceSyncLog from './DeviceSyncLog';
+import Provider from './Provider';
 
 // Create models object
 const models = {
@@ -54,6 +55,7 @@ const models = {
   DailyScore,
   DeviceConnection,
   DeviceSyncLog,
+  Provider,
 };
 
 // Call associate methods for all models

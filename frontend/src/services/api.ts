@@ -23,6 +23,8 @@ import {
   SleepStats,
   MedicationStats,
   Patient,
+  Provider,
+  CreateProviderInput,
   ExerciseLog,
   CreateExerciseLogInput,
   ExerciseLogStats,
@@ -706,6 +708,36 @@ class ApiService {
 
   async initiateStravaAuth(): Promise<{ authUrl: string }> {
     const response = await this.api.get<ApiResponse<{ authUrl: string }>>('strava/auth');
+    return response.data.data;
+  }
+
+  // ==================== PROVIDERS ENDPOINTS ====================
+  async getProviders(): Promise<Provider[]> {
+    const response = await this.api.get<ApiResponse<Provider[]>>('providers');
+    return response.data.data;
+  }
+
+  async getProvider(id: number): Promise<Provider> {
+    const response = await this.api.get<ApiResponse<Provider>>(`providers/${id}`);
+    return response.data.data;
+  }
+
+  async addProvider(data: CreateProviderInput): Promise<Provider> {
+    const response = await this.api.post<ApiResponse<Provider>>('providers', data);
+    return response.data.data;
+  }
+
+  async updateProvider(id: number, data: Partial<CreateProviderInput>): Promise<Provider> {
+    const response = await this.api.put<ApiResponse<Provider>>(`providers/${id}`, data);
+    return response.data.data;
+  }
+
+  async deleteProvider(id: number): Promise<void> {
+    await this.api.delete(`providers/${id}`);
+  }
+
+  async getUpcomingAppointments(): Promise<Provider[]> {
+    const response = await this.api.get<ApiResponse<Provider[]>>('providers/upcoming');
     return response.data.data;
   }
 }
