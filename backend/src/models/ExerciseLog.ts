@@ -46,6 +46,13 @@ interface ExerciseLogAttributes {
   perceivedExertion?: number;
   performanceScore?: number;
   notes?: string;
+
+  // Device sync tracking
+  dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect';
+  externalId?: string;
+  deviceConnectionId?: number;
+  syncedAt?: Date;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -97,6 +104,13 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public perceivedExertion?: number;
   public performanceScore?: number;
   public notes?: string;
+
+  // Device sync tracking
+  public dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect';
+  public externalId?: string;
+  public deviceConnectionId?: number;
+  public syncedAt?: Date;
+
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
 
@@ -279,6 +293,32 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           type: DataTypes.TEXT,
           allowNull: true,
         },
+        // Device sync tracking
+        dataSource: {
+          type: DataTypes.ENUM('manual', 'polar', 'samsung_health', 'health_connect'),
+          allowNull: true,
+          defaultValue: 'manual',
+          comment: 'Source of the exercise data',
+        },
+        externalId: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+          comment: 'External ID from device/service (e.g., Polar exercise ID)',
+        },
+        deviceConnectionId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'device_connections',
+            key: 'id',
+          },
+          comment: 'Device connection that synced this data',
+        },
+        syncedAt: {
+          type: DataTypes.DATE,
+          allowNull: true,
+          comment: 'When this record was synced from device',
+        },
       },
       {
         sequelize,
@@ -298,6 +338,12 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
       foreignKey: 'patientId',
       as: 'patient',
     });
+    if (models.DeviceConnection) {
+      ExerciseLog.belongsTo(models.DeviceConnection, {
+        foreignKey: 'deviceConnectionId',
+        as: 'deviceConnection',
+      });
+    }
   }
 }
 

@@ -24,6 +24,8 @@ import SleepLog from './SleepLog';
 import HydrationLog from './HydrationLog';
 import DailyScore from './DailyScore';
 import EventTemplate from './EventTemplate';
+import DeviceConnection from './DeviceConnection';
+import DeviceSyncLog from './DeviceSyncLog';
 
 // Create models object
 const models = {
@@ -50,6 +52,8 @@ const models = {
   SleepLog,
   HydrationLog,
   DailyScore,
+  DeviceConnection,
+  DeviceSyncLog,
 };
 
 // Call associate methods for all models

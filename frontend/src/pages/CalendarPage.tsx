@@ -1072,7 +1072,7 @@ See browser console for full configuration details.
     return iconMap[category] || '🏋️';
   };
 
-  // Custom event content renderer - shows icons for exercises
+  // Custom event content renderer - shows icons ONLY for COMPLETED exercises
   const renderEventContent = (eventInfo: any) => {
     const event = eventInfo.event;
     const extendedProps = event.extendedProps;
@@ -1082,22 +1082,28 @@ See browser console for full configuration details.
       return { html: event.title };
     }
 
-    // For exercise events, show icon instead of text
+    // For exercise events
     if (extendedProps.exerciseId && extendedProps.exercise) {
       const exercise = extendedProps.exercise;
-      const icon = getExerciseIcon(exercise.category);
       const isCompleted = extendedProps.status === 'completed';
 
-      return {
-        html: `
-          <div class="exercise-event ${isCompleted ? 'completed' : ''}"
-               style="display: flex; align-items: center; justify-content: center;
-                      width: 100%; height: 100%; padding: 2px;
-                      ${isCompleted ? 'opacity: 0.85; filter: brightness(1.1);' : ''}">
-            <span style="font-size: 16px; line-height: 1;">${icon}</span>
-          </div>
-        `
-      };
+      // ONLY show icon + checkmark if completed
+      if (isCompleted) {
+        const icon = getExerciseIcon(exercise.category);
+        return {
+          html: `
+            <div class="exercise-event completed"
+                 style="display: flex; align-items: center; justify-content: center; gap: 4px;
+                        width: 100%; height: 100%; padding: 4px;">
+              <span style="font-size: 18px; line-height: 1;">${icon}</span>
+              <span style="font-size: 14px; line-height: 1; color: #10b981;">✓</span>
+            </div>
+          `
+        };
+      } else {
+        // Show text for incomplete exercises
+        return { html: event.title };
+      }
     }
 
     // Default for other events
@@ -1587,25 +1593,30 @@ See browser console for full configuration details.
             }
 
             /* ========== COMPLETED EXERCISE STYLING ========== */
-            /* Depressed/inset appearance for completed exercises */
+            /* Faint blue depressed appearance for completed exercises */
+            .fc-event:has(.exercise-event.completed) {
+              background: linear-gradient(135deg, rgba(147, 197, 253, 0.3), rgba(191, 219, 254, 0.4)) !important;
+              border-color: rgba(96, 165, 250, 0.4) !important;
+              box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.35), inset 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+              transform: scale(0.97) !important;
+              transition: all 0.3s ease !important;
+            }
+
             .fc-event .exercise-event.completed {
-              box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-              filter: brightness(1.2) !important;
-              opacity: 0.9 !important;
-              transform: scale(0.98) !important;
-              transition: all 0.2s ease !important;
+              background: transparent !important;
+              width: 100%;
+              height: 100%;
             }
 
-            /* Make completed exercise icons slightly brighter */
+            /* Make completed exercise icons and checkmark bright */
             .exercise-event.completed span {
-              filter: brightness(1.3) saturate(1.1) !important;
-              text-shadow: 0px 0px 2px rgba(255,255,255,0.5) !important;
+              filter: brightness(1.4) saturate(1.3) drop-shadow(0 0 2px rgba(255,255,255,0.6)) !important;
             }
 
-            /* Category-specific icon brightness enhancements */
-            .exercise-event:not(.completed) span {
-              filter: brightness(1.4) saturate(1.2) drop-shadow(0 0 3px rgba(255,255,255,0.4)) !important;
-              font-size: 18px !important;
+            /* Hover effect for completed exercises */
+            .fc-event:has(.exercise-event.completed):hover {
+              transform: scale(0.98) !important;
+              box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(96, 165, 250, 0.3) !important;
             }
 
             @keyframes pulse-glow {
