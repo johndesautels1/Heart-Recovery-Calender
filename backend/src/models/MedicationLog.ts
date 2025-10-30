@@ -8,6 +8,7 @@ interface MedicationLogAttributes {
   scheduledTime: Date;
   takenTime?: Date;
   status: 'scheduled' | 'taken' | 'missed' | 'skipped';
+  postSurgeryDay?: number;
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -22,6 +23,7 @@ class MedicationLog extends Model<MedicationLogAttributes, MedicationLogCreation
   public scheduledTime!: Date;
   public takenTime?: Date;
   public status!: 'scheduled' | 'taken' | 'missed' | 'skipped';
+  public postSurgeryDay?: number;
   public notes?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -62,6 +64,11 @@ class MedicationLog extends Model<MedicationLogAttributes, MedicationLogCreation
           type: DataTypes.STRING(20),
           allowNull: false,
           defaultValue: 'scheduled',
+        },
+        postSurgeryDay: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Days since surgery (Day 0 = surgery date), auto-calculated by trigger',
         },
         notes: {
           type: DataTypes.TEXT,

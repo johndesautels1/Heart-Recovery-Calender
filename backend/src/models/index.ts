@@ -20,6 +20,9 @@ import Patient from './Patient';
 import Exercise from './Exercise';
 import ExercisePrescription from './ExercisePrescription';
 import ExerciseLog from './ExerciseLog';
+import SleepLog from './SleepLog';
+import HydrationLog from './HydrationLog';
+import DailyScore from './DailyScore';
 import EventTemplate from './EventTemplate';
 
 // Create models object
@@ -44,6 +47,9 @@ const models = {
   Exercise,
   ExercisePrescription,
   ExerciseLog,
+  SleepLog,
+  HydrationLog,
+  DailyScore,
 };
 
 // Call associate methods for all models

@@ -1,37 +1,33 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from './database';
 
-interface SleepLogAttributes {
+interface HydrationLogAttributes {
   id: number;
   userId: number;
   date: Date;
-  hoursSlept: number;
-  sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  totalOunces: number;
+  targetOunces?: number;
   postSurgeryDay?: number;
   notes?: string;
-  bedTime?: Date;
-  wakeTime?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface SleepLogCreationAttributes extends Optional<SleepLogAttributes, 'id' | 'sleepQuality' | 'notes' | 'bedTime' | 'wakeTime' | 'createdAt' | 'updatedAt'> {}
+interface HydrationLogCreationAttributes extends Optional<HydrationLogAttributes, 'id' | 'targetOunces' | 'postSurgeryDay' | 'notes' | 'createdAt' | 'updatedAt'> {}
 
-class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> implements SleepLogAttributes {
+class HydrationLog extends Model<HydrationLogAttributes, HydrationLogCreationAttributes> implements HydrationLogAttributes {
   public id!: number;
   public userId!: number;
   public date!: Date;
-  public hoursSlept!: number;
-  public sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  public totalOunces!: number;
+  public targetOunces?: number;
   public postSurgeryDay?: number;
   public notes?: string;
-  public bedTime?: Date;
-  public wakeTime?: Date;
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
 
   static initialize() {
-    SleepLog.init(
+    HydrationLog.init(
       {
         id: {
           type: DataTypes.INTEGER,
@@ -49,16 +45,18 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
         date: {
           type: DataTypes.DATEONLY,
           allowNull: false,
-          comment: 'Date of the sleep (the day you woke up)',
+          comment: 'Date of hydration tracking',
         },
-        hoursSlept: {
-          type: DataTypes.DECIMAL(4, 2),
+        totalOunces: {
+          type: DataTypes.DECIMAL(5, 1),
           allowNull: false,
-          comment: 'Total hours of sleep',
+          defaultValue: 0,
+          comment: 'Total fluid intake in ounces for the day',
         },
-        sleepQuality: {
-          type: DataTypes.ENUM('poor', 'fair', 'good', 'excellent'),
+        targetOunces: {
+          type: DataTypes.DECIMAL(5, 1),
           allowNull: true,
+          comment: 'Daily target based on body weight (Weight in lbs × 0.5)',
         },
         postSurgeryDay: {
           type: DataTypes.INTEGER,
@@ -69,21 +67,11 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
           type: DataTypes.TEXT,
           allowNull: true,
         },
-        bedTime: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          comment: 'Time went to bed',
-        },
-        wakeTime: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          comment: 'Time woke up',
-        },
       },
       {
         sequelize,
-        modelName: 'SleepLog',
-        tableName: 'sleep_logs',
+        modelName: 'HydrationLog',
+        tableName: 'hydration_logs',
         timestamps: true,
         indexes: [
           {
@@ -96,13 +84,13 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
   }
 
   static associate(models: any) {
-    SleepLog.belongsTo(models.User, {
+    HydrationLog.belongsTo(models.User, {
       foreignKey: 'userId',
       as: 'user',
     });
   }
 }
 
-SleepLog.initialize();
+HydrationLog.initialize();
 
-export default SleepLog;
+export default HydrationLog;

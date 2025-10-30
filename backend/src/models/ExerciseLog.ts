@@ -6,15 +6,45 @@ interface ExerciseLogAttributes {
   prescriptionId: number;
   patientId: number;
   completedAt: Date;
+  postSurgeryDay?: number;
+  startedAt?: Date;
+
+  // Pre-exercise vitals
+  preBpSystolic?: number;
+  preBpDiastolic?: number;
+  preHeartRate?: number;
+  preOxygenSat?: number;
+
+  // During exercise vitals
+  duringHeartRateAvg?: number;
+  duringHeartRateMax?: number;
+  duringBpSystolic?: number;
+  duringBpDiastolic?: number;
+
+  // Post-exercise vitals
+  postBpSystolic?: number;
+  postBpDiastolic?: number;
+  postHeartRate?: number;
+  postOxygenSat?: number;
+
+  // Activity-specific metrics
+  distanceMiles?: number;
+  laps?: number;
+  steps?: number;
+  elevationFeet?: number;
+  caloriesBurned?: number;
+
+  // Exercise tracking
   actualSets?: number;
   actualReps?: number;
-  actualDuration?: number; // in minutes
-  weight?: number; // NEW: Weight used (for progressive overload tracking)
-  rangeOfMotion?: number; // NEW: Range of motion in degrees or percentage (0-100)
-  difficultyRating?: number; // 1-10 scale
-  painLevel?: number; // 1-10 scale
-  painLocation?: string; // NEW: Where the pain is located
-  performanceScore?: number; // 0 = no show, 4 = completed, 6 = met goals, 8 = exceeded goals
+  actualDuration?: number;
+  weight?: number;
+  rangeOfMotion?: number;
+  difficultyRating?: number;
+  painLevel?: number;
+  painLocation?: string;
+  perceivedExertion?: number;
+  performanceScore?: number;
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -27,6 +57,35 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public prescriptionId!: number;
   public patientId!: number;
   public completedAt!: Date;
+  public postSurgeryDay?: number;
+  public startedAt?: Date;
+
+  // Pre-exercise vitals
+  public preBpSystolic?: number;
+  public preBpDiastolic?: number;
+  public preHeartRate?: number;
+  public preOxygenSat?: number;
+
+  // During exercise vitals
+  public duringHeartRateAvg?: number;
+  public duringHeartRateMax?: number;
+  public duringBpSystolic?: number;
+  public duringBpDiastolic?: number;
+
+  // Post-exercise vitals
+  public postBpSystolic?: number;
+  public postBpDiastolic?: number;
+  public postHeartRate?: number;
+  public postOxygenSat?: number;
+
+  // Activity-specific metrics
+  public distanceMiles?: number;
+  public laps?: number;
+  public steps?: number;
+  public elevationFeet?: number;
+  public caloriesBurned?: number;
+
+  // Exercise tracking
   public actualSets?: number;
   public actualReps?: number;
   public actualDuration?: number;
@@ -35,6 +94,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public difficultyRating?: number;
   public painLevel?: number;
   public painLocation?: string;
+  public perceivedExertion?: number;
   public performanceScore?: number;
   public notes?: string;
   public readonly createdAt?: Date;
@@ -67,6 +127,105 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
         completedAt: {
           type: DataTypes.DATE,
           allowNull: false,
+        },
+        postSurgeryDay: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Days since surgery (Day 0 = surgery date), auto-calculated by trigger',
+        },
+        startedAt: {
+          type: DataTypes.DATE,
+          allowNull: true,
+          comment: 'When the exercise session started',
+        },
+        // Pre-exercise vitals
+        preBpSystolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Pre-exercise systolic blood pressure (mmHg)',
+        },
+        preBpDiastolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Pre-exercise diastolic blood pressure (mmHg)',
+        },
+        preHeartRate: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Pre-exercise heart rate (bpm)',
+        },
+        preOxygenSat: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Pre-exercise oxygen saturation (%)',
+        },
+        // During exercise vitals
+        duringHeartRateAvg: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Average heart rate during exercise (bpm)',
+        },
+        duringHeartRateMax: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Maximum heart rate during exercise (bpm)',
+        },
+        duringBpSystolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Blood pressure during exercise - systolic (optional monitoring)',
+        },
+        duringBpDiastolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Blood pressure during exercise - diastolic (optional monitoring)',
+        },
+        // Post-exercise vitals
+        postBpSystolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Post-exercise systolic blood pressure (mmHg)',
+        },
+        postBpDiastolic: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Post-exercise diastolic blood pressure (mmHg)',
+        },
+        postHeartRate: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Post-exercise heart rate (bpm)',
+        },
+        postOxygenSat: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Post-exercise oxygen saturation (%)',
+        },
+        // Activity-specific metrics
+        distanceMiles: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          comment: 'Distance covered in miles (running, cycling, swimming, walking)',
+        },
+        laps: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Number of laps (swimming, track)',
+        },
+        steps: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Step count (walking, hiking)',
+        },
+        elevationFeet: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          comment: 'Elevation gain in feet (hiking, cycling)',
+        },
+        caloriesBurned: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Estimated calories burned',
         },
         actualSets: {
           type: DataTypes.INTEGER,
@@ -105,6 +264,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           type: DataTypes.STRING(255),
           allowNull: true,
           comment: 'Location of pain/discomfort (e.g., chest, shoulder, knee)',
+        },
+        perceivedExertion: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Borg Scale 1-10 (1=very easy, 10=max effort)',
         },
         performanceScore: {
           type: DataTypes.INTEGER,

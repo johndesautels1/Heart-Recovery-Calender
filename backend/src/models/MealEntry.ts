@@ -17,6 +17,7 @@ interface MealEntryAttributes {
   protein?: number;
   carbohydrates?: number;
   withinSpec: boolean;
+  postSurgeryDay?: number;
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -40,6 +41,7 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
   public protein?: number;
   public carbohydrates?: number;
   public withinSpec!: boolean;
+  public postSurgeryDay?: number;
   public notes?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -121,6 +123,11 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
           type: DataTypes.BOOLEAN,
           defaultValue: true,
           comment: 'Whether meal meets dietary specifications',
+        },
+        postSurgeryDay: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Days since surgery (Day 0 = surgery date), auto-calculated by trigger',
         },
         notes: {
           type: DataTypes.TEXT,

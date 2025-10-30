@@ -19,6 +19,7 @@ interface VitalsSampleAttributes {
   cholesterolHDL?: number;
   triglycerides?: number;
   respiratoryRate?: number;
+  postSurgeryDay?: number;
   notes?: string;
   symptoms?: string;
   medicationsTaken: boolean;
@@ -48,6 +49,7 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public cholesterolHDL?: number;
   public triglycerides?: number;
   public respiratoryRate?: number;
+  public postSurgeryDay?: number;
   public notes?: string;
   public symptoms?: string;
   public medicationsTaken!: boolean;
@@ -170,6 +172,11 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'Breaths per minute',
+        },
+        postSurgeryDay: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Days since surgery (Day 0 = surgery date), auto-calculated by trigger',
         },
         notes: {
           type: DataTypes.TEXT,
