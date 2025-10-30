@@ -4,7 +4,7 @@ import sequelize from './database';
 interface DeviceConnectionAttributes {
   id: number;
   userId: number;
-  deviceType: 'polar' | 'samsung_health' | 'health_connect';
+  deviceType: 'polar' | 'samsung_health' | 'health_connect' | 'strava';
   deviceId?: string;
   deviceName?: string;
 
@@ -17,6 +17,7 @@ interface DeviceConnectionAttributes {
   // Device-specific metadata
   polarUserId?: number;
   samsungUserId?: string;
+  stravaAthleteId?: string;
   lastSyncedAt?: Date;
   syncStatus: 'active' | 'error' | 'disconnected';
   syncError?: string;
@@ -32,12 +33,12 @@ interface DeviceConnectionAttributes {
   updatedAt?: Date;
 }
 
-interface DeviceConnectionCreationAttributes extends Optional<DeviceConnectionAttributes, 'id' | 'deviceId' | 'deviceName' | 'accessToken' | 'refreshToken' | 'tokenExpiresAt' | 'webhookSecret' | 'polarUserId' | 'samsungUserId' | 'lastSyncedAt' | 'syncError' | 'createdAt' | 'updatedAt'> {}
+interface DeviceConnectionCreationAttributes extends Optional<DeviceConnectionAttributes, 'id' | 'deviceId' | 'deviceName' | 'accessToken' | 'refreshToken' | 'tokenExpiresAt' | 'webhookSecret' | 'polarUserId' | 'samsungUserId' | 'stravaAthleteId' | 'lastSyncedAt' | 'syncError' | 'createdAt' | 'updatedAt'> {}
 
 class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectionCreationAttributes> implements DeviceConnectionAttributes {
   public id!: number;
   public userId!: number;
-  public deviceType!: 'polar' | 'samsung_health' | 'health_connect';
+  public deviceType!: 'polar' | 'samsung_health' | 'health_connect' | 'strava';
   public deviceId?: string;
   public deviceName?: string;
 
@@ -48,6 +49,7 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
 
   public polarUserId?: number;
   public samsungUserId?: string;
+  public stravaAthleteId?: string;
   public lastSyncedAt?: Date;
   public syncStatus!: 'active' | 'error' | 'disconnected';
   public syncError?: string;
@@ -78,7 +80,7 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
           },
         },
         deviceType: {
-          type: DataTypes.ENUM('polar', 'samsung_health', 'health_connect'),
+          type: DataTypes.ENUM('polar', 'samsung_health', 'health_connect', 'strava'),
           allowNull: false,
           comment: 'Type of device/service connected',
         },
@@ -121,6 +123,11 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
           type: DataTypes.STRING(255),
           allowNull: true,
           comment: 'Samsung Health user ID',
+        },
+        stravaAthleteId: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+          comment: 'Strava athlete ID',
         },
         lastSyncedAt: {
           type: DataTypes.DATE,

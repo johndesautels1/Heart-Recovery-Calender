@@ -20,6 +20,10 @@ import * as exerciseLogsController from '../controllers/exerciseLogsController';
 import * as hydrationLogsController from '../controllers/hydrationLogsController';
 import * as dailyScoresController from '../controllers/dailyScoresController';
 import uploadRoutes from './upload';
+import devicesRoutes from './devices';
+import stravaRoutes from './strava';
+// import polarRoutes from './polar';
+// import samsungRoutes from './samsung';
 
 const router = Router();
 
@@ -204,5 +208,11 @@ router.delete('/daily-scores/:id', dailyScoresController.deleteDailyScore);
 
 // ========== UPLOAD ROUTES ==========
 router.use('/upload', uploadRoutes);
+
+// ========== DEVICE INTEGRATION ROUTES ==========
+router.use('/devices', devicesRoutes);
+router.use('/strava', stravaRoutes);
+// router.use('/polar', polarRoutes);  // Keep disabled for now
+// router.use('/samsung', samsungRoutes);  // Keep disabled for now
 
 export default router;

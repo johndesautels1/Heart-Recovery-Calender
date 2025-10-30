@@ -33,6 +33,10 @@ import {
   CreateDailyScoreInput,
   DailyScoreStats,
   DailyScoreTrends,
+  DeviceConnection,
+  DeviceSyncLog,
+  UpdateDeviceSettingsInput,
+  TriggerSyncInput,
 } from '../types';
 
 class ApiService {
@@ -657,6 +661,52 @@ class ApiService {
 
     const response = await this.api.get<DailyScoreTrends>(`daily-scores/trends?${params.toString()}`);
     return response.data;
+  }
+
+  // ==================== DEVICE CONNECTIONS ENDPOINTS ====================
+  async getDevices(): Promise<DeviceConnection[]> {
+    const response = await this.api.get<ApiResponse<DeviceConnection[]>>('devices');
+    return response.data.data;
+  }
+
+  async getDevice(id: number): Promise<DeviceConnection> {
+    const response = await this.api.get<ApiResponse<DeviceConnection>>(`devices/${id}`);
+    return response.data.data;
+  }
+
+  async deleteDevice(id: number): Promise<void> {
+    await this.api.delete(`devices/${id}`);
+  }
+
+  async updateDeviceSettings(id: number, settings: UpdateDeviceSettingsInput): Promise<DeviceConnection> {
+    const response = await this.api.put<ApiResponse<DeviceConnection>>(`devices/${id}/settings`, settings);
+    return response.data.data;
+  }
+
+  async getSyncHistory(deviceId: number, limit: number = 20): Promise<DeviceSyncLog[]> {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    const response = await this.api.get<ApiResponse<DeviceSyncLog[]>>(`devices/${deviceId}/sync-history?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async triggerDeviceSync(deviceId: number, data?: TriggerSyncInput): Promise<DeviceSyncLog> {
+    const response = await this.api.post<ApiResponse<DeviceSyncLog>>(`devices/${deviceId}/sync`, data || {});
+    return response.data.data;
+  }
+
+  async initiatePolarAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('polar/auth');
+    return response.data.data;
+  }
+
+  async initiateSamsungAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('samsung/auth');
+    return response.data.data;
+  }
+
+  async initiateStravaAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('strava/auth');
+    return response.data.data;
   }
 }
 

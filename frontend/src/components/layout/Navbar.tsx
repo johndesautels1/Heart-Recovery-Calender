@@ -17,7 +17,8 @@ import {
   Moon,
   Sun,
   UserCircle2,
-  Dumbbell
+  Dumbbell,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useView } from '../../contexts/ViewContext';
@@ -74,6 +75,7 @@ export function Navbar() {
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
     { path: '/medications', label: 'Medications', icon: Pill },
     { path: '/sleep', label: 'Sleep Journal', icon: Moon },
+    { path: '/devices', label: 'My Devices', icon: Smartphone },
   ];
 
   // Add My Patients tab for therapists/admins or My Providers tab for patients at position 3

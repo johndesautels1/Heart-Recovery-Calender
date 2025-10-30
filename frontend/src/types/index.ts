@@ -612,3 +612,58 @@ export interface DailyScoreTrends {
     daysLogged?: number;
   }>;
 }
+
+// ==================== DEVICE CONNECTIONS ====================
+export interface DeviceConnection {
+  id: number;
+  userId: number;
+  deviceType: 'polar' | 'samsung_health' | 'health_connect' | 'strava';
+  deviceName: string;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiresAt?: string;
+  polarUserId?: number;
+  samsungUserId?: string;
+  stravaAthleteId?: string;
+  lastSyncedAt?: string;
+  syncStatus: 'active' | 'error' | 'disconnected';
+  syncError?: string;
+  autoSync: boolean;
+  syncExercises: boolean;
+  syncHeartRate: boolean;
+  syncSteps: boolean;
+  syncCalories: boolean;
+  webhookSecret?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeviceSyncLog {
+  id: number;
+  deviceConnectionId: number;
+  syncType: 'manual' | 'scheduled' | 'webhook';
+  dataType: 'all' | 'exercise' | 'heart_rate' | 'steps' | 'calories' | 'sleep';
+  status: 'pending' | 'in_progress' | 'success' | 'error';
+  startedAt: string;
+  completedAt?: string;
+  recordsProcessed?: number;
+  recordsCreated?: number;
+  recordsSkipped?: number;
+  errorMessage?: string;
+  errorDetails?: string;
+  externalIds?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateDeviceSettingsInput {
+  autoSync?: boolean;
+  syncExercises?: boolean;
+  syncHeartRate?: boolean;
+  syncSteps?: boolean;
+  syncCalories?: boolean;
+}
+
+export interface TriggerSyncInput {
+  dataType?: 'all' | 'exercise' | 'heart_rate' | 'steps' | 'calories' | 'sleep';
+}

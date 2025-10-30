@@ -48,7 +48,7 @@ interface ExerciseLogAttributes {
   notes?: string;
 
   // Device sync tracking
-  dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect';
+  dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect' | 'strava';
   externalId?: string;
   deviceConnectionId?: number;
   syncedAt?: Date;
@@ -106,7 +106,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public notes?: string;
 
   // Device sync tracking
-  public dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect';
+  public dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect' | 'strava';
   public externalId?: string;
   public deviceConnectionId?: number;
   public syncedAt?: Date;
@@ -295,7 +295,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
         },
         // Device sync tracking
         dataSource: {
-          type: DataTypes.ENUM('manual', 'polar', 'samsung_health', 'health_connect'),
+          type: DataTypes.ENUM('manual', 'polar', 'samsung_health', 'health_connect', 'strava'),
           allowNull: true,
           defaultValue: 'manual',
           comment: 'Source of the exercise data',
