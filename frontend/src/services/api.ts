@@ -23,6 +23,16 @@ import {
   SleepStats,
   MedicationStats,
   Patient,
+  ExerciseLog,
+  CreateExerciseLogInput,
+  ExerciseLogStats,
+  HydrationLog,
+  CreateHydrationLogInput,
+  HydrationStats,
+  DailyScore,
+  CreateDailyScoreInput,
+  DailyScoreStats,
+  DailyScoreTrends,
 } from '../types';
 
 class ApiService {
@@ -490,6 +500,159 @@ class ApiService {
     if (userId) params.append('userId', userId.toString());
 
     const response = await this.api.get<SleepStats>(`sleep-logs/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  // ==================== EXERCISE LOGS ENDPOINTS ====================
+  async getExerciseLogs(filters?: {
+    exerciseId?: number;
+    prescriptionId?: number;
+    startDate?: string;
+    endDate?: string;
+    userId?: number;
+  }): Promise<ExerciseLog[]> {
+    const params = new URLSearchParams();
+    if (filters?.exerciseId) params.append('exerciseId', filters.exerciseId.toString());
+    if (filters?.prescriptionId) params.append('prescriptionId', filters.prescriptionId.toString());
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<ApiResponse<ExerciseLog[]>>(`exercise-logs?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getExerciseLog(id: number): Promise<ExerciseLog> {
+    const response = await this.api.get<ExerciseLog>(`exercise-logs/${id}`);
+    return response.data;
+  }
+
+  async createExerciseLog(data: CreateExerciseLogInput): Promise<ExerciseLog> {
+    const response = await this.api.post<ExerciseLog>('exercise-logs', data);
+    return response.data;
+  }
+
+  async updateExerciseLog(id: number, data: Partial<CreateExerciseLogInput>): Promise<ExerciseLog> {
+    const response = await this.api.put<ExerciseLog>(`exercise-logs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteExerciseLog(id: number): Promise<void> {
+    await this.api.delete(`exercise-logs/${id}`);
+  }
+
+  async getExerciseLogStats(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<ExerciseLogStats> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<ExerciseLogStats>(`exercise-logs/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  // ==================== HYDRATION LOGS ENDPOINTS ====================
+  async getHydrationLogs(filters?: { startDate?: string; endDate?: string; date?: string; userId?: number }): Promise<HydrationLog[]> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.date) params.append('date', filters.date);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<ApiResponse<HydrationLog[]>>(`hydration-logs?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getHydrationLog(id: number): Promise<HydrationLog> {
+    const response = await this.api.get<HydrationLog>(`hydration-logs/${id}`);
+    return response.data;
+  }
+
+  async getHydrationLogByDate(date: string, userId?: number): Promise<HydrationLog> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId.toString());
+
+    const response = await this.api.get<HydrationLog>(`hydration-logs/date/${date}?${params.toString()}`);
+    return response.data;
+  }
+
+  async createHydrationLog(data: CreateHydrationLogInput): Promise<HydrationLog> {
+    const response = await this.api.post<HydrationLog>('hydration-logs', data);
+    return response.data;
+  }
+
+  async updateHydrationLog(id: number, data: Partial<CreateHydrationLogInput>): Promise<HydrationLog> {
+    const response = await this.api.put<HydrationLog>(`hydration-logs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteHydrationLog(id: number): Promise<void> {
+    await this.api.delete(`hydration-logs/${id}`);
+  }
+
+  async getHydrationStats(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<HydrationStats> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<HydrationStats>(`hydration-logs/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  // ==================== DAILY SCORES ENDPOINTS ====================
+  async getDailyScores(filters?: { startDate?: string; endDate?: string; minScore?: number; maxScore?: number; userId?: number }): Promise<DailyScore[]> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.minScore !== undefined) params.append('minScore', filters.minScore.toString());
+    if (filters?.maxScore !== undefined) params.append('maxScore', filters.maxScore.toString());
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<ApiResponse<DailyScore[]>>(`daily-scores?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getDailyScore(id: number): Promise<DailyScore> {
+    const response = await this.api.get<DailyScore>(`daily-scores/${id}`);
+    return response.data;
+  }
+
+  async getDailyScoreByDate(date: string, userId?: number): Promise<DailyScore> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId.toString());
+
+    const response = await this.api.get<DailyScore>(`daily-scores/date/${date}?${params.toString()}`);
+    return response.data;
+  }
+
+  async createOrUpdateDailyScore(data: CreateDailyScoreInput): Promise<DailyScore> {
+    const response = await this.api.post<DailyScore>('daily-scores', data);
+    return response.data;
+  }
+
+  async deleteDailyScore(id: number): Promise<void> {
+    await this.api.delete(`daily-scores/${id}`);
+  }
+
+  async getDailyScoreStats(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<DailyScoreStats> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<DailyScoreStats>(`daily-scores/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  async getDailyScoreTrends(filters?: { startDate?: string; endDate?: string; interval?: 'day' | 'week'; userId?: number }): Promise<DailyScoreTrends> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.interval) params.append('interval', filters.interval);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<DailyScoreTrends>(`daily-scores/trends?${params.toString()}`);
     return response.data;
   }
 }

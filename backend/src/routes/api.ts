@@ -16,6 +16,9 @@ import * as exercisesController from '../controllers/exercisesController';
 import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
 import * as eventTemplatesController from '../controllers/eventTemplatesController';
 import * as sleepLogsController from '../controllers/sleepLogsController';
+import * as exerciseLogsController from '../controllers/exerciseLogsController';
+import * as hydrationLogsController from '../controllers/hydrationLogsController';
+import * as dailyScoresController from '../controllers/dailyScoresController';
 
 const router = Router();
 
@@ -171,5 +174,31 @@ router.get('/sleep-logs/date/:date', sleepLogsController.getSleepLogByDate);
 router.get('/sleep-logs/:id', sleepLogsController.getSleepLog);
 router.put('/sleep-logs/:id', sleepLogsController.updateSleepLog);
 router.delete('/sleep-logs/:id', sleepLogsController.deleteSleepLog);
+
+// ========== EXERCISE LOGS ROUTES ==========
+router.get('/exercise-logs', exerciseLogsController.getExerciseLogs);
+router.post('/exercise-logs', exerciseLogsController.createExerciseLog);
+router.get('/exercise-logs/stats', exerciseLogsController.getExerciseLogStats);
+router.get('/exercise-logs/:id', exerciseLogsController.getExerciseLog);
+router.put('/exercise-logs/:id', exerciseLogsController.updateExerciseLog);
+router.delete('/exercise-logs/:id', exerciseLogsController.deleteExerciseLog);
+
+// ========== HYDRATION LOGS ROUTES ==========
+router.get('/hydration-logs', hydrationLogsController.getHydrationLogs);
+router.post('/hydration-logs', hydrationLogsController.createHydrationLog);
+router.get('/hydration-logs/stats', hydrationLogsController.getHydrationStats);
+router.get('/hydration-logs/date/:date', hydrationLogsController.getHydrationLogByDate);
+router.get('/hydration-logs/:id', hydrationLogsController.getHydrationLog);
+router.put('/hydration-logs/:id', hydrationLogsController.updateHydrationLog);
+router.delete('/hydration-logs/:id', hydrationLogsController.deleteHydrationLog);
+
+// ========== DAILY SCORES ROUTES ==========
+router.get('/daily-scores', dailyScoresController.getDailyScores);
+router.post('/daily-scores', dailyScoresController.createOrUpdateDailyScore);
+router.get('/daily-scores/stats', dailyScoresController.getDailyScoreStats);
+router.get('/daily-scores/trends', dailyScoresController.getTrends);
+router.get('/daily-scores/date/:date', dailyScoresController.getDailyScoreByDate);
+router.get('/daily-scores/:id', dailyScoresController.getDailyScore);
+router.delete('/daily-scores/:id', dailyScoresController.deleteDailyScore);
 
 export default router;

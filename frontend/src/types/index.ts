@@ -407,3 +407,208 @@ export interface MedicationStats {
   startDate?: string;
   endDate?: string;
 }
+
+// ==================== EXERCISE LOGS ====================
+export interface ExerciseLog {
+  id: number;
+  prescriptionId: number;
+  patientId: number;
+  completedAt: string;
+  postSurgeryDay?: number;
+  startedAt?: string;
+
+  // Pre-exercise vitals
+  preBpSystolic?: number;
+  preBpDiastolic?: number;
+  preHeartRate?: number;
+  preOxygenSat?: number;
+
+  // During exercise vitals
+  duringHeartRateAvg?: number;
+  duringHeartRateMax?: number;
+  duringBpSystolic?: number;
+  duringBpDiastolic?: number;
+
+  // Post-exercise vitals
+  postBpSystolic?: number;
+  postBpDiastolic?: number;
+  postHeartRate?: number;
+  postOxygenSat?: number;
+
+  // Activity metrics
+  distanceMiles?: number;
+  laps?: number;
+  steps?: number;
+  elevationFeet?: number;
+  caloriesBurned?: number;
+
+  // Subjective
+  perceivedExertion?: number; // 1-10 RPE scale
+  performanceScore?: number; // 0-4-6-8 scale
+  exerciseIntensity?: 'low' | 'moderate' | 'high' | 'very-high';
+  durationMinutes?: number;
+  notes?: string;
+
+  createdAt: string;
+  updatedAt: string;
+  exercise?: any; // TODO: Define Exercise type
+  user?: User;
+}
+
+export interface CreateExerciseLogInput {
+  prescriptionId: number;
+  patientId?: number;
+  completedAt?: string;
+  startedAt?: string;
+
+  // Pre-exercise vitals
+  preBpSystolic?: number;
+  preBpDiastolic?: number;
+  preHeartRate?: number;
+  preOxygenSat?: number;
+
+  // During exercise vitals
+  duringHeartRateAvg?: number;
+  duringHeartRateMax?: number;
+  duringBpSystolic?: number;
+  duringBpDiastolic?: number;
+
+  // Post-exercise vitals
+  postBpSystolic?: number;
+  postBpDiastolic?: number;
+  postHeartRate?: number;
+  postOxygenSat?: number;
+
+  // Activity metrics
+  distanceMiles?: number;
+  laps?: number;
+  steps?: number;
+  elevationFeet?: number;
+  caloriesBurned?: number;
+
+  // Subjective
+  perceivedExertion?: number;
+  performanceScore?: number;
+  exerciseIntensity?: 'low' | 'moderate' | 'high' | 'very-high';
+  durationMinutes?: number;
+  notes?: string;
+}
+
+export interface ExerciseLogStats {
+  totalLogs: number;
+  avgPerformanceScore: number;
+  avgDuration: number;
+  totalDistance: number;
+  totalCalories: number;
+  byExerciseType: any[];
+  scoreDistribution: any[];
+}
+
+// ==================== HYDRATION LOGS ====================
+export interface HydrationLog {
+  id: number;
+  userId: number;
+  date: string;
+  totalOunces: number;
+  targetOunces?: number;
+  postSurgeryDay?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+}
+
+export interface CreateHydrationLogInput {
+  userId?: number;
+  date: string;
+  totalOunces: number;
+  targetOunces?: number;
+  notes?: string;
+}
+
+export interface HydrationStats {
+  totalLogs: number;
+  avgDailyIntake: number;
+  avgDailyTarget: number;
+  daysMetTarget: number;
+  complianceRate: number;
+  totalOunces: number;
+}
+
+// ==================== DAILY SCORES ====================
+export interface DailyScore {
+  id: number;
+  userId: number;
+  scoreDate: string;
+  postSurgeryDay?: number;
+
+  // Category scores (0-100)
+  exerciseScore?: number;
+  nutritionScore?: number;
+  medicationScore?: number;
+  sleepScore?: number;
+  vitalsScore?: number;
+  hydrationScore?: number;
+
+  // Auto-calculated
+  totalDailyScore: number;
+
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+}
+
+export interface CreateDailyScoreInput {
+  userId?: number;
+  scoreDate: string;
+  exerciseScore?: number;
+  nutritionScore?: number;
+  medicationScore?: number;
+  sleepScore?: number;
+  vitalsScore?: number;
+  hydrationScore?: number;
+  notes?: string;
+}
+
+export interface DailyScoreStats {
+  totalDays: number;
+  averageScores: {
+    exercise: number;
+    nutrition: number;
+    medication: number;
+    sleep: number;
+    vitals: number;
+    hydration: number;
+    total: number;
+  };
+  scoreDistribution: {
+    excellent: number; // >= 80
+    good: number; // 60-79
+    fair: number; // 40-59
+    poor: number; // < 40
+  };
+}
+
+export interface DailyScoreTrends {
+  data: Array<{
+    date?: string;
+    period?: string;
+    exerciseScore?: number;
+    nutritionScore?: number;
+    medicationScore?: number;
+    sleepScore?: number;
+    vitalsScore?: number;
+    hydrationScore?: number;
+    totalDailyScore?: number;
+    postSurgeryDay?: number;
+    avgExercise?: number;
+    avgNutrition?: number;
+    avgMedication?: number;
+    avgSleep?: number;
+    avgVitals?: number;
+    avgHydration?: number;
+    avgTotal?: number;
+    daysLogged?: number;
+  }>;
+}
