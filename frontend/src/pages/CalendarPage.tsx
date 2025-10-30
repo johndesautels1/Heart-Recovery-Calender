@@ -5,7 +5,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode } from 'lucide-react';
+import { RestTimer } from '../components/RestTimer';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,12 +76,30 @@ export function CalendarPage() {
   const [preOxygenSat, setPreOxygenSat] = useState<string>('');
   const [duringBpSystolic, setDuringBpSystolic] = useState<string>('');
   const [duringBpDiastolic, setDuringBpDiastolic] = useState<string>('');
+  const [duringHeartRateAvg, setDuringHeartRateAvg] = useState<string>('');
+  const [duringHeartRateMax, setDuringHeartRateMax] = useState<string>('');
   const [postBpSystolic, setPostBpSystolic] = useState<string>('');
   const [postBpDiastolic, setPostBpDiastolic] = useState<string>('');
   const [postHeartRate, setPostHeartRate] = useState<string>('');
   const [postOxygenSat, setPostOxygenSat] = useState<string>('');
   const [perceivedExertion, setPerceivedExertion] = useState<string>('');
   const [startedAt, setStartedAt] = useState<string>('');
+
+  // Phase 4 - Progressive overload fields
+  const [setsCompleted, setSetsCompleted] = useState<string>('');
+  const [repsPerSet, setRepsPerSet] = useState<string>('');
+  const [weightUsed, setWeightUsed] = useState<string>('');
+
+  // Phase 4 - PT tracking fields
+  const [difficultyRating, setDifficultyRating] = useState<string>('');
+  const [painLevel, setPainLevel] = useState<string>('');
+  const [painLocation, setPainLocation] = useState<string>('');
+  const [rangeOfMotion, setRangeOfMotion] = useState<string>('');
+
+  // Phase 4 - Instruction tabs state
+  const [instructionTab, setInstructionTab] = useState<'video' | 'images' | 'instructions'>('video');
+  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  const [showRestTimer, setShowRestTimer] = useState(false);
 
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -351,6 +370,8 @@ export function CalendarPage() {
       setPreOxygenSat('');
       setDuringBpSystolic('');
       setDuringBpDiastolic('');
+      setDuringHeartRateAvg('');
+      setDuringHeartRateMax('');
       setPostBpSystolic('');
       setPostBpDiastolic('');
       setPostHeartRate('');
@@ -358,14 +379,23 @@ export function CalendarPage() {
       setPerceivedExertion('');
       setStartedAt('');
 
-      // Load meals for this event's date
-      const eventDate = new Date(event.startTime).toISOString().split('T')[0];
-      try {
-        const meals = await api.getMeals({ startDate: eventDate, endDate: eventDate });
-        setSelectedDateMeals(meals);
-      } catch (error) {
-        console.error('Failed to load meals:', error);
-        setSelectedDateMeals([]);
+      // Phase 4 - Fetch exercise details if this is an exercise event
+      if (event.exerciseId) {
+        try {
+          const token = localStorage.getItem('token');
+          const exerciseResponse = await fetch(`/api/exercises/${event.exerciseId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (exerciseResponse.ok) {
+            const exerciseData = await exerciseResponse.json();
+            setCurrentExercise(exerciseData);
+          }
+        } catch (error) {
+          console.error('Failed to load exercise details:', error);
+          setCurrentExercise(null);
+        }
+      } else {
+        setCurrentExercise(null);
       }
     }
   };
@@ -795,11 +825,11 @@ See browser console for full configuration details.
           preHeartRate: preHeartRate ? parseInt(preHeartRate) : undefined,
           preOxygenSat: preOxygenSat ? parseInt(preOxygenSat) : undefined,
 
-          // During-exercise vitals
+          // During-exercise vitals (FIXED: using correct state variables)
           duringBpSystolic: duringBpSystolic ? parseInt(duringBpSystolic) : undefined,
           duringBpDiastolic: duringBpDiastolic ? parseInt(duringBpDiastolic) : undefined,
-          duringHeartRateAvg: heartRateAvg ? parseInt(heartRateAvg) : undefined,
-          duringHeartRateMax: heartRateMax ? parseInt(heartRateMax) : undefined,
+          duringHeartRateAvg: duringHeartRateAvg ? parseInt(duringHeartRateAvg) : undefined,
+          duringHeartRateMax: duringHeartRateMax ? parseInt(duringHeartRateMax) : undefined,
 
           // Post-exercise vitals
           postBpSystolic: postBpSystolic ? parseInt(postBpSystolic) : undefined,
@@ -815,10 +845,21 @@ See browser console for full configuration details.
           caloriesBurned: caloriesBurned ? parseInt(caloriesBurned) : undefined,
           durationMinutes: durationMinutes ? parseInt(durationMinutes) : undefined,
 
+          // Phase 4 - Progressive overload tracking
+          actualSets: setsCompleted ? parseInt(setsCompleted) : undefined,
+          actualReps: repsPerSet ? parseInt(repsPerSet) : undefined,
+          weight: weightUsed ? parseFloat(weightUsed) : undefined,
+
           // Subjective measures
           perceivedExertion: perceivedExertion ? parseInt(perceivedExertion) : undefined,
           performanceScore: selectedEvent.performanceScore,
           exerciseIntensity: exerciseIntensity || undefined,
+
+          // Phase 4 - PT tracking fields
+          difficultyRating: difficultyRating ? parseInt(difficultyRating) : undefined,
+          painLevel: painLevel ? parseInt(painLevel) : undefined,
+          painLocation: painLocation || undefined,
+          rangeOfMotion: rangeOfMotion ? parseInt(rangeOfMotion) : undefined,
 
           // Notes
           notes: exerciseNotes || undefined,
@@ -1662,7 +1703,6 @@ See browser console for full configuration details.
         isOpen={!!selectedEvent}
         onClose={() => {
           setSelectedEvent(null);
-          setSelectedDateMeals([]);
           setSleepHours('');
           setPerformanceScore('');
           setExerciseIntensity('');
@@ -1675,6 +1715,17 @@ See browser console for full configuration details.
           setHeartRateMax('');
           setCaloriesBurned('');
           setExerciseNotes('');
+          setSetsCompleted('');
+          setRepsPerSet('');
+          setWeightUsed('');
+          setDifficultyRating('');
+          setPainLevel('');
+          setPainLocation('');
+          setRangeOfMotion('');
+          setDuringHeartRateAvg('');
+          setDuringHeartRateMax('');
+          setInstructionTab('video');
+          setCurrentExercise(null);
         }}
         title="Event Details"
         size="lg"
@@ -1711,40 +1762,130 @@ See browser console for full configuration details.
               </div>
             )}
 
-            {/* Sleep Hours Section - Moved AFTER description, with cobalt blue text */}
-            <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300 mt-6">
-              <div className="flex items-center space-x-2 mb-2">
-                <Moon className="h-6 w-6 text-blue-700" />
-                <p className="font-bold text-blue-800 text-lg">Hours of Restful Sleep</p>
+            {/* Phase 4 - Exercise Instructions Tabs - Only show for exercise events */}
+            {selectedEvent.exerciseId && currentExercise && (
+              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-4 border-2 border-cyan-300 mt-4">
+                {/* Tabs and Rest Timer Button */}
+                <div className="flex items-center justify-between mb-4 border-b border-cyan-300">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setInstructionTab('video')}
+                      className={`px-4 py-2 font-bold transition-colors ${
+                        instructionTab === 'video'
+                          ? 'border-b-2 border-cyan-600 text-cyan-700'
+                          : 'text-cyan-500 hover:text-cyan-600'
+                      }`}
+                    >
+                      📹 Video
+                    </button>
+                    <button
+                      onClick={() => setInstructionTab('images')}
+                      className={`px-4 py-2 font-bold transition-colors ${
+                        instructionTab === 'images'
+                          ? 'border-b-2 border-cyan-600 text-cyan-700'
+                          : 'text-cyan-500 hover:text-cyan-600'
+                      }`}
+                    >
+                      📸 Images
+                    </button>
+                    <button
+                      onClick={() => setInstructionTab('instructions')}
+                      className={`px-4 py-2 font-bold transition-colors ${
+                        instructionTab === 'instructions'
+                          ? 'border-b-2 border-cyan-600 text-cyan-700'
+                          : 'text-cyan-500 hover:text-cyan-600'
+                      }`}
+                    >
+                      📝 Instructions
+                    </button>
+                  </div>
+
+                  {/* Rest Timer Button */}
+                  <button
+                    onClick={() => setShowRestTimer(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg"
+                  >
+                    <Timer className="h-4 w-4" />
+                    <span>Rest Timer</span>
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                <div className="bg-white rounded-lg p-3 border border-cyan-200 min-h-[240px] max-h-[400px] overflow-y-auto">
+                  {instructionTab === 'video' && (
+                    <div>
+                      {currentExercise.videoUrl ? (
+                        <div className="flex flex-col items-center">
+                          <iframe
+                            width="320"
+                            height="240"
+                            src={currentExercise.videoUrl.replace('watch?v=', 'embed/')}
+                            title={currentExercise.name}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="rounded-lg shadow-md"
+                          ></iframe>
+                          <p className="text-sm text-gray-600 mt-2 font-medium">{currentExercise.name}</p>
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic text-center py-8">No video available for this exercise</p>
+                      )}
+                    </div>
+                  )}
+
+                  {instructionTab === 'images' && (
+                    <div>
+                      {currentExercise.imageUrl ? (
+                        <div className="flex flex-col items-center">
+                          <img
+                            src={currentExercise.imageUrl}
+                            alt={currentExercise.name}
+                            className="max-w-full h-auto rounded-lg shadow-md"
+                            style={{ maxHeight: '300px' }}
+                          />
+                          <p className="text-sm text-gray-600 mt-2 font-medium">{currentExercise.name}</p>
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic text-center py-8">No images available for this exercise</p>
+                      )}
+                    </div>
+                  )}
+
+                  {instructionTab === 'instructions' && (
+                    <div className="space-y-3">
+                      {currentExercise.instructions && (
+                        <div>
+                          <h4 className="font-bold text-cyan-700 mb-2">📋 Instructions:</h4>
+                          <p className="text-gray-700 whitespace-pre-wrap">{currentExercise.instructions}</p>
+                        </div>
+                      )}
+                      {currentExercise.formTips && (
+                        <div>
+                          <h4 className="font-bold text-cyan-700 mb-2">✅ Form Tips:</h4>
+                          <p className="text-gray-700 whitespace-pre-wrap">{currentExercise.formTips}</p>
+                        </div>
+                      )}
+                      {currentExercise.contraindications && (
+                        <div>
+                          <h4 className="font-bold text-red-700 mb-2">⚠️ Contraindications:</h4>
+                          <p className="text-red-600 whitespace-pre-wrap">{currentExercise.contraindications}</p>
+                        </div>
+                      )}
+                      {currentExercise.modifications && (
+                        <div>
+                          <h4 className="font-bold text-cyan-700 mb-2">🔄 Modifications:</h4>
+                          <p className="text-gray-700 whitespace-pre-wrap">{currentExercise.modifications}</p>
+                        </div>
+                      )}
+                      {!currentExercise.instructions && !currentExercise.formTips && !currentExercise.contraindications && !currentExercise.modifications && (
+                        <p className="text-gray-500 italic text-center py-8">No detailed instructions available for this exercise</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-blue-700 font-medium mb-3">Sleep from the night before this date</p>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  value={sleepHours}
-                  onChange={(e) => setSleepHours(e.target.value)}
-                  placeholder="Enter hours (e.g., 7.5)"
-                  className="flex-1 px-3 py-2 border-2 border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none text-blue-900 font-bold text-lg"
-                  style={{ color: '#1e40af' }}
-                />
-                <Button
-                  size="sm"
-                  onClick={handleUpdateSleepHours}
-                  disabled={isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 font-bold"
-                >
-                  Save Sleep
-                </Button>
-              </div>
-              {selectedEvent.sleepHours && (
-                <p className="text-blue-800 font-bold mt-2">
-                  Current: {selectedEvent.sleepHours} hours
-                </p>
-              )}
-            </div>
+            )}
 
             {/* Performance Score Section - Only show for exercise events */}
             {selectedEvent.exerciseId && (
@@ -1948,6 +2089,50 @@ See browser console for full configuration details.
                       <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.caloriesBurned} cal</p>
                     )}
                   </div>
+
+                  {/* Phase 4 - Progressive Overload Fields */}
+                  {/* Sets Completed */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Sets Completed</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={setsCompleted}
+                      onChange={(e) => setSetsCompleted(e.target.value)}
+                      placeholder="e.g., 3"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    <p className="text-xs text-teal-600 mt-1">Number of sets performed</p>
+                  </div>
+
+                  {/* Reps Per Set */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Reps per Set</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={repsPerSet}
+                      onChange={(e) => setRepsPerSet(e.target.value)}
+                      placeholder="e.g., 12"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    <p className="text-xs text-teal-600 mt-1">Repetitions per set</p>
+                  </div>
+
+                  {/* Weight Used */}
+                  <div>
+                    <label className="block text-sm font-medium text-teal-800 mb-1">Weight Used (lbs)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={weightUsed}
+                      onChange={(e) => setWeightUsed(e.target.value)}
+                      placeholder="e.g., 25"
+                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                    />
+                    <p className="text-xs text-teal-600 mt-1">Weight in pounds (if applicable)</p>
+                  </div>
                 </div>
 
                 {/* Notes - Full Width */}
@@ -2073,8 +2258,37 @@ See browser console for full configuration details.
                       className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                     />
                   </div>
+
+                  {/* During-Heart Rate Average */}
+                  <div>
+                    <label className="block text-sm font-medium text-indigo-800 mb-1">Avg Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={duringHeartRateAvg}
+                      onChange={(e) => setDuringHeartRateAvg(e.target.value)}
+                      placeholder="e.g., 130"
+                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                    <p className="text-xs text-indigo-600 mt-1">Average pulse during exercise</p>
+                  </div>
+
+                  {/* During-Heart Rate Max */}
+                  <div>
+                    <label className="block text-sm font-medium text-indigo-800 mb-1">Max Heart Rate (bpm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="250"
+                      value={duringHeartRateMax}
+                      onChange={(e) => setDuringHeartRateMax(e.target.value)}
+                      placeholder="e.g., 155"
+                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                    <p className="text-xs text-indigo-600 mt-1">Peak pulse during exercise</p>
+                  </div>
                 </div>
-                <p className="text-xs text-indigo-600 mt-2 italic">Note: Avg/Max HR are in Exercise Metrics section above</p>
               </div>
             )}
 
@@ -2182,55 +2396,66 @@ See browser console for full configuration details.
                     />
                     <p className="text-xs text-amber-700 mt-1">When did the exercise begin?</p>
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* Meals Section */}
-            {selectedDateMeals.length > 0 && (
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <UtensilsCrossed className="h-5 w-5 text-green-600" />
-                  <p className="font-medium text-gray-700">Meals for This Day</p>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {selectedDateMeals.map((meal) => (
-                    <div
-                      key={meal.id}
-                      className="bg-white rounded-lg border border-gray-200 p-3"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-800 capitalize">
-                              {meal.mealType}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(meal.timestamp).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{meal.foodItems}</p>
-                          <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
-                            {meal.calories && <span>{meal.calories} cal</span>}
-                            {meal.protein && <span>{meal.protein}g protein</span>}
-                            {meal.sodium && <span>{meal.sodium}mg sodium</span>}
-                          </div>
-                        </div>
-                        {meal.withinSpec !== null && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            meal.withinSpec
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {meal.withinSpec ? '✓' : '⚠'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {/* Phase 4 - PT Tracking Fields */}
+                  {/* Difficulty Rating */}
+                  <div>
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Difficulty Rating (1-10)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={difficultyRating}
+                      onChange={(e) => setDifficultyRating(e.target.value)}
+                      placeholder="1=Too Easy, 10=Too Hard"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">How difficult was this exercise?</p>
+                  </div>
+
+                  {/* Pain Level */}
+                  <div>
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Pain Level (0-10)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={painLevel}
+                      onChange={(e) => setPainLevel(e.target.value)}
+                      placeholder="0=No Pain, 10=Worst Pain"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">0=No Pain → 10=Maximum Pain</p>
+                  </div>
+
+                  {/* Range of Motion */}
+                  <div>
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Range of Motion (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={rangeOfMotion}
+                      onChange={(e) => setRangeOfMotion(e.target.value)}
+                      placeholder="e.g., 85"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">% of normal range achieved</p>
+                  </div>
+
+                  {/* Pain Location - Full Width */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-amber-800 mb-1">Pain Location (if any)</label>
+                    <input
+                      type="text"
+                      value={painLocation}
+                      onChange={(e) => setPainLocation(e.target.value)}
+                      placeholder="e.g., Left knee, lower back, right shoulder..."
+                      disabled={!painLevel || parseInt(painLevel) === 0}
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                    <p className="text-xs text-amber-700 mt-1">Describe where pain occurred (only if pain level {'>'} 0)</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -2859,6 +3084,11 @@ See browser console for full configuration details.
           </div>
         </div>
       </Modal>
+
+      {/* Floating Rest Timer */}
+      {showRestTimer && (
+        <RestTimer onClose={() => setShowRestTimer(false)} />
+      )}
     </div>
   );
 }
