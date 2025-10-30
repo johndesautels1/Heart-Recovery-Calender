@@ -19,6 +19,7 @@ import * as sleepLogsController from '../controllers/sleepLogsController';
 import * as exerciseLogsController from '../controllers/exerciseLogsController';
 import * as hydrationLogsController from '../controllers/hydrationLogsController';
 import * as dailyScoresController from '../controllers/dailyScoresController';
+import uploadRoutes from './upload';
 
 const router = Router();
 
@@ -200,5 +201,8 @@ router.get('/daily-scores/trends', dailyScoresController.getTrends);
 router.get('/daily-scores/date/:date', dailyScoresController.getDailyScoreByDate);
 router.get('/daily-scores/:id', dailyScoresController.getDailyScore);
 router.delete('/daily-scores/:id', dailyScoresController.deleteDailyScore);
+
+// ========== UPLOAD ROUTES ==========
+router.use('/upload', uploadRoutes);
 
 export default router;
