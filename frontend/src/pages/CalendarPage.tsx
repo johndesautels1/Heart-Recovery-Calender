@@ -1764,93 +1764,122 @@ See browser console for full configuration details.
 
             {/* Phase 4 - Exercise Instructions Tabs - Only show for exercise events */}
             {selectedEvent.exerciseId && currentExercise && (
-              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-4 border-2 border-cyan-300 mt-4">
-                {/* Tabs and Rest Timer Button */}
-                <div className="flex items-center justify-between mb-4 border-b border-cyan-300">
-                  <div className="flex space-x-2">
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-purple-500/40" />
+
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Tabs and Rest Timer Button */}
+                  <div className="flex items-center justify-between mb-6 border-b-2 border-white/40 pb-4">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setInstructionTab('video')}
+                        className={`px-6 py-3 font-bold text-lg rounded-t-xl transition-all shadow-lg ${
+                          instructionTab === 'video'
+                            ? 'bg-white/95 text-cyan-700 border-b-4 border-cyan-600'
+                            : 'bg-white/40 text-white hover:bg-white/60'
+                        }`}
+                      >
+                        📹 Video
+                      </button>
+                      <button
+                        onClick={() => setInstructionTab('images')}
+                        className={`px-6 py-3 font-bold text-lg rounded-t-xl transition-all shadow-lg ${
+                          instructionTab === 'images'
+                            ? 'bg-white/95 text-cyan-700 border-b-4 border-cyan-600'
+                            : 'bg-white/40 text-white hover:bg-white/60'
+                        }`}
+                      >
+                        📸 Images
+                      </button>
+                      <button
+                        onClick={() => setInstructionTab('instructions')}
+                        className={`px-6 py-3 font-bold text-lg rounded-t-xl transition-all shadow-lg ${
+                          instructionTab === 'instructions'
+                            ? 'bg-white/95 text-cyan-700 border-b-4 border-cyan-600'
+                            : 'bg-white/40 text-white hover:bg-white/60'
+                        }`}
+                      >
+                        📝 Instructions
+                      </button>
+                    </div>
+
+                    {/* Rest Timer Button */}
                     <button
-                      onClick={() => setInstructionTab('video')}
-                      className={`px-4 py-2 font-bold transition-colors ${
-                        instructionTab === 'video'
-                          ? 'border-b-2 border-cyan-600 text-cyan-700'
-                          : 'text-cyan-500 hover:text-cyan-600'
-                      }`}
+                      onClick={() => setShowRestTimer(true)}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-2xl hover:shadow-purple-500/50 hover:scale-105"
                     >
-                      📹 Video
-                    </button>
-                    <button
-                      onClick={() => setInstructionTab('images')}
-                      className={`px-4 py-2 font-bold transition-colors ${
-                        instructionTab === 'images'
-                          ? 'border-b-2 border-cyan-600 text-cyan-700'
-                          : 'text-cyan-500 hover:text-cyan-600'
-                      }`}
-                    >
-                      📸 Images
-                    </button>
-                    <button
-                      onClick={() => setInstructionTab('instructions')}
-                      className={`px-4 py-2 font-bold transition-colors ${
-                        instructionTab === 'instructions'
-                          ? 'border-b-2 border-cyan-600 text-cyan-700'
-                          : 'text-cyan-500 hover:text-cyan-600'
-                      }`}
-                    >
-                      📝 Instructions
+                      <Timer className="h-5 w-5" />
+                      <span>Rest Timer</span>
                     </button>
                   </div>
 
-                  {/* Rest Timer Button */}
-                  <button
-                    onClick={() => setShowRestTimer(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg"
-                  >
-                    <Timer className="h-4 w-4" />
-                    <span>Rest Timer</span>
-                  </button>
-                </div>
+                  {/* Tab Content - Glassmorphic */}
+                  <div className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 border-2 border-white/50 shadow-inner min-h-[280px] max-h-[500px] overflow-y-auto">
+                    {instructionTab === 'video' && (
+                      <div className="space-y-4">
+                        {currentExercise.videoUrl ? (
+                          <div className="flex flex-col items-center space-y-4">
+                            <iframe
+                              width="420"
+                              height="315"
+                              src={currentExercise.videoUrl.replace('watch?v=', 'embed/')}
+                              title={currentExercise.name}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="rounded-xl shadow-2xl border-4 border-cyan-500/30"
+                            ></iframe>
+                            <p className="text-lg text-cyan-900 font-bold">{currentExercise.name}</p>
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 font-semibold italic text-center py-8">No video available for this exercise</p>
+                        )}
 
-                {/* Tab Content */}
-                <div className="bg-white rounded-lg p-3 border border-cyan-200 min-h-[240px] max-h-[400px] overflow-y-auto">
-                  {instructionTab === 'video' && (
-                    <div>
-                      {currentExercise.videoUrl ? (
-                        <div className="flex flex-col items-center">
-                          <iframe
-                            width="320"
-                            height="240"
-                            src={currentExercise.videoUrl.replace('watch?v=', 'embed/')}
-                            title={currentExercise.name}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="rounded-lg shadow-md"
-                          ></iframe>
-                          <p className="text-sm text-gray-600 mt-2 font-medium">{currentExercise.name}</p>
+                        {/* UPLOAD VIDEO BUTTON */}
+                        <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                          <label className="flex flex-col items-center px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl shadow-lg hover:from-cyan-600 hover:to-blue-700 cursor-pointer transition-all hover:scale-105">
+                            <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span className="text-lg font-bold">Upload Your Exercise Video</span>
+                            <span className="text-sm mt-1 opacity-90">MP4, MOV, AVI - Max 100MB</span>
+                            <input type="file" className="hidden" accept="video/*" />
+                          </label>
                         </div>
-                      ) : (
-                        <p className="text-gray-500 italic text-center py-8">No video available for this exercise</p>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {instructionTab === 'images' && (
-                    <div>
-                      {currentExercise.imageUrl ? (
-                        <div className="flex flex-col items-center">
-                          <img
-                            src={currentExercise.imageUrl}
-                            alt={currentExercise.name}
-                            className="max-w-full h-auto rounded-lg shadow-md"
-                            style={{ maxHeight: '300px' }}
-                          />
-                          <p className="text-sm text-gray-600 mt-2 font-medium">{currentExercise.name}</p>
+                    {instructionTab === 'images' && (
+                      <div className="space-y-4">
+                        {currentExercise.imageUrl ? (
+                          <div className="flex flex-col items-center space-y-4">
+                            <img
+                              src={currentExercise.imageUrl}
+                              alt={currentExercise.name}
+                              className="max-w-full h-auto rounded-xl shadow-2xl border-4 border-pink-500/30"
+                              style={{ maxHeight: '400px' }}
+                            />
+                            <p className="text-lg text-pink-900 font-bold">{currentExercise.name}</p>
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 font-semibold italic text-center py-8">No images available for this exercise</p>
+                        )}
+
+                        {/* UPLOAD IMAGE BUTTON */}
+                        <div className="border-t-2 border-pink-300 pt-4 mt-4">
+                          <label className="flex flex-col items-center px-6 py-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl shadow-lg hover:from-pink-600 hover:to-rose-700 cursor-pointer transition-all hover:scale-105">
+                            <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-lg font-bold">Upload Exercise Image</span>
+                            <span className="text-sm mt-1 opacity-90">JPG, PNG, GIF - Max 10MB</span>
+                            <input type="file" className="hidden" accept="image/*" />
+                          </label>
                         </div>
-                      ) : (
-                        <p className="text-gray-500 italic text-center py-8">No images available for this exercise</p>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
                   {instructionTab === 'instructions' && (
                     <div className="space-y-3">
@@ -1885,337 +1914,359 @@ See browser console for full configuration details.
                   )}
                 </div>
               </div>
+            </div>
             )}
 
             {/* Performance Score Section - Only show for exercise events */}
             {selectedEvent.exerciseId && (
-              <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-300 mt-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-2xl">🏋️</span>
-                  <p className="font-bold text-purple-800 text-lg">Exercise Performance Score</p>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40" />
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">🏋️</span>
+                    <p className="font-black text-white text-xl drop-shadow-lg">Exercise Performance Score</p>
+                  </div>
+                  <p className="text-base text-white font-bold mb-4 drop-shadow">Rate the patient's performance for this exercise session</p>
+
+                  <div className="flex items-center space-x-3">
+                    <select
+                      value={performanceScore}
+                      onChange={(e) => setPerformanceScore(e.target.value)}
+                      className="flex-1 px-4 py-3 bg-white/95 text-gray-900 font-bold text-lg rounded-xl border-2 border-purple-400/50 focus:border-purple-600 focus:ring-4 focus:ring-purple-400/30 outline-none shadow-lg"
+                    >
+                      <option value="">Select Score...</option>
+                      <option value="0" style={{ color: '#dc2626' }}>0 - No Show (Red)</option>
+                      <option value="4" style={{ color: '#ea580c' }}>4 - Completed (Orange)</option>
+                      <option value="6" style={{ color: '#2563eb' }}>6 - Met Goals (Blue)</option>
+                      <option value="8" style={{ color: '#059669' }}>8 - Exceeded Goals (Green)</option>
+                    </select>
+                    <Button
+                      size="sm"
+                      onClick={handleUpdatePerformanceScore}
+                      disabled={isLoading}
+                      className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 font-bold text-lg px-6 py-3 shadow-xl hover:scale-105 transition-all"
+                    >
+                      Save Score
+                    </Button>
+                  </div>
+
+                  {selectedEvent.performanceScore !== undefined && selectedEvent.performanceScore !== null && (
+                    <div className="mt-3 bg-white/95 backdrop-blur rounded-xl px-4 py-2 border-2 border-purple-400/50 shadow-lg">
+                      <p className="text-purple-900 font-black text-base">
+                        Current Score: {selectedEvent.performanceScore} points
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-purple-700 font-medium mb-3">Rate the patient's performance for this exercise session</p>
-                <div className="flex items-center space-x-2">
-                  <select
-                    value={performanceScore}
-                    onChange={(e) => setPerformanceScore(e.target.value)}
-                    className="flex-1 px-3 py-2 border-2 border-purple-400 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none text-purple-900 font-bold text-lg bg-white"
-                    style={{ color: '#6b21a8' }}
-                  >
-                    <option value="">Select Score...</option>
-                    <option value="0" style={{ color: '#dc2626' }}>0 - No Show (Red)</option>
-                    <option value="4" style={{ color: '#ea580c' }}>4 - Completed (Orange)</option>
-                    <option value="6" style={{ color: '#2563eb' }}>6 - Met Goals (Blue)</option>
-                    <option value="8" style={{ color: '#059669' }}>8 - Exceeded Goals (Green)</option>
-                  </select>
-                  <Button
-                    size="sm"
-                    onClick={handleUpdatePerformanceScore}
-                    disabled={isLoading}
-                    className="bg-purple-600 hover:bg-purple-700 font-bold"
-                  >
-                    Save Score
-                  </Button>
-                </div>
-                {selectedEvent.performanceScore !== undefined && selectedEvent.performanceScore !== null && (
-                  <p className="text-purple-800 font-bold mt-2">
-                    Current: {selectedEvent.performanceScore} points
-                  </p>
-                )}
               </div>
             )}
 
             {/* Exercise Metrics Section - Only show for exercise events */}
             {selectedEvent.exerciseId && (
-              <div className="bg-teal-50 rounded-lg p-4 border-2 border-teal-300 mt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl">📊</span>
-                    <p className="font-bold text-teal-800 text-lg">Exercise Metrics</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleUpdateExerciseMetrics}
-                    disabled={isLoading}
-                    className="bg-teal-600 hover:bg-teal-700 font-bold"
-                  >
-                    Save All Metrics
-                  </Button>
-                </div>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/40 via-cyan-500/30 to-blue-500/40" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Intensity */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Intensity (1-10)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={exerciseIntensity}
-                      onChange={(e) => setExerciseIntensity(e.target.value)}
-                      placeholder="e.g., 7"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-3xl">📊</span>
+                      <p className="font-black text-white text-xl drop-shadow-lg">Exercise Metrics</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleUpdateExerciseMetrics}
+                      disabled={isLoading}
+                      className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 font-bold text-lg px-6 py-3 shadow-xl hover:scale-105 transition-all"
+                    >
+                      Save All Metrics
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Intensity */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Intensity (1-10)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={exerciseIntensity}
+                        onChange={(e) => setExerciseIntensity(e.target.value)}
+                        placeholder="e.g., 7"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.exerciseIntensity && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.exerciseIntensity}</p>
+                      )}
+                    </div>
+
+                    {/* Duration */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Duration (minutes)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(e.target.value)}
+                        placeholder="e.g., 30"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.durationMinutes && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.durationMinutes} min</p>
+                      )}
+                    </div>
+
+                    {/* Distance */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Distance (miles)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={distanceMiles}
+                        onChange={(e) => setDistanceMiles(e.target.value)}
+                        placeholder="e.g., 2.5"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.distanceMiles && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.distanceMiles} mi</p>
+                      )}
+                    </div>
+
+                    {/* Steps */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Steps</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={steps}
+                        onChange={(e) => setSteps(e.target.value)}
+                        placeholder="e.g., 5000"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.steps && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.steps.toLocaleString()}</p>
+                      )}
+                    </div>
+
+                    {/* Laps */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Laps</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={laps}
+                        onChange={(e) => setLaps(e.target.value)}
+                        placeholder="e.g., 10"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.laps && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.laps}</p>
+                      )}
+                    </div>
+
+                    {/* Elevation */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Elevation (feet)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={elevationFeet}
+                        onChange={(e) => setElevationFeet(e.target.value)}
+                        placeholder="e.g., 250"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.elevationFeet && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.elevationFeet} ft</p>
+                      )}
+                    </div>
+
+                    {/* Heart Rate Average */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Avg Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={heartRateAvg}
+                        onChange={(e) => setHeartRateAvg(e.target.value)}
+                        placeholder="e.g., 120"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.heartRateAvg && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.heartRateAvg} bpm</p>
+                      )}
+                    </div>
+
+                    {/* Heart Rate Max */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Max Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={heartRateMax}
+                        onChange={(e) => setHeartRateMax(e.target.value)}
+                        placeholder="e.g., 150"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.heartRateMax && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.heartRateMax} bpm</p>
+                      )}
+                    </div>
+
+                    {/* Calories */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Calories Burned</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={caloriesBurned}
+                        onChange={(e) => setCaloriesBurned(e.target.value)}
+                        placeholder="e.g., 350"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      {selectedEvent.caloriesBurned && (
+                        <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.caloriesBurned} cal</p>
+                      )}
+                    </div>
+
+                    {/* Phase 4 - Progressive Overload Fields */}
+                    {/* Sets Completed */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Sets Completed</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={setsCompleted}
+                        onChange={(e) => setSetsCompleted(e.target.value)}
+                        placeholder="e.g., 3"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Number of sets performed</p>
+                    </div>
+
+                    {/* Reps Per Set */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Reps per Set</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={repsPerSet}
+                        onChange={(e) => setRepsPerSet(e.target.value)}
+                        placeholder="e.g., 12"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Repetitions per set</p>
+                    </div>
+
+                    {/* Weight Used */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Weight Used (lbs)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={weightUsed}
+                        onChange={(e) => setWeightUsed(e.target.value)}
+                        placeholder="e.g., 25"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Weight in pounds (if applicable)</p>
+                    </div>
+                  </div>
+
+                  {/* Notes - Full Width */}
+                  <div className="mt-6">
+                    <label className="block text-sm font-bold text-white mb-2 drop-shadow">Exercise Notes</label>
+                    <textarea
+                      value={exerciseNotes}
+                      onChange={(e) => setExerciseNotes(e.target.value)}
+                      placeholder="Add any additional notes about this exercise session..."
+                      rows={3}
+                      className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none resize-none shadow-lg"
                     />
-                    {selectedEvent.exerciseIntensity && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.exerciseIntensity}</p>
+                    {selectedEvent.exerciseNotes && (
+                      <p className="text-xs text-white font-bold mt-1 drop-shadow">Current notes: {selectedEvent.exerciseNotes}</p>
                     )}
                   </div>
-
-                  {/* Duration */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Duration (minutes)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={durationMinutes}
-                      onChange={(e) => setDurationMinutes(e.target.value)}
-                      placeholder="e.g., 30"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.durationMinutes && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.durationMinutes} min</p>
-                    )}
-                  </div>
-
-                  {/* Distance */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Distance (miles)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={distanceMiles}
-                      onChange={(e) => setDistanceMiles(e.target.value)}
-                      placeholder="e.g., 2.5"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.distanceMiles && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.distanceMiles} mi</p>
-                    )}
-                  </div>
-
-                  {/* Steps */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Steps</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={steps}
-                      onChange={(e) => setSteps(e.target.value)}
-                      placeholder="e.g., 5000"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.steps && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.steps.toLocaleString()}</p>
-                    )}
-                  </div>
-
-                  {/* Laps */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Laps</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={laps}
-                      onChange={(e) => setLaps(e.target.value)}
-                      placeholder="e.g., 10"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.laps && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.laps}</p>
-                    )}
-                  </div>
-
-                  {/* Elevation */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Elevation (feet)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={elevationFeet}
-                      onChange={(e) => setElevationFeet(e.target.value)}
-                      placeholder="e.g., 250"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.elevationFeet && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.elevationFeet} ft</p>
-                    )}
-                  </div>
-
-                  {/* Heart Rate Average */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Avg Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={heartRateAvg}
-                      onChange={(e) => setHeartRateAvg(e.target.value)}
-                      placeholder="e.g., 120"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.heartRateAvg && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.heartRateAvg} bpm</p>
-                    )}
-                  </div>
-
-                  {/* Heart Rate Max */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Max Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={heartRateMax}
-                      onChange={(e) => setHeartRateMax(e.target.value)}
-                      placeholder="e.g., 150"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.heartRateMax && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.heartRateMax} bpm</p>
-                    )}
-                  </div>
-
-                  {/* Calories */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Calories Burned</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={caloriesBurned}
-                      onChange={(e) => setCaloriesBurned(e.target.value)}
-                      placeholder="e.g., 350"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    {selectedEvent.caloriesBurned && (
-                      <p className="text-xs text-teal-700 mt-1">Current: {selectedEvent.caloriesBurned} cal</p>
-                    )}
-                  </div>
-
-                  {/* Phase 4 - Progressive Overload Fields */}
-                  {/* Sets Completed */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Sets Completed</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={setsCompleted}
-                      onChange={(e) => setSetsCompleted(e.target.value)}
-                      placeholder="e.g., 3"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    <p className="text-xs text-teal-600 mt-1">Number of sets performed</p>
-                  </div>
-
-                  {/* Reps Per Set */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Reps per Set</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={repsPerSet}
-                      onChange={(e) => setRepsPerSet(e.target.value)}
-                      placeholder="e.g., 12"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    <p className="text-xs text-teal-600 mt-1">Repetitions per set</p>
-                  </div>
-
-                  {/* Weight Used */}
-                  <div>
-                    <label className="block text-sm font-medium text-teal-800 mb-1">Weight Used (lbs)</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={weightUsed}
-                      onChange={(e) => setWeightUsed(e.target.value)}
-                      placeholder="e.g., 25"
-                      className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    />
-                    <p className="text-xs text-teal-600 mt-1">Weight in pounds (if applicable)</p>
-                  </div>
-                </div>
-
-                {/* Notes - Full Width */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-teal-800 mb-1">Exercise Notes</label>
-                  <textarea
-                    value={exerciseNotes}
-                    onChange={(e) => setExerciseNotes(e.target.value)}
-                    placeholder="Add any additional notes about this exercise session..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none resize-none"
-                  />
-                  {selectedEvent.exerciseNotes && (
-                    <p className="text-xs text-teal-700 mt-1">Current notes: {selectedEvent.exerciseNotes}</p>
-                  )}
                 </div>
               </div>
             )}
 
             {/* Pre-Exercise Vitals Section - Phase 1 */}
             {selectedEvent.exerciseId && (
-              <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300 mt-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🩺</span>
-                  <p className="font-bold text-blue-800 text-lg">Pre-Exercise Vitals</p>
-                </div>
-                <p className="text-sm text-blue-700 mb-3">Record vitals before starting exercise</p>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-cyan-500/40" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Pre-BP Systolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-800 mb-1">BP Systolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={preBpSystolic}
-                      onChange={(e) => setPreBpSystolic(e.target.value)}
-                      placeholder="e.g., 120"
-                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">🩺</span>
+                    <p className="font-black text-white text-xl drop-shadow-lg">Pre-Exercise Vitals</p>
                   </div>
+                  <p className="text-base text-white font-bold mb-4 drop-shadow">Record vitals before starting exercise</p>
 
-                  {/* Pre-BP Diastolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-800 mb-1">BP Diastolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="150"
-                      value={preBpDiastolic}
-                      onChange={(e) => setPreBpDiastolic(e.target.value)}
-                      placeholder="e.g., 80"
-                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Pre-BP Systolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Systolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={preBpSystolic}
+                        onChange={(e) => setPreBpSystolic(e.target.value)}
+                        placeholder="e.g., 120"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-blue-400/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* Pre-Heart Rate */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-800 mb-1">Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={preHeartRate}
-                      onChange={(e) => setPreHeartRate(e.target.value)}
-                      placeholder="e.g., 70"
-                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
+                    {/* Pre-BP Diastolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Diastolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="150"
+                        value={preBpDiastolic}
+                        onChange={(e) => setPreBpDiastolic(e.target.value)}
+                        placeholder="e.g., 80"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-blue-400/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* Pre-Oxygen Sat */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-800 mb-1">Oxygen Sat (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={preOxygenSat}
-                      onChange={(e) => setPreOxygenSat(e.target.value)}
-                      placeholder="e.g., 98"
-                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
+                    {/* Pre-Heart Rate */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={preHeartRate}
+                        onChange={(e) => setPreHeartRate(e.target.value)}
+                        placeholder="e.g., 70"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-blue-400/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-400/30 outline-none shadow-lg"
+                      />
+                    </div>
+
+                    {/* Pre-Oxygen Sat */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Oxygen Sat (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={preOxygenSat}
+                        onChange={(e) => setPreOxygenSat(e.target.value)}
+                        placeholder="e.g., 98"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-blue-400/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-400/30 outline-none shadow-lg"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2223,70 +2274,76 @@ See browser console for full configuration details.
 
             {/* During-Exercise Vitals Section - Phase 1 */}
             {selectedEvent.exerciseId && (
-              <div className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-300 mt-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">💓</span>
-                  <p className="font-bold text-indigo-800 text-lg">During-Exercise Vitals</p>
-                </div>
-                <p className="text-sm text-indigo-700 mb-3">Monitor vitals during activity</p>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/40 via-purple-500/30 to-pink-500/40" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* During-BP Systolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-indigo-800 mb-1">BP Systolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={duringBpSystolic}
-                      onChange={(e) => setDuringBpSystolic(e.target.value)}
-                      placeholder="e.g., 140"
-                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">💓</span>
+                    <p className="font-black text-white text-xl drop-shadow-lg">During-Exercise Vitals</p>
                   </div>
+                  <p className="text-base text-white font-bold mb-4 drop-shadow">Monitor vitals during activity</p>
 
-                  {/* During-BP Diastolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-indigo-800 mb-1">BP Diastolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="150"
-                      value={duringBpDiastolic}
-                      onChange={(e) => setDuringBpDiastolic(e.target.value)}
-                      placeholder="e.g., 90"
-                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* During-BP Systolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Systolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={duringBpSystolic}
+                        onChange={(e) => setDuringBpSystolic(e.target.value)}
+                        placeholder="e.g., 140"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-indigo-400/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* During-Heart Rate Average */}
-                  <div>
-                    <label className="block text-sm font-medium text-indigo-800 mb-1">Avg Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={duringHeartRateAvg}
-                      onChange={(e) => setDuringHeartRateAvg(e.target.value)}
-                      placeholder="e.g., 130"
-                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                    <p className="text-xs text-indigo-600 mt-1">Average pulse during exercise</p>
-                  </div>
+                    {/* During-BP Diastolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Diastolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="150"
+                        value={duringBpDiastolic}
+                        onChange={(e) => setDuringBpDiastolic(e.target.value)}
+                        placeholder="e.g., 90"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-indigo-400/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* During-Heart Rate Max */}
-                  <div>
-                    <label className="block text-sm font-medium text-indigo-800 mb-1">Max Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={duringHeartRateMax}
-                      onChange={(e) => setDuringHeartRateMax(e.target.value)}
-                      placeholder="e.g., 155"
-                      className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                    <p className="text-xs text-indigo-600 mt-1">Peak pulse during exercise</p>
+                    {/* During-Heart Rate Average */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Avg Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={duringHeartRateAvg}
+                        onChange={(e) => setDuringHeartRateAvg(e.target.value)}
+                        placeholder="e.g., 130"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-indigo-400/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Average pulse during exercise</p>
+                    </div>
+
+                    {/* During-Heart Rate Max */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Max Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={duringHeartRateMax}
+                        onChange={(e) => setDuringHeartRateMax(e.target.value)}
+                        placeholder="e.g., 155"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-indigo-400/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Peak pulse during exercise</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2294,68 +2351,74 @@ See browser console for full configuration details.
 
             {/* Post-Exercise Vitals Section - Phase 1 */}
             {selectedEvent.exerciseId && (
-              <div className="bg-emerald-50 rounded-lg p-4 border-2 border-emerald-300 mt-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🏁</span>
-                  <p className="font-bold text-emerald-800 text-lg">Post-Exercise Vitals (Recovery)</p>
-                </div>
-                <p className="text-sm text-emerald-700 mb-3">Record vitals after exercise completion</p>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/40 via-teal-500/30 to-green-500/40" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Post-BP Systolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-800 mb-1">BP Systolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={postBpSystolic}
-                      onChange={(e) => setPostBpSystolic(e.target.value)}
-                      placeholder="e.g., 125"
-                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    />
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">🏁</span>
+                    <p className="font-black text-white text-xl drop-shadow-lg">Post-Exercise Vitals (Recovery)</p>
                   </div>
+                  <p className="text-base text-white font-bold mb-4 drop-shadow">Record vitals after exercise completion</p>
 
-                  {/* Post-BP Diastolic */}
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-800 mb-1">BP Diastolic (mmHg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="150"
-                      value={postBpDiastolic}
-                      onChange={(e) => setPostBpDiastolic(e.target.value)}
-                      placeholder="e.g., 82"
-                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    />
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Post-BP Systolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Systolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={postBpSystolic}
+                        onChange={(e) => setPostBpSystolic(e.target.value)}
+                        placeholder="e.g., 125"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-emerald-400/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* Post-Heart Rate */}
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-800 mb-1">Heart Rate (bpm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="250"
-                      value={postHeartRate}
-                      onChange={(e) => setPostHeartRate(e.target.value)}
-                      placeholder="e.g., 85"
-                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    />
-                  </div>
+                    {/* Post-BP Diastolic */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">BP Diastolic (mmHg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="150"
+                        value={postBpDiastolic}
+                        onChange={(e) => setPostBpDiastolic(e.target.value)}
+                        placeholder="e.g., 82"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-emerald-400/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/30 outline-none shadow-lg"
+                      />
+                    </div>
 
-                  {/* Post-Oxygen Sat */}
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-800 mb-1">Oxygen Sat (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={postOxygenSat}
-                      onChange={(e) => setPostOxygenSat(e.target.value)}
-                      placeholder="e.g., 97"
-                      className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    />
+                    {/* Post-Heart Rate */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Heart Rate (bpm)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={postHeartRate}
+                        onChange={(e) => setPostHeartRate(e.target.value)}
+                        placeholder="e.g., 85"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-emerald-400/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/30 outline-none shadow-lg"
+                      />
+                    </div>
+
+                    {/* Post-Oxygen Sat */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Oxygen Sat (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={postOxygenSat}
+                        onChange={(e) => setPostOxygenSat(e.target.value)}
+                        placeholder="e.g., 97"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-emerald-400/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/30 outline-none shadow-lg"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2363,98 +2426,104 @@ See browser console for full configuration details.
 
             {/* Perceived Exertion & Timestamp Section - Phase 1 */}
             {selectedEvent.exerciseId && (
-              <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-300 mt-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">💪</span>
-                  <p className="font-bold text-amber-800 text-lg">Subjective Measures</p>
-                </div>
+              <div className="relative rounded-2xl p-6 mt-4 overflow-hidden backdrop-blur-xl border-2 border-white/30 shadow-2xl">
+                {/* Glassmorphic gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/40 via-orange-500/30 to-yellow-500/40" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Perceived Exertion (Borg RPE) */}
-                  <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Perceived Exertion (Borg RPE 1-10)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={perceivedExertion}
-                      onChange={(e) => setPerceivedExertion(e.target.value)}
-                      placeholder="1=Very Easy, 10=Max Effort"
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">1=Very Easy → 10=Maximum Effort</p>
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">💪</span>
+                    <p className="font-black text-white text-xl drop-shadow-lg">Subjective Measures</p>
                   </div>
 
-                  {/* Started At Timestamp */}
-                  <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Exercise Start Time</label>
-                    <input
-                      type="datetime-local"
-                      value={startedAt}
-                      onChange={(e) => setStartedAt(e.target.value)}
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">When did the exercise begin?</p>
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Perceived Exertion (Borg RPE) */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Perceived Exertion (Borg RPE 1-10)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={perceivedExertion}
+                        onChange={(e) => setPerceivedExertion(e.target.value)}
+                        placeholder="1=Very Easy, 10=Max Effort"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">1=Very Easy → 10=Maximum Effort</p>
+                    </div>
 
-                  {/* Phase 4 - PT Tracking Fields */}
-                  {/* Difficulty Rating */}
-                  <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Difficulty Rating (1-10)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={difficultyRating}
-                      onChange={(e) => setDifficultyRating(e.target.value)}
-                      placeholder="1=Too Easy, 10=Too Hard"
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">How difficult was this exercise?</p>
-                  </div>
+                    {/* Started At Timestamp */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Exercise Start Time</label>
+                      <input
+                        type="datetime-local"
+                        value={startedAt}
+                        onChange={(e) => setStartedAt(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">When did the exercise begin?</p>
+                    </div>
 
-                  {/* Pain Level */}
-                  <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Pain Level (0-10)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={painLevel}
-                      onChange={(e) => setPainLevel(e.target.value)}
-                      placeholder="0=No Pain, 10=Worst Pain"
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">0=No Pain → 10=Maximum Pain</p>
-                  </div>
+                    {/* Phase 4 - PT Tracking Fields */}
+                    {/* Difficulty Rating */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Difficulty Rating (1-10)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={difficultyRating}
+                        onChange={(e) => setDifficultyRating(e.target.value)}
+                        placeholder="1=Too Easy, 10=Too Hard"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">How difficult was this exercise?</p>
+                    </div>
 
-                  {/* Range of Motion */}
-                  <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Range of Motion (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={rangeOfMotion}
-                      onChange={(e) => setRangeOfMotion(e.target.value)}
-                      placeholder="e.g., 85"
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">% of normal range achieved</p>
-                  </div>
+                    {/* Pain Level */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Pain Level (0-10)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={painLevel}
+                        onChange={(e) => setPainLevel(e.target.value)}
+                        placeholder="0=No Pain, 10=Worst Pain"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">0=No Pain → 10=Maximum Pain</p>
+                    </div>
 
-                  {/* Pain Location - Full Width */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-amber-800 mb-1">Pain Location (if any)</label>
-                    <input
-                      type="text"
-                      value={painLocation}
-                      onChange={(e) => setPainLocation(e.target.value)}
-                      placeholder="e.g., Left knee, lower back, right shoulder..."
-                      disabled={!painLevel || parseInt(painLevel) === 0}
-                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                    <p className="text-xs text-amber-700 mt-1">Describe where pain occurred (only if pain level {'>'} 0)</p>
+                    {/* Range of Motion */}
+                    <div>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Range of Motion (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={rangeOfMotion}
+                        onChange={(e) => setRangeOfMotion(e.target.value)}
+                        placeholder="e.g., 85"
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">% of normal range achieved</p>
+                    </div>
+
+                    {/* Pain Location - Full Width */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Pain Location (if any)</label>
+                      <input
+                        type="text"
+                        value={painLocation}
+                        onChange={(e) => setPainLocation(e.target.value)}
+                        placeholder="e.g., Left knee, lower back, right shoulder..."
+                        disabled={!painLevel || parseInt(painLevel) === 0}
+                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-amber-400/50 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/30 outline-none shadow-lg placeholder:text-gray-500 disabled:bg-white/50 disabled:cursor-not-allowed"
+                      />
+                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Describe where pain occurred (only if pain level {'>'} 0)</p>
+                    </div>
                   </div>
                 </div>
               </div>

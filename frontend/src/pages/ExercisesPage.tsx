@@ -24,7 +24,8 @@ import {
   Award,
   Target,
   User,
-  Timer
+  Timer,
+  Upload
 } from 'lucide-react';
 import {
   PieChart,
@@ -194,12 +195,16 @@ export function ExercisesPage() {
   const [newLogDate, setNewLogDate] = useState(new Date().toISOString().split('T')[0]);
   const [newLogScore, setNewLogScore] = useState<number>(8);
   const [newLogNotes, setNewLogNotes] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { isTherapistView } = useView();
   const { user } = useAuth();
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CreateExerciseInput>();
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExerciseInput>();
 
   useEffect(() => {
     loadExercises();
@@ -486,6 +491,76 @@ export function ExercisesPage() {
     }
 
     setFilteredExercises(filtered);
+  };
+
+  const handleUploadVideo = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    setVideoFile(file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await fetch('/api/upload/exercise-media', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload video');
+
+      const data = await response.json();
+      if (data.videoUrl) {
+        setValue('videoUrl', data.videoUrl);
+        toast.success('Video uploaded successfully!');
+      }
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      toast.error('Failed to upload video');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setImageFile(file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload/exercise-media', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+
+      const data = await response.json();
+      if (data.imageUrl) {
+        setValue('imageUrl', data.imageUrl);
+        toast.success('Image uploaded successfully!');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const onSubmit = async (data: CreateExerciseInput) => {
@@ -2367,6 +2442,27 @@ export function ExercisesPage() {
                 placeholder="https://youtube.com/watch?v=..."
                 {...register('videoUrl')}
               />
+              <input
+                type="file"
+                id="video-upload-therapist"
+                accept="video/*"
+                onChange={handleUploadVideo}
+                className="hidden"
+              />
+              <label
+                htmlFor="video-upload-therapist"
+                className="flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all hover:scale-105 cursor-pointer flex items-center gap-2"
+                style={{
+                  backgroundColor: uploadingVideo ? 'rgba(156, 163, 175, 0.2)' : 'rgba(139, 92, 246, 0.2)',
+                  color: uploadingVideo ? '#9ca3af' : '#8b5cf6',
+                  border: `1px solid ${uploadingVideo ? 'rgba(156, 163, 175, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`,
+                  pointerEvents: uploadingVideo ? 'none' : 'auto'
+                }}
+                title="Upload video file"
+              >
+                <Upload className="h-4 w-4" />
+                {uploadingVideo ? 'Uploading...' : 'Upload'}
+              </label>
               {watch('videoUrl') && (
                 <a
                   href={watch('videoUrl')}
@@ -2384,6 +2480,11 @@ export function ExercisesPage() {
                 </a>
               )}
             </div>
+            {videoFile && (
+              <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
+                Selected: {videoFile.name}
+              </p>
+            )}
           </div>
 
           <div>
@@ -2397,6 +2498,27 @@ export function ExercisesPage() {
                 placeholder="https://example.com/image.jpg"
                 {...register('imageUrl')}
               />
+              <input
+                type="file"
+                id="image-upload-therapist"
+                accept="image/*"
+                onChange={handleUploadImage}
+                className="hidden"
+              />
+              <label
+                htmlFor="image-upload-therapist"
+                className="flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all hover:scale-105 cursor-pointer flex items-center gap-2"
+                style={{
+                  backgroundColor: uploadingImage ? 'rgba(156, 163, 175, 0.2)' : 'rgba(236, 72, 153, 0.2)',
+                  color: uploadingImage ? '#9ca3af' : '#ec4899',
+                  border: `1px solid ${uploadingImage ? 'rgba(156, 163, 175, 0.3)' : 'rgba(236, 72, 153, 0.3)'}`,
+                  pointerEvents: uploadingImage ? 'none' : 'auto'
+                }}
+                title="Upload image file"
+              >
+                <Upload className="h-4 w-4" />
+                {uploadingImage ? 'Uploading...' : 'Upload'}
+              </label>
               {watch('imageUrl') && (
                 <a
                   href={watch('imageUrl')}
@@ -2414,6 +2536,11 @@ export function ExercisesPage() {
                 </a>
               )}
             </div>
+            {imageFile && (
+              <p className="text-xs mt-1" style={{ color: '#ec4899' }}>
+                Selected: {imageFile.name}
+              </p>
+            )}
           </div>
 
           <div>
