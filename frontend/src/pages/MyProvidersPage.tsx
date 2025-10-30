@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Button } from '../components/ui';
-import { Stethoscope, Phone, Mail, MapPin, Calendar, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Stethoscope, Phone, Mail, MapPin, Calendar, Plus, Edit, Trash2, X, CalendarPlus, CalendarCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
-import { Provider, CreateProviderInput } from '../types';
+import { Provider, CreateProviderInput, ProviderType, PreferredContactMethod, PROVIDER_TYPE_LABELS, PROVIDER_TYPE_ICONS, CONTACT_METHOD_LABELS } from '../types';
 import { toast } from 'sonner';
 
 export function MyProvidersPage() {
@@ -15,12 +15,21 @@ export function MyProvidersPage() {
   const [formData, setFormData] = useState<CreateProviderInput>({
     name: '',
     specialty: '',
+    providerType: undefined,
     phone: '',
     email: '',
     address: '',
     nextAppointment: '',
     notes: '',
     isPrimary: false,
+    officeHours: '',
+    faxNumber: '',
+    patientPortalUrl: '',
+    preferredContactMethod: undefined,
+    acceptedInsurance: '',
+    lastVisitDate: '',
+    isEmergencyContact: false,
+    pharmacyLicenseNumber: '',
   });
 
   useEffect(() => {
@@ -45,12 +54,21 @@ export function MyProvidersPage() {
     setFormData({
       name: '',
       specialty: '',
+      providerType: undefined,
       phone: '',
       email: '',
       address: '',
       nextAppointment: '',
       notes: '',
       isPrimary: false,
+      officeHours: '',
+      faxNumber: '',
+      patientPortalUrl: '',
+      preferredContactMethod: undefined,
+      acceptedInsurance: '',
+      lastVisitDate: '',
+      isEmergencyContact: false,
+      pharmacyLicenseNumber: '',
     });
     setShowModal(true);
   };
@@ -60,12 +78,21 @@ export function MyProvidersPage() {
     setFormData({
       name: provider.name,
       specialty: provider.specialty || '',
+      providerType: provider.providerType,
       phone: provider.phone || '',
       email: provider.email || '',
       address: provider.address || '',
       nextAppointment: provider.nextAppointment ? provider.nextAppointment.split('T')[0] : '',
       notes: provider.notes || '',
       isPrimary: provider.isPrimary,
+      officeHours: provider.officeHours || '',
+      faxNumber: provider.faxNumber || '',
+      patientPortalUrl: provider.patientPortalUrl || '',
+      preferredContactMethod: provider.preferredContactMethod,
+      acceptedInsurance: provider.acceptedInsurance || '',
+      lastVisitDate: provider.lastVisitDate ? provider.lastVisitDate.split('T')[0] : '',
+      isEmergencyContact: provider.isEmergencyContact,
+      pharmacyLicenseNumber: provider.pharmacyLicenseNumber || '',
     });
     setShowModal(true);
   };
@@ -167,23 +194,35 @@ export function MyProvidersPage() {
               {/* Provider Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                    <Stethoscope className="h-6 w-6 text-white" />
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-2xl">
+                    {provider.providerType ? PROVIDER_TYPE_ICONS[provider.providerType] : <Stethoscope className="h-6 w-6 text-white" />}
                   </div>
                   <div>
                     <h3 className="text-lg font-bold" style={{ color: 'var(--ink-bright)' }}>
                       {provider.name}
                     </h3>
+                    {provider.providerType && (
+                      <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                        {PROVIDER_TYPE_LABELS[provider.providerType]}
+                      </p>
+                    )}
                     {provider.specialty && (
                       <p className="text-sm" style={{ color: 'var(--muted)' }}>
                         {provider.specialty}
                       </p>
                     )}
-                    {provider.isPrimary && (
-                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
-                        Primary
-                      </span>
-                    )}
+                    <div className="flex gap-2 mt-1">
+                      {provider.isPrimary && (
+                        <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
+                          Primary
+                        </span>
+                      )}
+                      {provider.isEmergencyContact && (
+                        <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
+                          Emergency Contact
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -237,6 +276,28 @@ export function MyProvidersPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Calendar Widgets */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => handleScheduleAppointment(provider)}
+                  className="flex-1 p-2 rounded-lg transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs font-medium"
+                  style={{ backgroundColor: 'rgba(96, 165, 250, 0.15)', color: 'var(--accent)' }}
+                  title="Add to Calendar"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                  Add to Calendar
+                </button>
+                <button
+                  onClick={() => window.location.href = '/calendar'}
+                  className="flex-1 p-2 rounded-lg transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs font-medium"
+                  style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}
+                  title="Go to Calendar"
+                >
+                  <CalendarCheck className="h-4 w-4" />
+                  Go to Calendar
+                </button>
               </div>
 
               {/* Actions */}
@@ -363,7 +424,30 @@ export function MyProvidersPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                    Specialty
+                    Provider Type
+                  </label>
+                  <select
+                    value={formData.providerType || ''}
+                    onChange={(e) => setFormData({ ...formData, providerType: e.target.value as ProviderType || undefined })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--ink)'
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#1a1a1a', color: '#e0e0e0' }}>Select provider type...</option>
+                    {Object.entries(PROVIDER_TYPE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value} style={{ backgroundColor: '#1a1a1a', color: '#e0e0e0' }}>
+                        {PROVIDER_TYPE_ICONS[value as ProviderType]} {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Specialty / Additional Info
                   </label>
                   <input
                     type="text"
@@ -371,6 +455,7 @@ export function MyProvidersPage() {
                     onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border"
                     style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                    placeholder="e.g., Board Certified, Subspecialty"
                   />
                 </div>
 
@@ -428,6 +513,113 @@ export function MyProvidersPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Office Hours
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.officeHours}
+                    onChange={(e) => setFormData({ ...formData, officeHours: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                    placeholder="e.g., Mon-Fri 9am-5pm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Fax Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.faxNumber}
+                    onChange={(e) => setFormData({ ...formData, faxNumber: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Patient Portal URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.patientPortalUrl}
+                    onChange={(e) => setFormData({ ...formData, patientPortalUrl: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Preferred Contact Method
+                  </label>
+                  <select
+                    value={formData.preferredContactMethod || ''}
+                    onChange={(e) => setFormData({ ...formData, preferredContactMethod: e.target.value as PreferredContactMethod || undefined })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--ink)'
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#1a1a1a', color: '#e0e0e0' }}>Select contact method...</option>
+                    {Object.entries(CONTACT_METHOD_LABELS).map(([value, label]) => (
+                      <option key={value} value={value} style={{ backgroundColor: '#1a1a1a', color: '#e0e0e0' }}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Accepted Insurance
+                  </label>
+                  <textarea
+                    value={formData.acceptedInsurance}
+                    onChange={(e) => setFormData({ ...formData, acceptedInsurance: e.target.value })}
+                    rows={2}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                    placeholder="e.g., Medicare, Blue Cross, etc."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                    Last Visit Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.lastVisitDate}
+                    onChange={(e) => setFormData({ ...formData, lastVisitDate: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                  />
+                </div>
+
+                {formData.providerType === 'pharmacy' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                      Pharmacy License Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.pharmacyLicenseNumber}
+                      onChange={(e) => setFormData({ ...formData, pharmacyLicenseNumber: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
+                      placeholder="License/DEA number"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                     Notes
                   </label>
                   <textarea
@@ -439,17 +631,31 @@ export function MyProvidersPage() {
                   />
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isPrimary"
-                    checked={formData.isPrimary}
-                    onChange={(e) => setFormData({ ...formData, isPrimary: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label htmlFor="isPrimary" className="text-sm" style={{ color: 'var(--ink)' }}>
-                    Set as primary provider
-                  </label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isPrimary"
+                      checked={formData.isPrimary}
+                      onChange={(e) => setFormData({ ...formData, isPrimary: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label htmlFor="isPrimary" className="text-sm" style={{ color: 'var(--ink)' }}>
+                      Primary provider
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isEmergencyContact"
+                      checked={formData.isEmergencyContact}
+                      onChange={(e) => setFormData({ ...formData, isEmergencyContact: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label htmlFor="isEmergencyContact" className="text-sm" style={{ color: 'var(--ink)' }}>
+                      Emergency contact
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">

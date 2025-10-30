@@ -66,11 +66,19 @@ export const addProvider = async (req: Request, res: Response) => {
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
     if (sanitizedData.specialty === '') sanitizedData.specialty = null;
+    if (sanitizedData.providerType === '') sanitizedData.providerType = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
     if (sanitizedData.email === '') sanitizedData.email = null;
     if (sanitizedData.address === '') sanitizedData.address = null;
     if (sanitizedData.nextAppointment === '') sanitizedData.nextAppointment = null;
     if (sanitizedData.notes === '') sanitizedData.notes = null;
+    if (sanitizedData.officeHours === '') sanitizedData.officeHours = null;
+    if (sanitizedData.faxNumber === '') sanitizedData.faxNumber = null;
+    if (sanitizedData.patientPortalUrl === '') sanitizedData.patientPortalUrl = null;
+    if (sanitizedData.preferredContactMethod === '') sanitizedData.preferredContactMethod = null;
+    if (sanitizedData.acceptedInsurance === '') sanitizedData.acceptedInsurance = null;
+    if (sanitizedData.lastVisitDate === '') sanitizedData.lastVisitDate = null;
+    if (sanitizedData.pharmacyLicenseNumber === '') sanitizedData.pharmacyLicenseNumber = null;
 
     // If this is marked as primary, unset any existing primary providers
     if (sanitizedData.isPrimary) {
@@ -116,11 +124,19 @@ export const updateProvider = async (req: Request, res: Response) => {
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
     if (sanitizedData.specialty === '') sanitizedData.specialty = null;
+    if (sanitizedData.providerType === '') sanitizedData.providerType = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
     if (sanitizedData.email === '') sanitizedData.email = null;
     if (sanitizedData.address === '') sanitizedData.address = null;
     if (sanitizedData.nextAppointment === '') sanitizedData.nextAppointment = null;
     if (sanitizedData.notes === '') sanitizedData.notes = null;
+    if (sanitizedData.officeHours === '') sanitizedData.officeHours = null;
+    if (sanitizedData.faxNumber === '') sanitizedData.faxNumber = null;
+    if (sanitizedData.patientPortalUrl === '') sanitizedData.patientPortalUrl = null;
+    if (sanitizedData.preferredContactMethod === '') sanitizedData.preferredContactMethod = null;
+    if (sanitizedData.acceptedInsurance === '') sanitizedData.acceptedInsurance = null;
+    if (sanitizedData.lastVisitDate === '') sanitizedData.lastVisitDate = null;
+    if (sanitizedData.pharmacyLicenseNumber === '') sanitizedData.pharmacyLicenseNumber = null;
 
     // If this is being marked as primary, unset any existing primary providers
     if (sanitizedData.isPrimary && !provider.isPrimary) {

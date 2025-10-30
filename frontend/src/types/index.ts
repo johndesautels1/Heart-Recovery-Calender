@@ -319,17 +319,29 @@ export interface Patient {
   updatedAt: string;
 }
 
+export type ProviderType = 'cardiothoracic_surgeon' | 'cardiologist' | 'electrophysiologist' | 'general_practitioner' | 'physical_therapist' | 'pharmacy' | 'hospital' | 'other';
+export type PreferredContactMethod = 'phone' | 'email' | 'portal' | 'any';
+
 export interface Provider {
   id: number;
   userId: number;
   name: string;
   specialty?: string;
+  providerType?: ProviderType;
   phone?: string;
   email?: string;
   address?: string;
   nextAppointment?: string;
   notes?: string;
   isPrimary: boolean;
+  officeHours?: string;
+  faxNumber?: string;
+  patientPortalUrl?: string;
+  preferredContactMethod?: PreferredContactMethod;
+  acceptedInsurance?: string;
+  lastVisitDate?: string;
+  isEmergencyContact: boolean;
+  pharmacyLicenseNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -337,13 +349,52 @@ export interface Provider {
 export interface CreateProviderInput {
   name: string;
   specialty?: string;
+  providerType?: ProviderType;
   phone?: string;
   email?: string;
   address?: string;
   nextAppointment?: string;
   notes?: string;
   isPrimary?: boolean;
+  officeHours?: string;
+  faxNumber?: string;
+  patientPortalUrl?: string;
+  preferredContactMethod?: PreferredContactMethod;
+  acceptedInsurance?: string;
+  lastVisitDate?: string;
+  isEmergencyContact?: boolean;
+  pharmacyLicenseNumber?: string;
 }
+
+// Provider type labels and utilities
+export const PROVIDER_TYPE_LABELS: Record<ProviderType, string> = {
+  cardiothoracic_surgeon: 'Cardiothoracic Surgeon',
+  cardiologist: 'Cardiologist',
+  electrophysiologist: 'Electrophysiologist',
+  general_practitioner: 'General Practitioner',
+  physical_therapist: 'Physical Therapist',
+  pharmacy: 'Pharmacy',
+  hospital: 'Hospital',
+  other: 'Other',
+} as const;
+
+export const CONTACT_METHOD_LABELS: Record<PreferredContactMethod, string> = {
+  phone: 'Phone',
+  email: 'Email',
+  portal: 'Patient Portal',
+  any: 'Any Method',
+} as const;
+
+export const PROVIDER_TYPE_ICONS: Record<ProviderType, string> = {
+  cardiothoracic_surgeon: '🫀',
+  cardiologist: '❤️',
+  electrophysiologist: '⚡',
+  general_practitioner: '🩺',
+  physical_therapist: '🏃',
+  pharmacy: '💊',
+  hospital: '🏥',
+  other: '👨‍⚕️',
+} as const;
 
 export interface CreatePatientInput {
   name: string;
