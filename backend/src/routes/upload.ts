@@ -1,13 +1,13 @@
 import express from 'express';
 import { upload, uploadExerciseMedia, deleteExerciseMedia } from '../controllers/uploadController';
-import { authenticate } from '../middleware/authMiddleware';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // POST /api/upload/exercise-media - Upload video and/or image files
 router.post(
   '/exercise-media',
-  authenticate,
+  authenticateToken,
   upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'image', maxCount: 1 }
@@ -16,6 +16,6 @@ router.post(
 );
 
 // DELETE /api/upload/exercise-media/:type/:filename - Delete uploaded file
-router.delete('/exercise-media/:type/:filename', authenticate, deleteExerciseMedia);
+router.delete('/exercise-media/:type/:filename', authenticateToken, deleteExerciseMedia);
 
 export default router;
