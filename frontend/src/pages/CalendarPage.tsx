@@ -1076,10 +1076,23 @@ See browser console for full configuration details.
   const renderEventContent = (eventInfo: any) => {
     const event = eventInfo.event;
     const extendedProps = event.extendedProps;
+    const title = event.title || '';
 
-    // For meal events, show default
+    // Determine font size class based on text length
+    const getTextSizeClass = (text: string) => {
+      const length = text.length;
+      if (length <= 15) return 'event-text-default';
+      if (length <= 25) return 'event-text-medium';
+      if (length <= 35) return 'event-text-long';
+      return 'event-text-very-long';
+    };
+
+    // For meal events, show with auto-sizing
     if (extendedProps.isMealEvent) {
-      return { html: event.title };
+      const sizeClass = getTextSizeClass(title);
+      return {
+        html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+      };
     }
 
     // For exercise events
@@ -1101,13 +1114,19 @@ See browser console for full configuration details.
           `
         };
       } else {
-        // Show text for incomplete exercises
-        return { html: event.title };
+        // Show text for incomplete exercises with auto-sizing
+        const sizeClass = getTextSizeClass(title);
+        return {
+          html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+        };
       }
     }
 
-    // Default for other events
-    return { html: event.title };
+    // Default for other events with auto-sizing
+    const sizeClass = getTextSizeClass(title);
+    return {
+      html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+    };
   };
 
   // Custom day cell content to show sleep hours
@@ -1617,6 +1636,43 @@ See browser console for full configuration details.
             .fc-event:has(.exercise-event.completed):hover {
               transform: scale(0.98) !important;
               box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(96, 165, 250, 0.3) !important;
+            }
+
+            /* ========== AUTO-SIZING EVENT TEXT ========== */
+            /* Base wrapper for event text with overflow handling */
+            .event-text-wrapper {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+              padding: 2px 4px;
+              line-height: 1.2;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              hyphens: auto;
+            }
+
+            /* Short text - default size (0-15 characters) */
+            .event-text-default {
+              font-size: 13px !important;
+            }
+
+            /* Medium text (16-25 characters) */
+            .event-text-medium {
+              font-size: 11px !important;
+            }
+
+            /* Long text (26-35 characters) */
+            .event-text-long {
+              font-size: 9px !important;
+            }
+
+            /* Very long text (36+ characters) */
+            .event-text-very-long {
+              font-size: 8px !important;
+              line-height: 1.1;
             }
 
             @keyframes pulse-glow {
