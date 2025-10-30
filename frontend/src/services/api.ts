@@ -172,6 +172,9 @@ class ApiService {
     if (startDate) params.append('start', startDate);
     if (endDate) params.append('end', endDate);
 
+    // Include related data (exercise, template, creator, patient)
+    params.append('includeRelations', 'true');
+
     const response = await this.api.get<ApiResponse<CalendarEvent[]>>(`events?${params.toString()}`);
     return response.data.data;
   }
