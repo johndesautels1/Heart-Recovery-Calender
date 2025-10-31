@@ -493,14 +493,30 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
 
     // Merge calendar events and exercise logs for the "logs" field
     const allLogs = [
-      ...events.map((e: any) => ({
-        id: e.id,
-        startTime: e.startTime,
-        completedAt: e.startTime, // calendar events don't have completedAt
-        actualDuration: e.durationMinutes || 0,
-        caloriesBurned: 0, // calendar events don't track calories
-        performanceScore: e.performanceScore,
-      })),
+      ...events.map((e: any) => {
+        // Calculate calories burned based on duration and performance score
+        const duration = e.durationMinutes || 0;
+        const score = e.performanceScore || 0;
+
+        // Intensity multiplier based on performance score
+        let intensityMultiplier = 0;
+        if (score === 0) intensityMultiplier = 0; // no show
+        else if (score === 4) intensityMultiplier = 0.8; // completed (lighter effort)
+        else if (score === 6) intensityMultiplier = 1.0; // met goals (moderate effort)
+        else if (score === 8) intensityMultiplier = 1.2; // exceeded goals (higher effort)
+
+        // Base rate: ~5 calories per minute for cardiac exercise
+        const caloriesBurned = Math.round(duration * 5 * intensityMultiplier);
+
+        return {
+          id: e.id,
+          startTime: e.startTime,
+          completedAt: e.startTime, // calendar events don't have completedAt
+          actualDuration: duration,
+          caloriesBurned,
+          performanceScore: score,
+        };
+      }),
       ...logsForCharts,
     ].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 

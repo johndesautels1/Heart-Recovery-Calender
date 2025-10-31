@@ -1612,7 +1612,7 @@ export function ExercisesPage() {
 
               {/* Charts Row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Performance Breakdown Pie Chart */}
+                {/* Performance Breakdown Pie Chart  */}
                 <div className="glass rounded-xl p-6">
                   <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                     Performance Breakdown
@@ -1636,10 +1636,10 @@ export function ExercisesPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Exceeded Goals (8 pts)', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
-                          { name: 'Met Goals (6 pts)', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
-                          { name: 'Completed (4 pts)', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
-                          { name: 'No Show (0 pts)', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                          { name: '0pts: No Show', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                          { name: '4pts: Completed', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
+                          { name: '6pts: Met Goals', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
+                          { name: '8pts: Exceeded Goals', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
                         ].filter(item => item.value > 0)}
                         cx="50%"
                         cy="50%"
@@ -1647,13 +1647,31 @@ export function ExercisesPage() {
                         outerRadius={100}
                         paddingAngle={5}
                         dataKey="value"
-                        label={(entry) => `${entry.value}`}
+                        label={(props: any) => {
+                          const { x, y, value, name } = props;
+                          const isBlue = name === '6pts: Met Goals';
+                          const adjustedX = isBlue ? x + 10 : x;
+                          const adjustedY = isBlue ? y + 18 : y;
+                          return (
+                            <text
+                              x={adjustedX}
+                              y={adjustedY}
+                              fill="white"
+                              textAnchor={x > 200 ? 'start' : 'end'}
+                              dominantBaseline="middle"
+                              fontSize="12"
+                            >
+                              {`${value} ${value === 1 ? 'session' : 'sessions'} completed`}
+                            </text>
+                          );
+                        }}
+                        labelLine={true}
                       >
                         {[
-                          { name: 'Exceeded Goals (8 pts)', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
-                          { name: 'Met Goals (6 pts)', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
-                          { name: 'Completed (4 pts)', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
-                          { name: 'No Show (0 pts)', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                          { name: '0pts: No Show', value: monthlyStats.performanceBreakdown.noShow, color: '#ef4444' },
+                          { name: '4pts: Completed', value: monthlyStats.performanceBreakdown.completed, color: '#f59e0b' },
+                          { name: '6pts: Met Goals', value: monthlyStats.performanceBreakdown.metGoals, color: '#3b82f6' },
+                          { name: '8pts: Exceeded Goals', value: monthlyStats.performanceBreakdown.exceededGoals, color: '#10b981' },
                         ].filter(item => item.value > 0).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -1699,12 +1717,12 @@ export function ExercisesPage() {
                         const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short' });
                         const dateRange = `${monthName} ${startDay}-${endDay}`;
 
-                        // Color based on average score
+                        // Color based on average score ranges
                         let barColor = '#6b7280'; // gray for no data
                         if (avgScore === 0) barColor = '#dc2626'; // red - no show
-                        else if (avgScore === 4) barColor = '#ea580c'; // orange - completed
-                        else if (avgScore === 6) barColor = '#2563eb'; // blue - met goals
-                        else if (avgScore === 8) barColor = '#059669'; // green - exceeded goals
+                        else if (avgScore > 0 && avgScore < 5) barColor = '#ea580c'; // orange - completed range (1-4)
+                        else if (avgScore >= 5 && avgScore < 7) barColor = '#2563eb'; // blue - met goals range (5-6)
+                        else if (avgScore >= 7) barColor = '#059669'; // green - exceeded goals range (7-8)
 
                         return {
                           week: dateRange,
@@ -1733,9 +1751,9 @@ export function ExercisesPage() {
                           const avgScore = data.sessions > 0 ? Math.round(data.score / data.sessions) : 0;
                           let barColor = '#6b7280'; // gray for no data
                           if (avgScore === 0) barColor = '#dc2626'; // red - no show
-                          else if (avgScore === 4) barColor = '#ea580c'; // orange - completed
-                          else if (avgScore === 6) barColor = '#2563eb'; // blue - met goals
-                          else if (avgScore === 8) barColor = '#059669'; // green - exceeded goals
+                          else if (avgScore > 0 && avgScore < 5) barColor = '#ea580c'; // orange - completed range (1-4)
+                          else if (avgScore >= 5 && avgScore < 7) barColor = '#2563eb'; // blue - met goals range (5-6)
+                          else if (avgScore >= 7) barColor = '#059669'; // green - exceeded goals range (7-8)
 
                           return <Cell key={`cell-${index}`} fill={barColor} />;
                         })}
@@ -1745,99 +1763,81 @@ export function ExercisesPage() {
                 </div>
               </div>
 
-              {/* Score Gauge */}
-              <div className="glass rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
-                  Monthly Performance Score
-                </h3>
-                <div className="flex flex-col items-center">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <RadialBarChart
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="60%"
-                      outerRadius="90%"
-                      barSize={30}
-                      data={[{
-                        name: 'Score',
-                        value: monthlyStats.percentageScore,
-                        fill: monthlyStats.percentageScore >= 80 ? '#10b981' : monthlyStats.percentageScore >= 60 ? '#3b82f6' : monthlyStats.percentageScore >= 40 ? '#f59e0b' : '#ef4444'
-                      }]}
-                      startAngle={180}
-                      endAngle={0}
-                    >
-                      <RadialBar
-                        background
-                        dataKey="value"
-                        cornerRadius={15}
-                      />
-                      <text
-                        x="50%"
-                        y="50%"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        style={{ fontSize: '48px', fontWeight: 'bold', fill: '#ffffff' }}
-                      >
-                        {monthlyStats.percentageScore}%
-                      </text>
-                    </RadialBarChart>
-                  </ResponsiveContainer>
-                  <div className="flex items-center justify-center space-x-8 mt-6">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>0-39%</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>40-59%</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>60-79%</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>80-100%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Calorie Burn Tracking Chart */}
               <div className="glass rounded-xl p-6 mt-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--ink)' }}>
-                  <Flame className="h-5 w-5 text-orange-500" />
-                  Daily Calories Burned
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    Daily Calories Burned - {new Date(monthlyStats.year, monthlyStats.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <div className="text-center">
+                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>Total Calories</p>
+                    <p className="text-2xl font-bold text-orange-500">
+                      {(() => {
+                        const logs = monthlyStats.logs || [];
+                        return logs.reduce((sum: number, log: any) => sum + (log.caloriesBurned || 0), 0).toLocaleString();
+                      })()}
+                    </p>
+                  </div>
+                </div>
                 <div className="mb-2 flex flex-wrap gap-3 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>Calories Burned</span>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>Daily Calories</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>Running Total</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-6 h-0.5 bg-green-500" style={{ borderTop: '2px dashed #22c55e' }}></div>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>Daily Allowance (2000)</span>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={(() => {
                     // Calculate daily calories burned from exercise logs for the current month
                     const logs = monthlyStats.logs || [];
-                    const dailyCalories: { [date: string]: number } = {};
+                    const dailyCalories: { [key: string]: { date: Date, dateStr: string, calories: number, exercises: string[] } } = {};
 
                     logs.forEach((log: any) => {
-                      const date = new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      if (!dailyCalories[date]) {
-                        dailyCalories[date] = 0;
+                      const dateObj = new Date(log.startTime || log.completedAt);
+                      const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      const key = dateObj.toISOString().split('T')[0]; // Use ISO date as key for sorting
+
+                      if (!dailyCalories[key]) {
+                        dailyCalories[key] = { date: dateObj, dateStr, calories: 0, exercises: [] };
                       }
-                      dailyCalories[date] += log.caloriesBurned || 0;
+                      dailyCalories[key].calories += log.caloriesBurned || 0;
+
+                      // Add exercise name if available (from calendar events that have exercise relation)
+                      // For now we'll show a placeholder, but you can enhance this with actual exercise names
+                      const exerciseInfo = `${log.caloriesBurned || 0} cal`;
+                      dailyCalories[key].exercises.push(exerciseInfo);
                     });
 
-                    return Object.entries(dailyCalories).map(([date, calories]) => ({
-                      date,
-                      calories
-                    }));
+                    // Sort by date chronologically (earliest to latest) and calculate running total
+                    let runningTotal = 0;
+                    return Object.values(dailyCalories)
+                      .sort((a, b) => a.date.getTime() - b.date.getTime())
+                      .map(({ dateStr, calories, exercises }) => {
+                        runningTotal += calories;
+                        return {
+                          date: dateStr,
+                          calories,
+                          runningTotal,
+                          exercises: exercises.join(', ')
+                        };
+                      });
                   })()}>
                     <defs>
                       <linearGradient id="calorieGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>
                         <stop offset="100%" stopColor="#f97316" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="runningTotalGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4}/>
+                        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.05}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
@@ -1848,10 +1848,32 @@ export function ExercisesPage() {
                       tickLine={{ stroke: '#6b7280' }}
                     />
                     <YAxis
+                      domain={[0, 2500]}
+                      ticks={[0, 325, 650, 1000, 1500, 2000, 2500]}
                       stroke="#9ca3af"
                       tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
                       tickLine={{ stroke: '#6b7280' }}
                       label={{ value: 'Calories', angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontSize: 12, fontWeight: 600 } }}
+                    />
+                    <ReferenceLine
+                      y={325}
+                      stroke="#9ca3af"
+                      strokeWidth={1}
+                      strokeDasharray="3 3"
+                      strokeOpacity={0.5}
+                    />
+                    <ReferenceLine
+                      y={2000}
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      label={{
+                        value: 'Daily Caloric Allowance (2000 cal)',
+                        position: 'insideTopRight',
+                        fill: '#22c55e',
+                        fontSize: 12,
+                        fontWeight: 600
+                      }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1870,9 +1892,20 @@ export function ExercisesPage() {
                       stroke="#f97316"
                       strokeWidth={3}
                       fill="url(#calorieGrad)"
-                      name="Calories Burned"
+                      name="Daily Calories"
                       dot={{ fill: '#f97316', r: 4, strokeWidth: 2, stroke: '#fff' }}
                       activeDot={{ r: 7, strokeWidth: 3 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="runningTotal"
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                      fill="url(#runningTotalGrad)"
+                      name="Running Total"
+                      dot={{ fill: '#06b6d4', r: 3, strokeWidth: 2, stroke: '#fff' }}
+                      activeDot={{ r: 6, strokeWidth: 2 }}
+                      strokeDasharray="5 5"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
