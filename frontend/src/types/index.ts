@@ -581,6 +581,29 @@ export interface ExerciseLogStats {
   scoreDistribution: any[];
 }
 
+// ==================== CALORIES / ENERGY BALANCE ====================
+export interface CalorieSummary {
+  caloriesConsumed: number;
+  caloriesBurned: number;
+  netCalories: number;
+  status: 'deficit' | 'neutral' | 'surplus';
+}
+
+export interface DailyCalories {
+  date: string;
+  consumed: number;
+  burned: number;
+  net: number;
+}
+
+export interface WeightCorrelation {
+  currentWeight?: number;
+  targetWeight?: number;
+  startingWeight?: number;
+  weightUnit: string;
+  surgeryDate?: string;
+}
+
 // ==================== HYDRATION LOGS ====================
 export interface HydrationLog {
   id: number;

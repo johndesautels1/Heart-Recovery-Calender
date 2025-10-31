@@ -39,6 +39,9 @@ import {
   DeviceSyncLog,
   UpdateDeviceSettingsInput,
   TriggerSyncInput,
+  CalorieSummary,
+  DailyCalories,
+  WeightCorrelation,
 } from '../types';
 
 class ApiService {
@@ -557,6 +560,35 @@ class ApiService {
     if (filters?.userId) params.append('userId', filters.userId.toString());
 
     const response = await this.api.get<ExerciseLogStats>(`exercise-logs/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  // ==================== CALORIES / ENERGY BALANCE ENDPOINTS ====================
+  async getCalorieSummary(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<CalorieSummary> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<CalorieSummary>(`calories/summary?${params.toString()}`);
+    return response.data;
+  }
+
+  async getDailyCalories(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<DailyCalories[]> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId.toString());
+
+    const response = await this.api.get<{ data: DailyCalories[] }>(`calories/daily?${params.toString()}`);
+    return response.data.data;
+  }
+
+  async getWeightCorrelation(userId?: number): Promise<WeightCorrelation> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId.toString());
+
+    const response = await this.api.get<WeightCorrelation>(`calories/weight-correlation?${params.toString()}`);
     return response.data;
   }
 
