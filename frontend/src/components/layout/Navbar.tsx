@@ -249,23 +249,24 @@ export function Navbar() {
               {/* Clickable Avatar */}
               <div
                 onClick={handleAvatarClick}
-                className="cursor-pointer relative"
+                className="cursor-pointer relative flex-shrink-0"
                 title="Click to upload profile picture"
               >
                 {isUploadingPhoto && (
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center z-10">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
                 {user?.profilePhoto ? (
                   <img
+                    key={user.profilePhoto}
                     src={user.profilePhoto}
                     alt={user.name}
-                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
+                    className="h-10 w-10 rounded-full object-cover border-2 border-white/30"
                   />
                 ) : (
-                  <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
-                    <User className="h-4 w-4 text-white" />
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                    <User className="h-5 w-5 text-white" />
                   </div>
                 )}
               </div>
@@ -383,23 +384,24 @@ export function Navbar() {
               {/* Clickable Avatar */}
               <div
                 onClick={handleAvatarClick}
-                className="cursor-pointer relative"
+                className="cursor-pointer relative flex-shrink-0"
                 title="Click to upload profile picture"
               >
                 {isUploadingPhoto && (
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center z-10">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
                 {user?.profilePhoto ? (
                   <img
+                    key={user.profilePhoto}
                     src={user.profilePhoto}
                     alt={user.name}
-                    className="h-10 w-10 rounded-full object-cover border-2 border-white/30"
+                    className="h-12 w-12 rounded-full object-cover border-2 border-white/30"
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
-                    <User className="h-5 w-5 text-white" />
+                  <div className="h-12 w-12 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                    <User className="h-6 w-6 text-white" />
                   </div>
                 )}
               </div>
