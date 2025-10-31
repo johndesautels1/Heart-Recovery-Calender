@@ -1993,16 +1993,20 @@ See browser console for full configuration details.
                           <p className="text-gray-700 font-semibold italic text-center py-8">No video available for this exercise</p>
                         )}
 
-                        {/* UPLOAD VIDEO BUTTON */}
-                        <div className="border-t-2 border-cyan-300 pt-4 mt-4">
-                          <label className="flex flex-col items-center px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl shadow-lg hover:from-cyan-600 hover:to-blue-700 cursor-pointer transition-all hover:scale-105">
-                            <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <span className="text-lg font-bold">Upload Your Exercise Video</span>
-                            <span className="text-sm mt-1 opacity-90">MP4, MOV, AVI - Max 100MB</span>
-                            <input type="file" className="hidden" accept="video/*" />
-                          </label>
+                        {/* UPLOAD VIDEO BUTTON or REST TIMER */}
+                        <div className="border-t-2 border-cyan-300 pt-4 mt-4 relative">
+                          {showRestTimer ? (
+                            <RestTimer onClose={() => setShowRestTimer(false)} isCompact={true} />
+                          ) : (
+                            <label className="flex flex-col items-center px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl shadow-lg hover:from-cyan-600 hover:to-blue-700 cursor-pointer transition-all hover:scale-105">
+                              <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span className="text-lg font-bold">Upload Your Exercise Video</span>
+                              <span className="text-sm mt-1 opacity-90">MP4, MOV, AVI - Max 100MB</span>
+                              <input type="file" className="hidden" accept="video/*" />
+                            </label>
+                          )}
                         </div>
                       </div>
                     )}
@@ -3496,10 +3500,6 @@ See browser console for full configuration details.
         </div>
       </Modal>
 
-      {/* Floating Rest Timer */}
-      {showRestTimer && (
-        <RestTimer onClose={() => setShowRestTimer(false)} />
-      )}
     </div>
   );
 }

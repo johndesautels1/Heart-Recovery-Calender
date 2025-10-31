@@ -4,9 +4,10 @@ import { Play, Pause, RotateCcw, Plus, Minus, X } from 'lucide-react';
 interface RestTimerProps {
   onClose: () => void;
   defaultSeconds?: number;
+  isCompact?: boolean;
 }
 
-export function RestTimer({ onClose, defaultSeconds = 60 }: RestTimerProps) {
+export function RestTimer({ onClose, defaultSeconds = 60, isCompact = false }: RestTimerProps) {
   const [seconds, setSeconds] = useState(defaultSeconds);
   const [initialSeconds, setInitialSeconds] = useState(defaultSeconds);
   const [isRunning, setIsRunning] = useState(false);
@@ -92,6 +93,100 @@ export function RestTimer({ onClose, defaultSeconds = 60 }: RestTimerProps) {
     return 'from-blue-500 to-cyan-600';
   };
 
+  if (isCompact) {
+    // Compact rectangular timer for modal overlay
+    return (
+      <div className="glass rounded-xl p-4 w-full relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-white/20 transition-colors z-10"
+        >
+          <X className="h-4 w-4 text-white" />
+        </button>
+
+        <div className="flex items-center justify-between gap-4">
+          {/* Compact Timer Display */}
+          <div className="flex items-center gap-3">
+            <div className={`text-3xl font-bold bg-gradient-to-br ${getTimerColor()} bg-clip-text text-transparent`}>
+              {formatTime(seconds)}
+            </div>
+            {isComplete && (
+              <div className="text-green-500 font-bold text-sm animate-pulse">
+                COMPLETE! 💪
+              </div>
+            )}
+          </div>
+
+          {/* Control Buttons - Compact */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleSubtractTime}
+              disabled={isRunning}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <Minus className="h-4 w-4 text-white" />
+            </button>
+
+            {!isRunning ? (
+              <button
+                onClick={handleStart}
+                disabled={seconds === 0}
+                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                <Play className="h-4 w-4" />
+                Start
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold hover:scale-105 transition-transform text-sm"
+              >
+                <Pause className="h-4 w-4" />
+                Pause
+              </button>
+            )}
+
+            <button
+              onClick={handleReset}
+              className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:scale-105 transition-transform"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={handleAddTime}
+              disabled={isRunning}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <Plus className="h-4 w-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Time Presets - Compact */}
+        <div className="mt-3 flex gap-2 justify-center">
+          {[30, 60, 90, 120].map((time) => (
+            <button
+              key={time}
+              onClick={() => {
+                setSeconds(time);
+                setInitialSeconds(time);
+                setIsRunning(false);
+                setIsComplete(false);
+              }}
+              disabled={isRunning}
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {time}s
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Full-screen timer (original design)
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
       <div className="glass rounded-2xl p-8 max-w-md w-full relative">
