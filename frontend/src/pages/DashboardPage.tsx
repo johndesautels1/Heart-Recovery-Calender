@@ -199,6 +199,13 @@ export function DashboardPage() {
     sleep: number;
     weight: number;
   }>>([]);
+  const [calorieData, setCalorieData] = useState<Array<{
+    date: string;
+    consumed: number;
+    burned: number;
+    net: number;
+  }>>([]);
+  const [calorieLoading, setCalorieLoading] = useState(true);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
 
@@ -230,6 +237,43 @@ export function DashboardPage() {
       setSelectedPhotoPatient(user.id);
     }
   }, [isAdmin, adminStats.activePatients, user, selectedPhotoPatient]);
+
+  // Load calorie data for energy balance chart
+  useEffect(() => {
+    const loadCalorieData = async () => {
+      try {
+        setCalorieLoading(true);
+        const endDate = format(new Date(), 'yyyy-MM-dd');
+        const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+        const userId = isAdmin && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+
+        const data = await api.getDailyCalories({
+          startDate,
+          endDate,
+          userId
+        });
+
+        // Transform data for the chart
+        const chartData = data.map(item => ({
+          date: format(parseISO(item.date), 'MMM dd'),
+          consumed: item.consumed,
+          burned: item.burned,
+          net: item.net
+        }));
+
+        setCalorieData(chartData);
+      } catch (error) {
+        console.error('Error loading calorie data:', error);
+        setCalorieData([]);
+      } finally {
+        setCalorieLoading(false);
+      }
+    };
+
+    if (user?.id || (isAdmin && selectedPatient?.userId)) {
+      loadCalorieData();
+    }
+  }, [user?.id, isAdmin, selectedPatient]);
 
   // Calculate 12-week historical progress from real patient data
   const calculate12WeekProgress = async (userId?: number) => {
@@ -2934,27 +2978,24 @@ export function DashboardPage() {
         <p className="text-sm text-gray-300 mb-4">
           Track your daily caloric intake vs. expenditure to manage weight trajectory
         </p>
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart
-            data={(() => {
-              // Mock data for now - will be replaced with actual API call
-              const days = 30;
-              const data = [];
-              for (let i = days - 1; i >= 0; i--) {
-                const date = format(subDays(new Date(), i), 'MMM dd');
-                const consumed = 1800 + Math.random() * 400;
-                const burned = 200 + Math.random() * 300;
-                const net = consumed - burned;
-                data.push({
-                  date,
-                  consumed: Math.round(consumed),
-                  burned: Math.round(burned),
-                  net: Math.round(net)
-                });
-              }
-              return data;
-            })()}
-          >
+        {calorieLoading ? (
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading energy balance data...</p>
+            </div>
+          </div>
+        ) : calorieData.length === 0 ? (
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-center text-gray-400">
+              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No calorie data available yet</p>
+              <p className="text-sm mt-2">Start logging meals and exercises to see your energy balance</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <ComposedChart data={calorieData}>
             <defs>
               <linearGradient id="consumedGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
@@ -3022,17 +3063,32 @@ export function DashboardPage() {
         <div className="mt-4 grid grid-cols-3 gap-4 text-center">
           <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
             <div className="text-xs text-blue-300 mb-1">Avg Consumed</div>
-            <div className="text-2xl font-bold text-blue-400">1,950</div>
+            <div className="text-2xl font-bold text-blue-400">
+              {calorieData.length > 0
+                ? Math.round(calorieData.reduce((sum, d) => sum + d.consumed, 0) / calorieData.length).toLocaleString()
+                : '0'}
+            </div>
             <div className="text-xs text-gray-400">cal/day</div>
           </div>
           <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
             <div className="text-xs text-orange-300 mb-1">Avg Burned</div>
-            <div className="text-2xl font-bold text-orange-400">350</div>
+            <div className="text-2xl font-bold text-orange-400">
+              {calorieData.length > 0
+                ? Math.round(calorieData.reduce((sum, d) => sum + d.burned, 0) / calorieData.length).toLocaleString()
+                : '0'}
+            </div>
             <div className="text-xs text-gray-400">cal/day</div>
           </div>
           <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
             <div className="text-xs text-green-300 mb-1">Avg Net</div>
-            <div className="text-2xl font-bold text-green-400">+1,600</div>
+            <div className="text-2xl font-bold text-green-400">
+              {calorieData.length > 0
+                ? (() => {
+                    const avgNet = Math.round(calorieData.reduce((sum, d) => sum + d.net, 0) / calorieData.length);
+                    return (avgNet >= 0 ? '+' : '') + avgNet.toLocaleString();
+                  })()
+                : '0'}
+            </div>
             <div className="text-xs text-gray-400">cal/day</div>
           </div>
         </div>
