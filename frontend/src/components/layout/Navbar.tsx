@@ -326,11 +326,14 @@ export function Navbar() {
                         fontSize: '0.9375rem',
                         color: active ? '#facc15' : '#ffffff',
                         textShadow: active
-                          ? '0 0 24px rgba(250, 204, 21, 1), 0 2px 6px rgba(0, 0, 0, 1)'
+                          ? '0 0 20px rgba(250, 204, 21, 0.9), 0 1px 3px rgba(0, 0, 0, 1), 0 0 1px rgba(0, 0, 0, 0.8)'
                           : '0 2px 4px rgba(0, 0, 0, 0.8)',
                         fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        letterSpacing: '0.02em',
-                        fontWeight: active ? '800' : '700'
+                        letterSpacing: active ? '0.025em' : '0.02em',
+                        fontWeight: active ? '800' : '700',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                        textRendering: 'optimizeLegibility'
                       }}
                     >
                       {item.label}
