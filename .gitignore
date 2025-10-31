@@ -60,3 +60,6 @@ firestore-debug.log
 *.cert
 *.crtNUL
 **/NUL
+
+# Claude Code temporary files
+*.tmp.*

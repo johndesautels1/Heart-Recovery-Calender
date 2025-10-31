@@ -105,6 +105,7 @@ export function CalendarPage() {
   const [duringPulse, setDuringPulse] = useState<string>('');
   const [duringRespiration, setDuringRespiration] = useState<string>('');
   const [vitalSnapshots, setVitalSnapshots] = useState<any[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Device connection state
   const [devicesConnected, setDevicesConnected] = useState(false);
@@ -170,6 +171,14 @@ export function CalendarPage() {
       setSelectedCalendarIds(calendars.map(cal => cal.id));
     }
   }, [calendars]);
+
+  // Update current time every second for real-time clock display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Check device connections when exercise modal opens
   useEffect(() => {
@@ -941,6 +950,10 @@ See browser console for full configuration details.
 
           // Notes
           notes: exerciseNotes || undefined,
+
+          // Vitals snapshots (for saving to VitalsSample table)
+          vitalSnapshots: vitalSnapshots.length > 0 ? vitalSnapshots : undefined,
+          exerciseName: currentExercise?.name,
         };
 
         // Remove undefined fields
@@ -2019,6 +2032,12 @@ See browser console for full configuration details.
                             <span className="text-xs font-bold text-gray-600">MANUAL ENTRY</span>
                           </div>
                         )}
+                        <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 border border-blue-300 rounded-lg">
+                          <Clock className="h-3 w-3 text-blue-700" />
+                          <span className="text-sm font-mono font-bold text-blue-700">
+                            {currentTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
                       <button
                         onClick={() => {
@@ -2058,7 +2077,7 @@ See browser console for full configuration details.
                             value={duringBpSystolic}
                             onChange={(e) => setDuringBpSystolic(e.target.value)}
                             readOnly={devicesConnected}
-                            className={`w-full px-2 py-1 text-sm font-bold rounded border-2 ${
+                            className={`w-full px-2 py-1 text-sm font-bold text-blue-700 rounded border-2 ${
                               devicesConnected
                                 ? 'bg-green-50 border-green-400 cursor-not-allowed'
                                 : 'border-red-300 focus:border-red-500'
@@ -2071,7 +2090,7 @@ See browser console for full configuration details.
                             value={duringBpDiastolic}
                             onChange={(e) => setDuringBpDiastolic(e.target.value)}
                             readOnly={devicesConnected}
-                            className={`w-full px-2 py-1 text-sm font-bold rounded border-2 ${
+                            className={`w-full px-2 py-1 text-sm font-bold text-blue-700 rounded border-2 ${
                               devicesConnected
                                 ? 'bg-green-50 border-green-400 cursor-not-allowed'
                                 : 'border-red-300 focus:border-red-500'
@@ -2090,7 +2109,7 @@ See browser console for full configuration details.
                           value={duringPulse}
                           onChange={(e) => setDuringPulse(e.target.value)}
                           readOnly={devicesConnected}
-                          className={`w-full px-2 py-1.5 text-sm font-bold rounded border-2 ${
+                          className={`w-full px-2 py-1.5 text-sm font-bold text-blue-700 rounded border-2 ${
                             devicesConnected
                               ? 'bg-green-50 border-green-400 cursor-not-allowed'
                               : 'border-orange-300 focus:border-orange-500'
@@ -2108,7 +2127,7 @@ See browser console for full configuration details.
                           value={duringRespiration}
                           onChange={(e) => setDuringRespiration(e.target.value)}
                           readOnly={devicesConnected}
-                          className={`w-full px-2 py-1.5 text-sm font-bold rounded border-2 ${
+                          className={`w-full px-2 py-1.5 text-sm font-bold text-blue-700 rounded border-2 ${
                             devicesConnected
                               ? 'bg-green-50 border-green-400 cursor-not-allowed'
                               : 'border-blue-300 focus:border-blue-500'
@@ -2125,6 +2144,9 @@ See browser console for full configuration details.
                         <div className="flex flex-wrap gap-2">
                           {vitalSnapshots.map((snap, idx) => (
                             <div key={idx} className="text-xs bg-white px-2 py-1 rounded border border-green-300">
+                              <span className="font-mono text-gray-600 mr-2">
+                                {new Date(snap.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
                               <span className="font-bold text-blue-700">{snap.bpSystolic}/{snap.bpDiastolic}</span>
                               {' | '}
                               <span className="font-bold text-blue-700">{snap.pulse} bpm</span>

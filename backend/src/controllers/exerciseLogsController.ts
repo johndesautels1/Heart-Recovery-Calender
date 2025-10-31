@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import ExerciseLog from '../models/ExerciseLog';
 import Exercise from '../models/Exercise';
 import User from '../models/User';
+import VitalsSample from '../models/VitalsSample';
 import { Op } from 'sequelize';
 
 // GET /api/exercise-logs - Get all exercise logs with filters
@@ -132,6 +133,31 @@ export const createExerciseLog = async (req: Request, res: Response) => {
 
     console.log('[EXERCISE-LOGS] Exercise log created successfully:', log.id);
     console.log('[EXERCISE-LOGS] postSurgeryDay:', log.postSurgeryDay);
+
+    // Save vitals snapshots to VitalsSample records
+    if (req.body.vitalSnapshots && Array.isArray(req.body.vitalSnapshots) && req.body.vitalSnapshots.length > 0) {
+      console.log('[EXERCISE-LOGS] Saving', req.body.vitalSnapshots.length, 'vitals snapshots');
+
+      for (const snap of req.body.vitalSnapshots) {
+        try {
+          await VitalsSample.create({
+            userId: logData.userId,
+            timestamp: new Date(snap.timestamp),
+            bloodPressureSystolic: snap.bpSystolic,
+            bloodPressureDiastolic: snap.bpDiastolic,
+            heartRate: snap.pulse,
+            respiratoryRate: snap.respiration,
+            source: 'manual',
+            notes: `During exercise: ${req.body.exerciseName || req.body.notes || 'Exercise session'}`,
+            medicationsTaken: false,
+          });
+          console.log('[EXERCISE-LOGS] Saved vitals snapshot at', snap.timestamp);
+        } catch (vitalError: any) {
+          console.error('[EXERCISE-LOGS] Error saving vitals snapshot:', vitalError);
+          // Don't fail the whole request if vitals saving fails
+        }
+      }
+    }
 
     // Load full log with associations
     const fullLog = await ExerciseLog.findByPk(log.id, {
