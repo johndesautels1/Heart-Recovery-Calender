@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useView } from '../../contexts/ViewContext';
+import { LanguageSelector } from '../LanguageSelector';
 import clsx from 'clsx';
 
 export function Navbar() {
@@ -150,6 +151,9 @@ export function Navbar() {
                 </span>
               </button>
             </div>
+
+            {/* Language Selector */}
+            <LanguageSelector />
 
             {/* View Toggle - Hidden for now to simplify UI */}
             {/* {(user?.role === 'therapist' || user?.role === 'admin') && (

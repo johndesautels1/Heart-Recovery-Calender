@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Button } from '../components/ui';
-import { Stethoscope, Phone, Mail, MapPin, Calendar, Plus, Edit, Trash2, X, CalendarPlus, CalendarCheck } from 'lucide-react';
+import { Stethoscope, Phone, Mail, MapPin, Calendar, Plus, Edit, Trash2, X, CalendarPlus, CalendarCheck, QrCode, Camera } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { Provider, CreateProviderInput, ProviderType, PreferredContactMethod, PROVIDER_TYPE_LABELS, PROVIDER_TYPE_ICONS, CONTACT_METHOD_LABELS } from '../types';
 import { toast } from 'sonner';
+import { QRScanner } from '../components/QRScanner';
+import { QRGenerator } from '../components/QRGenerator';
+import { useTranslation } from 'react-i18next';
 
 export function MyProvidersPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +35,10 @@ export function MyProvidersPage() {
     isEmergencyContact: false,
     pharmacyLicenseNumber: '',
   });
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showQRGenerator, setShowQRGenerator] = useState(false);
+  const [qrData, setQrData] = useState<any>(null);
+  const [qrTitle, setQrTitle] = useState('');
 
   useEffect(() => {
     loadProviders();
@@ -159,6 +167,85 @@ export function MyProvidersPage() {
     }
   };
 
+  const handleQRScan = (data: string) => {
+    try {
+      const parsed = JSON.parse(data);
+
+      // Validate and populate form
+      setFormData({
+        name: parsed.name || '',
+        specialty: parsed.specialty || '',
+        providerType: parsed.providerType,
+        phone: parsed.phone || '',
+        email: parsed.email || '',
+        address: parsed.address || '',
+        nextAppointment: parsed.nextAppointment ? parsed.nextAppointment.split('T')[0] : '',
+        notes: parsed.notes || '',
+        isPrimary: parsed.isPrimary || false,
+        officeHours: parsed.officeHours || '',
+        faxNumber: parsed.faxNumber || '',
+        patientPortalUrl: parsed.patientPortalUrl || '',
+        preferredContactMethod: parsed.preferredContactMethod,
+        acceptedInsurance: parsed.acceptedInsurance || '',
+        lastVisitDate: parsed.lastVisitDate ? parsed.lastVisitDate.split('T')[0] : '',
+        isEmergencyContact: parsed.isEmergencyContact || false,
+        pharmacyLicenseNumber: parsed.pharmacyLicenseNumber || '',
+      });
+
+      setShowQRScanner(false);
+      toast.success('Provider data imported from QR code!');
+    } catch (error) {
+      toast.error('Invalid QR code data');
+      console.error('QR parse error:', error);
+    }
+  };
+
+  const handleGenerateQR = (provider: Provider) => {
+    // Only include essential fields for sharing, exclude internal IDs and timestamps
+    const essentialData = {
+      name: provider.name,
+      providerType: provider.providerType,
+      specialty: provider.specialty,
+      phone: provider.phone,
+      email: provider.email,
+      address: provider.address,
+      officeHours: provider.officeHours,
+      faxNumber: provider.faxNumber,
+      patientPortalUrl: provider.patientPortalUrl,
+      preferredContactMethod: provider.preferredContactMethod,
+      acceptedInsurance: provider.acceptedInsurance,
+      isPrimary: provider.isPrimary,
+      isEmergencyContact: provider.isEmergencyContact,
+      notes: provider.notes,
+    };
+    setQrData(essentialData);
+    setQrTitle(`${provider.name} - Provider Info`);
+    setShowQRGenerator(true);
+  };
+
+  const handleGenerateBulkQR = () => {
+    // Filter each provider to only essential fields
+    const essentialProvidersData = providers.map(provider => ({
+      name: provider.name,
+      providerType: provider.providerType,
+      specialty: provider.specialty,
+      phone: provider.phone,
+      email: provider.email,
+      address: provider.address,
+      officeHours: provider.officeHours,
+      faxNumber: provider.faxNumber,
+      patientPortalUrl: provider.patientPortalUrl,
+      preferredContactMethod: provider.preferredContactMethod,
+      acceptedInsurance: provider.acceptedInsurance,
+      isPrimary: provider.isPrimary,
+      isEmergencyContact: provider.isEmergencyContact,
+      notes: provider.notes,
+    }));
+    setQrData(essentialProvidersData);
+    setQrTitle('All Providers');
+    setShowQRGenerator(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -176,14 +263,26 @@ export function MyProvidersPage() {
             Manage your healthcare providers and contact information
           </p>
         </div>
-        <Button
-          onClick={handleAddProvider}
-          variant="primary"
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Provider
-        </Button>
+        <div className="flex gap-3">
+          {providers.length > 0 && (
+            <Button
+              onClick={handleGenerateBulkQR}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Export All as QR
+            </Button>
+          )}
+          <Button
+            onClick={handleAddProvider}
+            variant="primary"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Provider
+          </Button>
+        </div>
       </div>
 
       {/* Providers Grid */}
@@ -311,6 +410,14 @@ export function MyProvidersPage() {
                   Edit
                 </Button>
                 <Button
+                  onClick={() => handleGenerateQR(provider)}
+                  variant="secondary"
+                  className="flex items-center justify-center px-3"
+                  title="Export as QR Code"
+                >
+                  <QrCode className="h-4 w-4" />
+                </Button>
+                <Button
                   onClick={() => handleDeleteProvider(provider.id, provider.name)}
                   variant="secondary"
                   className="flex items-center justify-center px-3"
@@ -398,13 +505,29 @@ export function MyProvidersPage() {
                 <h2 className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
                   {editingProvider ? 'Edit Provider' : 'Add Provider'}
                 </h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 rounded-lg hover:bg-opacity-20 transition-all"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                >
-                  <X className="h-5 w-5" style={{ color: 'var(--muted)' }} />
-                </button>
+                <div className="flex gap-2">
+                  {!editingProvider && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowModal(false);
+                        setShowQRScanner(true);
+                      }}
+                      className="p-2 rounded-lg hover:bg-opacity-20 transition-all"
+                      style={{ backgroundColor: 'rgba(96, 165, 250, 0.2)' }}
+                      title="Scan QR Code"
+                    >
+                      <Camera className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="p-2 rounded-lg hover:bg-opacity-20 transition-all"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                  >
+                    <X className="h-5 w-5" style={{ color: 'var(--muted)' }} />
+                  </button>
+                </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -679,6 +802,26 @@ export function MyProvidersPage() {
             </div>
           </GlassCard>
         </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => {
+            setShowQRScanner(false);
+            setShowModal(true);
+          }}
+        />
+      )}
+
+      {/* QR Generator Modal */}
+      {showQRGenerator && qrData && (
+        <QRGenerator
+          data={qrData}
+          title={qrTitle}
+          onClose={() => setShowQRGenerator(false)}
+        />
       )}
     </div>
   );

@@ -1,0 +1,93 @@
+{
+  "common": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "update": "Update",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "providers": {
+    "title": "My Providers",
+    "subtitle": "Manage your healthcare providers and contact information",
+    "addProvider": "Add Provider",
+    "editProvider": "Edit Provider",
+    "exportAllQR": "Export All as QR",
+    "exportQR": "Export as QR Code",
+    "scanQR": "Scan QR Code",
+    "primary": "Primary",
+    "emergencyContact": "Emergency Contact",
+    "nextAppointment": "Next Appointment",
+    "addToCalendar": "Add to Calendar",
+    "goToCalendar": "Go to Calendar",
+    "quickActions": "Quick Actions",
+    "scheduleAppointment": "Schedule Appointment",
+    "messageProvider": "Message Provider",
+    "callProvider": "Call Provider",
+    "noProviders": "No Providers Yet",
+    "noProvidersMessage": "Add your healthcare providers to keep track of their contact information and appointments.",
+    "addFirstProvider": "Add Your First Provider",
+    "deleteConfirm": "Are you sure you want to delete",
+    "fields": {
+      "name": "Name",
+      "providerType": "Provider Type",
+      "specialty": "Specialty / Additional Info",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "nextAppointment": "Next Appointment",
+      "officeHours": "Office Hours",
+      "faxNumber": "Fax Number",
+      "patientPortalUrl": "Patient Portal URL",
+      "preferredContactMethod": "Preferred Contact Method",
+      "acceptedInsurance": "Accepted Insurance",
+      "lastVisitDate": "Last Visit Date",
+      "pharmacyLicenseNumber": "Pharmacy License Number",
+      "notes": "Notes",
+      "isPrimary": "Primary provider",
+      "isEmergencyContact": "Emergency contact"
+    },
+    "placeholders": {
+      "selectProviderType": "Select provider type...",
+      "specialtyExample": "e.g., Board Certified, Subspecialty",
+      "officeHoursExample": "e.g., Mon-Fri 9am-5pm",
+      "portalUrl": "https://...",
+      "insuranceExample": "e.g., Medicare, Blue Cross, etc.",
+      "licenseNumber": "License/DEA number"
+    },
+    "providerTypes": {
+      "cardiothoracic_surgeon": "Cardiothoracic Surgeon",
+      "cardiologist": "Cardiologist",
+      "electrophysiologist": "Electrophysiologist",
+      "general_practitioner": "General Practitioner",
+      "physical_therapist": "Physical Therapist",
+      "pharmacy": "Pharmacy",
+      "hospital": "Hospital",
+      "other": "Other"
+    },
+    "contactMethods": {
+      "phone": "Phone",
+      "email": "Email",
+      "portal": "Patient Portal",
+      "any": "Any Method"
+    },
+    "messages": {
+      "nameRequired": "Provider name is required",
+      "addedSuccess": "Provider added successfully",
+      "updatedSuccess": "Provider updated successfully",
+      "deletedSuccess": "Provider deleted successfully",
+      "loadFailed": "Failed to load providers",
+      "saveFailed": "Failed to save provider",
+      "deleteFailed": "Failed to delete provider",
+      "qrImportSuccess": "Provider data imported from QR code!",
+      "qrImportError": "Invalid QR code data",
+      "noEmail": "No email address available for this provider",
+      "noPhone": "No phone number available for this provider",
+      "cameraPermissionError": "Unable to access camera. Please check permissions."
+    }
+  }
+}

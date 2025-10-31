@@ -1,0 +1,93 @@
+{
+  "common": {
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "update": "Mettre à jour",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "providers": {
+    "title": "Mes Fournisseurs",
+    "subtitle": "Gérez vos prestataires de soins de santé et vos coordonnées",
+    "addProvider": "Ajouter un Fournisseur",
+    "editProvider": "Modifier le Fournisseur",
+    "exportAllQR": "Tout Exporter en QR",
+    "exportQR": "Exporter en Code QR",
+    "scanQR": "Scanner le Code QR",
+    "primary": "Principal",
+    "emergencyContact": "Contact d'Urgence",
+    "nextAppointment": "Prochain Rendez-vous",
+    "addToCalendar": "Ajouter au Calendrier",
+    "goToCalendar": "Aller au Calendrier",
+    "quickActions": "Actions Rapides",
+    "scheduleAppointment": "Planifier un Rendez-vous",
+    "messageProvider": "Message au Fournisseur",
+    "callProvider": "Appeler le Fournisseur",
+    "noProviders": "Aucun Fournisseur Pour l'Instant",
+    "noProvidersMessage": "Ajoutez vos prestataires de soins de santé pour suivre leurs coordonnées et rendez-vous.",
+    "addFirstProvider": "Ajoutez Votre Premier Fournisseur",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer",
+    "fields": {
+      "name": "Nom",
+      "providerType": "Type de Fournisseur",
+      "specialty": "Spécialité / Informations Supplémentaires",
+      "phone": "Téléphone",
+      "email": "Courriel",
+      "address": "Adresse",
+      "nextAppointment": "Prochain Rendez-vous",
+      "officeHours": "Heures d'Ouverture",
+      "faxNumber": "Numéro de Fax",
+      "patientPortalUrl": "URL du Portail Patient",
+      "preferredContactMethod": "Méthode de Contact Préférée",
+      "acceptedInsurance": "Assurance Acceptée",
+      "lastVisitDate": "Date de Dernière Visite",
+      "pharmacyLicenseNumber": "Numéro de Licence de Pharmacie",
+      "notes": "Notes",
+      "isPrimary": "Fournisseur principal",
+      "isEmergencyContact": "Contact d'urgence"
+    },
+    "placeholders": {
+      "selectProviderType": "Sélectionnez le type de fournisseur...",
+      "specialtyExample": "ex., Certifié par le Conseil, Sous-spécialité",
+      "officeHoursExample": "ex., Lun-Ven 9h-17h",
+      "portalUrl": "https://...",
+      "insuranceExample": "ex., Medicare, Blue Cross, etc.",
+      "licenseNumber": "Numéro de Licence/DEA"
+    },
+    "providerTypes": {
+      "cardiothoracic_surgeon": "Chirurgien Cardiothoracique",
+      "cardiologist": "Cardiologue",
+      "electrophysiologist": "Électrophysiologiste",
+      "general_practitioner": "Médecin Généraliste",
+      "physical_therapist": "Physiothérapeute",
+      "pharmacy": "Pharmacie",
+      "hospital": "Hôpital",
+      "other": "Autre"
+    },
+    "contactMethods": {
+      "phone": "Téléphone",
+      "email": "Courriel",
+      "portal": "Portail Patient",
+      "any": "Toute Méthode"
+    },
+    "messages": {
+      "nameRequired": "Le nom du fournisseur est obligatoire",
+      "addedSuccess": "Fournisseur ajouté avec succès",
+      "updatedSuccess": "Fournisseur mis à jour avec succès",
+      "deletedSuccess": "Fournisseur supprimé avec succès",
+      "loadFailed": "Échec du chargement des fournisseurs",
+      "saveFailed": "Échec de l'enregistrement du fournisseur",
+      "deleteFailed": "Échec de la suppression du fournisseur",
+      "qrImportSuccess": "Données du fournisseur importées depuis le code QR!",
+      "qrImportError": "Données de code QR invalides",
+      "noEmail": "Aucune adresse e-mail disponible pour ce fournisseur",
+      "noPhone": "Aucun numéro de téléphone disponible pour ce fournisseur",
+      "cameraPermissionError": "Impossible d'accéder à la caméra. Veuillez vérifier les autorisations."
+    }
+  }
+}
