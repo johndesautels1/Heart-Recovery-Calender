@@ -4,6 +4,9 @@ import Calendar from '../models/Calendar';
 import EventTemplate from '../models/EventTemplate';
 import Exercise from '../models/Exercise';
 import User from '../models/User';
+import ExerciseLog from '../models/ExerciseLog';
+import ExercisePrescription from '../models/ExercisePrescription';
+import Patient from '../models/Patient';
 import { Op } from 'sequelize';
 
 // GET /api/events - Get events with filters
@@ -370,13 +373,25 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'patientId, year, and month are required' });
     }
 
+    // IMPORTANT: Frontend passes patient.id, but CalendarEvent.patientId references users.id
+    // while ExerciseLog.patientId references patients.id. We need to handle this difference.
+
+    // Get the patient record to find the userId
+    const patient = await Patient.findByPk(Number(patientId));
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    const userId = patient.userId; // Get the user ID from the patient record
+
     // Calculate date range for the month
     const startDate = new Date(Number(year), Number(month) - 1, 1);
     const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59);
 
+    // Query calendar_events using userId (since CalendarEvent.patientId references users.id)
     const events = await CalendarEvent.findAll({
       where: {
-        patientId: Number(patientId),
+        patientId: userId, // Use userId for calendar_events
         exerciseId: { [Op.not]: null }, // Only exercise events
         performanceScore: { [Op.not]: null }, // Only events with scores
         startTime: {
@@ -439,6 +454,56 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
       return acc;
     }, {} as Record<number, { sessions: number; score: number }>);
 
+    // ALSO fetch exercise logs for the same period (for charts that need actual duration data)
+    const exerciseLogs = await ExerciseLog.findAll({
+      where: {
+        patientId: Number(patientId),
+        completedAt: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      include: [
+        {
+          model: ExercisePrescription,
+          as: 'prescription',
+          include: [
+            {
+              model: Exercise,
+              as: 'exercise',
+            },
+          ],
+        },
+      ],
+      order: [['completedAt', 'DESC']],
+    });
+
+    // Transform exercise logs to match the format expected by frontend charts
+    const logsForCharts = exerciseLogs.map((log: any) => ({
+      id: log.id,
+      startTime: log.startTime || log.completedAt,
+      completedAt: log.completedAt,
+      actualDuration: log.actualDuration,
+      caloriesBurned: log.caloriesBurned,
+      performanceScore: log.performanceLevel === 'exceeded_goals' ? 8
+        : log.performanceLevel === 'met_goals' ? 6
+        : log.performanceLevel === 'completed' ? 4
+        : 0,
+      performanceLevel: log.performanceLevel,
+    }));
+
+    // Merge calendar events and exercise logs for the "logs" field
+    const allLogs = [
+      ...events.map((e: any) => ({
+        id: e.id,
+        startTime: e.startTime,
+        completedAt: e.startTime, // calendar events don't have completedAt
+        actualDuration: e.duration || 0,
+        caloriesBurned: 0, // calendar events don't track calories
+        performanceScore: e.performanceScore,
+      })),
+      ...logsForCharts,
+    ].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+
     res.json({
       month: Number(month),
       year: Number(year),
@@ -452,6 +517,8 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
       performanceBreakdown,
       weeklyStats,
       events,
+      exerciseLogs, // NEW: raw exercise logs
+      logs: allLogs, // NEW: merged logs for charts
     });
   } catch (error) {
     console.error('Error fetching monthly stats:', error);
