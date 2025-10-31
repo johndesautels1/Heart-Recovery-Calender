@@ -395,7 +395,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.firstName || ''}
                             onChange={(e) => handleChange('firstName', e.target.value)}
-                            disabled={!isEditing}
                             icon={<User className="h-5 w-5" />}
                           />
                         </div>
@@ -406,7 +405,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.lastName || ''}
                             onChange={(e) => handleChange('lastName', e.target.value)}
-                            disabled={!isEditing}
                             icon={<User className="h-5 w-5" />}
                           />
                         </div>
@@ -420,7 +418,6 @@ export function PatientProfilePage() {
                             type="date"
                             value={patientData?.dateOfBirth || ''}
                             onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Calendar className="h-5 w-5" />}
                           />
                         </div>
@@ -431,9 +428,8 @@ export function PatientProfilePage() {
                           <select
                             value={patientData?.gender || ''}
                             onChange={(e) => handleChange('gender', e.target.value)}
-                            disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#64748b', fontWeight: '700' }}
+                            style={{ color: '#1e293b', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="male">Male</option>
@@ -461,7 +457,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.race || ''}
                             onChange={(e) => handleChange('race', e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                         <div>
@@ -471,7 +466,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.nationality || ''}
                             onChange={(e) => handleChange('nationality', e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                       </div>
@@ -489,7 +483,6 @@ export function PatientProfilePage() {
                             type="email"
                             value={patientData?.email || ''}
                             onChange={(e) => handleChange('email', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Mail className="h-5 w-5" />}
                           />
                         </div>
@@ -501,7 +494,6 @@ export function PatientProfilePage() {
                             type="tel"
                             value={patientData?.primaryPhone || ''}
                             onChange={(e) => handleChange('primaryPhone', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Phone className="h-5 w-5" />}
                           />
                         </div>
@@ -514,9 +506,8 @@ export function PatientProfilePage() {
                           <select
                             value={patientData?.primaryPhoneType || ''}
                             onChange={(e) => handleChange('primaryPhoneType', e.target.value)}
-                            disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#64748b', fontWeight: '700' }}
+                            style={{ color: '#1e293b', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="mobile">Mobile</option>
@@ -531,9 +522,8 @@ export function PatientProfilePage() {
                           <select
                             value={patientData?.preferredContactMethod || ''}
                             onChange={(e) => handleChange('preferredContactMethod', e.target.value)}
-                            disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#64748b', fontWeight: '700' }}
+                            style={{ color: '#1e293b', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="phone">Phone</option>
@@ -548,9 +538,8 @@ export function PatientProfilePage() {
                           <select
                             value={patientData?.bestTimeToContact || ''}
                             onChange={(e) => handleChange('bestTimeToContact', e.target.value)}
-                            disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#64748b', fontWeight: '700' }}
+                            style={{ color: '#1e293b', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="morning">Morning</option>
@@ -566,7 +555,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.streetAddress || ''}
                           onChange={(e) => handleChange('streetAddress', e.target.value)}
-                          disabled={!isEditing}
                           icon={<MapPin className="h-5 w-5" />}
                         />
                       </div>
@@ -578,7 +566,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.city || ''}
                             onChange={(e) => handleChange('city', e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                         <div>
@@ -588,7 +575,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.state || ''}
                             onChange={(e) => handleChange('state', e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                         <div>
@@ -598,7 +584,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.postalCode || ''}
                             onChange={(e) => handleChange('postalCode', e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                       </div>
@@ -621,8 +606,7 @@ export function PatientProfilePage() {
                               <Input
                                 value={patientData?.emergencyContact1Name || ''}
                                 onChange={(e) => handleChange('emergencyContact1Name', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<User className="h-5 w-5" />}
+                                    icon={<User className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -632,8 +616,7 @@ export function PatientProfilePage() {
                               <Input
                                 value={patientData?.emergencyContact1Relationship || ''}
                                 onChange={(e) => handleChange('emergencyContact1Relationship', e.target.value)}
-                                disabled={!isEditing}
-                                placeholder="e.g., Spouse, Parent, Sibling"
+                                    placeholder="e.g., Spouse, Parent, Sibling"
                               />
                             </div>
                           </div>
@@ -646,8 +629,7 @@ export function PatientProfilePage() {
                                 type="tel"
                                 value={patientData?.emergencyContact1Phone || ''}
                                 onChange={(e) => handleChange('emergencyContact1Phone', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Phone className="h-5 w-5" />}
+                                    icon={<Phone className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -658,8 +640,7 @@ export function PatientProfilePage() {
                                 type="tel"
                                 value={patientData?.emergencyContact1AlternatePhone || ''}
                                 onChange={(e) => handleChange('emergencyContact1AlternatePhone', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Phone className="h-5 w-5" />}
+                                    icon={<Phone className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -670,8 +651,7 @@ export function PatientProfilePage() {
                                 type="email"
                                 value={patientData?.emergencyContact1Email || ''}
                                 onChange={(e) => handleChange('emergencyContact1Email', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Mail className="h-5 w-5" />}
+                                    icon={<Mail className="h-5 w-5" />}
                               />
                             </div>
                           </div>
@@ -692,8 +672,7 @@ export function PatientProfilePage() {
                               <Input
                                 value={patientData?.emergencyContact2Name || ''}
                                 onChange={(e) => handleChange('emergencyContact2Name', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<User className="h-5 w-5" />}
+                                    icon={<User className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -703,8 +682,7 @@ export function PatientProfilePage() {
                               <Input
                                 value={patientData?.emergencyContact2Relationship || ''}
                                 onChange={(e) => handleChange('emergencyContact2Relationship', e.target.value)}
-                                disabled={!isEditing}
-                                placeholder="e.g., Spouse, Parent, Sibling"
+                                    placeholder="e.g., Spouse, Parent, Sibling"
                               />
                             </div>
                           </div>
@@ -717,8 +695,7 @@ export function PatientProfilePage() {
                                 type="tel"
                                 value={patientData?.emergencyContact2Phone || ''}
                                 onChange={(e) => handleChange('emergencyContact2Phone', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Phone className="h-5 w-5" />}
+                                    icon={<Phone className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -729,8 +706,7 @@ export function PatientProfilePage() {
                                 type="tel"
                                 value={patientData?.emergencyContact2AlternatePhone || ''}
                                 onChange={(e) => handleChange('emergencyContact2AlternatePhone', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Phone className="h-5 w-5" />}
+                                    icon={<Phone className="h-5 w-5" />}
                               />
                             </div>
                             <div>
@@ -741,8 +717,7 @@ export function PatientProfilePage() {
                                 type="email"
                                 value={patientData?.emergencyContact2Email || ''}
                                 onChange={(e) => handleChange('emergencyContact2Email', e.target.value)}
-                                disabled={!isEditing}
-                                icon={<Mail className="h-5 w-5" />}
+                                    icon={<Mail className="h-5 w-5" />}
                               />
                             </div>
                           </div>
@@ -762,7 +737,6 @@ export function PatientProfilePage() {
                             type="date"
                             value={patientData?.diagnosisDate || ''}
                             onChange={(e) => handleChange('diagnosisDate', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Calendar className="h-5 w-5" />}
                           />
                         </div>
@@ -774,7 +748,6 @@ export function PatientProfilePage() {
                             type="number"
                             value={patientData?.ejectionFraction || ''}
                             onChange={(e) => handleChange('ejectionFraction', parseFloat(e.target.value))}
-                            disabled={!isEditing}
                             icon={<Activity className="h-5 w-5" />}
                           />
                         </div>
@@ -788,7 +761,6 @@ export function PatientProfilePage() {
                             type="number"
                             value={patientData?.restingHeartRate || ''}
                             onChange={(e) => handleChange('restingHeartRate', parseInt(e.target.value))}
-                            disabled={!isEditing}
                             icon={<Heart className="h-5 w-5" />}
                           />
                         </div>
@@ -800,7 +772,6 @@ export function PatientProfilePage() {
                             type="number"
                             value={patientData?.maxHeartRate || ''}
                             onChange={(e) => handleChange('maxHeartRate', parseInt(e.target.value))}
-                            disabled={!isEditing}
                             icon={<Heart className="h-5 w-5" />}
                           />
                         </div>
@@ -812,7 +783,6 @@ export function PatientProfilePage() {
                             type="number"
                             value={patientData?.targetHeartRateMin || ''}
                             onChange={(e) => handleChange('targetHeartRateMin', parseInt(e.target.value))}
-                            disabled={!isEditing}
                             icon={<Heart className="h-5 w-5" />}
                           />
                         </div>
@@ -824,7 +794,6 @@ export function PatientProfilePage() {
                             type="number"
                             value={patientData?.targetHeartRateMax || ''}
                             onChange={(e) => handleChange('targetHeartRateMax', parseInt(e.target.value))}
-                            disabled={!isEditing}
                             icon={<Heart className="h-5 w-5" />}
                           />
                         </div>
@@ -839,15 +808,13 @@ export function PatientProfilePage() {
                               type="number"
                               value={patientData?.baselineBpSystolic || ''}
                               onChange={(e) => handleChange('baselineBpSystolic', parseInt(e.target.value))}
-                              disabled={!isEditing}
-                              placeholder="120"
+                                placeholder="120"
                             />
                             <Input
                               type="number"
                               value={patientData?.baselineBpDiastolic || ''}
                               onChange={(e) => handleChange('baselineBpDiastolic', parseInt(e.target.value))}
-                              disabled={!isEditing}
-                              placeholder="80"
+                                placeholder="80"
                             />
                           </div>
                         </div>
@@ -859,7 +826,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.heartConditions?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('heartConditions', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="CAD, CHF, AFib"
                         />
                       </div>
@@ -870,7 +836,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.medicationsAffectingHR?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('medicationsAffectingHR', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="Beta-blockers, etc."
                           icon={<Pill className="h-5 w-5" />}
                         />
@@ -882,10 +847,9 @@ export function PatientProfilePage() {
                         <textarea
                           value={patientData?.activityRestrictions || ''}
                           onChange={(e) => handleChange('activityRestrictions', e.target.value)}
-                          disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                           placeholder="Weight limits, movements to avoid, etc."
                         />
                       </div>
@@ -901,7 +865,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.priorHealthConditions?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('priorHealthConditions', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="Diabetes, CKD, COPD"
                         />
                       </div>
@@ -912,7 +875,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.currentConditions?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('currentConditions', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="Non-cardiac current conditions"
                         />
                       </div>
@@ -923,10 +885,9 @@ export function PatientProfilePage() {
                         <textarea
                           value={patientData?.nonCardiacMedications || ''}
                           onChange={(e) => handleChange('nonCardiacMedications', e.target.value)}
-                          disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                           placeholder="List all medications..."
                         />
                       </div>
@@ -937,10 +898,9 @@ export function PatientProfilePage() {
                         <textarea
                           value={patientData?.allergies || ''}
                           onChange={(e) => handleChange('allergies', e.target.value)}
-                          disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                           placeholder="List all known allergies..."
                         />
                       </div>
@@ -957,7 +917,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.hospitalName || ''}
                             onChange={(e) => handleChange('hospitalName', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Hospital className="h-5 w-5" />}
                           />
                         </div>
@@ -968,7 +927,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.surgeonName || ''}
                             onChange={(e) => handleChange('surgeonName', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Stethoscope className="h-5 w-5" />}
                           />
                         </div>
@@ -982,7 +940,6 @@ export function PatientProfilePage() {
                             type="date"
                             value={patientData?.surgeryDate || ''}
                             onChange={(e) => handleChange('surgeryDate', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Calendar className="h-5 w-5" />}
                           />
                         </div>
@@ -994,7 +951,6 @@ export function PatientProfilePage() {
                             type="date"
                             value={patientData?.dischargeDate || ''}
                             onChange={(e) => handleChange('dischargeDate', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Calendar className="h-5 w-5" />}
                           />
                         </div>
@@ -1006,7 +962,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.priorSurgicalProcedures?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('priorSurgicalProcedures', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="CABG, Valve Replacement, etc."
                         />
                       </div>
@@ -1017,7 +972,6 @@ export function PatientProfilePage() {
                         <Input
                           value={patientData?.devicesImplanted?.join(', ') || ''}
                           onChange={(e) => handleArrayChange('devicesImplanted', e.target.value)}
-                          disabled={!isEditing}
                           placeholder="Pacemaker, ICD, Stents, etc."
                         />
                       </div>
@@ -1028,10 +982,9 @@ export function PatientProfilePage() {
                         <textarea
                           value={patientData?.priorSurgeryNotes || ''}
                           onChange={(e) => handleChange('priorSurgeryNotes', e.target.value)}
-                          disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                           placeholder="Additional surgical notes..."
                         />
                       </div>
@@ -1042,10 +995,9 @@ export function PatientProfilePage() {
                         <textarea
                           value={patientData?.dischargeInstructions || ''}
                           onChange={(e) => handleChange('dischargeInstructions', e.target.value)}
-                          disabled={!isEditing}
                           rows={4}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                           placeholder="Post-discharge instructions..."
                         />
                       </div>
@@ -1062,7 +1014,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.polarDeviceId || ''}
                             onChange={(e) => handleChange('polarDeviceId', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Smartphone className="h-5 w-5" />}
                             placeholder="Enter Polar heart monitor ID"
                           />
@@ -1074,7 +1025,6 @@ export function PatientProfilePage() {
                           <Input
                             value={patientData?.samsungHealthAccount || ''}
                             onChange={(e) => handleChange('samsungHealthAccount', e.target.value)}
-                            disabled={!isEditing}
                             icon={<Smartphone className="h-5 w-5" />}
                             placeholder="Samsung account email"
                           />
@@ -1087,9 +1037,8 @@ export function PatientProfilePage() {
                         <select
                           value={patientData?.preferredDataSource || ''}
                           onChange={(e) => handleChange('preferredDataSource', e.target.value)}
-                          disabled={!isEditing}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all"
-                          style={{ color: '#64748b', fontWeight: '700' }}
+                          style={{ color: '#1e293b', fontWeight: '800' }}
                         >
                           <option value="">Select...</option>
                           <option value="polar">Polar Heart Monitor</option>
@@ -1121,7 +1070,6 @@ export function PatientProfilePage() {
                           onClick={() => passportInputRef.current?.click()}
                           variant="secondary"
                           className="w-full"
-                          disabled={!isEditing}
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           Upload Passport Scan
@@ -1147,7 +1095,6 @@ export function PatientProfilePage() {
                           onClick={() => insuranceInputRef.current?.click()}
                           variant="secondary"
                           className="w-full"
-                          disabled={!isEditing}
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           Upload Insurance Card
@@ -1173,7 +1120,6 @@ export function PatientProfilePage() {
                           onClick={() => allergyCardInputRef.current?.click()}
                           variant="secondary"
                           className="w-full"
-                          disabled={!isEditing}
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           Upload Allergy Card
