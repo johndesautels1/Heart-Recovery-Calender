@@ -763,17 +763,19 @@ export function DevicesPage() {
       )}
 
       {activeTab === 'trackers' && devices.length === 0 && (
-        <GlassCard>
-          <div className="p-12 text-center">
-            <Smartphone className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--muted)' }} />
-            <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
-              No Devices Connected
-            </h3>
-            <p className="text-sm" style={{ color: 'var(--muted)' }}>
-              Connect your first device to start automatically tracking your recovery data
-            </p>
-          </div>
-        </GlassCard>
+            <GlassCard>
+              <div className="p-12 text-center">
+                <Smartphone className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--muted)' }} />
+                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
+                  No Devices Connected
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Connect your first device to start automatically tracking your recovery data
+                </p>
+              </div>
+            </GlassCard>
+          )}
+        </>
       )}
 
       {/* Medical Implant Modal */}
@@ -807,19 +809,19 @@ export function DevicesPage() {
                         required
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       >
-                        <option value="">Select type...</option>
-                        <option value="Biological Valve">Biological Valve</option>
-                        <option value="Mechanical Valve">Mechanical Valve</option>
-                        <option value="Pacemaker">Pacemaker</option>
-                        <option value="ICD (Defibrillator)">ICD (Defibrillator)</option>
-                        <option value="Stent">Stent</option>
-                        <option value="Heart Pump/LVAD">Heart Pump/LVAD</option>
-                        <option value="Other Cardiac Device">Other Cardiac Device</option>
+                        <option value="" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Select type...</option>
+                        <option value="Biological Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Biological Valve</option>
+                        <option value="Mechanical Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Mechanical Valve</option>
+                        <option value="Pacemaker" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Pacemaker</option>
+                        <option value="ICD (Defibrillator)" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>ICD (Defibrillator)</option>
+                        <option value="Stent" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Stent</option>
+                        <option value="Heart Pump/LVAD" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Heart Pump/LVAD</option>
+                        <option value="Other Cardiac Device" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Other Cardiac Device</option>
                       </select>
                     </div>
 
@@ -833,11 +835,11 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, manufacturer: e.target.value })}
                         required
                         placeholder="e.g., Abbott, Medtronic, Edwards"
-                        className="w-full px-4 py-2 rounded-lg border"
+                        className="w-full px-4 py-2 rounded-lg border placeholder-gray-400"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>
@@ -853,9 +855,9 @@ export function DevicesPage() {
                         required
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>
@@ -889,9 +891,9 @@ export function DevicesPage() {
                         required
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>
@@ -906,9 +908,9 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, warrantyExpiration: e.target.value })}
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>
@@ -923,9 +925,9 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, implantingSurgeon: e.target.value })}
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>
@@ -940,9 +942,9 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, implantingHospital: e.target.value })}
                         className="w-full px-4 py-2 rounded-lg border"
                         style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--ink)',
+                          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
                         }}
                       />
                     </div>

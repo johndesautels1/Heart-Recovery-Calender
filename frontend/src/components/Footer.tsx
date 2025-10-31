@@ -67,12 +67,52 @@ export function Footer() {
         </div>
 
         {/* Company Logo */}
-        <div className="absolute left-8 bottom-[264px]">
-          <img
-            src={logoImage}
-            alt="AI Applications Division - John E. Desautels & Associates"
-            className="w-32 h-auto opacity-80 hover:opacity-100 transition-opacity"
-          />
+        <div className="absolute left-8 bottom-[264px] group">
+          <div className="relative">
+            <img
+              src={logoImage}
+              alt="AI Applications Division - John E. Desautels & Associates"
+              className="w-32 h-auto opacity-90 hover:opacity-100 transition-opacity cursor-help"
+            />
+            {/* Company Info Tooltip */}
+            <div className="absolute left-0 bottom-full mb-2 w-72 p-4 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50"
+              style={{
+                backgroundColor: 'rgba(20, 20, 30, 0.98)',
+                borderColor: 'var(--accent)',
+                border: '2px solid'
+              }}
+            >
+              <div className="space-y-2 text-sm">
+                <h4 className="font-bold text-base" style={{ color: 'var(--accent)' }}>
+                  John E. Desautels & Associates
+                </h4>
+                <div style={{ color: 'var(--ink)' }}>
+                  <p className="font-semibold" style={{ color: 'var(--cyan)' }}>AI Applications Division</p>
+                  <p className="mt-2">290 41st Ave.</p>
+                  <p>St. Pete Beach, FL 33706</p>
+                  <p className="mt-2">
+                    <a href="tel:+17274523506" className="hover:underline" style={{ color: 'var(--accent)' }}>
+                      +1-727-452-3506
+                    </a>
+                  </p>
+                  <p>
+                    <a href="https://hearthealthrecovery.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>
+                      hearthealthrecovery.com
+                    </a>
+                  </p>
+                  <p>
+                    <a href="mailto:hearthealthrecovery@gmail.com" className="hover:underline" style={{ color: 'var(--accent)' }}>
+                      hearthealthrecovery@gmail.com
+                    </a>
+                  </p>
+                  <p className="mt-3 pt-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                    <span className="font-semibold">President & Managing Member:</span><br/>
+                    John E. Desautels
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Medical Disclaimer */}
