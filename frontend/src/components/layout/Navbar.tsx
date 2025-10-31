@@ -142,41 +142,17 @@ export function Navbar() {
 
   return (
     <nav className="glass sticky top-0 z-40 border-b border-white/20">
-      <div className="w-full px-2">
-        <div className="flex items-center justify-between h-16 max-w-full">
+      <div className="w-full px-4">
+        {/* Row 1: Logo and User Controls */}
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-2">
+          <Link to="/dashboard" className="flex items-center space-x-2 flex-shrink-0">
             <Heart className="h-8 w-8 text-red-500" />
             <span className="text-xl font-bold text-gradient">Heart Recovery</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-3 flex-1 justify-center">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={clsx(
-                    'flex items-center space-x-1 px-2 py-2 rounded-lg transition-all duration-200 text-sm',
-                    isActive(item.path)
-                      ? 'bg-white/30 font-medium'
-                      : 'hover:bg-white/20'
-                  )}
-                  style={{
-                    color: isActive(item.path) ? 'var(--accent)' : 'var(--ink)'
-                  }}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-3 flex-shrink-0">
             {/* Theme Toggle Switch */}
             <div className="flex flex-col items-center">
               <button
@@ -245,7 +221,7 @@ export function Navbar() {
             />
 
             {/* Profile Section */}
-            <div className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors">
+            <div className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
               {/* Clickable Avatar */}
               <div
                 onClick={handleAvatarClick}
@@ -273,15 +249,16 @@ export function Navbar() {
 
               {/* Name/Role - Click to go to profile */}
               <Link to="/profile" className="flex flex-col items-start">
-                <span className="text-sm">{user?.name || 'Profile'}</span>
-                <span className="text-xs font-medium" style={{ color: '#ffa726' }}>
+                <span className="text-sm whitespace-nowrap">{user?.name || 'Profile'}</span>
+                <span className="text-xs font-medium whitespace-nowrap" style={{ color: '#ffa726' }}>
                   {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
                 </span>
               </Link>
             </div>
+
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors"
+              className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors whitespace-nowrap"
             >
               <LogOut className="h-4 w-4" />
               <span className="text-sm">Logout</span>
@@ -295,6 +272,100 @@ export function Navbar() {
           >
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
+        </div>
+
+        {/* Row 2: Navigation Tabs with Glassmorphic Prismatic Design */}
+        <div className="hidden md:flex items-center justify-center gap-2 pb-3 pt-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="group relative"
+                style={{ minWidth: '120px' }}
+              >
+                {/* Glassmorphic Prismatic Tab */}
+                <div
+                  className={clsx(
+                    'relative px-4 py-2.5 rounded-xl transition-all duration-300',
+                    'backdrop-blur-md border overflow-hidden',
+                    active
+                      ? 'bg-gradient-to-br from-white/40 via-white/30 to-white/20 border-white/60 shadow-lg'
+                      : 'bg-gradient-to-br from-white/20 via-white/10 to-white/5 border-white/30 hover:border-white/50 hover:shadow-md'
+                  )}
+                  style={{
+                    boxShadow: active
+                      ? '0 8px 32px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.2)'
+                      : '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                    transform: active ? 'translateY(-2px) scale(1.02)' : 'translateY(0)',
+                  }}
+                >
+                  {/* Prismatic Light Reflection */}
+                  <div
+                    className={clsx(
+                      'absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300',
+                      active ? 'opacity-30' : 'group-hover:opacity-20'
+                    )}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(147,51,234,0.3) 25%, rgba(59,130,246,0.3) 50%, rgba(16,185,129,0.3) 75%, rgba(255,255,255,0.8) 100%)',
+                      backgroundSize: '400% 400%',
+                      animation: active ? 'prismaticShine 3s ease infinite' : 'none'
+                    }}
+                  />
+
+                  {/* 3D Depth Layer */}
+                  <div
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                      background: active
+                        ? 'linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)'
+                        : 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(0,0,0,0.05) 100%)',
+                    }}
+                  />
+
+                  {/* Content */}
+                  <div className="relative flex items-center justify-center space-x-2">
+                    <Icon
+                      className={clsx(
+                        'h-4 w-4 transition-all duration-300',
+                        active ? 'scale-110' : 'group-hover:scale-105'
+                      )}
+                      style={{
+                        color: active ? 'var(--accent)' : 'var(--ink)',
+                        filter: active ? 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))' : 'none'
+                      }}
+                    />
+                    <span
+                      className={clsx(
+                        'text-sm font-medium transition-all duration-300',
+                        active ? 'font-bold' : 'group-hover:font-semibold'
+                      )}
+                      style={{
+                        color: active ? 'var(--accent)' : 'var(--ink)',
+                        textShadow: active ? '0 0 10px rgba(139, 92, 246, 0.4)' : 'none'
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+
+                  {/* Bottom Accent Line */}
+                  {active && (
+                    <div
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: '80%',
+                        background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+                        boxShadow: '0 0 8px var(--accent)'
+                      }}
+                    />
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
