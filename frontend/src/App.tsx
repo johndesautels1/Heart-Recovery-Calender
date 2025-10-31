@@ -17,6 +17,7 @@ import {
   FoodDiaryPage,
   AnalyticsPage,
   ProfilePage,
+  PatientProfilePage,
   PatientsPage,
   MyProvidersPage,
   PatientCalendarView,
@@ -64,6 +65,7 @@ function App() {
                 <Route path="/sleep" element={<SleepPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/patient-profile" element={<PatientProfilePage />} />
                 <Route path="/devices" element={<DevicesPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/my-providers" element={<MyProvidersPage />} />

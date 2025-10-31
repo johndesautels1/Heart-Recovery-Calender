@@ -395,6 +395,16 @@ class ApiService {
     return response.data;
   }
 
+  async getPatient(patientId: number): Promise<Patient> {
+    const response = await this.api.get<Patient>(`/patients/${patientId}`);
+    return response.data;
+  }
+
+  async updatePatientProfile(patientId: number, data: Partial<Patient>): Promise<Patient> {
+    const response = await this.api.put<Patient>(`/patients/${patientId}`, data);
+    return response.data;
+  }
+
   async getPatientData(patientId: number, dataType: string, startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
