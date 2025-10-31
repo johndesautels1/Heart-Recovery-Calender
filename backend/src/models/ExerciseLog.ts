@@ -20,6 +20,7 @@ interface ExerciseLogAttributes {
   duringHeartRateMax?: number;
   duringBpSystolic?: number;
   duringBpDiastolic?: number;
+  duringRespiratoryRate?: number;
 
   // Post-exercise vitals
   postBpSystolic?: number;
@@ -78,6 +79,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public duringHeartRateMax?: number;
   public duringBpSystolic?: number;
   public duringBpDiastolic?: number;
+  public duringRespiratoryRate?: number;
 
   // Post-exercise vitals
   public postBpSystolic?: number;
@@ -193,6 +195,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'Blood pressure during exercise - diastolic (optional monitoring)',
+        },
+        duringRespiratoryRate: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Respiratory rate during exercise (breaths per minute)',
         },
         // Post-exercise vitals
         postBpSystolic: {

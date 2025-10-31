@@ -7,6 +7,9 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticateToken);
 
+// Real-time vitals endpoint (must come before /:id routes)
+router.get('/vitals/latest', deviceConnectionController.getLatestVitals);
+
 // Device connection management
 router.get('/', deviceConnectionController.getUserDevices);
 router.get('/:id', deviceConnectionController.getDevice);

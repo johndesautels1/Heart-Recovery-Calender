@@ -907,8 +907,9 @@ See browser console for full configuration details.
           // During-exercise vitals (FIXED: using correct state variables)
           duringBpSystolic: duringBpSystolic ? parseInt(duringBpSystolic) : undefined,
           duringBpDiastolic: duringBpDiastolic ? parseInt(duringBpDiastolic) : undefined,
-          duringHeartRateAvg: duringHeartRateAvg ? parseInt(duringHeartRateAvg) : undefined,
+          duringHeartRateAvg: duringHeartRateAvg || duringPulse ? parseInt(duringHeartRateAvg || duringPulse) : undefined,
           duringHeartRateMax: duringHeartRateMax ? parseInt(duringHeartRateMax) : undefined,
+          duringRespiratoryRate: duringRespiration ? parseInt(duringRespiration) : undefined,
 
           // Post-exercise vitals
           postBpSystolic: postBpSystolic ? parseInt(postBpSystolic) : undefined,

@@ -215,4 +215,69 @@ export const deviceConnectionController = {
       res.status(500).json({ error: 'Failed to trigger sync' });
     }
   },
+
+  // Get latest real-time vitals from connected devices
+  async getLatestVitals(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Import VitalsSample model
+      const VitalsSample = (await import('../models/VitalsSample')).default;
+
+      // Get the most recent vitals reading from devices (within last 5 minutes)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+      const latestVitals = await VitalsSample.findOne({
+        where: {
+          userId,
+          source: 'device',
+          timestamp: {
+            [require('sequelize').Op.gte]: fiveMinutesAgo,
+          },
+        },
+        order: [['timestamp', 'DESC']],
+      });
+
+      if (!latestVitals) {
+        // No recent device data available
+        return res.status(404).json({
+          success: false,
+          error: 'No recent device vitals available',
+        });
+      }
+
+      // Format response for frontend
+      const response: any = {
+        timestamp: latestVitals.timestamp,
+        source: latestVitals.deviceId || 'device',
+      };
+
+      if (latestVitals.heartRate) {
+        response.heartRate = latestVitals.heartRate;
+      }
+
+      if (latestVitals.bloodPressureSystolic && latestVitals.bloodPressureDiastolic) {
+        response.bloodPressure = {
+          systolic: latestVitals.bloodPressureSystolic,
+          diastolic: latestVitals.bloodPressureDiastolic,
+        };
+      }
+
+      if (latestVitals.respiratoryRate) {
+        response.respirationRate = latestVitals.respiratoryRate;
+      }
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error('Error fetching latest vitals:', error);
+      res.status(500).json({ error: 'Failed to fetch latest vitals' });
+    }
+  },
 };
