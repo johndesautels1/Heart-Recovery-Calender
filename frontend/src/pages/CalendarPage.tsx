@@ -101,9 +101,7 @@ export function CalendarPage() {
   const [currentExercise, setCurrentExercise] = useState<any>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
 
-  // During-exercise vital signs snapshots
-  const [duringBpSystolic, setDuringBpSystolic] = useState<string>('');
-  const [duringBpDiastolic, setDuringBpDiastolic] = useState<string>('');
+  // During-exercise vital signs snapshots (BP declared above in Phase 1)
   const [duringPulse, setDuringPulse] = useState<string>('');
   const [duringRespiration, setDuringRespiration] = useState<string>('');
   const [vitalSnapshots, setVitalSnapshots] = useState<any[]>([]);
