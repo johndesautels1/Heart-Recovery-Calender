@@ -288,44 +288,22 @@ export function Navbar() {
                 className="group relative"
                 style={{ minWidth: '105px' }}
               >
-                {/* Glassmorphic Prismatic Tab */}
+                {/* Glassmorphic Tab - Clean, no internal prism */}
                 <div
                   className={clsx(
                     'relative px-3 py-2 rounded-xl transition-all duration-300',
-                    'backdrop-blur-md border overflow-hidden',
+                    'backdrop-blur-lg border',
                     active
-                      ? 'bg-gradient-to-br from-white/40 via-white/30 to-white/20 border-white/60 shadow-lg'
-                      : 'bg-gradient-to-br from-white/20 via-white/10 to-white/5 border-white/30 hover:border-white/50 hover:shadow-md'
+                      ? 'bg-white/50 border-white/70 shadow-lg'
+                      : 'bg-white/20 border-white/40 hover:border-white/60 hover:shadow-md'
                   )}
                   style={{
                     boxShadow: active
-                      ? '0 8px 32px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.2)'
-                      : '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                      ? '0 8px 32px rgba(255, 255, 255, 0.25), 0 0 25px rgba(147, 51, 234, 0.2), 0 0 40px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+                      : '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
                     transform: active ? 'translateY(-2px) scale(1.02)' : 'translateY(0)',
                   }}
                 >
-                  {/* Prismatic Light Reflection */}
-                  <div
-                    className={clsx(
-                      'absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300',
-                      active ? 'opacity-30' : 'group-hover:opacity-20'
-                    )}
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(147,51,234,0.3) 25%, rgba(59,130,246,0.3) 50%, rgba(16,185,129,0.3) 75%, rgba(255,255,255,0.8) 100%)',
-                      backgroundSize: '400% 400%',
-                      animation: active ? 'prismaticShine 3s ease infinite' : 'none'
-                    }}
-                  />
-
-                  {/* 3D Depth Layer */}
-                  <div
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      background: active
-                        ? 'linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)'
-                        : 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(0,0,0,0.05) 100%)',
-                    }}
-                  />
 
                   {/* Content */}
                   <div className="relative flex items-center justify-center space-x-2">
@@ -335,21 +313,24 @@ export function Navbar() {
                         active ? 'scale-110' : 'group-hover:scale-105'
                       )}
                       style={{
-                        color: active ? '#fb923c' : 'var(--ink)',
-                        filter: active ? 'drop-shadow(0 0 12px rgba(251, 146, 60, 0.9))' : 'none'
+                        color: active ? '#facc15' : '#ffffff',
+                        filter: active ? 'drop-shadow(0 0 14px rgba(250, 204, 21, 1))' : 'drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))'
                       }}
                     />
                     <span
                       className={clsx(
-                        'text-sm font-medium transition-all duration-300',
+                        'font-medium transition-all duration-300',
                         active ? 'font-extrabold' : 'group-hover:font-semibold'
                       )}
                       style={{
-                        color: active ? '#fb923c' : 'var(--ink)',
-                        textShadow: active ? '0 0 18px rgba(251, 146, 60, 1), 0 2px 4px rgba(0, 0, 0, 0.9)' : 'none',
+                        fontSize: '0.9375rem',
+                        color: active ? '#facc15' : '#ffffff',
+                        textShadow: active
+                          ? '0 0 24px rgba(250, 204, 21, 1), 0 2px 6px rgba(0, 0, 0, 1)'
+                          : '0 2px 4px rgba(0, 0, 0, 0.8)',
                         fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        letterSpacing: active ? '0.015em' : '0.01em',
-                        fontWeight: active ? '800' : '600'
+                        letterSpacing: '0.02em',
+                        fontWeight: active ? '800' : '700'
                       }}
                     >
                       {item.label}
@@ -362,8 +343,8 @@ export function Navbar() {
                       className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
                       style={{
                         width: '80%',
-                        background: 'linear-gradient(90deg, transparent, #fb923c, transparent)',
-                        boxShadow: '0 0 14px rgba(251, 146, 60, 0.9)'
+                        background: 'linear-gradient(90deg, transparent, #facc15, transparent)',
+                        boxShadow: '0 0 16px rgba(250, 204, 21, 1)'
                       }}
                     />
                   )}
