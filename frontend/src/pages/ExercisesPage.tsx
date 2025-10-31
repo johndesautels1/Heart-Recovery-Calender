@@ -1938,15 +1938,45 @@ export function ExercisesPage() {
                           </div>
                         ))}
                         {(() => {
-                          // Create a 4-week heatmap
+                          // Create a 4-week heatmap with REAL DATA
                           const weeks = 4;
                           const days = weeks * 7;
                           const logs = monthlyStats.logs || [];
 
+                          // Calculate daily exercise minutes from real logs
+                          const dailyMinutes: { [dateKey: string]: number } = {};
+
+                          logs.forEach((log: any) => {
+                            const logDate = new Date(log.startTime || log.completedAt);
+                            const dateKey = logDate.toDateString(); // Use full date string as key
+
+                            if (!dailyMinutes[dateKey]) {
+                              dailyMinutes[dateKey] = 0;
+                            }
+                            dailyMinutes[dateKey] += log.actualDuration || 0;
+                          });
+
+                          // Get the last 28 days
+                          const today = new Date();
+                          const startDate = new Date(today);
+                          startDate.setDate(today.getDate() - 27); // Go back 27 days (plus today = 28 days)
+
                           return Array.from({ length: days }).map((_, index) => {
-                            // Simulate exercise intensity for each day
-                            const hasExercise = Math.random() > 0.3; // 70% chance of exercise
-                            const intensity = hasExercise ? Math.floor(Math.random() * 4) + 1 : 0;
+                            // Calculate the actual date for this cell
+                            const cellDate = new Date(startDate);
+                            cellDate.setDate(startDate.getDate() + index);
+                            const dateKey = cellDate.toDateString();
+
+                            // Get actual minutes for this date
+                            const minutes = dailyMinutes[dateKey] || 0;
+
+                            // Determine intensity level based on actual minutes
+                            let intensity = 0;
+                            if (minutes === 0) intensity = 0; // Rest
+                            else if (minutes <= 30) intensity = 1; // Light (1-30 min)
+                            else if (minutes <= 60) intensity = 2; // Moderate (31-60 min)
+                            else if (minutes <= 90) intensity = 3; // High (61-90 min)
+                            else intensity = 4; // Very high (90+ min)
 
                             const colors = [
                               'rgba(255, 255, 255, 0.05)', // No exercise
@@ -1955,6 +1985,8 @@ export function ExercisesPage() {
                               'rgba(16, 185, 129, 0.7)',  // High
                               'rgba(16, 185, 129, 0.95)'  // Very high
                             ];
+
+                            const intensityLabels = ['Rest', 'Light', 'Moderate', 'High', 'Very High'];
 
                             return (
                               <div
@@ -1965,9 +1997,9 @@ export function ExercisesPage() {
                                   border: intensity > 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
                                   color: intensity > 2 ? '#ffffff' : '#ffffff60'
                                 }}
-                                title={`Day ${index + 1}: ${intensity === 0 ? 'Rest' : intensity * 15 + ' min'}`}
+                                title={`${cellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${minutes === 0 ? 'Rest' : Math.round(minutes) + ' min (' + intensityLabels[intensity] + ')'}`}
                               >
-                                {intensity > 0 ? intensity * 15 : ''}
+                                {minutes > 0 ? Math.round(minutes) : ''}
                               </div>
                             );
                           });
