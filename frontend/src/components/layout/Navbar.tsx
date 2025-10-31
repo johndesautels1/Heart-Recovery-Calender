@@ -187,7 +187,17 @@ export function Navbar() {
               to="/profile"
               className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors"
             >
-              <User className="h-4 w-4" />
+              {user?.profilePhoto ? (
+                <img
+                  src={user.profilePhoto}
+                  alt={user.name}
+                  className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+              )}
               <div className="flex flex-col items-start">
                 <span className="text-sm">{user?.name || 'Profile'}</span>
                 <span className="text-xs font-medium" style={{ color: '#ffa726' }}>
@@ -300,7 +310,17 @@ export function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/20 transition-colors"
             >
-              <User className="h-5 w-5" />
+              {user?.profilePhoto ? (
+                <img
+                  src={user.profilePhoto}
+                  alt={user.name}
+                  className="h-10 w-10 rounded-full object-cover border-2 border-white/30"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+              )}
               <div className="flex flex-col items-start">
                 <span>{user?.name || 'Profile'}</span>
                 <span className="text-sm font-medium" style={{ color: '#ffa726' }}>
