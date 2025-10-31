@@ -108,7 +108,7 @@ interface Section {
 
 export function PatientProfilePage() {
   const { user, updateUser } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);  // Changed to true by default
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['personal']);
@@ -204,7 +204,6 @@ export function PatientProfilePage() {
       const updated = await api.updatePatientProfile(patientId, patientData);
       setPatientData(updated as any);
       toast.success('Profile updated successfully!');
-      setIsEditing(false);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.response?.data?.error || 'Failed to update profile');
@@ -214,8 +213,7 @@ export function PatientProfilePage() {
   };
 
   const handleCancel = () => {
-    fetchPatientData();
-    setIsEditing(false);
+    fetchPatientData();  // Reload original data to discard changes
   };
 
   const handlePhotoClick = () => {
@@ -297,11 +295,6 @@ export function PatientProfilePage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>Patient Profile</h1>
-        {!isEditing && (
-          <Button onClick={() => setIsEditing(true)} variant="primary">
-            Edit Profile
-          </Button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -1193,27 +1186,25 @@ export function PatientProfilePage() {
             </GlassCard>
           ))}
 
-          {isEditing && (
-            <div className="flex gap-3">
-              <Button
-                onClick={handleSave}
-                loading={isSaving}
-                variant="success"
-                className="flex-1"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-              <Button
-                onClick={handleCancel}
-                variant="secondary"
-                className="flex-1"
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleSave}
+              loading={isSaving}
+              variant="success"
+              className="flex-1"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
+            <Button
+              onClick={handleCancel}
+              variant="secondary"
+              className="flex-1"
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       </div>
     </div>
