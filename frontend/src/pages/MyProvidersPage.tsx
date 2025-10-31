@@ -258,9 +258,9 @@ export function MyProvidersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>My Providers</h1>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{t('providers.title')}</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            Manage your healthcare providers and contact information
+            {t('providers.subtitle')}
           </p>
         </div>
         <div className="flex gap-3">
@@ -271,7 +271,7 @@ export function MyProvidersPage() {
               className="flex items-center gap-2"
             >
               <QrCode className="h-4 w-4" />
-              Export All as QR
+              {t('providers.exportAllAsQR')}
             </Button>
           )}
           <Button
@@ -280,7 +280,7 @@ export function MyProvidersPage() {
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Add Provider
+            {t('providers.addProvider')}
           </Button>
         </div>
       </div>
@@ -313,12 +313,12 @@ export function MyProvidersPage() {
                     <div className="flex gap-2 mt-1">
                       {provider.isPrimary && (
                         <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
-                          Primary
+                          {t('providers.primary')}
                         </span>
                       )}
                       {provider.isEmergencyContact && (
                         <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
-                          Emergency Contact
+                          {t('providers.emergencyContact')}
                         </span>
                       )}
                     </div>
@@ -407,7 +407,7 @@ export function MyProvidersPage() {
                   className="flex-1 flex items-center justify-center gap-2"
                 >
                   <Edit className="h-4 w-4" />
-                  Edit
+                  {t('common.edit')}
                 </Button>
                 <Button
                   onClick={() => handleGenerateQR(provider)}
@@ -503,7 +503,7 @@ export function MyProvidersPage() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-                  {editingProvider ? 'Edit Provider' : 'Add Provider'}
+                  {editingProvider ? t('providers.editProvider') : t('providers.addProvider')}
                 </h2>
                 <div className="flex gap-2">
                   {!editingProvider && (
