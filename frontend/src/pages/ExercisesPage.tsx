@@ -265,6 +265,17 @@ export function ExercisesPage() {
     }
   }, [user, selectedPatientId]);
 
+  // Auto-select first patient for stats view when patients load
+  useEffect(() => {
+    if (patients.length > 0 && !statsPatientId) {
+      const activePatients = patients.filter(p => p.isActive);
+      if (activePatients.length > 0) {
+        setStatsPatientId(activePatients[0].id.toString());
+        console.log('Auto-selected first patient for stats:', activePatients[0].name);
+      }
+    }
+  }, [patients, statsPatientId]);
+
   const loadExercises = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -357,6 +368,13 @@ export function ExercisesPage() {
       console.log('📈 Total Sessions:', data.totalSessions);
       console.log('🎯 Performance Breakdown:', data.performanceBreakdown);
       console.log('📅 Weekly Stats:', data.weeklyStats);
+      console.log('📝 Logs array:', data.logs);
+      console.log('📝 Logs count:', data.logs?.length || 0);
+      console.log('📝 Exercise Logs count:', data.exerciseLogs?.length || 0);
+      if (data.logs && data.logs.length > 0) {
+        console.log('📅 First log:', data.logs[0]);
+        console.log('📅 Last log:', data.logs[data.logs.length - 1]);
+      }
       setMonthlyStats(data);
     } catch (error) {
       console.error('Error loading monthly stats:', error);
@@ -1344,6 +1362,55 @@ export function ExercisesPage() {
             </div>
           </div>
 
+          {/* Scoring Guide */}
+          <div className="glass rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+              Scoring Guide
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid #ef4444' }}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <XCircle className="h-5 w-5" style={{ color: '#ef4444' }} />
+                  <span className="font-semibold" style={{ color: '#ef4444' }}>No Show</span>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#ef4444' }}>0 pts</p>
+                <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Patient did not attend session
+                </p>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b' }}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <CheckCircle2 className="h-5 w-5" style={{ color: '#f59e0b' }} />
+                  <span className="font-semibold" style={{ color: '#f59e0b' }}>Completed</span>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#f59e0b' }}>4 pts</p>
+                <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Completed the session
+                </p>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid #3b82f6' }}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Target className="h-5 w-5" style={{ color: '#3b82f6' }} />
+                  <span className="font-semibold" style={{ color: '#3b82f6' }}>Met Goals</span>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#3b82f6' }}>6 pts</p>
+                <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Achieved therapist goals
+                </p>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981' }}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Award className="h-5 w-5" style={{ color: '#10b981' }} />
+                  <span className="font-semibold" style={{ color: '#10b981' }}>Exceeded</span>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#10b981' }}>8 pts</p>
+                <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Surpassed expectations
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* No Patient Selected State */}
           {!statsPatientId && (
             <div className="glass rounded-xl p-12 text-center">
@@ -1383,28 +1450,101 @@ export function ExercisesPage() {
             <>
               {/* Summary Cards Row */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Weekly Score Card */}
+                {/* Weekly Average Score Card - Performance-based color */}
                 <div className="glass rounded-xl p-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#ea580c', transform: 'translate(30%, -30%)' }}></div>
-                  <TrendingUp className="h-8 w-8 mb-3" style={{ color: '#ea580c' }} />
-                  <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Weekly Score</p>
-                  <p className="text-3xl font-bold" style={{ color: '#ea580c' }}>
-                    {monthlyStats.totalSessions > 0 ? Math.round(monthlyStats.totalScore / Math.ceil(monthlyStats.totalSessions / 3)) : 0}
-                  </p>
-                  <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
-                    Average per week
-                  </p>
+                  {(() => {
+                    const weeklyAvg = monthlyStats.totalSessions > 0 ? Math.round(monthlyStats.totalScore / Math.ceil(monthlyStats.totalSessions / 3)) : 0;
+                    const weeklyPercent = Math.round((weeklyAvg / 24) * 100);
+                    const color = weeklyPercent >= 80 ? '#059669' : weeklyPercent >= 60 ? '#2563eb' : weeklyPercent >= 40 ? '#ea580c' : '#dc2626';
+
+                    return (
+                      <>
+                        <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: color, transform: 'translate(30%, -30%)' }}></div>
+                        <TrendingUp className="h-8 w-8 mb-3" style={{ color }} />
+                        <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Weekly Average</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-3xl font-bold" style={{ color }}>
+                            {weeklyAvg}
+                          </p>
+                          <p className="text-sm opacity-50" style={{ color: 'var(--ink)' }}>/24</p>
+                        </div>
+                        <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
+                          {monthlyStats.totalSessions} sessions
+                        </p>
+                        {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                          <p className="text-xs font-semibold mt-1" style={{ color: 'var(--ink)' }}>
+                            {(() => {
+                              const sortedLogs = [...monthlyStats.logs].sort((a: any, b: any) =>
+                                new Date(a.completedAt || a.startTime).getTime() - new Date(b.completedAt || b.startTime).getTime()
+                              );
+                              const firstDate = new Date(sortedLogs[0].completedAt || sortedLogs[0].startTime);
+                              const lastDate = new Date(sortedLogs[sortedLogs.length - 1].completedAt || sortedLogs[sortedLogs.length - 1].startTime);
+                              return `${firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                            })()}
+                          </p>
+                        )}
+                        <p className="text-xs opacity-70 mt-1" style={{ color: 'var(--ink)' }}>
+                          3 sessions/week × 8pts max
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
 
-                {/* Cumulative Score Card */}
+                {/* Cumulative Score Card - Performance-based color */}
                 <div className="glass rounded-xl p-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#2563eb', transform: 'translate(30%, -30%)' }}></div>
-                  <Activity className="h-8 w-8 mb-3" style={{ color: '#2563eb' }} />
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{
+                    backgroundColor: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626',
+                    transform: 'translate(30%, -30%)'
+                  }}></div>
+                  <Activity className="h-8 w-8 mb-3" style={{
+                    color: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626'
+                  }} />
                   <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Cumulative Score</p>
-                  <p className="text-3xl font-bold" style={{ color: '#2563eb' }}>{monthlyStats.totalScore}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold" style={{
+                      color: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626'
+                    }}>{monthlyStats.totalScore}</p>
+                    <p className="text-sm opacity-50" style={{ color: 'var(--ink)' }}>/100</p>
+                  </div>
                   <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
                     {monthlyStats.totalSessions} sessions
                   </p>
+                  {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold mt-2" style={{ color: 'var(--ink)' }}>
+                        {(() => {
+                          const sortedLogs = [...monthlyStats.logs].sort((a: any, b: any) =>
+                            new Date(a.completedAt || a.startTime).getTime() - new Date(b.completedAt || b.startTime).getTime()
+                          );
+                          const firstDate = new Date(sortedLogs[0].completedAt || sortedLogs[0].startTime);
+                          const lastDate = new Date(sortedLogs[sortedLogs.length - 1].completedAt || sortedLogs[sortedLogs.length - 1].startTime);
+                          return `${firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                        })()}
+                      </p>
+                      <div className="mt-3 pt-3 border-t border-white/20">
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--ink)' }}>Performance Scale:</p>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#dc2626' }}></div>
+                            <span style={{ color: 'var(--ink)', opacity: 0.7 }}>0-39: Poor</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ea580c' }}></div>
+                            <span style={{ color: 'var(--ink)', opacity: 0.7 }}>40-59: OK</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#2563eb' }}></div>
+                            <span style={{ color: 'var(--ink)', opacity: 0.7 }}>60-79: Good</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#059669' }}></div>
+                            <span style={{ color: 'var(--ink)', opacity: 0.7 }}>80-100: Excellent</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Percentage Score Card - Color based on performance */}
@@ -1423,6 +1563,21 @@ export function ExercisesPage() {
                   <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
                     {monthlyStats.finalScore}/{monthlyStats.maxPossibleScore} points
                   </p>
+                  {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                    <p className="text-xs font-semibold mt-2" style={{ color: 'var(--ink)' }}>
+                      {(() => {
+                        const sortedLogs = [...monthlyStats.logs].sort((a: any, b: any) =>
+                          new Date(a.completedAt || a.startTime).getTime() - new Date(b.completedAt || b.startTime).getTime()
+                        );
+                        const firstDate = new Date(sortedLogs[0].completedAt || sortedLogs[0].startTime);
+                        const lastDate = new Date(sortedLogs[sortedLogs.length - 1].completedAt || sortedLogs[sortedLogs.length - 1].startTime);
+                        return `${firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                      })()}
+                    </p>
+                  )}
+                  <p className="text-xs opacity-70 mt-1" style={{ color: 'var(--ink)' }}>
+                    Adjusted for session count & completion
+                  </p>
                 </div>
 
                 {/* Exceeded Goals Card - Green to match 8-point color */}
@@ -1430,9 +1585,27 @@ export function ExercisesPage() {
                   <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{ backgroundColor: '#059669', transform: 'translate(30%, -30%)' }}></div>
                   <CheckCircle2 className="h-8 w-8 mb-3" style={{ color: '#059669' }} />
                   <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Exceeded Goals</p>
-                  <p className="text-3xl font-bold" style={{ color: '#059669' }}>{monthlyStats.performanceBreakdown.exceededGoals}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold" style={{ color: '#059669' }}>{monthlyStats.performanceBreakdown.exceededGoals}</p>
+                    <p className="text-sm opacity-50" style={{ color: 'var(--ink)' }}>/{monthlyStats.totalSessions}</p>
+                  </div>
                   <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
-                    8 pts sessions
+                    {monthlyStats.totalSessions > 0 ? Math.round((monthlyStats.performanceBreakdown.exceededGoals / monthlyStats.totalSessions) * 100) : 0}% of total sessions
+                  </p>
+                  {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                    <p className="text-xs font-semibold mt-1" style={{ color: 'var(--ink)' }}>
+                      {(() => {
+                        const sortedLogs = [...monthlyStats.logs].sort((a: any, b: any) =>
+                          new Date(a.completedAt || a.startTime).getTime() - new Date(b.completedAt || b.startTime).getTime()
+                        );
+                        const firstDate = new Date(sortedLogs[0].completedAt || sortedLogs[0].startTime);
+                        const lastDate = new Date(sortedLogs[sortedLogs.length - 1].completedAt || sortedLogs[sortedLogs.length - 1].startTime);
+                        return `${firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                      })()}
+                    </p>
+                  )}
+                  <p className="text-xs opacity-70 mt-1" style={{ color: 'var(--ink)' }}>
+                    8 points = surpassed expectations
                   </p>
                 </div>
               </div>
@@ -1603,55 +1776,6 @@ export function ExercisesPage() {
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
                       <span className="text-sm" style={{ color: 'var(--ink)' }}>80-100%</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Level Legend */}
-              <div className="glass rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
-                  Scoring Guide
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid #ef4444' }}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <XCircle className="h-5 w-5" style={{ color: '#ef4444' }} />
-                      <span className="font-semibold" style={{ color: '#ef4444' }}>No Show</span>
-                    </div>
-                    <p className="text-2xl font-bold mb-1" style={{ color: '#ef4444' }}>0 pts</p>
-                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
-                      Patient did not attend session
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b' }}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <CheckCircle2 className="h-5 w-5" style={{ color: '#f59e0b' }} />
-                      <span className="font-semibold" style={{ color: '#f59e0b' }}>Completed</span>
-                    </div>
-                    <p className="text-2xl font-bold mb-1" style={{ color: '#f59e0b' }}>4 pts</p>
-                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
-                      Completed the session
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid #3b82f6' }}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Target className="h-5 w-5" style={{ color: '#3b82f6' }} />
-                      <span className="font-semibold" style={{ color: '#3b82f6' }}>Met Goals</span>
-                    </div>
-                    <p className="text-2xl font-bold mb-1" style={{ color: '#3b82f6' }}>6 pts</p>
-                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
-                      Achieved therapist goals
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981' }}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Award className="h-5 w-5" style={{ color: '#10b981' }} />
-                      <span className="font-semibold" style={{ color: '#10b981' }}>Exceeded</span>
-                    </div>
-                    <p className="text-2xl font-bold mb-1" style={{ color: '#10b981' }}>8 pts</p>
-                    <p className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
-                      Surpassed expectations
-                    </p>
                   </div>
                 </div>
               </div>

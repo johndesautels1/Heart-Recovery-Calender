@@ -856,11 +856,26 @@ See browser console for full configuration details.
       console.log('📤 Sending API request with score:', score);
       console.log('🆔 Event ID:', selectedEvent.id);
 
-      const updated = await api.updateEvent(selectedEvent.id, { performanceScore: score });
+      // Build update data with performance score
+      const updateData: any = { performanceScore: score };
+
+      // If no duration is set but exercise has a default duration, use it
+      if (!selectedEvent.durationMinutes && currentExercise?.defaultDuration) {
+        updateData.durationMinutes = currentExercise.defaultDuration;
+        console.log(`⏱️  Auto-setting duration from exercise default: ${currentExercise.defaultDuration} minutes`);
+      }
+
+      const updated = await api.updateEvent(selectedEvent.id, updateData);
 
       console.log('✅ API response received:', updated);
       setEvents(events.map(e => e.id === updated.id ? updated : e));
       setSelectedEvent(updated);
+
+      // Update local state if duration was auto-set
+      if (updateData.durationMinutes) {
+        setDurationMinutes(updateData.durationMinutes.toString());
+      }
+
       toast.success(`Performance score updated to ${score} points`);
     } catch (error) {
       console.error('❌ Failed to update performance score:', error);

@@ -497,7 +497,7 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
         id: e.id,
         startTime: e.startTime,
         completedAt: e.startTime, // calendar events don't have completedAt
-        actualDuration: e.duration || 0,
+        actualDuration: e.durationMinutes || 0,
         caloriesBurned: 0, // calendar events don't track calories
         performanceScore: e.performanceScore,
       })),
