@@ -3,7 +3,10 @@ import ExerciseLog from '../models/ExerciseLog';
 import Exercise from '../models/Exercise';
 import User from '../models/User';
 import VitalsSample from '../models/VitalsSample';
+import Patient from '../models/Patient';
+import ExercisePrescription from '../models/ExercisePrescription';
 import { Op } from 'sequelize';
+import { calculateCaloriesBurned } from '../utils/calorieCalculator';
 
 // GET /api/exercise-logs - Get all exercise logs with filters
 export const getExerciseLogs = async (req: Request, res: Response) => {
@@ -128,6 +131,41 @@ export const createExerciseLog = async (req: Request, res: Response) => {
     }
 
     console.log('[EXERCISE-LOGS] Creating log with data:', JSON.stringify(logData, null, 2));
+
+    // Calculate calories burned if not provided (device data takes priority)
+    if (!logData.caloriesBurned && logData.prescriptionId && logData.actualDuration) {
+      try {
+        // Get exercise details and patient weight
+        const prescription = await ExercisePrescription.findByPk(logData.prescriptionId, {
+          include: [{ model: Exercise, as: 'exercise' }],
+        });
+
+        const patient = await Patient.findOne({ where: { userId: logData.userId } });
+
+        if (prescription && (prescription as any).exercise) {
+          const exercise = (prescription as any).exercise;
+          const patientWeight = patient?.currentWeight;
+
+          // Calculate calories based on category, duration, difficulty, and weight
+          logData.caloriesBurned = calculateCaloriesBurned(
+            exercise.category || 'cardio',
+            logData.actualDuration,
+            exercise.difficulty || 'moderate',
+            patientWeight
+          );
+
+          console.log('[EXERCISE-LOGS] Calculated calories:', logData.caloriesBurned, {
+            category: exercise.category,
+            duration: logData.actualDuration,
+            difficulty: exercise.difficulty,
+            weight: patientWeight,
+          });
+        }
+      } catch (calcError: any) {
+        console.error('[EXERCISE-LOGS] Error calculating calories:', calcError);
+        // Don't fail if calculation fails, just log without calories
+      }
+    }
 
     const log = await ExerciseLog.create(logData);
 

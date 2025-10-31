@@ -20,6 +20,7 @@ import * as sleepLogsController from '../controllers/sleepLogsController';
 import * as exerciseLogsController from '../controllers/exerciseLogsController';
 import * as hydrationLogsController from '../controllers/hydrationLogsController';
 import * as dailyScoresController from '../controllers/dailyScoresController';
+import * as caloriesController from '../controllers/caloriesController';
 import uploadRoutes from './upload';
 import devicesRoutes from './devices';
 import stravaRoutes from './strava';
@@ -196,6 +197,11 @@ router.get('/exercise-logs/stats', exerciseLogsController.getExerciseLogStats);
 router.get('/exercise-logs/:id', exerciseLogsController.getExerciseLog);
 router.put('/exercise-logs/:id', exerciseLogsController.updateExerciseLog);
 router.delete('/exercise-logs/:id', exerciseLogsController.deleteExerciseLog);
+
+// ========== CALORIES / ENERGY BALANCE ROUTES ==========
+router.get('/calories/summary', caloriesController.getCalorieSummary);
+router.get('/calories/daily', caloriesController.getDailyCalories);
+router.get('/calories/weight-correlation', caloriesController.getWeightCorrelation);
 
 // ========== HYDRATION LOGS ROUTES ==========
 router.get('/hydration-logs', hydrationLogsController.getHydrationLogs);
