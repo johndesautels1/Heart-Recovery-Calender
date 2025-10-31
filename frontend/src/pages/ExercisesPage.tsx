@@ -1494,21 +1494,21 @@ export function ExercisesPage() {
                 {/* Cumulative Score Card - Performance-based color */}
                 <div className="glass rounded-xl p-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10" style={{
-                    backgroundColor: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626',
+                    backgroundColor: monthlyStats.finalScore >= 80 ? '#059669' : monthlyStats.finalScore >= 60 ? '#2563eb' : monthlyStats.finalScore >= 40 ? '#ea580c' : '#dc2626',
                     transform: 'translate(30%, -30%)'
                   }}></div>
                   <Activity className="h-8 w-8 mb-3" style={{
-                    color: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626'
+                    color: monthlyStats.finalScore >= 80 ? '#059669' : monthlyStats.finalScore >= 60 ? '#2563eb' : monthlyStats.finalScore >= 40 ? '#ea580c' : '#dc2626'
                   }} />
                   <p className="text-sm opacity-70 mb-1" style={{ color: 'var(--ink)' }}>Cumulative Score</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-3xl font-bold" style={{
-                      color: monthlyStats.totalScore >= 80 ? '#059669' : monthlyStats.totalScore >= 60 ? '#2563eb' : monthlyStats.totalScore >= 40 ? '#ea580c' : '#dc2626'
-                    }}>{monthlyStats.totalScore}</p>
+                      color: monthlyStats.finalScore >= 80 ? '#059669' : monthlyStats.finalScore >= 60 ? '#2563eb' : monthlyStats.finalScore >= 40 ? '#ea580c' : '#dc2626'
+                    }}>{monthlyStats.finalScore}</p>
                     <p className="text-sm opacity-50" style={{ color: 'var(--ink)' }}>/100</p>
                   </div>
                   <p className="text-xs opacity-50 mt-1" style={{ color: 'var(--ink)' }}>
-                    {monthlyStats.totalSessions} sessions
+                    {monthlyStats.totalSessions} sessions (+{monthlyStats.bonusPoints || 0} bonus)
                   </p>
                   {monthlyStats.logs && monthlyStats.logs.length > 0 && (
                     <>
@@ -1614,9 +1614,24 @@ export function ExercisesPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Performance Breakdown Pie Chart */}
                 <div className="glass rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                     Performance Breakdown
                   </h3>
+                  <p className="text-xs opacity-70 mb-1" style={{ color: 'var(--ink)' }}>
+                    How many sessions at each performance level
+                  </p>
+                  {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                    <p className="text-xs font-semibold mb-3" style={{ color: 'var(--ink)' }}>
+                      {(() => {
+                        const sortedLogs = [...monthlyStats.logs].sort((a: any, b: any) =>
+                          new Date(a.completedAt || a.startTime).getTime() - new Date(b.completedAt || b.startTime).getTime()
+                        );
+                        const firstDate = new Date(sortedLogs[0].completedAt || sortedLogs[0].startTime);
+                        const lastDate = new Date(sortedLogs[sortedLogs.length - 1].completedAt || sortedLogs[sortedLogs.length - 1].startTime);
+                        return `${firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • ${monthlyStats.totalSessions} total sessions`;
+                      })()}
+                    </p>
+                  )}
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -1659,9 +1674,17 @@ export function ExercisesPage() {
 
                 {/* Weekly Progress Bar Chart */}
                 <div className="glass rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--ink)' }}>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                     Weekly Progress
                   </h3>
+                  <p className="text-xs opacity-70 mb-1" style={{ color: 'var(--ink)' }}>
+                    Average performance score per session each week
+                  </p>
+                  {monthlyStats.logs && monthlyStats.logs.length > 0 && (
+                    <p className="text-xs font-semibold mb-3" style={{ color: 'var(--ink)' }}>
+                      {new Date(monthlyStats.year, monthlyStats.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} • Scale: 0-8 points
+                    </p>
+                  )}
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart
                       data={Object.entries(monthlyStats.weeklyStats).map(([week, data]) => {
