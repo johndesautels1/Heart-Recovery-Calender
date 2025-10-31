@@ -1931,13 +1931,17 @@ export function ExercisesPage() {
 
                       <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={(() => {
-                          // Simulate progressive endurance data from logs
+                          // Use REAL endurance data from logs
                           const logs = monthlyStats.logs || [];
-                          return logs.slice(-12).map((log: any, index: number) => ({
-                            date: new Date(log.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                            duration: 15 + (index * 2) + Math.random() * 5, // Progressive duration
-                            distance: 0.5 + (index * 0.1) + Math.random() * 0.2, // Progressive distance
-                            avgHR: 75 + (index * 2) + Math.random() * 5 // Progressive HR efficiency
+                          // Sort logs chronologically (earliest to latest) before slicing
+                          const sortedLogs = [...logs].sort((a: any, b: any) =>
+                            new Date(a.startTime || a.completedAt).getTime() - new Date(b.startTime || b.completedAt).getTime()
+                          );
+                          return sortedLogs.slice(-12).map((log: any) => ({
+                            date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            duration: log.actualDuration || 0, // Real exercise duration
+                            calories: log.caloriesBurned || 0, // Real calories burned
+                            score: log.performanceScore || 0 // Real performance score
                           }));
                         })()}>
                           <defs>
@@ -1972,7 +1976,7 @@ export function ExercisesPage() {
                           />
                           <Legend wrapperStyle={{ fontSize: '12px' }} />
                           <Area type="monotone" dataKey="duration" stroke="#06b6d4" strokeWidth={3} fill="url(#durationGrad)" name="Duration (min)" filter="url(#enduranceGlow)" />
-                          <Area type="monotone" dataKey="distance" stroke="#10b981" strokeWidth={3} fill="url(#distanceGrad)" name="Distance (mi)" filter="url(#enduranceGlow)" />
+                          <Area type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={3} fill="url(#distanceGrad)" name="Calories Burned" filter="url(#enduranceGlow)" />
                         </AreaChart>
                       </ResponsiveContainer>
 
@@ -1994,12 +1998,22 @@ export function ExercisesPage() {
 
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={(() => {
-                          // Simulate MET level progression
+                          // Use REAL MET data from logs with heart rate data
                           const logs = monthlyStats.logs || [];
-                          return logs.slice(-12).map((log: any, index: number) => ({
-                            week: `W${index + 1}`,
-                            metLevel: 2 + (index * 0.5) + Math.random() * 0.3, // Progressive MET
-                            target: 2 + (index * 0.4) // Target progression
+
+                          // Sort logs chronologically (earliest to latest)
+                          const sortedLogs = [...logs].sort((a: any, b: any) =>
+                            new Date(a.startTime || a.completedAt).getTime() - new Date(b.startTime || b.completedAt).getTime()
+                          );
+
+                          // Filter logs that have MET data and get the last 12
+                          const logsWithMET = sortedLogs.filter((log: any) => log.actualMET !== null && log.actualMET !== undefined);
+
+                          return logsWithMET.slice(-12).map((log: any) => ({
+                            date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            metLevel: log.actualMET || 0, // Real calculated MET from heart rate data
+                            targetMin: log.targetMETMin || 0, // Minimum target MET zone
+                            targetMax: log.targetMETMax || 0, // Maximum target MET zone
                           }));
                         })()}>
                           <defs>
@@ -2017,8 +2031,8 @@ export function ExercisesPage() {
                             </filter>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                          <XAxis dataKey="week" stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                          <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} label={{ value: 'METs', angle: -90, position: 'insideLeft', fill: '#ffffff60' }} />
+                          <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '12px' }} />
+                          <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} domain={[0, 'auto']} label={{ value: 'METs', angle: -90, position: 'insideLeft', fill: '#ffffff60' }} />
                           <Tooltip
                             contentStyle={{
                               backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -2028,10 +2042,17 @@ export function ExercisesPage() {
                               padding: '12px',
                               color: '#ffffff'
                             }}
+                            formatter={(value: any, name: string) => {
+                              if (name === 'Actual MET') return [value.toFixed(2), name];
+                              if (name === 'Target Min') return [value.toFixed(2), name];
+                              if (name === 'Target Max') return [value.toFixed(2), name];
+                              return [value, name];
+                            }}
                           />
                           <Legend wrapperStyle={{ fontSize: '12px' }} />
-                          <Line type="monotone" dataKey="target" stroke="#ffffff40" strokeWidth={2} strokeDasharray="5 5" name="Target" dot={false} />
-                          <Line type="monotone" dataKey="metLevel" stroke="url(#metGradient)" strokeWidth={4} name="Actual MET Level" dot={{ r: 6, fill: '#a855f7', strokeWidth: 2, stroke: '#fff' }} filter="url(#metGlow)" />
+                          <Line type="monotone" dataKey="targetMin" stroke="#22c55e" strokeWidth={2} strokeDasharray="5 5" name="Target Min" dot={false} />
+                          <Line type="monotone" dataKey="targetMax" stroke="#eab308" strokeWidth={2} strokeDasharray="5 5" name="Target Max" dot={false} />
+                          <Line type="monotone" dataKey="metLevel" stroke="url(#metGradient)" strokeWidth={4} name="Actual MET" dot={{ r: 6, fill: '#a855f7', strokeWidth: 2, stroke: '#fff' }} filter="url(#metGlow)" />
                         </LineChart>
                       </ResponsiveContainer>
 

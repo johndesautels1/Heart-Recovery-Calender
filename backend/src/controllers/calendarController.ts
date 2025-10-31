@@ -477,19 +477,90 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
       order: [['completedAt', 'DESC']],
     });
 
+    // ========== MET CALCULATION LOGIC ==========
+    // Calculate patient age and max heart rate for MET calculations
+    let patientAge = null;
+    let maxHeartRate = null;
+    let restingHeartRate = patient.restingHeartRate || null;
+    let targetHeartRateMin = patient.targetHeartRateMin || null;
+    let targetHeartRateMax = patient.targetHeartRateMax || null;
+
+    // Calculate age from date of birth
+    if (patient.dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(patient.dateOfBirth);
+      patientAge = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        patientAge--;
+      }
+    }
+
+    // Calculate max heart rate (use patient's custom value or 220 - age)
+    if (patient.maxHeartRate) {
+      maxHeartRate = patient.maxHeartRate;
+    } else if (patientAge) {
+      maxHeartRate = 220 - patientAge;
+    }
+
+    // Function to calculate MET using Heart Rate Reserve method
+    const calculateMET = (duringHR: number, restingHR: number, maxHR: number): number => {
+      if (!duringHR || !restingHR || !maxHR || maxHR <= restingHR) {
+        return 0;
+      }
+      // METs = [(HR_during - HR_rest) / (HR_max - HR_rest)] × 9 + 1
+      const hrReserve = maxHR - restingHR;
+      const hrWorking = duringHR - restingHR;
+      const mets = (hrWorking / hrReserve) * 9 + 1;
+
+      // Clamp METs to reasonable range (1-20)
+      return Math.max(1, Math.min(20, mets));
+    };
+
     // Transform exercise logs to match the format expected by frontend charts
-    const logsForCharts = exerciseLogs.map((log: any) => ({
-      id: log.id,
-      startTime: log.startTime || log.completedAt,
-      completedAt: log.completedAt,
-      actualDuration: log.actualDuration,
-      caloriesBurned: log.caloriesBurned,
-      performanceScore: log.performanceLevel === 'exceeded_goals' ? 8
-        : log.performanceLevel === 'met_goals' ? 6
-        : log.performanceLevel === 'completed' ? 4
-        : 0,
-      performanceLevel: log.performanceLevel,
-    }));
+    const logsForCharts = exerciseLogs.map((log: any) => {
+      // Calculate actual MET if we have heart rate data
+      let actualMET = null;
+      let targetMETMin = null;
+      let targetMETMax = null;
+
+      // Use preHeartRate from the log if available, otherwise use patient's baseline
+      const effectiveRestingHR = log.preHeartRate || restingHeartRate;
+
+      if (log.duringHeartRateAvg && effectiveRestingHR && maxHeartRate) {
+        actualMET = calculateMET(log.duringHeartRateAvg, effectiveRestingHR, maxHeartRate);
+      }
+
+      // Calculate target MET range based on patient's target heart rate zones
+      if (targetHeartRateMin && effectiveRestingHR && maxHeartRate) {
+        targetMETMin = calculateMET(targetHeartRateMin, effectiveRestingHR, maxHeartRate);
+      }
+      if (targetHeartRateMax && effectiveRestingHR && maxHeartRate) {
+        targetMETMax = calculateMET(targetHeartRateMax, effectiveRestingHR, maxHeartRate);
+      }
+
+      return {
+        id: log.id,
+        startTime: log.startTime || log.completedAt,
+        completedAt: log.completedAt,
+        actualDuration: log.actualDuration,
+        caloriesBurned: log.caloriesBurned,
+        performanceScore: log.performanceLevel === 'exceeded_goals' ? 8
+          : log.performanceLevel === 'met_goals' ? 6
+          : log.performanceLevel === 'completed' ? 4
+          : 0,
+        performanceLevel: log.performanceLevel,
+        // Heart rate data
+        preHeartRate: log.preHeartRate,
+        duringHeartRateAvg: log.duringHeartRateAvg,
+        duringHeartRateMax: log.duringHeartRateMax,
+        postHeartRate: log.postHeartRate,
+        // MET calculations
+        actualMET: actualMET ? Number(actualMET.toFixed(2)) : null,
+        targetMETMin: targetMETMin ? Number(targetMETMin.toFixed(2)) : null,
+        targetMETMax: targetMETMax ? Number(targetMETMax.toFixed(2)) : null,
+      };
+    });
 
     // Merge calendar events and exercise logs for the "logs" field
     const allLogs = [
@@ -535,6 +606,17 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
       events,
       exerciseLogs, // NEW: raw exercise logs
       logs: allLogs, // NEW: merged logs for charts
+      // Patient cardiac baseline data for MET calculations and chart reference
+      patientCardiacBaseline: {
+        age: patientAge,
+        dateOfBirth: patient.dateOfBirth,
+        restingHeartRate: restingHeartRate,
+        maxHeartRate: maxHeartRate,
+        targetHeartRateMin: targetHeartRateMin,
+        targetHeartRateMax: targetHeartRateMax,
+        ejectionFraction: patient.ejectionFraction,
+        medicationsAffectingHR: patient.medicationsAffectingHR,
+      },
     });
   } catch (error) {
     console.error('Error fetching monthly stats:', error);
