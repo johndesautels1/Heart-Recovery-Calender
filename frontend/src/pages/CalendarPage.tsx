@@ -108,6 +108,11 @@ export function CalendarPage() {
   const [duringRespiration, setDuringRespiration] = useState<string>('');
   const [vitalSnapshots, setVitalSnapshots] = useState<any[]>([]);
 
+  // Device connection state
+  const [devicesConnected, setDevicesConnected] = useState(false);
+  const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
+  const [liveVitalsPolling, setLiveVitalsPolling] = useState<NodeJS.Timeout | null>(null);
+
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -167,6 +172,69 @@ export function CalendarPage() {
       setSelectedCalendarIds(calendars.map(cal => cal.id));
     }
   }, [calendars]);
+
+  // Check device connections when exercise modal opens
+  useEffect(() => {
+    if (selectedEvent?.exerciseId && currentExercise) {
+      checkDeviceConnections();
+    }
+
+    // Cleanup polling on modal close
+    return () => {
+      if (liveVitalsPolling) {
+        clearInterval(liveVitalsPolling);
+        setLiveVitalsPolling(null);
+      }
+    };
+  }, [selectedEvent, currentExercise]);
+
+  const checkDeviceConnections = async () => {
+    try {
+      const devices = await api.getDevices();
+      const activeDevices = devices.filter((d: any) => d.isActive);
+
+      if (activeDevices.length > 0) {
+        setDevicesConnected(true);
+        setConnectedDevices(activeDevices.map((d: any) => d.deviceType));
+        // Start real-time polling
+        startLiveVitalsPolling();
+      } else {
+        setDevicesConnected(false);
+        setConnectedDevices([]);
+      }
+    } catch (error) {
+      console.error('Error checking devices:', error);
+      setDevicesConnected(false);
+    }
+  };
+
+  const startLiveVitalsPolling = () => {
+    // Poll every 5 seconds for live data
+    const interval = setInterval(async () => {
+      try {
+        // Get latest vitals from connected devices
+        const vitals = await api.getLatestDeviceVitals();
+
+        if (vitals) {
+          // Auto-populate widgets with live data
+          if (vitals.heartRate) {
+            setDuringPulse(vitals.heartRate.toString());
+          }
+          if (vitals.bloodPressure) {
+            setDuringBpSystolic(vitals.bloodPressure.systolic.toString());
+            setDuringBpDiastolic(vitals.bloodPressure.diastolic.toString());
+          }
+          if (vitals.respirationRate) {
+            setDuringRespiration(vitals.respirationRate.toString());
+          }
+        }
+      } catch (error) {
+        console.error('Error polling vitals:', error);
+      }
+    }, 5000); // Every 5 seconds
+
+    setLiveVitalsPolling(interval);
+  };
 
   const loadPatients = async () => {
     // Only load patients if user is admin or therapist
@@ -1936,10 +2004,23 @@ See browser console for full configuration details.
                   {/* VITAL SIGNS SNAPSHOT WIDGETS */}
                   <div className="mb-4 bg-white/95 backdrop-blur-lg rounded-xl p-4 border-2 border-red-200 shadow-lg">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
-                        <Heart className="h-4 w-4" />
-                        During-Exercise Vitals Snapshot
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
+                          <Heart className="h-4 w-4" />
+                          During-Exercise Vitals Snapshot
+                        </h3>
+                        {devicesConnected ? (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full animate-pulse">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs font-bold text-green-700">LIVE</span>
+                            <span className="text-xs text-green-600">({connectedDevices.join(', ')})</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
+                            <span className="text-xs font-bold text-gray-600">MANUAL ENTRY</span>
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => {
                           if (duringBpSystolic && duringBpDiastolic && duringPulse && duringRespiration) {
@@ -1977,7 +2058,12 @@ See browser console for full configuration details.
                             placeholder="120"
                             value={duringBpSystolic}
                             onChange={(e) => setDuringBpSystolic(e.target.value)}
-                            className="w-full px-2 py-1 text-sm font-bold rounded border-2 border-red-300 focus:border-red-500 focus:outline-none"
+                            readOnly={devicesConnected}
+                            className={`w-full px-2 py-1 text-sm font-bold rounded border-2 ${
+                              devicesConnected
+                                ? 'bg-green-50 border-green-400 cursor-not-allowed'
+                                : 'border-red-300 focus:border-red-500'
+                            } focus:outline-none`}
                           />
                           <span className="text-red-700 font-bold">/</span>
                           <input
@@ -1985,7 +2071,12 @@ See browser console for full configuration details.
                             placeholder="80"
                             value={duringBpDiastolic}
                             onChange={(e) => setDuringBpDiastolic(e.target.value)}
-                            className="w-full px-2 py-1 text-sm font-bold rounded border-2 border-red-300 focus:border-red-500 focus:outline-none"
+                            readOnly={devicesConnected}
+                            className={`w-full px-2 py-1 text-sm font-bold rounded border-2 ${
+                              devicesConnected
+                                ? 'bg-green-50 border-green-400 cursor-not-allowed'
+                                : 'border-red-300 focus:border-red-500'
+                            } focus:outline-none`}
                           />
                         </div>
                         <span className="text-xs text-red-600 font-semibold">mmHg</span>
@@ -1999,7 +2090,12 @@ See browser console for full configuration details.
                           placeholder="72"
                           value={duringPulse}
                           onChange={(e) => setDuringPulse(e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm font-bold rounded border-2 border-orange-300 focus:border-orange-500 focus:outline-none"
+                          readOnly={devicesConnected}
+                          className={`w-full px-2 py-1.5 text-sm font-bold rounded border-2 ${
+                            devicesConnected
+                              ? 'bg-green-50 border-green-400 cursor-not-allowed'
+                              : 'border-orange-300 focus:border-orange-500'
+                          } focus:outline-none`}
                         />
                         <span className="text-xs text-orange-600 font-semibold">bpm</span>
                       </div>
@@ -2012,7 +2108,12 @@ See browser console for full configuration details.
                           placeholder="16"
                           value={duringRespiration}
                           onChange={(e) => setDuringRespiration(e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm font-bold rounded border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
+                          readOnly={devicesConnected}
+                          className={`w-full px-2 py-1.5 text-sm font-bold rounded border-2 ${
+                            devicesConnected
+                              ? 'bg-green-50 border-green-400 cursor-not-allowed'
+                              : 'border-blue-300 focus:border-blue-500'
+                          } focus:outline-none`}
                         />
                         <span className="text-xs text-blue-600 font-semibold">breaths/min</span>
                       </div>

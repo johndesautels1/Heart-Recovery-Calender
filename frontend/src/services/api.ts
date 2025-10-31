@@ -691,6 +691,16 @@ class ApiService {
     return response.data.data;
   }
 
+  async getLatestDeviceVitals(): Promise<any> {
+    try {
+      const response = await this.api.get<ApiResponse<any>>('devices/vitals/latest');
+      return response.data.data;
+    } catch (error) {
+      // Return null if no vitals available (devices not connected)
+      return null;
+    }
+  }
+
   async triggerDeviceSync(deviceId: number, data?: TriggerSyncInput): Promise<DeviceSyncLog> {
     const response = await this.api.post<ApiResponse<DeviceSyncLog>>(`devices/${deviceId}/sync`, data || {});
     return response.data.data;
