@@ -5,8 +5,10 @@ import { api } from '../services/api';
 import { DeviceConnection, DeviceSyncLog } from '../types';
 import { toast } from 'sonner';
 import { QRGenerator } from '../components/QRGenerator';
+import { useTranslation } from 'react-i18next';
 
 export function DevicesPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'implants' | 'trackers'>('implants');
   const [devices, setDevices] = useState<DeviceConnection[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<DeviceConnection | null>(null);
@@ -53,7 +55,7 @@ export function DevicesPage() {
       setDevices(data);
     } catch (error: any) {
       console.error('Error loading devices:', error);
-      toast.error('Failed to load devices');
+      toast.error(t('devices.trackers.messages.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +76,7 @@ export function DevicesPage() {
       window.location.href = authUrl;
     } catch (error: any) {
       console.error('Error initiating Strava auth:', error);
-      toast.error('Failed to connect to Strava');
+      toast.error(t('devices.trackers.messages.connectStravaFailed'));
     }
   };
 
@@ -84,7 +86,7 @@ export function DevicesPage() {
       window.location.href = authUrl;
     } catch (error: any) {
       console.error('Error initiating Polar auth:', error);
-      toast.error('Failed to connect to Polar');
+      toast.error(t('devices.trackers.messages.connectPolarFailed'));
     }
   };
 
@@ -94,7 +96,7 @@ export function DevicesPage() {
       window.location.href = authUrl;
     } catch (error: any) {
       console.error('Error initiating Samsung auth:', error);
-      toast.error('Failed to connect to Samsung Health');
+      toast.error(t('devices.trackers.messages.connectSamsungFailed'));
     }
   };
 
@@ -102,32 +104,32 @@ export function DevicesPage() {
     try {
       setIsSyncing(device.id);
       await api.triggerDeviceSync(device.id);
-      toast.success('Sync started successfully');
+      toast.success(t('devices.trackers.messages.syncStarted'));
       // Reload devices to update last sync time
       setTimeout(loadDevices, 2000);
     } catch (error: any) {
       console.error('Error syncing device:', error);
-      toast.error(error.response?.data?.error || 'Failed to sync device');
+      toast.error(error.response?.data?.error || t('devices.trackers.messages.syncFailed'));
     } finally {
       setIsSyncing(null);
     }
   };
 
   const handleDisconnect = async (device: DeviceConnection) => {
-    if (!confirm(`Are you sure you want to disconnect ${device.deviceName}?`)) {
+    if (!confirm(`${t('devices.trackers.disconnectConfirm')} ${device.deviceName}?`)) {
       return;
     }
 
     try {
       await api.deleteDevice(device.id);
-      toast.success('Device disconnected');
+      toast.success(t('devices.trackers.messages.disconnected'));
       loadDevices();
       if (selectedDevice?.id === device.id) {
         setSelectedDevice(null);
       }
     } catch (error: any) {
       console.error('Error disconnecting device:', error);
-      toast.error('Failed to disconnect device');
+      toast.error(t('devices.trackers.messages.disconnectFailed'));
     }
   };
 
@@ -138,10 +140,10 @@ export function DevicesPage() {
       if (selectedDevice?.id === device.id) {
         setSelectedDevice(updatedDevice);
       }
-      toast.success('Settings updated');
+      toast.success(t('devices.trackers.messages.settingsUpdated'));
     } catch (error: any) {
       console.error('Error updating settings:', error);
-      toast.error('Failed to update settings');
+      toast.error(t('devices.trackers.messages.settingsUpdateFailed'));
     }
   };
 
@@ -164,21 +166,21 @@ export function DevicesPage() {
         return (
           <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm">
             <CheckCircle className="h-4 w-4" />
-            <span>Active</span>
+            <span>{t('devices.trackers.status.active')}</span>
           </div>
         );
       case 'error':
         return (
           <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm">
             <XCircle className="h-4 w-4" />
-            <span>Error</span>
+            <span>{t('devices.trackers.status.error')}</span>
           </div>
         );
       case 'disconnected':
         return (
           <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-gray-500/20 text-gray-400 text-sm">
             <AlertCircle className="h-4 w-4" />
-            <span>Disconnected</span>
+            <span>{t('devices.trackers.status.disconnected')}</span>
           </div>
         );
       default:
@@ -187,15 +189,15 @@ export function DevicesPage() {
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return t('devices.trackers.time.never');
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+    if (diffMins < 1) return t('devices.trackers.time.justNow');
+    if (diffMins < 60) return `${diffMins} ${t('devices.trackers.time.minAgo')}`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} ${t('devices.trackers.time.hoursAgo')}`;
     return date.toLocaleDateString();
   };
 
@@ -246,23 +248,23 @@ export function DevicesPage() {
         imp.id === editingImplant.id ? { ...implantForm, id: imp.id } : imp
       );
       saveImplants(updated);
-      toast.success('Medical implant updated successfully');
+      toast.success(t('devices.implants.messages.updatedSuccess'));
     } else {
       // Add new
       const newImplant = { ...implantForm, id: Date.now() };
       saveImplants([...implants, newImplant]);
-      toast.success('Medical implant added successfully');
+      toast.success(t('devices.implants.messages.addedSuccess'));
     }
 
     setShowImplantModal(false);
   };
 
   const handleDeleteImplant = (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    if (!confirm(`${t('devices.implants.deleteConfirm')} ${name}?`)) return;
 
     const filtered = implants.filter(imp => imp.id !== id);
     saveImplants(filtered);
-    toast.success('Medical implant deleted');
+    toast.success(t('devices.implants.messages.deletedSuccess'));
   };
 
   const handleGenerateImplantQR = (implant: any) => {
@@ -317,11 +319,11 @@ export function DevicesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>My Devices</h1>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{t('devices.title')}</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
             {activeTab === 'implants'
-              ? 'Critical medical implant information for emergency sharing'
-              : 'Connect wearable devices to automatically track your recovery data'}
+              ? t('devices.subtitleImplants')
+              : t('devices.subtitleTrackers')}
           </p>
         </div>
       </div>
@@ -338,9 +340,9 @@ export function DevicesPage() {
           style={{ color: activeTab === 'implants' ? '#f87171' : 'var(--muted)' }}
         >
           <AlertTriangle className="h-4 w-4" />
-          Medical Implants
+          {t('devices.tabs.medicalImplants')}
           <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
-            EMERGENCY
+            {t('devices.tabs.emergency')}
           </span>
         </button>
         <button
@@ -353,7 +355,7 @@ export function DevicesPage() {
           style={{ color: activeTab === 'trackers' ? 'var(--accent)' : 'var(--muted)' }}
         >
           <Activity className="h-4 w-4" />
-          Fitness Trackers
+          {t('devices.tabs.fitnessTrackers')}
         </button>
       </div>
 
@@ -365,7 +367,7 @@ export function DevicesPage() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-red-400" />
               <h2 className="text-2xl font-bold text-red-400">
-                Critical Medical Implants
+                {t('devices.implants.title')}
               </h2>
             </div>
             <div className="flex gap-2">
@@ -376,7 +378,7 @@ export function DevicesPage() {
                   className="flex items-center gap-2"
                 >
                   <QrCode className="h-4 w-4" />
-                  Export All as QR
+                  {t('devices.implants.exportAllQR')}
                 </Button>
               )}
               <Button
@@ -385,7 +387,7 @@ export function DevicesPage() {
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
               >
                 <Plus className="h-4 w-4" />
-                Add Medical Implant
+                {t('devices.implants.addImplant')}
               </Button>
             </div>
           </div>
@@ -415,7 +417,7 @@ export function DevicesPage() {
                           onClick={() => handleGenerateImplantQR(implant)}
                           variant="secondary"
                           className="px-3"
-                          title="Export as QR Code"
+                          title={t('devices.implants.exportQR')}
                         >
                           <QrCode className="h-4 w-4" />
                         </Button>
@@ -439,25 +441,25 @@ export function DevicesPage() {
                     {/* Implant Details Grid */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <p className="text-xs" style={{ color: 'var(--muted)' }}>Serial Number</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{t('devices.implants.labels.serialNumber')}</p>
                         <p className="font-mono text-sm font-semibold" style={{ color: 'var(--ink)' }}>
                           {implant.serialNumber}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs" style={{ color: 'var(--muted)' }}>Implant Date</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{t('devices.implants.labels.implantDate')}</p>
                         <p className="text-sm" style={{ color: 'var(--ink)' }}>
                           {implant.implantDate ? new Date(implant.implantDate).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs" style={{ color: 'var(--muted)' }}>Surgeon</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{t('devices.implants.labels.surgeon')}</p>
                         <p className="text-sm" style={{ color: 'var(--ink)' }}>
                           {implant.implantingSurgeon || 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs" style={{ color: 'var(--muted)' }}>Hospital</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{t('devices.implants.labels.hospital')}</p>
                         <p className="text-sm" style={{ color: 'var(--ink)' }}>
                           {implant.implantingHospital || 'N/A'}
                         </p>
@@ -469,25 +471,25 @@ export function DevicesPage() {
                       {implant.isMRISafe ? (
                         <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
-                          MRI Safe
+                          {t('devices.implants.badges.mriSafe')}
                         </span>
                       ) : (
                         <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs flex items-center gap-1">
                           <XCircle className="h-3 w-3" />
-                          NOT MRI Safe
+                          {t('devices.implants.badges.notMriSafe')}
                         </span>
                       )}
                       {implant.isEmergencyCritical && (
                         <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" />
-                          Emergency Critical
+                          {t('devices.implants.badges.emergencyCritical')}
                         </span>
                       )}
                     </div>
 
                     {implant.notes && (
                       <div className="mt-4 p-3 rounded-lg bg-gray-500/10">
-                        <p className="text-xs" style={{ color: 'var(--muted)' }}>Notes</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{t('devices.implants.labels.notes')}</p>
                         <p className="text-sm" style={{ color: 'var(--ink)' }}>{implant.notes}</p>
                       </div>
                     )}
@@ -500,10 +502,10 @@ export function DevicesPage() {
               <div className="p-12 text-center">
                 <Heart className="h-16 w-16 mx-auto mb-4 text-red-400" />
                 <h3 className="text-xl font-bold mb-2 text-red-400">
-                  No Medical Implants Recorded
+                  {t('devices.implants.noImplants')}
                 </h3>
                 <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-                  Add critical medical implant information (biological valves, pacemakers, etc.) for emergency situations
+                  {t('devices.implants.noImplantsMessage')}
                 </p>
                 <Button
                   onClick={handleAddImplant}
@@ -511,7 +513,7 @@ export function DevicesPage() {
                   className="bg-red-600 hover:bg-red-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add First Medical Implant
+                  {t('devices.implants.addFirstImplant')}
                 </Button>
               </div>
             </GlassCard>
@@ -532,19 +534,19 @@ export function DevicesPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
-                  Strava
+                  {t('devices.trackers.devices.strava.name')}
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                  Universal fitness tracking
+                  {t('devices.trackers.devices.strava.description')}
                 </p>
               </div>
             </div>
             <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
-              Connect Strava to automatically sync all your workouts from Samsung Watch, Polar devices, and more - all in one place!
+              {t('devices.trackers.devices.strava.details')}
             </p>
             <Button onClick={handleConnectStrava} variant="primary" className="w-full bg-orange-500 hover:bg-orange-600">
               <Activity className="h-4 w-4 mr-2" />
-              Connect Strava (Recommended)
+              {t('devices.trackers.devices.strava.connect')}
             </Button>
           </div>
         </GlassCard>
@@ -557,19 +559,19 @@ export function DevicesPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
-                  Polar H10
+                  {t('devices.trackers.devices.polar.name')}
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                  Heart rate monitor
+                  {t('devices.trackers.devices.polar.description')}
                 </p>
               </div>
             </div>
             <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
-              Connect your Polar H10 to automatically sync exercise sessions, heart rate data, and training metrics.
+              {t('devices.trackers.devices.polar.details')}
             </p>
             <Button onClick={handleConnectPolar} variant="primary" className="w-full">
               <Heart className="h-4 w-4 mr-2" />
-              Connect Polar Device
+              {t('devices.trackers.devices.polar.connect')}
             </Button>
           </div>
         </GlassCard>
@@ -579,7 +581,7 @@ export function DevicesPage() {
       {devices.length > 0 && (
         <>
           <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--ink)' }}>
-            Connected Devices
+            {t('devices.trackers.connectedDevices')}
           </h2>
           <div className="grid grid-cols-1 gap-4">
             {devices.map((device) => (
@@ -595,7 +597,7 @@ export function DevicesPage() {
                           {device.deviceName}
                         </h3>
                         <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                          Last synced: {formatDate(device.lastSyncedAt)}
+                          {t('devices.trackers.lastSynced')}: {formatDate(device.lastSyncedAt)}
                         </p>
                       </div>
                     </div>
@@ -614,33 +616,33 @@ export function DevicesPage() {
                     {device.syncExercises && (
                       <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
                         <Activity className="h-3 w-3 inline mr-1" />
-                        Exercise
+                        {t('devices.trackers.dataTypes.exercise')}
                       </span>
                     )}
                     {device.syncHeartRate && (
                       <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs">
                         <Heart className="h-3 w-3 inline mr-1" />
-                        Heart Rate
+                        {t('devices.trackers.dataTypes.heartRate')}
                       </span>
                     )}
                     {device.syncSteps && (
                       <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs">
-                        Steps
+                        {t('devices.trackers.dataTypes.steps')}
                       </span>
                     )}
                     {device.syncCalories && (
                       <span className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs">
-                        Calories
+                        {t('devices.trackers.dataTypes.calories')}
                       </span>
                     )}
                   </div>
 
                   {showSettings === device.id ? (
                     <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-                      <h4 className="font-semibold mb-3" style={{ color: 'var(--ink)' }}>Sync Settings</h4>
+                      <h4 className="font-semibold mb-3" style={{ color: 'var(--ink)' }}>{t('devices.trackers.settings.title')}</h4>
                       <div className="space-y-2">
                         <label className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'var(--ink)' }}>Auto-sync</span>
+                          <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.trackers.settings.autoSync')}</span>
                           <input
                             type="checkbox"
                             checked={device.autoSync}
@@ -649,7 +651,7 @@ export function DevicesPage() {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'var(--ink)' }}>Exercise Sessions</span>
+                          <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.trackers.settings.exerciseSessions')}</span>
                           <input
                             type="checkbox"
                             checked={device.syncExercises}
@@ -658,7 +660,7 @@ export function DevicesPage() {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'var(--ink)' }}>Heart Rate</span>
+                          <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.trackers.dataTypes.heartRate')}</span>
                           <input
                             type="checkbox"
                             checked={device.syncHeartRate}
@@ -667,7 +669,7 @@ export function DevicesPage() {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'var(--ink)' }}>Steps</span>
+                          <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.trackers.dataTypes.steps')}</span>
                           <input
                             type="checkbox"
                             checked={device.syncSteps}
@@ -676,7 +678,7 @@ export function DevicesPage() {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'var(--ink)' }}>Calories</span>
+                          <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.trackers.dataTypes.calories')}</span>
                           <input
                             type="checkbox"
                             checked={device.syncCalories}
@@ -696,7 +698,7 @@ export function DevicesPage() {
                       className="flex-1"
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
-                      Sync Now
+                      {t('devices.trackers.syncNow')}
                     </Button>
                     <Button
                       onClick={() => setShowSettings(showSettings === device.id ? null : device.id)}
@@ -721,7 +723,7 @@ export function DevicesPage() {
                   {/* Sync History */}
                   {selectedDevice?.id === device.id && syncHistory.length > 0 && (
                     <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                      <h4 className="font-semibold mb-3" style={{ color: 'var(--ink)' }}>Recent Sync History</h4>
+                      <h4 className="font-semibold mb-3" style={{ color: 'var(--ink)' }}>{t('devices.trackers.syncHistory.title')}</h4>
                       <div className="space-y-2">
                         {syncHistory.map((log) => (
                           <div
@@ -739,11 +741,11 @@ export function DevicesPage() {
                               )}
                               <div>
                                 <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>
-                                  {log.syncType.charAt(0).toUpperCase() + log.syncType.slice(1)} sync
+                                  {log.syncType.charAt(0).toUpperCase() + log.syncType.slice(1)} {t('devices.trackers.syncHistory.sync')}
                                 </p>
                                 <p className="text-xs" style={{ color: 'var(--muted)' }}>
                                   {formatDate(log.startedAt)}
-                                  {log.recordsCreated && ` • ${log.recordsCreated} records created`}
+                                  {log.recordsCreated && ` • ${log.recordsCreated} ${t('devices.trackers.syncHistory.recordsCreated')}`}
                                 </p>
                               </div>
                             </div>
@@ -767,10 +769,10 @@ export function DevicesPage() {
               <div className="p-12 text-center">
                 <Smartphone className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--muted)' }} />
                 <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
-                  No Devices Connected
+                  {t('devices.trackers.noDevices')}
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                  Connect your first device to start automatically tracking your recovery data
+                  {t('devices.trackers.noDevicesMessage')}
                 </p>
               </div>
             </GlassCard>
@@ -786,7 +788,7 @@ export function DevicesPage() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-red-400">
-                    {editingImplant ? 'Edit Medical Implant' : 'Add Medical Implant'}
+                    {editingImplant ? t('devices.implants.editImplant') : t('devices.implants.addImplant')}
                   </h2>
                   <button
                     onClick={() => setShowImplantModal(false)}
@@ -801,7 +803,7 @@ export function DevicesPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Device Type *
+                        {t('devices.implants.fields.deviceType')} *
                       </label>
                       <select
                         value={implantForm.deviceType}
@@ -814,27 +816,27 @@ export function DevicesPage() {
                           color: '#ffffff',
                         }}
                       >
-                        <option value="" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Select type...</option>
-                        <option value="Biological Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Biological Valve</option>
-                        <option value="Mechanical Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Mechanical Valve</option>
-                        <option value="Pacemaker" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Pacemaker</option>
-                        <option value="ICD (Defibrillator)" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>ICD (Defibrillator)</option>
-                        <option value="Stent" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Stent</option>
-                        <option value="Heart Pump/LVAD" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Heart Pump/LVAD</option>
-                        <option value="Other Cardiac Device" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>Other Cardiac Device</option>
+                        <option value="" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.placeholders.selectType')}</option>
+                        <option value="Biological Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.biologicalValve')}</option>
+                        <option value="Mechanical Valve" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.mechanicalValve')}</option>
+                        <option value="Pacemaker" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.pacemaker')}</option>
+                        <option value="ICD (Defibrillator)" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.icd')}</option>
+                        <option value="Stent" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.stent')}</option>
+                        <option value="Heart Pump/LVAD" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.heartPump')}</option>
+                        <option value="Other Cardiac Device" style={{ backgroundColor: '#1e1e1e', color: '#ffffff' }}>{t('devices.implants.deviceTypes.otherCardiac')}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Manufacturer *
+                        {t('devices.implants.fields.manufacturer')} *
                       </label>
                       <input
                         type="text"
                         value={implantForm.manufacturer}
                         onChange={(e) => setImplantForm({ ...implantForm, manufacturer: e.target.value })}
                         required
-                        placeholder="e.g., Abbott, Medtronic, Edwards"
+                        placeholder={t('devices.implants.placeholders.manufacturerExample')}
                         className="w-full px-4 py-2 rounded-lg border placeholder-gray-400"
                         style={{
                           backgroundColor: 'rgba(30, 30, 30, 0.95)',
@@ -846,7 +848,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Model Number *
+                        {t('devices.implants.fields.modelNumber')} *
                       </label>
                       <input
                         type="text"
@@ -864,7 +866,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Serial Number *
+                        {t('devices.implants.fields.serialNumber')} *
                       </label>
                       <input
                         type="text"
@@ -882,7 +884,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Implant Date *
+                        {t('devices.implants.fields.implantDate')} *
                       </label>
                       <input
                         type="date"
@@ -900,7 +902,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Warranty/Replacement Date
+                        {t('devices.implants.fields.warrantyExpiration')}
                       </label>
                       <input
                         type="date"
@@ -917,7 +919,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Implanting Surgeon
+                        {t('devices.implants.fields.implantingSurgeon')}
                       </label>
                       <input
                         type="text"
@@ -934,7 +936,7 @@ export function DevicesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                        Implanting Hospital
+                        {t('devices.implants.fields.implantingHospital')}
                       </label>
                       <input
                         type="text"
@@ -952,7 +954,7 @@ export function DevicesPage() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                      Notes
+                      {t('devices.implants.fields.notes')}
                     </label>
                     <textarea
                       value={implantForm.notes}
@@ -975,7 +977,7 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, isMRISafe: e.target.checked })}
                         className="w-5 h-5"
                       />
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>MRI Safe</span>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.implants.fields.isMRISafe')}</span>
                     </label>
 
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -985,13 +987,13 @@ export function DevicesPage() {
                         onChange={(e) => setImplantForm({ ...implantForm, isEmergencyCritical: e.target.checked })}
                         className="w-5 h-5"
                       />
-                      <span className="text-sm" style={{ color: 'var(--ink)' }}>Emergency Critical</span>
+                      <span className="text-sm" style={{ color: 'var(--ink)' }}>{t('devices.implants.fields.isEmergencyCritical')}</span>
                     </label>
                   </div>
 
                   <div className="flex gap-3 pt-4">
                     <Button type="submit" variant="primary" className="flex-1 bg-red-600 hover:bg-red-700">
-                      {editingImplant ? 'Update Implant' : 'Add Implant'}
+                      {editingImplant ? t('devices.implants.updateImplant') : t('devices.implants.addImplant')}
                     </Button>
                     <Button
                       type="button"
@@ -999,7 +1001,7 @@ export function DevicesPage() {
                       variant="secondary"
                       className="flex-1"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </form>

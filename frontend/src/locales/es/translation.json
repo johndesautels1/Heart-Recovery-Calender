@@ -89,5 +89,132 @@
       "noPhone": "No hay número de teléfono disponible para este proveedor",
       "cameraPermissionError": "No se puede acceder a la cámara. Por favor, verifique los permisos."
     }
+  },
+  "devices": {
+    "title": "Mis Dispositivos",
+    "subtitleImplants": "Información crítica de implantes médicos para compartir en emergencias",
+    "subtitleTrackers": "Conecte dispositivos portátiles para rastrear automáticamente sus datos de recuperación",
+    "tabs": {
+      "medicalImplants": "Implantes Médicos",
+      "emergency": "EMERGENCIA",
+      "fitnessTrackers": "Rastreadores de Ejercicio"
+    },
+    "implants": {
+      "title": "Implantes Médicos Críticos",
+      "addImplant": "Agregar Implante Médico",
+      "editImplant": "Editar Implante Médico",
+      "updateImplant": "Actualizar Implante",
+      "addFirstImplant": "Agregar Primer Implante Médico",
+      "exportAllQR": "Exportar Todo como QR",
+      "exportQR": "Exportar como Código QR",
+      "noImplants": "No Hay Implantes Médicos Registrados",
+      "noImplantsMessage": "Agregue información crítica de implantes médicos (válvulas biológicas, marcapasos, etc.) para situaciones de emergencia",
+      "deleteConfirm": "¿Está seguro de que desea eliminar",
+      "fields": {
+        "deviceType": "Tipo de Dispositivo",
+        "manufacturer": "Fabricante",
+        "modelNumber": "Número de Modelo",
+        "serialNumber": "Número de Serie",
+        "implantDate": "Fecha de Implante",
+        "warrantyExpiration": "Fecha de Garantía/Reemplazo",
+        "implantingSurgeon": "Cirujano Implantador",
+        "implantingHospital": "Hospital de Implantación",
+        "notes": "Notas",
+        "isMRISafe": "Seguro para MRI",
+        "isEmergencyCritical": "Crítico de Emergencia"
+      },
+      "placeholders": {
+        "selectType": "Seleccione tipo...",
+        "manufacturerExample": "ej., Abbott, Medtronic, Edwards"
+      },
+      "deviceTypes": {
+        "biologicalValve": "Válvula Biológica",
+        "mechanicalValve": "Válvula Mecánica",
+        "pacemaker": "Marcapasos",
+        "icd": "ICD (Desfibrilador)",
+        "stent": "Stent",
+        "heartPump": "Bomba Cardíaca/LVAD",
+        "otherCardiac": "Otro Dispositivo Cardíaco"
+      },
+      "badges": {
+        "mriSafe": "Seguro para MRI",
+        "notMriSafe": "NO Seguro para MRI",
+        "emergencyCritical": "Crítico de Emergencia"
+      },
+      "labels": {
+        "serialNumber": "Número de Serie",
+        "implantDate": "Fecha de Implante",
+        "surgeon": "Cirujano",
+        "hospital": "Hospital",
+        "notes": "Notas"
+      },
+      "messages": {
+        "addedSuccess": "Implante médico agregado exitosamente",
+        "updatedSuccess": "Implante médico actualizado exitosamente",
+        "deletedSuccess": "Implante médico eliminado"
+      }
+    },
+    "trackers": {
+      "connectedDevices": "Dispositivos Conectados",
+      "noDevices": "No Hay Dispositivos Conectados",
+      "noDevicesMessage": "Conecte su primer dispositivo para comenzar a rastrear automáticamente sus datos de recuperación",
+      "lastSynced": "Última sincronización",
+      "syncNow": "Sincronizar Ahora",
+      "disconnect": "Desconectar",
+      "disconnectConfirm": "¿Está seguro de que desea desconectar",
+      "devices": {
+        "strava": {
+          "name": "Strava",
+          "description": "Seguimiento universal de ejercicios",
+          "details": "¡Conecte Strava para sincronizar automáticamente todos sus entrenamientos desde Samsung Watch, dispositivos Polar y más, todo en un solo lugar!",
+          "connect": "Conectar Strava (Recomendado)"
+        },
+        "polar": {
+          "name": "Polar H10",
+          "description": "Monitor de frecuencia cardíaca",
+          "details": "Conecte su Polar H10 para sincronizar automáticamente sesiones de ejercicio, datos de frecuencia cardíaca y métricas de entrenamiento.",
+          "connect": "Conectar Dispositivo Polar"
+        }
+      },
+      "status": {
+        "active": "Activo",
+        "error": "Error",
+        "disconnected": "Desconectado"
+      },
+      "dataTypes": {
+        "exercise": "Ejercicio",
+        "heartRate": "Frecuencia Cardíaca",
+        "steps": "Pasos",
+        "calories": "Calorías"
+      },
+      "settings": {
+        "title": "Configuración de Sincronización",
+        "autoSync": "Sincronización automática",
+        "exerciseSessions": "Sesiones de Ejercicio"
+      },
+      "syncHistory": {
+        "title": "Historial de Sincronización Reciente",
+        "sync": "sincronización",
+        "recordsCreated": "registros creados"
+      },
+      "time": {
+        "never": "Nunca",
+        "justNow": "Justo ahora",
+        "minAgo": "min atrás",
+        "hoursAgo": "horas atrás"
+      },
+      "messages": {
+        "loadFailed": "Error al cargar dispositivos",
+        "connectStravaFailed": "Error al conectar con Strava",
+        "connectPolarFailed": "Error al conectar con Polar",
+        "connectSamsungFailed": "Error al conectar con Samsung Health",
+        "syncStarted": "Sincronización iniciada exitosamente",
+        "syncFailed": "Error al sincronizar dispositivo",
+        "disconnected": "Dispositivo desconectado",
+        "disconnectFailed": "Error al desconectar dispositivo",
+        "settingsUpdated": "Configuración actualizada",
+        "settingsUpdateFailed": "Error al actualizar configuración"
+      }
+    }
   }
 }

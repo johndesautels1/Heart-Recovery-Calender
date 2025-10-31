@@ -89,5 +89,132 @@
       "noPhone": "No phone number available for this provider",
       "cameraPermissionError": "Unable to access camera. Please check permissions."
     }
+  },
+  "devices": {
+    "title": "My Devices",
+    "subtitleImplants": "Critical medical implant information for emergency sharing",
+    "subtitleTrackers": "Connect wearable devices to automatically track your recovery data",
+    "tabs": {
+      "medicalImplants": "Medical Implants",
+      "emergency": "EMERGENCY",
+      "fitnessTrackers": "Fitness Trackers"
+    },
+    "implants": {
+      "title": "Critical Medical Implants",
+      "addImplant": "Add Medical Implant",
+      "editImplant": "Edit Medical Implant",
+      "updateImplant": "Update Implant",
+      "addFirstImplant": "Add First Medical Implant",
+      "exportAllQR": "Export All as QR",
+      "exportQR": "Export as QR Code",
+      "noImplants": "No Medical Implants Recorded",
+      "noImplantsMessage": "Add critical medical implant information (biological valves, pacemakers, etc.) for emergency situations",
+      "deleteConfirm": "Are you sure you want to delete",
+      "fields": {
+        "deviceType": "Device Type",
+        "manufacturer": "Manufacturer",
+        "modelNumber": "Model Number",
+        "serialNumber": "Serial Number",
+        "implantDate": "Implant Date",
+        "warrantyExpiration": "Warranty/Replacement Date",
+        "implantingSurgeon": "Implanting Surgeon",
+        "implantingHospital": "Implanting Hospital",
+        "notes": "Notes",
+        "isMRISafe": "MRI Safe",
+        "isEmergencyCritical": "Emergency Critical"
+      },
+      "placeholders": {
+        "selectType": "Select type...",
+        "manufacturerExample": "e.g., Abbott, Medtronic, Edwards"
+      },
+      "deviceTypes": {
+        "biologicalValve": "Biological Valve",
+        "mechanicalValve": "Mechanical Valve",
+        "pacemaker": "Pacemaker",
+        "icd": "ICD (Defibrillator)",
+        "stent": "Stent",
+        "heartPump": "Heart Pump/LVAD",
+        "otherCardiac": "Other Cardiac Device"
+      },
+      "badges": {
+        "mriSafe": "MRI Safe",
+        "notMriSafe": "NOT MRI Safe",
+        "emergencyCritical": "Emergency Critical"
+      },
+      "labels": {
+        "serialNumber": "Serial Number",
+        "implantDate": "Implant Date",
+        "surgeon": "Surgeon",
+        "hospital": "Hospital",
+        "notes": "Notes"
+      },
+      "messages": {
+        "addedSuccess": "Medical implant added successfully",
+        "updatedSuccess": "Medical implant updated successfully",
+        "deletedSuccess": "Medical implant deleted"
+      }
+    },
+    "trackers": {
+      "connectedDevices": "Connected Devices",
+      "noDevices": "No Devices Connected",
+      "noDevicesMessage": "Connect your first device to start automatically tracking your recovery data",
+      "lastSynced": "Last synced",
+      "syncNow": "Sync Now",
+      "disconnect": "Disconnect",
+      "disconnectConfirm": "Are you sure you want to disconnect",
+      "devices": {
+        "strava": {
+          "name": "Strava",
+          "description": "Universal fitness tracking",
+          "details": "Connect Strava to automatically sync all your workouts from Samsung Watch, Polar devices, and more - all in one place!",
+          "connect": "Connect Strava (Recommended)"
+        },
+        "polar": {
+          "name": "Polar H10",
+          "description": "Heart rate monitor",
+          "details": "Connect your Polar H10 to automatically sync exercise sessions, heart rate data, and training metrics.",
+          "connect": "Connect Polar Device"
+        }
+      },
+      "status": {
+        "active": "Active",
+        "error": "Error",
+        "disconnected": "Disconnected"
+      },
+      "dataTypes": {
+        "exercise": "Exercise",
+        "heartRate": "Heart Rate",
+        "steps": "Steps",
+        "calories": "Calories"
+      },
+      "settings": {
+        "title": "Sync Settings",
+        "autoSync": "Auto-sync",
+        "exerciseSessions": "Exercise Sessions"
+      },
+      "syncHistory": {
+        "title": "Recent Sync History",
+        "sync": "sync",
+        "recordsCreated": "records created"
+      },
+      "time": {
+        "never": "Never",
+        "justNow": "Just now",
+        "minAgo": "min ago",
+        "hoursAgo": "hours ago"
+      },
+      "messages": {
+        "loadFailed": "Failed to load devices",
+        "connectStravaFailed": "Failed to connect to Strava",
+        "connectPolarFailed": "Failed to connect to Polar",
+        "connectSamsungFailed": "Failed to connect to Samsung Health",
+        "syncStarted": "Sync started successfully",
+        "syncFailed": "Failed to sync device",
+        "disconnected": "Device disconnected",
+        "disconnectFailed": "Failed to disconnect device",
+        "settingsUpdated": "Settings updated",
+        "settingsUpdateFailed": "Failed to update settings"
+      }
+    }
   }
 }
