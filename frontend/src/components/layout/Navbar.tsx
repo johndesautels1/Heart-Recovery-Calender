@@ -131,11 +131,13 @@ export function Navbar() {
     { path: '/devices', label: 'My Devices', icon: Smartphone },
   ];
 
-  // Add My Patients tab for therapists/admins or My Providers tab for patients at position 3
+  // Add My Patients/My Providers tab at position 2, then Vitals at position 3
   if (user?.role === 'therapist' || user?.role === 'admin') {
     navItems.splice(2, 0, { path: '/patients', label: 'My Patients', icon: Stethoscope });
+    navItems.splice(3, 0, { path: '/vitals', label: 'Vitals', icon: Activity });
   } else if (user?.role === 'patient') {
     navItems.splice(2, 0, { path: '/my-providers', label: 'My Providers', icon: UserCircle2 });
+    navItems.splice(3, 0, { path: '/vitals', label: 'Vitals', icon: Activity });
   }
 
   const isActive = (path: string) => location.pathname === path;
@@ -275,7 +277,7 @@ export function Navbar() {
         </div>
 
         {/* Row 2: Navigation Tabs with Glassmorphic Prismatic Design */}
-        <div className="hidden md:flex items-center justify-center gap-2 pb-3 pt-1">
+        <div className="hidden md:flex items-center justify-center gap-1.5 pb-3 pt-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -284,12 +286,12 @@ export function Navbar() {
                 key={item.path}
                 to={item.path}
                 className="group relative"
-                style={{ minWidth: '120px' }}
+                style={{ minWidth: '105px' }}
               >
                 {/* Glassmorphic Prismatic Tab */}
                 <div
                   className={clsx(
-                    'relative px-4 py-2.5 rounded-xl transition-all duration-300',
+                    'relative px-3 py-2 rounded-xl transition-all duration-300',
                     'backdrop-blur-md border overflow-hidden',
                     active
                       ? 'bg-gradient-to-br from-white/40 via-white/30 to-white/20 border-white/60 shadow-lg'
@@ -333,18 +335,18 @@ export function Navbar() {
                         active ? 'scale-110' : 'group-hover:scale-105'
                       )}
                       style={{
-                        color: active ? 'var(--accent)' : 'var(--ink)',
-                        filter: active ? 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))' : 'none'
+                        color: active ? '#fbbf24' : 'var(--ink)',
+                        filter: active ? 'drop-shadow(0 0 12px rgba(251, 191, 36, 0.8))' : 'none'
                       }}
                     />
                     <span
                       className={clsx(
                         'text-sm font-medium transition-all duration-300',
-                        active ? 'font-bold' : 'group-hover:font-semibold'
+                        active ? 'font-extrabold' : 'group-hover:font-semibold'
                       )}
                       style={{
-                        color: active ? 'var(--accent)' : 'var(--ink)',
-                        textShadow: active ? '0 0 10px rgba(139, 92, 246, 0.4)' : 'none'
+                        color: active ? '#fbbf24' : 'var(--ink)',
+                        textShadow: active ? '0 0 16px rgba(251, 191, 36, 0.9), 0 2px 4px rgba(0, 0, 0, 0.8)' : 'none'
                       }}
                     >
                       {item.label}
@@ -357,8 +359,8 @@ export function Navbar() {
                       className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
                       style={{
                         width: '80%',
-                        background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
-                        boxShadow: '0 0 8px var(--accent)'
+                        background: 'linear-gradient(90deg, transparent, #fbbf24, transparent)',
+                        boxShadow: '0 0 12px rgba(251, 191, 36, 0.8)'
                       }}
                     />
                   )}
