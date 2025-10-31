@@ -2994,73 +2994,74 @@ export function DashboardPage() {
             </div>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={calorieData}>
-            <defs>
-              <linearGradient id="consumedGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.2}/>
-              </linearGradient>
-              <linearGradient id="burnedGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#f97316" stopOpacity={0.2}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-            <XAxis
-              dataKey="date"
-              stroke="#9ca3af"
-              tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 600 }}
-              tickLine={{ stroke: '#6b7280' }}
-            />
-            <YAxis
-              stroke="#9ca3af"
-              tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
-              tickLine={{ stroke: '#6b7280' }}
-              label={{ value: 'Calories', angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontSize: 12, fontWeight: 600 } }}
-            />
-            <Tooltip
-              contentStyle={{
-                background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
-                border: '2px solid #3b82f6',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.3)',
-                backdropFilter: 'blur(10px)'
-              }}
-              labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
-            />
-            <Legend
-              iconType="circle"
-              wrapperStyle={{ paddingTop: '10px' }}
-            />
-            <Area
-              type="monotone"
-              dataKey="consumed"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              fill="url(#consumedGrad)"
-              name="Calories Consumed"
-            />
-            <Area
-              type="monotone"
-              dataKey="burned"
-              stroke="#f97316"
-              strokeWidth={2}
-              fill="url(#burnedGrad)"
-              name="Calories Burned"
-            />
-            <Line
-              type="monotone"
-              dataKey="net"
-              stroke="#10b981"
-              strokeWidth={3}
-              strokeDasharray="5 5"
-              name="Net Calories"
-              dot={{ fill: '#10b981', r: 4 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-        <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+          <>
+            <ResponsiveContainer width="100%" height={350}>
+              <ComposedChart data={calorieData}>
+              <defs>
+                <linearGradient id="consumedGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                </linearGradient>
+                <linearGradient id="burnedGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>
+                  <stop offset="100%" stopColor="#f97316" stopOpacity={0.2}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis
+                dataKey="date"
+                stroke="#9ca3af"
+                tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 600 }}
+                tickLine={{ stroke: '#6b7280' }}
+              />
+              <YAxis
+                stroke="#9ca3af"
+                tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                tickLine={{ stroke: '#6b7280' }}
+                label={{ value: 'Calories', angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontSize: 12, fontWeight: 600 } }}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                  border: '2px solid #3b82f6',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.3)',
+                  backdropFilter: 'blur(10px)'
+                }}
+                labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+              />
+              <Legend
+                iconType="circle"
+                wrapperStyle={{ paddingTop: '10px' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="consumed"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fill="url(#consumedGrad)"
+                name="Calories Consumed"
+              />
+              <Area
+                type="monotone"
+                dataKey="burned"
+                stroke="#f97316"
+                strokeWidth={2}
+                fill="url(#burnedGrad)"
+                name="Calories Burned"
+              />
+              <Line
+                type="monotone"
+                dataKey="net"
+                stroke="#10b981"
+                strokeWidth={3}
+                strokeDasharray="5 5"
+                name="Net Calories"
+                dot={{ fill: '#10b981', r: 4 }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
           <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
             <div className="text-xs text-blue-300 mb-1">Avg Consumed</div>
             <div className="text-2xl font-bold text-blue-400">
@@ -3092,6 +3093,8 @@ export function DashboardPage() {
             <div className="text-xs text-gray-400">cal/day</div>
           </div>
         </div>
+          </>
+        )}
       </GlassCard>
 
       {/* 12-Week Progress Photos - Patient View */}
