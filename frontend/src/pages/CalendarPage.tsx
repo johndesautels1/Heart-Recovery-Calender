@@ -1980,10 +1980,10 @@ See browser console for full configuration details.
                             <iframe
                               width="420"
                               height="315"
-                              src={currentExercise.videoUrl.replace('watch?v=', 'embed/')}
+                              src={`${currentExercise.videoUrl.replace('watch?v=', 'embed/')}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
                               title={currentExercise.name}
                               frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen
                               className="rounded-xl shadow-2xl border-4 border-cyan-500/30"
                             ></iframe>
