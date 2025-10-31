@@ -335,8 +335,8 @@ export function Navbar() {
                         active ? 'scale-110' : 'group-hover:scale-105'
                       )}
                       style={{
-                        color: active ? '#fbbf24' : 'var(--ink)',
-                        filter: active ? 'drop-shadow(0 0 12px rgba(251, 191, 36, 0.8))' : 'none'
+                        color: active ? '#fb923c' : 'var(--ink)',
+                        filter: active ? 'drop-shadow(0 0 12px rgba(251, 146, 60, 0.9))' : 'none'
                       }}
                     />
                     <span
@@ -345,8 +345,11 @@ export function Navbar() {
                         active ? 'font-extrabold' : 'group-hover:font-semibold'
                       )}
                       style={{
-                        color: active ? '#fbbf24' : 'var(--ink)',
-                        textShadow: active ? '0 0 16px rgba(251, 191, 36, 0.9), 0 2px 4px rgba(0, 0, 0, 0.8)' : 'none'
+                        color: active ? '#fb923c' : 'var(--ink)',
+                        textShadow: active ? '0 0 18px rgba(251, 146, 60, 1), 0 2px 4px rgba(0, 0, 0, 0.9)' : 'none',
+                        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        letterSpacing: active ? '0.015em' : '0.01em',
+                        fontWeight: active ? '800' : '600'
                       }}
                     >
                       {item.label}
@@ -359,8 +362,8 @@ export function Navbar() {
                       className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
                       style={{
                         width: '80%',
-                        background: 'linear-gradient(90deg, transparent, #fbbf24, transparent)',
-                        boxShadow: '0 0 12px rgba(251, 191, 36, 0.8)'
+                        background: 'linear-gradient(90deg, transparent, #fb923c, transparent)',
+                        boxShadow: '0 0 14px rgba(251, 146, 60, 0.9)'
                       }}
                     />
                   )}
