@@ -25,7 +25,8 @@ import {
   Target,
   User,
   Timer,
-  Upload
+  Upload,
+  Flame
 } from 'lucide-react';
 import {
   PieChart,
@@ -1653,6 +1654,81 @@ export function ExercisesPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Calorie Burn Tracking Chart */}
+              <div className="glass rounded-xl p-6 mt-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  Daily Calories Burned
+                </h3>
+                <div className="mb-2 flex flex-wrap gap-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>Calories Burned</span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={(() => {
+                    // Calculate daily calories burned from exercise logs for the current month
+                    const logs = monthlyStats.logs || [];
+                    const dailyCalories: { [date: string]: number } = {};
+
+                    logs.forEach((log: any) => {
+                      const date = new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      if (!dailyCalories[date]) {
+                        dailyCalories[date] = 0;
+                      }
+                      dailyCalories[date] += log.caloriesBurned || 0;
+                    });
+
+                    return Object.entries(dailyCalories).map(([date, calories]) => ({
+                      date,
+                      calories
+                    }));
+                  })()}>
+                    <defs>
+                      <linearGradient id="calorieGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#f97316" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#9ca3af"
+                      tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                      tickLine={{ stroke: '#6b7280' }}
+                    />
+                    <YAxis
+                      stroke="#9ca3af"
+                      tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                      tickLine={{ stroke: '#6b7280' }}
+                      label={{ value: 'Calories', angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontSize: 12, fontWeight: 600 } }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                        border: '2px solid #f97316',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(249, 115, 22, 0.3)',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                      cursor={{ fill: 'rgba(249, 115, 22, 0.1)', stroke: '#f97316', strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="calories"
+                      stroke="#f97316"
+                      strokeWidth={3}
+                      fill="url(#calorieGrad)"
+                      name="Calories Burned"
+                      dot={{ fill: '#f97316', r: 4, strokeWidth: 2, stroke: '#fff' }}
+                      activeDot={{ r: 7, strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
 
               {/* ===== ADVANCED CARDIAC EXERCISE ANALYTICS ===== */}
