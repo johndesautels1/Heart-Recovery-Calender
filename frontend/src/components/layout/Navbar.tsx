@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -23,14 +23,18 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useView } from '../../contexts/ViewContext';
 import { LanguageSelector } from '../LanguageSelector';
+import { toast } from 'sonner';
+import api from '../../services/api';
 import clsx from 'clsx';
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { viewMode, setViewMode, isTherapistView } = useView();
 
   // Load theme preference from localStorage on mount
@@ -66,6 +70,54 @@ export function Navbar() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+
+        try {
+          const updatedUser = await api.updateProfile({ profilePhoto: base64String });
+          updateUser(updatedUser);
+          toast.success('Profile photo updated successfully!');
+        } catch (error: any) {
+          console.error('Error uploading photo:', error);
+          toast.error(error.response?.data?.error || 'Failed to upload photo');
+        } finally {
+          setIsUploadingPhoto(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      toast.error('Failed to process photo');
+      setIsUploadingPhoto(false);
+    }
   };
 
   const navItems = [
@@ -183,28 +235,49 @@ export function Navbar() {
               </button>
             )} */}
 
-            <Link
-              to="/profile"
-              className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors"
-            >
-              {user?.profilePhoto ? (
-                <img
-                  src={user.profilePhoto}
-                  alt={user.name}
-                  className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
-                />
-              ) : (
-                <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-              )}
-              <div className="flex flex-col items-start">
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+
+            {/* Profile Section */}
+            <div className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-white/20 transition-colors">
+              {/* Clickable Avatar */}
+              <div
+                onClick={handleAvatarClick}
+                className="cursor-pointer relative"
+                title="Click to upload profile picture"
+              >
+                {isUploadingPhoto && (
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {user?.profilePhoto ? (
+                  <img
+                    src={user.profilePhoto}
+                    alt={user.name}
+                    className="h-8 w-8 rounded-full object-cover border-2 border-white/30"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Name/Role - Click to go to profile */}
+              <Link to="/profile" className="flex flex-col items-start">
                 <span className="text-sm">{user?.name || 'Profile'}</span>
                 <span className="text-xs font-medium" style={{ color: '#ffa726' }}>
                   {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
                 </span>
-              </div>
-            </Link>
+              </Link>
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors"
@@ -305,29 +378,44 @@ export function Navbar() {
               </button>
             )} */}
 
-            <Link
-              to="/profile"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/20 transition-colors"
-            >
-              {user?.profilePhoto ? (
-                <img
-                  src={user.profilePhoto}
-                  alt={user.name}
-                  className="h-10 w-10 rounded-full object-cover border-2 border-white/30"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-              )}
-              <div className="flex flex-col items-start">
+            {/* Mobile Profile Section */}
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/20 transition-colors">
+              {/* Clickable Avatar */}
+              <div
+                onClick={handleAvatarClick}
+                className="cursor-pointer relative"
+                title="Click to upload profile picture"
+              >
+                {isUploadingPhoto && (
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {user?.profilePhoto ? (
+                  <img
+                    src={user.profilePhoto}
+                    alt={user.name}
+                    className="h-10 w-10 rounded-full object-cover border-2 border-white/30"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white/30">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Name/Role - Click to go to profile */}
+              <Link
+                to="/profile"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex flex-col items-start"
+              >
                 <span>{user?.name || 'Profile'}</span>
                 <span className="text-sm font-medium" style={{ color: '#ffa726' }}>
                   {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
                 </span>
-              </div>
-            </Link>
+              </Link>
+            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-green-500/20 text-green-500 font-bold transition-colors"
