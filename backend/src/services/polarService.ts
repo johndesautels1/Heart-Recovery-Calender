@@ -186,6 +186,54 @@ export const polarService = {
       console.error('Error committing transaction:', error.response?.data || error.message);
     }
   },
+
+  // Get continuous heart rate data (for real-time streaming)
+  async getContinuousHeartRate(accessToken: string): Promise<any[]> {
+    try {
+      const response = await axios.get(`${POLAR_API_BASE}/users/heart-rate`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return response.data.samples || [];
+    } catch (error: any) {
+      console.error('Error fetching continuous HR:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get available activity summaries (daily steps, calories, etc.)
+  async getActivitySummaries(accessToken: string): Promise<string[]> {
+    try {
+      const response = await axios.get(`${POLAR_API_BASE}/activity-summary`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return response.data['activity-log'] || [];
+    } catch (error: any) {
+      console.error('Error fetching activity summaries:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get activity summary details
+  async getActivitySummary(accessToken: string, summaryUrl: string): Promise<any> {
+    try {
+      const response = await axios.get(summaryUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching activity summary details:', error.response?.data || error.message);
+      return null;
+    }
+  },
 };
 
 // Sync Polar data to database
@@ -269,6 +317,29 @@ export async function syncPolarData(
           syncedAt: new Date(),
           notes: `Polar ${exercise.sport} activity`,
         });
+
+        // ALSO create VitalsSample records for heart rate monitoring
+        // This allows the vitals section and modal to access real-time HR data
+        const VitalsSample = (await import('../models/VitalsSample')).default;
+
+        // Create a vitals sample at exercise completion with heart rate data
+        if (exercise['heart-rate']?.average) {
+          try {
+            await VitalsSample.create({
+              userId: device.userId,
+              timestamp: new Date(exercise['stop-time']),
+              heartRate: exercise['heart-rate'].average,
+              heartRateVariability: exercise['heart-rate'].maximum - exercise['heart-rate'].average, // Simple HRV approximation
+              source: 'device',
+              deviceId: `polar_${device.id}`,
+              notes: `Polar ${exercise.sport} - avg HR during exercise`,
+              medicationsTaken: false,
+            });
+          } catch (vitalError: any) {
+            console.error('Error creating VitalsSample from Polar exercise:', vitalError);
+            // Don't fail the whole sync if vitals creation fails
+          }
+        }
 
         externalIds.push(exercise.id);
         recordsCreated++;

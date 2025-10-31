@@ -56,7 +56,7 @@ export const samsungService = {
       client_id: SAMSUNG_CLIENT_ID,
       redirect_uri: SAMSUNG_REDIRECT_URI,
       state,
-      scope: 'read:exercise read:heart_rate read:steps read:calories read:sleep',
+      scope: 'read:exercise read:heart_rate read:blood_pressure read:oxygen_saturation read:respiratory_rate read:heart_rate_variability read:steps read:calories read:sleep',
     });
 
     return `https://us.account.samsung.com/accounts/v1/SAUP/authorize?${params.toString()}`;
@@ -157,6 +157,102 @@ export const samsungService = {
       return response.data.records || [];
     } catch (error: any) {
       console.error('Error fetching Samsung heart rate samples:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get blood pressure samples
+  async getBloodPressureSamples(
+    accessToken: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<any[]> {
+    try {
+      const response = await axios.get('https://healthconnect.googleapis.com/v1/blood_pressure', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        },
+      });
+
+      return response.data.records || [];
+    } catch (error: any) {
+      console.error('Error fetching Samsung blood pressure samples:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get oxygen saturation (SpO2) samples
+  async getOxygenSaturationSamples(
+    accessToken: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<any[]> {
+    try {
+      const response = await axios.get('https://healthconnect.googleapis.com/v1/oxygen_saturation', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        },
+      });
+
+      return response.data.records || [];
+    } catch (error: any) {
+      console.error('Error fetching Samsung oxygen saturation samples:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get respiratory rate samples
+  async getRespiratoryRateSamples(
+    accessToken: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<any[]> {
+    try {
+      const response = await axios.get('https://healthconnect.googleapis.com/v1/respiratory_rate', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        },
+      });
+
+      return response.data.records || [];
+    } catch (error: any) {
+      console.error('Error fetching Samsung respiratory rate samples:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Get heart rate variability (HRV) samples
+  async getHeartRateVariabilitySamples(
+    accessToken: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<any[]> {
+    try {
+      const response = await axios.get('https://healthconnect.googleapis.com/v1/heart_rate_variability', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        },
+      });
+
+      return response.data.records || [];
+    } catch (error: any) {
+      console.error('Error fetching Samsung HRV samples:', error.response?.data || error.message);
       return [];
     }
   },
@@ -273,18 +369,36 @@ export async function syncSamsungData(
       }
     }
 
-    // Sync heart rate samples if enabled
+    // Sync comprehensive vitals data if enabled
     if (device.syncHeartRate) {
-      const heartRateSamples = await samsungService.getHeartRateSamples(
-        device.accessToken,
-        startTime,
-        endTime
-      );
+      // Fetch all vitals data types in parallel for efficiency
+      const [
+        heartRateSamples,
+        bloodPressureSamples,
+        oxygenSaturationSamples,
+        respiratoryRateSamples,
+        hrvSamples
+      ] = await Promise.all([
+        samsungService.getHeartRateSamples(device.accessToken, startTime, endTime),
+        samsungService.getBloodPressureSamples(device.accessToken, startTime, endTime),
+        samsungService.getOxygenSaturationSamples(device.accessToken, startTime, endTime),
+        samsungService.getRespiratoryRateSamples(device.accessToken, startTime, endTime),
+        samsungService.getHeartRateVariabilitySamples(device.accessToken, startTime, endTime)
+      ]);
 
-      for (const sample of heartRateSamples) {
+      // Create maps for efficient lookup by timestamp
+      const bpMap = new Map(bloodPressureSamples.map(s => [new Date(s.time).toISOString(), s]));
+      const o2Map = new Map(oxygenSaturationSamples.map(s => [new Date(s.time).toISOString(), s]));
+      const respMap = new Map(respiratoryRateSamples.map(s => [new Date(s.time).toISOString(), s]));
+      const hrvMap = new Map(hrvSamples.map(s => [new Date(s.time).toISOString(), s]));
+
+      // Process heart rate samples and merge with other vitals at same timestamp
+      for (const hrSample of heartRateSamples) {
         try {
+          const sampleTime = new Date(hrSample.time);
+          const timeKey = sampleTime.toISOString();
+
           // Check if already synced
-          const sampleTime = new Date(sample.time);
           const existing = await VitalsSample.findOne({
             where: {
               userId: device.userId,
@@ -297,18 +411,55 @@ export async function syncSamsungData(
             continue;
           }
 
-          // Create vitals sample
+          // Get matching vitals at same timestamp
+          const bp = bpMap.get(timeKey);
+          const o2 = o2Map.get(timeKey);
+          const resp = respMap.get(timeKey);
+          const hrv = hrvMap.get(timeKey);
+
+          // Create comprehensive vitals sample with ALL available data
           await VitalsSample.create({
             userId: device.userId,
             timestamp: sampleTime,
-            heartRate: sample.beatsPerMinute,
+            heartRate: hrSample.beatsPerMinute,
+            bloodPressureSystolic: bp?.systolic,
+            bloodPressureDiastolic: bp?.diastolic,
+            oxygenSaturation: o2?.percentage,
+            respiratoryRate: resp?.rate,
+            heartRateVariability: hrv?.milliseconds,
             source: 'device',
             deviceId: `samsung_${device.id}`,
-            notes: 'Auto-synced from Samsung Health',
+            notes: 'Auto-synced from Samsung Galaxy Watch',
             medicationsTaken: false,
           });
         } catch (error: any) {
-          console.error('Error processing heart rate sample:', error);
+          console.error('Error processing Samsung vitals sample:', error);
+        }
+      }
+
+      // Process standalone vitals (BP, O2, resp, HRV) that don't have matching HR timestamp
+      // This ensures we don't miss any vitals data
+      for (const bp of bloodPressureSamples) {
+        try {
+          const sampleTime = new Date(bp.time);
+          const existing = await VitalsSample.findOne({
+            where: { userId: device.userId, timestamp: sampleTime, source: 'device' }
+          });
+
+          if (!existing) {
+            await VitalsSample.create({
+              userId: device.userId,
+              timestamp: sampleTime,
+              bloodPressureSystolic: bp.systolic,
+              bloodPressureDiastolic: bp.diastolic,
+              source: 'device',
+              deviceId: `samsung_${device.id}`,
+              notes: 'Blood pressure from Samsung Galaxy Watch',
+              medicationsTaken: false,
+            });
+          }
+        } catch (error: any) {
+          console.error('Error processing standalone BP:', error);
         }
       }
     }

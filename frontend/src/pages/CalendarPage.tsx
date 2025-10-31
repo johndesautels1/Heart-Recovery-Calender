@@ -6,7 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
 import { RestTimer } from '../components/RestTimer';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer, Heart } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -189,7 +189,7 @@ export function CalendarPage() {
   const checkDeviceConnections = async () => {
     try {
       const devices = await api.getDevices();
-      const activeDevices = devices.filter((d: any) => d.isActive);
+      const activeDevices = devices.filter((d: any) => d.syncStatus === 'active');
 
       if (activeDevices.length > 0) {
         setDevicesConnected(true);
@@ -2125,11 +2125,11 @@ See browser console for full configuration details.
                         <div className="flex flex-wrap gap-2">
                           {vitalSnapshots.map((snap, idx) => (
                             <div key={idx} className="text-xs bg-white px-2 py-1 rounded border border-green-300">
-                              <span className="font-bold text-red-600">{snap.bpSystolic}/{snap.bpDiastolic}</span>
+                              <span className="font-bold text-blue-700">{snap.bpSystolic}/{snap.bpDiastolic}</span>
                               {' | '}
-                              <span className="font-bold text-orange-600">{snap.pulse} bpm</span>
+                              <span className="font-bold text-blue-700">{snap.pulse} bpm</span>
                               {' | '}
-                              <span className="font-bold text-blue-600">{snap.respiration} br/min</span>
+                              <span className="font-bold text-blue-700">{snap.respiration} br/min</span>
                             </div>
                           ))}
                         </div>
