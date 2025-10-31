@@ -2925,6 +2925,119 @@ export function DashboardPage() {
         />
       </GlassCard>
 
+      {/* Energy Balance Tracking */}
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
+          <BarChart3 className="h-6 w-6 text-blue-400" />
+          Energy Balance - Last 30 Days
+        </h2>
+        <p className="text-sm text-gray-300 mb-4">
+          Track your daily caloric intake vs. expenditure to manage weight trajectory
+        </p>
+        <ResponsiveContainer width="100%" height={350}>
+          <ComposedChart
+            data={(() => {
+              // Mock data for now - will be replaced with actual API call
+              const days = 30;
+              const data = [];
+              for (let i = days - 1; i >= 0; i--) {
+                const date = format(subDays(new Date(), i), 'MMM dd');
+                const consumed = 1800 + Math.random() * 400;
+                const burned = 200 + Math.random() * 300;
+                const net = consumed - burned;
+                data.push({
+                  date,
+                  consumed: Math.round(consumed),
+                  burned: Math.round(burned),
+                  net: Math.round(net)
+                });
+              }
+              return data;
+            })()}
+          >
+            <defs>
+              <linearGradient id="consumedGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.2}/>
+              </linearGradient>
+              <linearGradient id="burnedGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="#f97316" stopOpacity={0.2}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+            <XAxis
+              dataKey="date"
+              stroke="#9ca3af"
+              tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 600 }}
+              tickLine={{ stroke: '#6b7280' }}
+            />
+            <YAxis
+              stroke="#9ca3af"
+              tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+              tickLine={{ stroke: '#6b7280' }}
+              label={{ value: 'Calories', angle: -90, position: 'insideLeft', style: { fill: '#d1d5db', fontSize: 12, fontWeight: 600 } }}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                border: '2px solid #3b82f6',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}
+              labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+            />
+            <Legend
+              iconType="circle"
+              wrapperStyle={{ paddingTop: '10px' }}
+            />
+            <Area
+              type="monotone"
+              dataKey="consumed"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              fill="url(#consumedGrad)"
+              name="Calories Consumed"
+            />
+            <Area
+              type="monotone"
+              dataKey="burned"
+              stroke="#f97316"
+              strokeWidth={2}
+              fill="url(#burnedGrad)"
+              name="Calories Burned"
+            />
+            <Line
+              type="monotone"
+              dataKey="net"
+              stroke="#10b981"
+              strokeWidth={3}
+              strokeDasharray="5 5"
+              name="Net Calories"
+              dot={{ fill: '#10b981', r: 4 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+            <div className="text-xs text-blue-300 mb-1">Avg Consumed</div>
+            <div className="text-2xl font-bold text-blue-400">1,950</div>
+            <div className="text-xs text-gray-400">cal/day</div>
+          </div>
+          <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
+            <div className="text-xs text-orange-300 mb-1">Avg Burned</div>
+            <div className="text-2xl font-bold text-orange-400">350</div>
+            <div className="text-xs text-gray-400">cal/day</div>
+          </div>
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+            <div className="text-xs text-green-300 mb-1">Avg Net</div>
+            <div className="text-2xl font-bold text-green-400">+1,600</div>
+            <div className="text-xs text-gray-400">cal/day</div>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* 12-Week Progress Photos - Patient View */}
       <GlassCard>
         <h2 className="text-xl font-semibold text-white font-bold mb-4 flex items-center gap-2">
