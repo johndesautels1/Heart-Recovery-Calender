@@ -101,6 +101,13 @@ export function CalendarPage() {
   const [currentExercise, setCurrentExercise] = useState<any>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
 
+  // During-exercise vital signs snapshots
+  const [duringBpSystolic, setDuringBpSystolic] = useState<string>('');
+  const [duringBpDiastolic, setDuringBpDiastolic] = useState<string>('');
+  const [duringPulse, setDuringPulse] = useState<string>('');
+  const [duringRespiration, setDuringRespiration] = useState<string>('');
+  const [vitalSnapshots, setVitalSnapshots] = useState<any[]>([]);
+
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
@@ -1926,6 +1933,110 @@ See browser console for full configuration details.
 
                 {/* Content */}
                 <div className="relative z-10">
+                  {/* VITAL SIGNS SNAPSHOT WIDGETS */}
+                  <div className="mb-4 bg-white/95 backdrop-blur-lg rounded-xl p-4 border-2 border-red-200 shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
+                        <Heart className="h-4 w-4" />
+                        During-Exercise Vitals Snapshot
+                      </h3>
+                      <button
+                        onClick={() => {
+                          if (duringBpSystolic && duringBpDiastolic && duringPulse && duringRespiration) {
+                            const snapshot = {
+                              timestamp: new Date().toISOString(),
+                              bpSystolic: parseInt(duringBpSystolic),
+                              bpDiastolic: parseInt(duringBpDiastolic),
+                              pulse: parseInt(duringPulse),
+                              respiration: parseInt(duringRespiration)
+                            };
+                            setVitalSnapshots([...vitalSnapshots, snapshot]);
+                            toast.success('Vital signs logged!');
+                            // Clear inputs
+                            setDuringBpSystolic('');
+                            setDuringBpDiastolic('');
+                            setDuringPulse('');
+                            setDuringRespiration('');
+                          } else {
+                            toast.error('Please fill all vital signs');
+                          }
+                        }}
+                        className="px-4 py-1.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold rounded-lg hover:scale-105 transition-transform shadow-md"
+                      >
+                        Log Vitals
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Blood Pressure */}
+                      <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-3 border border-red-200">
+                        <label className="text-xs font-bold text-red-700 mb-1 block">Blood Pressure</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="120"
+                            value={duringBpSystolic}
+                            onChange={(e) => setDuringBpSystolic(e.target.value)}
+                            className="w-full px-2 py-1 text-sm font-bold rounded border-2 border-red-300 focus:border-red-500 focus:outline-none"
+                          />
+                          <span className="text-red-700 font-bold">/</span>
+                          <input
+                            type="number"
+                            placeholder="80"
+                            value={duringBpDiastolic}
+                            onChange={(e) => setDuringBpDiastolic(e.target.value)}
+                            className="w-full px-2 py-1 text-sm font-bold rounded border-2 border-red-300 focus:border-red-500 focus:outline-none"
+                          />
+                        </div>
+                        <span className="text-xs text-red-600 font-semibold">mmHg</span>
+                      </div>
+
+                      {/* Pulse */}
+                      <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-200">
+                        <label className="text-xs font-bold text-orange-700 mb-1 block">Pulse</label>
+                        <input
+                          type="number"
+                          placeholder="72"
+                          value={duringPulse}
+                          onChange={(e) => setDuringPulse(e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm font-bold rounded border-2 border-orange-300 focus:border-orange-500 focus:outline-none"
+                        />
+                        <span className="text-xs text-orange-600 font-semibold">bpm</span>
+                      </div>
+
+                      {/* Respiration */}
+                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200">
+                        <label className="text-xs font-bold text-blue-700 mb-1 block">Respiration</label>
+                        <input
+                          type="number"
+                          placeholder="16"
+                          value={duringRespiration}
+                          onChange={(e) => setDuringRespiration(e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm font-bold rounded border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
+                        />
+                        <span className="text-xs text-blue-600 font-semibold">breaths/min</span>
+                      </div>
+                    </div>
+
+                    {/* Logged Snapshots Display */}
+                    {vitalSnapshots.length > 0 && (
+                      <div className="mt-3 p-2 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-xs font-bold text-green-700 mb-1">Logged Snapshots ({vitalSnapshots.length}):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {vitalSnapshots.map((snap, idx) => (
+                            <div key={idx} className="text-xs bg-white px-2 py-1 rounded border border-green-300">
+                              <span className="font-bold text-red-600">{snap.bpSystolic}/{snap.bpDiastolic}</span>
+                              {' | '}
+                              <span className="font-bold text-orange-600">{snap.pulse} bpm</span>
+                              {' | '}
+                              <span className="font-bold text-blue-600">{snap.respiration} br/min</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Tabs and Rest Timer Button */}
                   <div className="flex items-center justify-between mb-6 border-b-2 border-white/40 pb-4">
                     <div className="flex space-x-2">
