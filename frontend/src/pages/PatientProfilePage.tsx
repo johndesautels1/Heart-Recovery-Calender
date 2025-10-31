@@ -440,7 +440,7 @@ export function PatientProfilePage() {
                             onChange={(e) => handleChange('gender', e.target.value)}
                             disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: 'var(--ink)' }}
+                            style={{ color: '#64748b', fontWeight: '700' }}
                           >
                             <option value="">Select...</option>
                             <option value="male">Male</option>
@@ -523,7 +523,7 @@ export function PatientProfilePage() {
                             onChange={(e) => handleChange('primaryPhoneType', e.target.value)}
                             disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: 'var(--ink)' }}
+                            style={{ color: '#64748b', fontWeight: '700' }}
                           >
                             <option value="">Select...</option>
                             <option value="mobile">Mobile</option>
@@ -540,7 +540,7 @@ export function PatientProfilePage() {
                             onChange={(e) => handleChange('preferredContactMethod', e.target.value)}
                             disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: 'var(--ink)' }}
+                            style={{ color: '#64748b', fontWeight: '700' }}
                           >
                             <option value="">Select...</option>
                             <option value="phone">Phone</option>
@@ -557,7 +557,7 @@ export function PatientProfilePage() {
                             onChange={(e) => handleChange('bestTimeToContact', e.target.value)}
                             disabled={!isEditing}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: 'var(--ink)' }}
+                            style={{ color: '#64748b', fontWeight: '700' }}
                           >
                             <option value="">Select...</option>
                             <option value="morning">Morning</option>
@@ -892,7 +892,7 @@ export function PatientProfilePage() {
                           disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 outline-none transition-all resize-none"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                           placeholder="Weight limits, movements to avoid, etc."
                         />
                       </div>
@@ -933,7 +933,7 @@ export function PatientProfilePage() {
                           disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                           placeholder="List all medications..."
                         />
                       </div>
@@ -947,7 +947,7 @@ export function PatientProfilePage() {
                           disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 outline-none transition-all resize-none"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                           placeholder="List all known allergies..."
                         />
                       </div>
@@ -1038,7 +1038,7 @@ export function PatientProfilePage() {
                           disabled={!isEditing}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                           placeholder="Additional surgical notes..."
                         />
                       </div>
@@ -1052,7 +1052,7 @@ export function PatientProfilePage() {
                           disabled={!isEditing}
                           rows={4}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                           placeholder="Post-discharge instructions..."
                         />
                       </div>
@@ -1096,7 +1096,7 @@ export function PatientProfilePage() {
                           onChange={(e) => handleChange('preferredDataSource', e.target.value)}
                           disabled={!isEditing}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all"
-                          style={{ color: 'var(--ink)' }}
+                          style={{ color: '#64748b', fontWeight: '700' }}
                         >
                           <option value="">Select...</option>
                           <option value="polar">Polar Heart Monitor</option>

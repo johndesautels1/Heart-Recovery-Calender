@@ -146,10 +146,11 @@
   }
 
   .glass-input {
-    @apply w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 font-semibold placeholder:font-normal;
+    @apply w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 placeholder:font-normal;
     background: #ffffff;
     border: 3px solid var(--accent);
-    color: #1a1a1a;
+    color: #64748b;
+    font-weight: 700;
     font-size: 1.1rem;
     min-height: 50px;
     /* Thick raised effect for inputs */
