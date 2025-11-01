@@ -51,7 +51,48 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(cors());
+// CORS configuration - Balance security with flexibility
+// Supports multiple localhost ports for development and specific origin for production
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (mobile apps, Postman, curl, server-to-server)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Get allowed origin from environment variable (production) or use defaults (development)
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? [process.env.CORS_ORIGIN]
+      : [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:5173', // Vite default
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:3001',
+          'http://127.0.0.1:5173',
+        ];
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies and authorization headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+  ],
+  exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+  maxAge: 86400, // Cache pre-flight requests for 24 hours (reduce OPTIONS spam)
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
