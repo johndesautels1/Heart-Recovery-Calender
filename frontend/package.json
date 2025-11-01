@@ -1,7 +1,27 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Frontend UI for Heart Recovery Calendar - React-based health monitoring dashboard for patients and therapists",
+  "author": "John Desautels",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johndesautels1/Heart-Recovery-Calender.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "heart-health",
+    "patient-portal",
+    "health-dashboard",
+    "react",
+    "typescript",
+    "vite",
+    "tailwindcss"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

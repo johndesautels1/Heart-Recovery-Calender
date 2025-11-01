@@ -24,6 +24,12 @@
 - [x] **ENV-001** - Updated `.env.example` with all required variables (Strava, Polar, Samsung APIs)
 - [x] **ENV-002** - Added security warnings about JWT_SECRET fallback in auth code (4 locations)
 
+### Safe Fixes - Package Management
+- [x] **PKG-001** - Added descriptions to backend and frontend package.json files
+- [x] **PKG-002** - Added engines field specifying Node >=18.0.0, npm >=9.0.0
+- [x] **PKG-003** - Added repository field with GitHub URL
+- [x] **PKG-004** - Added keywords for better discoverability
+
 ---
 
 ## 🔒 SAFE FIXES (Low Risk - No Code Breaks)
@@ -47,10 +53,10 @@
 - [x] **FMT-003**: Add `.eslintignore` for build folders
 
 ### Package Management
-- [ ] **PKG-001**: Update `package.json` with proper descriptions
-- [ ] **PKG-002**: Add `engines` field to specify Node version
-- [ ] **PKG-003**: Add `repository` field to package.json
-- [ ] **PKG-004**: Add `keywords` to package.json
+- [x] **PKG-001**: Update `package.json` with proper descriptions
+- [x] **PKG-002**: Add `engines` field to specify Node version
+- [x] **PKG-003**: Add `repository` field to package.json
+- [x] **PKG-004**: Add `keywords` to package.json
 
 ---
 
@@ -157,9 +163,9 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 10
+**Completed:** 14
 **In Progress:** 0
-**Remaining:** 84+
+**Remaining:** 80+
 **Total:** 94+
 
 **Priority Focus:**

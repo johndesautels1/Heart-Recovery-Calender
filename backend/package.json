@@ -1,6 +1,29 @@
 {
   "name": "@heartbeat/backend",
   "version": "1.0.0",
+  "description": "Backend API for Heart Recovery Calendar - a health monitoring application for tracking heart health, medications, vitals, and device integrations",
+  "author": "John Desautels",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johndesautels1/Heart-Recovery-Calender.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "heart-health",
+    "health-monitoring",
+    "medical-records",
+    "vitals-tracking",
+    "medication-tracking",
+    "strava-integration",
+    "polar-integration",
+    "express",
+    "typescript",
+    "postgresql"
+  ],
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
