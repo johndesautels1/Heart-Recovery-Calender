@@ -1,73 +1,117 @@
-# React + TypeScript + Vite
+# Heart Recovery Calendar - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-based frontend application for the Heart Recovery Calendar, providing an intuitive health monitoring dashboard for patients and therapists.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Patient Dashboard**: Track medications, vitals, meals, exercise, and symptoms
+- **Interactive Calendar**: Full calendar view with event scheduling and medication reminders
+- **Vital Signs Tracking**: Blood pressure, heart rate, weight, oxygen saturation
+- **Medication Management**: Medication schedules, dosage tracking, and reminders
+- **Device Integration UI**: Connect and sync data from Strava, Polar, and Samsung Health
+- **Therapist Portal**: View and manage multiple patient records
+- **Real-time Charts**: Visualize health trends with Recharts
+- **Multi-language Support**: i18next internationalization
+- **QR Code Generation**: Share profile or appointment data
+- **Responsive Design**: Tailwind CSS for mobile-friendly interface
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React 19.1.1
+- **Build Tool**: Vite 7.x
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Routing**: React Router DOM 7.x
+- **State Management**: React Query (TanStack Query)
+- **Forms**: React Hook Form + Zod validation
+- **Calendar**: FullCalendar
+- **Charts**: Recharts
+- **Date Handling**: date-fns, dayjs
+- **UI Components**: Headless UI, Lucide React icons
+- **Notifications**: React Hot Toast, Sonner
+- **QR Codes**: qrcode.react, html5-qrcode
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- Backend API running (see backend/README.md)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/johndesautels1/Heart-Recovery-Calender.git
+   cd Heart-Recovery-Calender/frontend
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**
+
+   Create a `.env` file in the frontend directory:
+   ```bash
+   VITE_API_URL=http://localhost:4000
+   ```
+
+## Running the Application
+
+### Development Mode
+```bash
+npm run dev
+```
+Application will start on `http://localhost:3000` with hot module replacement.
+
+### Production Build
+```bash
+npm run build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Linting
+```bash
+npm run lint
 ```
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/      # Reusable UI components
+│   ├── contexts/        # React Context providers
+│   ├── pages/           # Page components
+│   ├── services/        # API client
+│   ├── types/           # TypeScript types
+│   └── App.tsx
+├── dist/                # Build output
+└── package.json
+```
+
+## Key Routes
+
+- `/dashboard` - Patient dashboard
+- `/calendar` - Interactive calendar
+- `/vitals` - Vital signs tracking
+- `/medications` - Medication management
+- `/devices` - Device integrations
+- `/profile` - User profile
+
+## Device Integration
+
+Connect Strava, Polar, or Samsung Health from the Devices page to automatically sync heart rate and fitness data.
+
+## Contributing
+
+See the main repository README for contribution guidelines.
+
+## License
+
+MIT
+
+## Author
+
+John Desautels
