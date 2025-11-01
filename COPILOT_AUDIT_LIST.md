@@ -71,7 +71,7 @@
 ### Security - Medium Risk
 - [ ] **SEC-001**: Fix npm audit vulnerabilities (run `npm audit fix`)
 - [ ] **SEC-002**: Update protobufjs (4 critical vulns via firebase-admin)
-- [ ] **SEC-003**: Update semver (3 high vulns via nodemon)
+- [x] **SEC-003**: Update semver (Fixed by updating nodemon to 3.1.10)
 - [ ] **SEC-004**: Update nodemailer (1 moderate vuln)
 - [ ] **SEC-005**: Remove JWT_SECRET fallback to 'your-secret-key'
 - [ ] **SEC-006**: Add helmet middleware for HTTP security headers
