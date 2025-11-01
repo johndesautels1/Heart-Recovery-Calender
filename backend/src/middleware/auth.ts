@@ -2,6 +2,16 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import Patient from '../models/Patient';
 
+// Validate JWT_SECRET is set - server won't start without it
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set!\n' +
+    'Generate a secure secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))" \n' +
+    'Then add it to your .env file: JWT_SECRET=your-generated-secret'
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // Extend Express Request type to include user
 declare global {
   namespace Express {
@@ -28,10 +38,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   try {
-    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
-    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
-    // Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       id: number;
       email: string;
       role?: string;
@@ -54,9 +61,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
 
   if (token) {
     try {
-      // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
-      // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
         id: number;
         email: string;
         role?: string;

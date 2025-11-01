@@ -4,6 +4,16 @@ import Patient from '../models/Patient';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
+// Validate JWT_SECRET is set - server won't start without it
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set!\n' +
+    'Generate a secure secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))" \n' +
+    'Then add it to your .env file: JWT_SECRET=your-generated-secret'
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // GET /api/auth/me - Get current user info
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
@@ -70,11 +80,9 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
-    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
-    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -110,11 +118,9 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
-    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
-    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
