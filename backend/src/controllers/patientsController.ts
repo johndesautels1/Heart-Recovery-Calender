@@ -158,15 +158,27 @@ export const getPatient = async (req: Request, res: Response) => {
 export const updatePatient = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const therapistId = req.user?.id;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
-    if (!therapistId) {
+    if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const patient = await Patient.findOne({
-      where: { id, therapistId },
-    });
+    // Build where clause based on user role
+    const where: any = { id };
+
+    if (userRole === 'therapist') {
+      // Therapists can only update their own patients
+      where.therapistId = userId;
+    } else if (userRole === 'patient') {
+      // Patients can only update their own record
+      where.userId = userId;
+    } else {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const patient = await Patient.findOne({ where });
 
     if (!patient) {
       return res.status(404).json({ error: 'Patient not found' });

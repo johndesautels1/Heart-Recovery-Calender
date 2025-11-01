@@ -8,7 +8,6 @@ export { MealsPage } from './MealsPage';
 export { FoodDiaryPage } from './FoodDiaryPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ProfilePage } from './ProfilePage';
-export { PatientProfilePage } from './PatientProfilePage';
 export { PatientsPage } from './PatientsPage';
 export { MyProvidersPage } from './MyProvidersPage';
 export { PatientCalendarView } from './PatientCalendarView';
