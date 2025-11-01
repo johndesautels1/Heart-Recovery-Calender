@@ -116,6 +116,57 @@ npm start
 npm test
 ```
 
+---
+
+## 🚨 CRITICAL: PRODUCTION DEPLOYMENT WARNING 🚨
+
+### ⚠️ YOU MUST SET `CORS_ORIGIN` IN PRODUCTION OR YOUR FRONTEND WILL BE BLOCKED ⚠️
+
+**DO NOT DEPLOY TO PRODUCTION WITHOUT THIS!**
+
+When you deploy to production, you MUST set the `CORS_ORIGIN` environment variable to your production frontend domain, or your frontend will be completely blocked from accessing the API.
+
+**Why this matters:**
+- The backend defaults to allowing `localhost` origins for development
+- In production, if `CORS_ORIGIN` is not set, your production frontend domain will be rejected
+- Your users will see network errors and the application will not work
+
+**What to do:**
+
+1. **Set the environment variable** on your production server:
+   ```bash
+   CORS_ORIGIN=https://your-production-domain.com
+   ```
+
+2. **Example configurations:**
+   ```bash
+   # Single domain (most common)
+   CORS_ORIGIN=https://heartrecovery.app
+
+   # Multiple domains (if you have staging + production)
+   # Note: Currently supports single origin, modify app.ts for multiple
+   CORS_ORIGIN=https://heartrecovery.app
+   ```
+
+3. **Verify it's working:**
+   - Check backend logs for: "CORS blocked request from origin: ..." warnings
+   - If you see this, your `CORS_ORIGIN` is not set correctly
+   - The origin must match EXACTLY (including https:// and no trailing slash)
+
+**Common mistakes:**
+- ❌ Forgetting to set `CORS_ORIGIN` at all
+- ❌ Using `http://` instead of `https://` in production
+- ❌ Adding a trailing slash: `https://example.com/` (should be `https://example.com`)
+- ❌ Using the backend URL instead of the frontend URL
+
+**Testing before deployment:**
+1. Set `CORS_ORIGIN` to your staging frontend URL
+2. Test all API calls from the frontend
+3. Check browser console for any CORS errors
+4. Check backend logs for blocked origins
+
+---
+
 ## Project Structure
 
 ```
