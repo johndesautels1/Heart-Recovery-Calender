@@ -46,7 +46,7 @@
 - [x] **GIT-001**: Add `.env` to `.gitignore` (if not already there)
 
 ### Code Quality - Documentation
-- [ ] **DOC-002**: Add JSDoc comments to all API endpoints
+- [x] **DOC-002**: Add JSDoc comments to all API endpoints (110+ endpoints documented in api.ts, auth.ts, devices.ts, upload.ts)
 - [x] **DOC-003**: Add README.md to backend folder with setup instructions
 - [x] **DOC-004**: Add README.md to frontend folder with setup instructions
 - [ ] **DOC-005**: Document database schema in backend/docs/
@@ -168,9 +168,9 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 17
+**Completed:** 18
 **In Progress:** 0
-**Remaining:** 77+
+**Remaining:** 76+
 **Total:** 94+
 
 **Priority Focus:**
