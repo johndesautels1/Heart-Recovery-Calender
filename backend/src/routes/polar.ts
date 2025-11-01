@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { authenticateToken, Request } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { polarService, syncPolarData } from '../services/polarService';
 import DeviceConnection from '../models/DeviceConnection';
 import DeviceSyncLog from '../models/DeviceSyncLog';
