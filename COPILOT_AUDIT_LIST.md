@@ -31,6 +31,7 @@
 - [x] **PKG-004** - Added keywords for better discoverability
 
 ### Safe Fixes - Documentation
+- [x] **DOC-001** - Documented ALL environment variables in main README (87 lines added)
 - [x] **DOC-003** - Created comprehensive backend README.md with setup instructions
 - [x] **DOC-004** - Created comprehensive frontend README.md with setup instructions
 
@@ -41,7 +42,7 @@
 ### Security - Low Risk
 - [x] **ENV-001**: Add `.env.example` file with documented variables (NO secrets)
 - [x] **ENV-002**: Add security comment about JWT_SECRET fallback in code
-- [ ] **DOC-001**: Document all environment variables in README
+- [x] **DOC-001**: Document all environment variables in README
 - [x] **GIT-001**: Add `.env` to `.gitignore` (if not already there)
 
 ### Code Quality - Documentation
@@ -167,9 +168,9 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 16
+**Completed:** 17
 **In Progress:** 0
-**Remaining:** 78+
+**Remaining:** 77+
 **Total:** 94+
 
 **Priority Focus:**

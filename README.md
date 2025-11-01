@@ -99,7 +99,7 @@ The setup script will:
    cp .env.example .env
    ```
 
-3. Configure `.env`:
+3. Configure `.env` (see [Environment Variables](#environment-variables) for complete list):
    ```env
    # Database
    DB_HOST=localhost
@@ -112,11 +112,17 @@ The setup script will:
    PORT=4000
    NODE_ENV=development
 
-   # Security (CHANGE THESE!)
+   # Security (CRITICAL - Generate secure key for production!)
    JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 
    # CORS
    CORS_ORIGIN=http://localhost:3000
+   FRONTEND_URL=http://localhost:3000
+
+   # Device Integrations (CRITICAL for heart rate monitoring)
+   STRAVA_CLIENT_ID=your_strava_client_id
+   STRAVA_CLIENT_SECRET=your_strava_client_secret
+   STRAVA_REDIRECT_URI=http://localhost:4000/api/strava/callback
    ```
 
 4. Create PostgreSQL database:
@@ -337,6 +343,95 @@ This will prompt you for:
 | GET | `/api/exercise-prescriptions/:id/logs` | Get exercise logs |
 | GET | `/api/exercise-prescriptions/stats` | Get statistics |
 
+## Environment Variables
+
+### Backend Environment Variables (`backend/.env`)
+
+#### Required Variables
+
+| Variable | Description | Example | Notes |
+|----------|-------------|---------|-------|
+| `DB_HOST` | PostgreSQL host | `localhost` | Production: use managed DB host |
+| `DB_PORT` | PostgreSQL port | `5432` | Default PostgreSQL port |
+| `DB_NAME` | Database name | `heart_recovery_calendar` | Must be created first |
+| `DB_USER` | Database username | `postgres` | |
+| `DB_PASSWORD` | Database password | `your_secure_password` | **Keep secret!** |
+| `PORT` | Server port | `4000` | |
+| `NODE_ENV` | Environment | `development` or `production` | Affects logging, CORS |
+| `JWT_SECRET` | JWT signing key | `64_char_random_string` | **CRITICAL:** Generate with crypto.randomBytes(32).toString('hex') |
+| `CORS_ORIGIN` | Allowed frontend URL | `http://localhost:3000` | Production: your domain |
+| `FRONTEND_URL` | Frontend URL for redirects | `http://localhost:3000` | Used for OAuth callbacks |
+
+#### Device Integration Variables (CRITICAL)
+
+These integrations sync heart rate and fitness data - essential for patient monitoring.
+
+**Strava API** (Heart rate & exercise data):
+| Variable | Description | How to Get |
+|----------|-------------|------------|
+| `STRAVA_CLIENT_ID` | Strava application ID | Register at https://www.strava.com/settings/api |
+| `STRAVA_CLIENT_SECRET` | Strava secret key | From Strava API settings |
+| `STRAVA_REDIRECT_URI` | OAuth callback URL | `http://localhost:4000/api/strava/callback` |
+
+**Polar API** (Optional - Heart rate monitoring):
+| Variable | Description | How to Get |
+|----------|-------------|------------|
+| `POLAR_CLIENT_ID` | Polar application ID | Register at https://admin.polaraccesslink.com/ |
+| `POLAR_CLIENT_SECRET` | Polar secret key | From Polar developer portal |
+| `POLAR_REDIRECT_URI` | OAuth callback URL | `http://localhost:4000/api/polar/callback` |
+
+**Samsung Health API** (Optional - Fitness data):
+| Variable | Description | How to Get |
+|----------|-------------|------------|
+| `SAMSUNG_CLIENT_ID` | Samsung Health app ID | Samsung Health developer portal |
+| `SAMSUNG_CLIENT_SECRET` | Samsung Health secret | From Samsung developer console |
+| `SAMSUNG_REDIRECT_URI` | OAuth callback URL | `http://localhost:4000/api/samsung/callback` |
+
+#### Optional Variables
+
+| Variable | Description | Default | Notes |
+|----------|-------------|---------|-------|
+| `DB_LOGGING` | SQL query logging | `false` | Set to `true` for debugging |
+| `SMTP_HOST` | Email server host | - | For email notifications |
+| `SMTP_PORT` | Email server port | `587` | |
+| `SMTP_USER` | Email username | - | |
+| `SMTP_PASS` | Email password | - | Use app-specific password |
+| `EMAIL_FROM` | Sender email address | - | |
+| `TWILIO_ACCOUNT_SID` | Twilio account ID | - | For SMS reminders |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token | - | |
+| `TWILIO_PHONE_NUMBER` | Twilio phone | - | Format: +1234567890 |
+| `RATE_LIMIT_WINDOW_MS` | Rate limit window | `900000` | 15 minutes |
+| `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | `100` | |
+
+### Frontend Environment Variables (`frontend/.env`)
+
+| Variable | Description | Example | Notes |
+|----------|-------------|---------|-------|
+| `VITE_API_URL` | Backend API URL | `http://localhost:4000` | Production: your API domain |
+| `VITE_APP_NAME` | Application name | `Heart Recovery Calendar` | Shown in UI |
+| `VITE_APP_URL` | Frontend URL | `http://localhost:3000` | For sharing features |
+
+### Generating Secure Secrets
+
+**JWT_SECRET** (CRITICAL for security):
+```bash
+# Generate a secure 64-character random string
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**Database Password**:
+```bash
+# Generate secure password
+openssl rand -base64 32
+```
+
+### Environment-Specific Files
+
+- `.env` - Your local development (gitignored, never commit!)
+- `.env.example` - Template with no secrets (safe to commit)
+- `.env.production` - Production values (keep secure!)
+- `.env.test` - Test environment values
+
 ## User Roles
 
 ### Patient Role
@@ -380,15 +475,35 @@ Therapists can generate QR codes for patient enrollment:
 
 **Backend (`backend/.env`):**
 ```env
-NODE_ENV=production
+# Database
 DB_HOST=your_production_db_host
 DB_PORT=5432
 DB_NAME=heart_recovery_prod
 DB_USER=your_db_user
 DB_PASSWORD=your_secure_password
-JWT_SECRET=your_very_secure_random_64_char_string
+
+# Server
 PORT=4000
+NODE_ENV=production
+
+# Security (CRITICAL!)
+JWT_SECRET=your_very_secure_random_64_char_string
+
+# CORS
 CORS_ORIGIN=https://your-domain.com
+FRONTEND_URL=https://your-domain.com
+
+# Device Integrations (for heart rate monitoring)
+STRAVA_CLIENT_ID=your_strava_client_id
+STRAVA_CLIENT_SECRET=your_strava_client_secret
+STRAVA_REDIRECT_URI=https://api.your-domain.com/api/strava/callback
+
+# Optional: Email notifications
+SMTP_HOST=smtp.your-provider.com
+SMTP_PORT=587
+SMTP_USER=your_email@domain.com
+SMTP_PASS=your_app_password
+EMAIL_FROM=noreply@your-domain.com
 ```
 
 **Frontend (`frontend/.env`):**
