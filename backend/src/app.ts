@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import sequelize, { models } from './models';
@@ -13,6 +14,13 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 dotenv.config();
 
 const app = express();
+
+// Security middleware - sets various HTTP headers for security
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for now to avoid breaking existing functionality
+  crossOriginEmbedderPolicy: false // Allow embedding for development
+}));
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

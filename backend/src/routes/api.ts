@@ -47,7 +47,7 @@ router.post('/auth/register', authController.register);
  * @returns { token, user }
  */
 router.post('/auth/login', authController.login);
-n// ========== STRAVA OAUTH CALLBACK (PUBLIC) ==========
+// ========== STRAVA OAUTH CALLBACK (PUBLIC) ==========
 // Strava routes must be registered before authenticateToken middleware
 // because Strava's OAuth callback comes from their servers (no auth token)
 // Note: /strava/auth route has its own authenticateToken middleware
