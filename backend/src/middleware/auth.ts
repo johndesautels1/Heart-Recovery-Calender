@@ -28,6 +28,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   try {
+    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
+    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
+    // Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
       id: number;
       email: string;
@@ -51,6 +54,8 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
 
   if (token) {
     try {
+      // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
+      // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
         id: number;
         email: string;

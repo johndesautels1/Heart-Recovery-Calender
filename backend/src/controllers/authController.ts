@@ -70,6 +70,8 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
+    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
+    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -108,6 +110,8 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
+    // SECURITY WARNING: The fallback 'your-secret-key' is ONLY for development.
+    // In production, ALWAYS set JWT_SECRET environment variable to a secure random string.
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your-secret-key',

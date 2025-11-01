@@ -20,13 +20,17 @@
 - [x] **FMT-002** - Added `.prettierrc` configuration for automatic code formatting
 - [x] **FMT-003** - Added `.eslintignore` to exclude build folders from linting
 
+### Safe Fixes - Security Documentation
+- [x] **ENV-001** - Updated `.env.example` with all required variables (Strava, Polar, Samsung APIs)
+- [x] **ENV-002** - Added security warnings about JWT_SECRET fallback in auth code (4 locations)
+
 ---
 
 ## 🔒 SAFE FIXES (Low Risk - No Code Breaks)
 
 ### Security - Low Risk
-- [ ] **ENV-001**: Add `.env.example` file with documented variables (NO secrets)
-- [ ] **ENV-002**: Add security comment about JWT_SECRET fallback in code
+- [x] **ENV-001**: Add `.env.example` file with documented variables (NO secrets)
+- [x] **ENV-002**: Add security comment about JWT_SECRET fallback in code
 - [ ] **DOC-001**: Document all environment variables in README
 - [x] **GIT-001**: Add `.env` to `.gitignore` (if not already there)
 
@@ -153,9 +157,9 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 8
+**Completed:** 10
 **In Progress:** 0
-**Remaining:** 86+
+**Remaining:** 84+
 **Total:** 94+
 
 **Priority Focus:**
