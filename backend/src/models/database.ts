@@ -12,11 +12,21 @@ const sequelize = new Sequelize(
     port: parseInt(process.env.DB_PORT || '5432'),
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+
+    // Connection pool configuration for optimal performance
+    // Pool reuses database connections instead of creating new ones for each request
     pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
+      max: parseInt(process.env.DB_POOL_MAX || '10'), // Maximum number of connections in pool (default: 10)
+      min: parseInt(process.env.DB_POOL_MIN || '2'),  // Minimum number of connections in pool (default: 2)
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000'), // Max time (ms) to get connection before throwing error (default: 30s)
+      idle: parseInt(process.env.DB_POOL_IDLE || '10000'), // Max time (ms) a connection can be idle before being released (default: 10s)
+      evict: parseInt(process.env.DB_POOL_EVICT || '1000'), // Time interval (ms) for evicting stale connections (default: 1s)
+    },
+
+    // Retry configuration for connection failures
+    retry: {
+      max: 3, // Maximum number of connection retry attempts
+      timeout: 5000, // Timeout between retries (ms)
     }
   }
 );
