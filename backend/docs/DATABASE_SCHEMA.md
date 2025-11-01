@@ -844,18 +844,136 @@ CREATE INDEX idx_alerts_severity ON alerts(severity);
 
 ## Database Migrations
 
-**Location:** `backend/migrations/` (if using Sequelize migrations)
+### Overview
 
-**Running Migrations:**
+The Heart Recovery Calendar uses **Sequelize migrations** to manage database schema changes in a version-controlled, repeatable manner.
+
+**Migration System:** Sequelize CLI + Umzug
+**Location:** `backend/src/migrations/`
+**Total Migrations:** 42 migration files (as of Nov 2025)
+**Status:** ✅ Fully implemented and actively used
+
+### Current Migrations
+
+The project includes comprehensive migrations covering:
+
+| Date Range | Count | Purpose |
+|------------|-------|---------|
+| Oct 24, 2025 | 10 | Initial schema (Users, Calendars, Events, Meals, Vitals, Medications, Therapy, Food) |
+| Oct 25-26, 2025 | 8 | Patient system, Exercises, Sleep logs, Hydration |
+| Oct 27-29, 2025 | 10 | Patient enhancements, Exercise metrics, Event tracking |
+| Oct 30, 2025 | 10 | Post-surgery tracking, Device integrations, Daily scores |
+| Oct 31, 2025 | 4 | Provider system, Device sync enhancements |
+
+**Key Migration Examples:**
+- `20251024000001-create-users.js` - User authentication system
+- `20251024000009-create-therapy-system.js` - Physical therapy management (14KB)
+- `20251024000010-create-food-system.js` - Nutrition tracking (29KB)
+- `20251030115540-add-vitals-and-metrics-to-exercise-logs.js` - Exercise health metrics
+- `20251030115600-create-device-connections.js` - Strava/Polar/Samsung integration
+
+### Running Migrations
+
+**Standard Workflow (Sequelize CLI):**
 ```bash
 # Create a new migration
 npx sequelize-cli migration:generate --name description-of-changes
 
-# Run pending migrations
+# Run all pending migrations
 npx sequelize-cli db:migrate
+
+# Check migration status
+npx sequelize-cli db:migrate:status
 
 # Undo last migration
 npx sequelize-cli db:migrate:undo
+
+# Undo all migrations (DANGEROUS)
+npx sequelize-cli db:migrate:undo:all
+```
+
+**Alternative: Manual Migration Script**
+The project also includes `run-migration.js` for custom migration workflows:
+```bash
+node run-migration.js
+```
+
+### Migration Naming Convention
+
+```
+YYYYMMDDHHMMSS-description-of-change.js
+```
+
+**Examples:**
+- `20251024000001-create-users.js` - Clear purpose (create users table)
+- `20251030115540-add-vitals-and-metrics-to-exercise-logs.js` - Descriptive enhancement
+
+### Best Practices
+
+✅ **DO:**
+- Use timestamps in migration filenames (YYYYMMDDHHMMSS)
+- Include both `up` and `down` methods for reversibility
+- Add `IF NOT EXISTS` / `IF EXISTS` clauses for idempotency
+- Test migrations in development before production
+- Keep migrations atomic (one logical change per file)
+- Add database comments for complex columns
+
+❌ **DON'T:**
+- Modify existing migration files after they've been deployed
+- Delete migration files from the migrations folder
+- Run migrations manually in production (use CI/CD)
+- Mix schema changes with data migrations in the same file
+
+### Migration Template
+
+```javascript
+'use strict';
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('table_name', {
+      id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER
+      },
+      // ... other columns
+      createdAt: {
+        allowNull: false,
+        type: Sequelize.DATE
+      },
+      updatedAt: {
+        allowNull: false,
+        type: Sequelize.DATE
+      }
+    });
+
+    // Add indexes
+    await queryInterface.addIndex('table_name', ['column_name']);
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('table_name');
+  }
+};
+```
+
+### Production Deployment
+
+**Migration Checklist:**
+1. ✅ Test migration in local development
+2. ✅ Test rollback (`db:migrate:undo`) works
+3. ✅ Review migration file for SQL injection risks
+4. ✅ Backup database before running migrations
+5. ✅ Run migrations during maintenance window
+6. ✅ Verify migration completed successfully
+7. ✅ Monitor application for errors post-migration
+
+**Automated Deployment:**
+```bash
+# Example CI/CD pipeline step
+npm run migrate:production
 ```
 
 ---
