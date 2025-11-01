@@ -49,7 +49,7 @@
 - [x] **DOC-002**: Add JSDoc comments to all API endpoints (110+ endpoints documented in api.ts, auth.ts, devices.ts, upload.ts)
 - [x] **DOC-003**: Add README.md to backend folder with setup instructions
 - [x] **DOC-004**: Add README.md to frontend folder with setup instructions
-- [ ] **DOC-005**: Document database schema in backend/docs/
+- [x] **DOC-005**: Document database schema in backend/docs/ (27 tables documented with relationships, indexes, HIPAA notes)
 - [ ] **DOC-006**: Create API documentation file
 
 ### Code Quality - Formatting
@@ -168,9 +168,9 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 18
+**Completed:** 19
 **In Progress:** 0
-**Remaining:** 76+
+**Remaining:** 75+
 **Total:** 94+
 
 **Priority Focus:**
