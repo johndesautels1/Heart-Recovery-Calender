@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import sequelize, { models } from './models';
@@ -21,6 +22,35 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false // Allow embedding for development
 }));
 
+// Rate limiting configuration
+// General API rate limiter - 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Auth rate limiter - stricter limits for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per windowMs
+  message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
+});
+
+// Upload rate limiter - moderate limits for file uploads
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit each IP to 20 uploads per hour
+  message: 'Too many file uploads from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -32,6 +62,16 @@ app.use((_req, _res, next) => {
   logger.info('Request: ' + _req.method + ' ' + _req.url);
   next();
 });
+
+// Apply rate limiting to all API routes
+app.use('/api', apiLimiter);
+
+// Apply stricter rate limiting to auth endpoints
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// Apply rate limiting to upload endpoints
+app.use('/api/upload', uploadLimiter);
 
 app.use('/api', apiRoutes);
 
