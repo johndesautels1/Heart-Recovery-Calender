@@ -92,12 +92,12 @@ export function MealsPage() {
       const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
 
       const data = await api.getMeals({
         startDate,
         endDate,
-        ...(userId && { userId })
+        userId
       });
 
       setMeals(data);
@@ -1546,7 +1546,7 @@ export function MealsPage() {
           </GlassCard>
 
           {/* Chart 5: Weight Tracking */}
-          {(isViewingAsTherapist && selectedPatient) || (!isViewingAsTherapist && user) ? (
+          {selectedPatient && (
             <GlassCard>
               <h3
                 className="text-lg font-semibold mb-4 flex items-center gap-2"
@@ -1556,26 +1556,12 @@ export function MealsPage() {
                 Weight Tracking Progress
               </h3>
               <WeightTrackingChart
-                patient={isViewingAsTherapist && selectedPatient ? selectedPatient : {
-                  id: user?.id || 0,
-                  therapistId: 0,
-                  name: user?.name || '',
-                  isActive: true,
-                  height: 70, // TODO: Get from user profile
-                  heightUnit: 'in' as 'in' | 'cm',
-                  startingWeight: 180, // TODO: Get from user profile
-                  currentWeight: 175, // TODO: Get from latest vitals
-                  targetWeight: 165, // TODO: Get from user profile
-                  weightUnit: 'lbs' as 'kg' | 'lbs',
-                  surgeryDate: '', // TODO: Get from user profile
-                  createdAt: '',
-                  updatedAt: ''
-                }}
+                patient={selectedPatient}
                 weightEntries={[]} // TODO: Fetch weight entries from vitals
                 showTargetStar={true}
               />
             </GlassCard>
-          ) : null}
+          )}
 
           {/* NEW: 8 Advanced Meal Visualizations */}
           {meals.length > 0 && (

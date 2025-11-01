@@ -405,6 +405,39 @@ class ApiService {
     return response.data;
   }
 
+  async completePatientProfile(data: {
+    surgeryDate: string;
+    height?: number;
+    heightUnit?: string;
+    startingWeight?: number;
+    weightUnit?: string;
+    therapistId?: number;
+  }): Promise<Patient> {
+    const response = await this.api.post<Patient>('/patients/complete-profile', data);
+    return response.data;
+  }
+
+  async checkPatientProfile(): Promise<{ hasProfile: boolean; patient?: Patient }> {
+    try {
+      // Get current user first
+      const userData = await this.getMe();
+      if (!userData || !userData.id) {
+        return { hasProfile: false };
+      }
+
+      const response = await this.api.get<{ data: Patient[] }>('/patients', {
+        params: { userId: userData.id }
+      });
+      const patients = response.data.data;
+      if (patients && patients.length > 0) {
+        return { hasProfile: true, patient: patients[0] };
+      }
+      return { hasProfile: false };
+    } catch (error) {
+      return { hasProfile: false };
+    }
+  }
+
   async getPatientData(patientId: number, dataType: string, startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);

@@ -1931,13 +1931,26 @@ export function ExercisesPage() {
 
                       <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={(() => {
-                          // Simulate progressive endurance data from logs
+                          // Use REAL endurance data from logs (duration and distance)
                           const logs = monthlyStats.logs || [];
-                          return logs.slice(-12).map((log: any, index: number) => ({
-                            date: new Date(log.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                            duration: 15 + (index * 2) + Math.random() * 5, // Progressive duration
-                            distance: 0.5 + (index * 0.1) + Math.random() * 0.2, // Progressive distance
-                            avgHR: 75 + (index * 2) + Math.random() * 5 // Progressive HR efficiency
+
+                          // Sort logs chronologically (earliest to latest for left-to-right time flow)
+                          const sortedLogs = [...logs].sort((a: any, b: any) =>
+                            new Date(a.startTime || a.completedAt).getTime() - new Date(b.startTime || b.completedAt).getTime()
+                          );
+
+                          // Filter logs that have duration or distance data
+                          const logsWithEndurance = sortedLogs.filter((log: any) =>
+                            (log.actualDuration && log.actualDuration > 0) ||
+                            (log.distanceMiles && log.distanceMiles > 0)
+                          );
+
+                          // Get the last 12 endurance logs
+                          return logsWithEndurance.slice(-12).map((log: any) => ({
+                            date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            duration: log.actualDuration || 0, // REAL duration in minutes
+                            distance: log.distanceMiles || 0, // REAL distance in miles
+                            avgHR: log.heartRateAvg || 0 // REAL average heart rate
                           }));
                         })()}>
                           <defs>

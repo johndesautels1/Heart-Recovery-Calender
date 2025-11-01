@@ -75,7 +75,7 @@ export function SleepPage() {
       const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
 
       const data = await api.getSleepLogs({
         startDate,
@@ -97,7 +97,7 @@ export function SleepPage() {
       const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
       const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
       const endDate = format(new Date(), 'yyyy-MM-dd');
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
 
       const data = await api.getSleepStats(startDate, endDate, userId);
       setStats(data);
@@ -117,8 +117,8 @@ export function SleepPage() {
       } else {
         const newLogData = {
           ...data,
-          // Include userId if therapist is adding for a selected patient
-          ...(isViewingAsTherapist && selectedPatient?.userId && { userId: selectedPatient.userId })
+          // Always include userId: therapist uses selectedPatient, patient uses own user
+          userId: isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id
         } as CreateSleepLogInput & { userId?: number };
 
         const newLog = await api.createSleepLog(newLogData);

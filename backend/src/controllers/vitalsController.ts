@@ -51,7 +51,7 @@ export const addVital = async (req: Request, res: Response) => {
 // GET /api/vitals/latest - Get most recent vital signs
 export const getLatestVital = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -76,7 +76,7 @@ export const getLatestVital = async (req: Request, res: Response) => {
 // GET /api/vitals/trends - Get trends for specific metric
 export const getTrends = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const { metric, start, end, interval = 'day' } = req.query;
 
     if (!metric) {

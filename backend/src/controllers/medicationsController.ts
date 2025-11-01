@@ -93,7 +93,7 @@ export const addMedication = async (req: Request, res: Response) => {
 // GET /api/medications/schedule - Get medication schedule for a day
 export const getSchedule = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const date = req.query.date ? new Date(req.query.date as string) : new Date();
 
     const medications = await Medication.findAll({
@@ -293,7 +293,7 @@ export const logDose = async (req: Request, res: Response) => {
 // GET /api/medications/logs - Get medication logs for a date range
 export const getMedicationLogs = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const { startDate, endDate, medicationId, status } = req.query;
 
     const where: any = { userId };

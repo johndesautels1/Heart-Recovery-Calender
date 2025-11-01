@@ -544,6 +544,7 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
         startTime: log.startTime || log.completedAt,
         completedAt: log.completedAt,
         actualDuration: log.actualDuration,
+        distanceMiles: log.distanceMiles || 0,
         caloriesBurned: log.caloriesBurned,
         performanceScore: log.performanceLevel === 'exceeded_goals' ? 8
           : log.performanceLevel === 'met_goals' ? 6
@@ -555,6 +556,7 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
         duringHeartRateAvg: log.duringHeartRateAvg,
         duringHeartRateMax: log.duringHeartRateMax,
         postHeartRate: log.postHeartRate,
+        heartRateAvg: log.duringHeartRateAvg || 0, // Alias for chart compatibility
         // MET calculations
         actualMET: actualMET ? Number(actualMET.toFixed(2)) : null,
         targetMETMin: targetMETMin ? Number(targetMETMin.toFixed(2)) : null,
@@ -584,8 +586,10 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
           startTime: e.startTime,
           completedAt: e.startTime, // calendar events don't have completedAt
           actualDuration: duration,
+          distanceMiles: e.distanceMiles || 0,
           caloriesBurned,
           performanceScore: score,
+          heartRateAvg: e.heartRateAvg || 0,
         };
       }),
       ...logsForCharts,

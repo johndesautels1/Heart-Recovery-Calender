@@ -55,7 +55,7 @@ export const addMeal = async (req: Request, res: Response) => {
 
 export const getDailySummary = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const date = req.query.date ? new Date(req.query.date as string) : new Date();
     const dayStart = new Date(date);
     dayStart.setHours(0, 0, 0, 0);
@@ -92,7 +92,7 @@ export const getDailySummary = async (req: Request, res: Response) => {
 
 export const getCompliance = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const { start, end } = req.query;
     const startDate = start ? new Date(start as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = end ? new Date(end as string) : new Date();

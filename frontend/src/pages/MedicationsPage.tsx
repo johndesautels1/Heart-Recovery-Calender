@@ -98,8 +98,8 @@ export function MedicationsPage() {
   const loadMedications = async () => {
     try {
       setIsLoading(true);
-      // Use selected patient's userId if viewing as therapist, otherwise use own data
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      // Use selected patient's userId if viewing as therapist, otherwise use own user ID
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
       const medsData = await api.getMedications(false, userId);
       setMedications(medsData);
       setActiveMeds(medsData.filter(m => m.isActive));
@@ -115,7 +115,7 @@ export function MedicationsPage() {
   const loadAdherenceData = async () => {
     try {
       setIsLoading(true);
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : undefined;
+      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
       const logsData = await api.getMedicationLogs({
         startDate: dateRange.start,
         endDate: dateRange.end,
@@ -151,8 +151,8 @@ export function MedicationsPage() {
         const newMedData = {
           ...data,
           isActive: true,
-          // Include userId if therapist is adding for a selected patient
-          ...(isViewingAsTherapist && selectedPatient?.userId && { userId: selectedPatient.userId })
+          // Always include userId: therapist uses selectedPatient, patient uses own user
+          userId: isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id
         } as CreateMedicationInput & { userId?: number };
 
         console.log('Creating medication with data:', newMedData);

@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ViewProvider } from './contexts/ViewContext';
 import { PatientSelectionProvider } from './contexts/PatientSelectionContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
+import { CompleteProfileModal } from './components/CompleteProfileModal';
 import {
   LoginPage,
   RegisterPage,
@@ -35,13 +36,38 @@ const queryClient = new QueryClient({
   },
 });
 
+function ProfileChecker({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, hasPatientProfile, user, isLoading } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    // Show modal if user is authenticated, patient role, and doesn't have profile
+    if (!isLoading && isAuthenticated && user?.role === 'patient' && !hasPatientProfile) {
+      setShowProfileModal(true);
+    } else {
+      setShowProfileModal(false);
+    }
+  }, [isAuthenticated, hasPatientProfile, user, isLoading]);
+
+  return (
+    <>
+      {children}
+      <CompleteProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ViewProvider>
-          <PatientSelectionProvider>
-            <Router>
+        <ProfileChecker>
+          <ViewProvider>
+            <PatientSelectionProvider>
+              <Router>
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
@@ -79,6 +105,7 @@ function App() {
             </Router>
           </PatientSelectionProvider>
         </ViewProvider>
+        </ProfileChecker>
       </AuthProvider>
     </QueryClientProvider>
   );

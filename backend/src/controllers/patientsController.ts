@@ -336,6 +336,56 @@ export const getPostOpWeek = async (req: Request, res: Response) => {
   }
 };
 
+// POST /api/patients/complete-profile - Patient completes their profile (creates patient record)
+export const completeProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const userName = req.user?.name;
+    const userEmail = req.user?.email;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check if patient record already exists
+    const existingPatient = await Patient.findOne({ where: { userId } });
+    if (existingPatient) {
+      return res.json(existingPatient); // Already has profile
+    }
+
+    // Extract required fields from request
+    const { surgeryDate, height, heightUnit, startingWeight, weightUnit, therapistId } = req.body;
+
+    if (!surgeryDate) {
+      return res.status(400).json({ error: 'Surgery date is required' });
+    }
+
+    // Create patient record linked to user account
+    const patientData = {
+      userId,
+      therapistId: therapistId || 1, // Default therapist or provided
+      name: userName || 'Patient',
+      email: userEmail,
+      surgeryDate,
+      height: height || null,
+      heightUnit: heightUnit || 'in',
+      startingWeight: startingWeight || null,
+      currentWeight: startingWeight || null,
+      weightUnit: weightUnit || 'lbs',
+      isActive: true
+    };
+
+    const patient = await Patient.create(patientData);
+
+    console.log(`[COMPLETE_PROFILE] Created patient record ${patient.id} for user ${userId}`);
+
+    res.status(201).json(patient);
+  } catch (error: any) {
+    console.error('Error completing patient profile:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};
+
 // GET /api/patients/:id/metrics - Get patient compliance metrics
 export const getPatientMetrics = async (req: Request, res: Response) => {
   try {

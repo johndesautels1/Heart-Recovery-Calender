@@ -1142,8 +1142,10 @@ See browser console for full configuration details.
 
   // Create a map of vitals by date for medication tracking
   const vitalsByDate = vitals.reduce((acc, vital) => {
-    const dateStr = vital.date.split('T')[0];
-    acc[dateStr] = vital;
+    if (vital.timestamp) {
+      const dateStr = new Date(vital.timestamp).toISOString().split('T')[0];
+      acc[dateStr] = vital;
+    }
     return acc;
   }, {} as Record<string, VitalsSample>);
 

@@ -139,7 +139,7 @@ export const deleteSleepLog = async (req: Request, res: Response) => {
 
 export const getSleepStats = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.query.userId as string);
     const { start, end } = req.query;
 
     const startDate = start

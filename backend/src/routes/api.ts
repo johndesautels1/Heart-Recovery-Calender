@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requirePatientProfile } from '../middleware/auth';
 import * as authController from '../controllers/authController';
 import * as userController from '../controllers/userController';
 import * as calendarsController from '../controllers/calendarsController';
@@ -38,6 +38,12 @@ router.use(authenticateToken);
 
 // ========== AUTH ROUTES (PROTECTED) ==========
 router.get('/auth/me', authController.getCurrentUser);
+
+// Allow profile completion without patient record
+router.post('/patients/complete-profile', patientsController.completeProfile);
+
+// All routes below require patient profile for patient-role users
+router.use(requirePatientProfile);
 
 // ========== USER ROUTES ==========
 router.get('/users/profile', userController.getProfile);
