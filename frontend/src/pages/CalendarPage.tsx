@@ -38,6 +38,7 @@ const eventSchema = z.object({
   reminderMinutes: z.number().optional(),
   notes: z.string().optional(),
   sleepHours: z.number().optional(),
+  status: z.enum(['scheduled', 'completed', 'cancelled', 'missed']).optional(),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -291,7 +292,7 @@ export function CalendarPage() {
       const shouldLoadAllCalendars = !userId && (user?.role === 'admin' || user?.role === 'therapist');
 
       const [calendarsData, eventsData, mealsData, medicationsData, sleepLogsData, vitalsData] = await Promise.all([
-        api.getCalendars(shouldLoadAllCalendars ? undefined : userId),
+        api.getCalendars(),
         api.getEvents(userId, undefined, undefined, { usePatientId: !!userId }),
         api.getMeals({ startDate, endDate, userId }),
         api.getMedications(false, userId),
@@ -3568,7 +3569,7 @@ See browser console for full configuration details.
                         <div
                           key={event.id}
                           className="bg-white rounded-lg border-2 border-blue-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => handleEventClick({ event: { id: event.id, ...event } })}
+                          onClick={() => handleEventClick({ event: { ...event } })}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -3740,7 +3741,7 @@ See browser console for full configuration details.
         {/* Action Buttons */}
         <div className="flex justify-between pt-4 mt-4 border-t">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setShowDateDetailsModal(false);
               // Switch to day view for this date

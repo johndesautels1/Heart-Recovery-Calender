@@ -483,7 +483,7 @@ export function PatientCalendarView() {
                 className={`min-h-[120px] p-2 rounded-lg cursor-pointer ${
                   isSameMonth(day, currentMonth) ? 'glass' : 'opacity-40'
                 } ${isToday ? 'ring-2' : ''}`}
-                style={isToday ? { ringColor: 'var(--accent)' } : {}}
+                style={isToday ? { borderColor: 'var(--accent)' } : {}}
                 onClick={() => isSameMonth(day, currentMonth) && handleDateClick(day)}
               >
                 <div className="text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>

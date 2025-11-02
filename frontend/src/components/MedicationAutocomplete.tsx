@@ -152,7 +152,9 @@ export function MedicationAutocomplete({ value, onChange, onMedicationSelect, er
                       </div>
                     )}
                     {!hasCriticalEffects && !hasWarningEffects && (
-                      <CheckCircle className="h-4 w-4 text-green-500" title="No major PT concerns" />
+                      <span title="No major PT concerns">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      </span>
                     )}
                   </div>
                 </div>

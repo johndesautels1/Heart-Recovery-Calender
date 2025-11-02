@@ -68,7 +68,7 @@ export function VitalsPage() {
       const endDate = new Date().toISOString().split('T')[0];
       
       const [vitalsData, latest] = await Promise.all([
-        api.getVitals(startDate, endDate),
+        api.getVitals({ startDate, endDate }),
         api.getLatestVital(),
       ]);
       

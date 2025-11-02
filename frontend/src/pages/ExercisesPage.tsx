@@ -61,6 +61,7 @@ import { RestTimer } from '../components/RestTimer';
 import { useView } from '../contexts/ViewContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
+import { Patient } from '../types';
 
 interface Exercise {
   id: number;
@@ -83,14 +84,6 @@ interface Exercise {
   defaultDuration?: number;
   isActive: boolean;
   createdBy?: number;
-}
-
-interface Patient {
-  id: number;
-  userId: number;
-  name: string;
-  surgeryDate?: string;
-  isActive: boolean;
 }
 
 interface MonthlyStats {
