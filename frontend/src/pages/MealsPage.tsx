@@ -28,6 +28,7 @@ export function MealsPage() {
   // For visuals tab
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [weightEntries, setWeightEntries] = useState<Array<{ date: string; weight: number }>>([]);
 
   // Load categories and stats on mount
   useEffect(() => {
@@ -48,6 +49,43 @@ export function MealsPage() {
       loadMeals();
     }
   }, [dateRange, selectedPatient, activeTab]);
+
+  // Load weight entries from vitals
+  useEffect(() => {
+    const loadWeightEntries = async () => {
+      if (activeTab !== 'visuals') return;
+
+      try {
+        const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+        if (!userId) return;
+
+        const endDate = format(new Date(), 'yyyy-MM-dd');
+        const startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd'); // Last 90 days
+
+        const vitals = await api.getVitals({
+          startDate,
+          endDate,
+          userId,
+        });
+
+        // Filter vitals that have weight data and transform to weight entries
+        const entries = vitals
+          .filter(v => v.weight != null)
+          .map(v => ({
+            date: v.timestamp.split('T')[0],
+            weight: v.weight!,
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        setWeightEntries(entries);
+      } catch (error) {
+        console.error('Failed to load weight entries:', error);
+        setWeightEntries([]);
+      }
+    };
+
+    loadWeightEntries();
+  }, [activeTab, isViewingAsTherapist, selectedPatient?.userId, user?.id]);
 
   const loadCategories = async () => {
     try {
@@ -1557,7 +1595,7 @@ export function MealsPage() {
               </h3>
               <WeightTrackingChart
                 patient={selectedPatient}
-                weightEntries={[]} // TODO: Fetch weight entries from vitals
+                weightEntries={weightEntries}
                 showTargetStar={true}
               />
             </GlassCard>

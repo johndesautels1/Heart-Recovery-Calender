@@ -206,6 +206,9 @@ export function DashboardPage() {
     net: number;
   }>>([]);
   const [calorieLoading, setCalorieLoading] = useState(true);
+  const [patientScores, setPatientScores] = useState<Record<number, { currentWeek: number; previousWeek: number; change: number }>>({});
+  const [weightEntries, setWeightEntries] = useState<Array<{ date: string; weight: number }>>([]);
+  const [patientProfile, setPatientProfile] = useState<Patient | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'therapist';
 
@@ -237,6 +240,59 @@ export function DashboardPage() {
       setSelectedPhotoPatient(user.id);
     }
   }, [isAdmin, adminStats.activePatients, user, selectedPhotoPatient]);
+
+  // Load patient profile for current user (if patient role)
+  useEffect(() => {
+    const loadPatientProfile = async () => {
+      if (isAdmin || !user?.id) return;
+
+      try {
+        const { hasProfile, patient } = await api.checkPatientProfile();
+        if (hasProfile && patient) {
+          setPatientProfile(patient);
+        }
+      } catch (error) {
+        console.error('Failed to load patient profile:', error);
+      }
+    };
+
+    loadPatientProfile();
+  }, [isAdmin, user?.id]);
+
+  // Load weight entries from vitals
+  useEffect(() => {
+    const loadWeightEntries = async () => {
+      try {
+        const userId = isAdmin && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+        if (!userId) return;
+
+        const endDate = format(new Date(), 'yyyy-MM-dd');
+        const startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd'); // Last 90 days
+
+        const vitals = await api.getVitals({
+          startDate,
+          endDate,
+          userId,
+        });
+
+        // Filter vitals that have weight data and transform to weight entries
+        const entries = vitals
+          .filter(v => v.weight != null)
+          .map(v => ({
+            date: v.timestamp.split('T')[0],
+            weight: v.weight!,
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        setWeightEntries(entries);
+      } catch (error) {
+        console.error('Failed to load weight entries:', error);
+        setWeightEntries([]);
+      }
+    };
+
+    loadWeightEntries();
+  }, [isAdmin, selectedPatient?.userId, user?.id]);
 
   // Load calorie data for energy balance chart
   useEffect(() => {
@@ -313,9 +369,8 @@ export function DashboardPage() {
         // Calculate Meals Score (0-100) - based on meal quality
         const mealsScore = meals.length > 0
           ? Math.round(meals.reduce((sum, meal) => {
-              const qualityScore = meal.heartHealthRating === 'green' ? 100
-                : meal.heartHealthRating === 'yellow' ? 60
-                : 30;
+              // Use withinSpec to determine meal quality score
+              const qualityScore = meal.withinSpec ? 100 : 50;
               return sum + qualityScore;
             }, 0) / meals.length)
           : 0;
@@ -343,7 +398,7 @@ export function DashboardPage() {
         const weightScore = vitals.length > 0 && vitals[0].weight
           ? (() => {
               const weekWeight = vitals[vitals.length - 1].weight; // Latest weight in week
-              const patient = isAdmin ? selectedPatient : user;
+              const patient = isAdmin ? selectedPatient : patientProfile;
               if (!patient || !patient.startingWeight || !patient.targetWeight) return 0;
 
               const weightLoss = (patient.startingWeight || 0) - (weekWeight || 0);
@@ -385,7 +440,7 @@ export function DashboardPage() {
         api.getEvents(patientUserId, today, today, { usePatientId: true }),
         api.getMedications(true),
         api.getLatestVital(),
-        api.getMeals(today, today),
+        api.getMeals({ startDate: today, endDate: today }),
       ]);
 
       // Calculate weekly compliance (simplified)
@@ -511,11 +566,67 @@ export function DashboardPage() {
       } else {
         await calculate12WeekProgress();
       }
+
+      // Load patient scores for week-over-week comparison
+      await loadPatientScores(activePatients);
     } catch (error) {
       console.error('Failed to load admin dashboard data:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadPatientScores = async (patients: Patient[]) => {
+    const scores: Record<number, { currentWeek: number; previousWeek: number; change: number }> = {};
+    const today = new Date();
+    const sevenDaysAgo = subDays(today, 7);
+    const fourteenDaysAgo = subDays(today, 14);
+
+    for (const patient of patients.slice(0, 5)) {
+      if (!patient.userId) continue;
+
+      try {
+        // Get daily scores for current week and previous week
+        const currentWeekScores = await api.getDailyScores({
+          userId: patient.userId,
+          startDate: format(sevenDaysAgo, 'yyyy-MM-dd'),
+          endDate: format(today, 'yyyy-MM-dd'),
+        });
+
+        const previousWeekScores = await api.getDailyScores({
+          userId: patient.userId,
+          startDate: format(fourteenDaysAgo, 'yyyy-MM-dd'),
+          endDate: format(sevenDaysAgo, 'yyyy-MM-dd'),
+        });
+
+        // Calculate average scores
+        const currentAvg = currentWeekScores.length > 0
+          ? currentWeekScores.reduce((sum, s) => sum + s.totalDailyScore, 0) / currentWeekScores.length
+          : 0;
+
+        const previousAvg = previousWeekScores.length > 0
+          ? previousWeekScores.reduce((sum, s) => sum + s.totalDailyScore, 0) / previousWeekScores.length
+          : 0;
+
+        const change = currentAvg - previousAvg;
+
+        scores[patient.id] = {
+          currentWeek: Math.round(currentAvg),
+          previousWeek: Math.round(previousAvg),
+          change: Math.round(change),
+        };
+      } catch (error) {
+        console.error(`Failed to load scores for patient ${patient.id}:`, error);
+        // Set default values if API call fails
+        scores[patient.id] = {
+          currentWeek: 0,
+          previousWeek: 0,
+          change: 0,
+        };
+      }
+    }
+
+    setPatientScores(scores);
   };
 
   const getGreeting = () => {
@@ -618,7 +729,7 @@ export function DashboardPage() {
       patients.forEach(p => {
         const patientVitals = allVitals
           .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
-          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
         if (patientVitals.length >= 2) {
           const firstBP = patientVitals[0].bloodPressureSystolic || 0;
@@ -677,7 +788,7 @@ export function DashboardPage() {
         // Vitals improving? +1
         const patientVitals = allVitals
           .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
-          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         if (patientVitals.length >= 2) {
           const firstBP = patientVitals[0].bloodPressureSystolic || 0;
           const latestBP = patientVitals[patientVitals.length - 1].bloodPressureSystolic || 0;
@@ -712,7 +823,7 @@ export function DashboardPage() {
       patients.forEach(p => {
         const patientVitals = allVitals
           .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
-          .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
         if (patientVitals.length >= 2) {
           const firstBP = patientVitals[0].bloodPressureSystolic || 0;
@@ -732,7 +843,7 @@ export function DashboardPage() {
     const improvingTrendsCount = patients.filter(p => {
       const patientVitals = allVitals
         .filter(v => v.userId === p.userId && v.bloodPressureSystolic)
-        .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       if (patientVitals.length >= 2) {
         const firstBP = patientVitals[0].bloodPressureSystolic || 0;
@@ -859,7 +970,7 @@ export function DashboardPage() {
               // Calculate weight lost (initial - current)
               const patientVitals = allVitals
                 .filter(v => v.userId === p.userId && v.weight)
-                .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
               if (patientVitals.length >= 2) {
                 const initialWeight = patientVitals[0].weight || 0;
@@ -1370,18 +1481,27 @@ export function DashboardPage() {
                     <h3 className="text-sm font-bold text-violet-400">Week-over-Week Scores</h3>
                   </div>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {/* TODO: Wire to real patient score data */}
-                    {adminStats.activePatients.slice(0, 5).map((patient, idx) => (
-                      <div key={patient.id} className="flex items-center justify-between p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
-                        <span className="text-xs text-white font-bold truncate flex-1">{patient.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-violet-300">
-                            {(75 + Math.random() * 20).toFixed(0)}%
-                          </span>
-                          <TrendingUp className="h-3 w-3 text-green-400" />
+                    {adminStats.activePatients.slice(0, 5).map((patient) => {
+                      const score = patientScores[patient.id];
+                      const scoreValue = score?.currentWeek || 0;
+                      const isPositive = (score?.change || 0) >= 0;
+
+                      return (
+                        <div key={patient.id} className="flex items-center justify-between p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #232d42, #2d3a57)' }}>
+                          <span className="text-xs text-white font-bold truncate flex-1">{patient.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-violet-300">
+                              {scoreValue}%
+                            </span>
+                            {isPositive ? (
+                              <TrendingUp className="h-3 w-3 text-green-400" />
+                            ) : (
+                              <TrendingUp className="h-3 w-3 text-red-400 rotate-180" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2136,7 +2256,7 @@ export function DashboardPage() {
                 </h2>
                 <WeightTrackingChart
                   patient={selectedPatient}
-                  weightEntries={[]} // TODO: Fetch weight entries from vitals for this patient
+                  weightEntries={weightEntries}
                   showTargetStar={true}
                 />
               </GlassCard>
@@ -2954,17 +3074,17 @@ export function DashboardPage() {
             therapistId: 0,
             name: user?.name || '',
             isActive: true,
-            height: 70, // TODO: Get from user profile
-            heightUnit: 'in' as 'in' | 'cm',
-            startingWeight: 180, // TODO: Get from user profile
-            currentWeight: stats.latestVitals?.weight || 175, // Get from latest vitals
-            targetWeight: 165, // TODO: Get from user profile
-            weightUnit: 'lbs' as 'kg' | 'lbs',
-            surgeryDate: '', // TODO: Get from user profile
+            height: patientProfile?.height || 70,
+            heightUnit: (patientProfile?.heightUnit || 'in') as 'in' | 'cm',
+            startingWeight: patientProfile?.startingWeight || 180,
+            currentWeight: stats.latestVitals?.weight || patientProfile?.currentWeight || 175,
+            targetWeight: patientProfile?.targetWeight || 165,
+            weightUnit: (patientProfile?.weightUnit || 'lbs') as 'kg' | 'lbs',
+            surgeryDate: patientProfile?.surgeryDate || '',
             createdAt: '',
             updatedAt: ''
           }}
-          weightEntries={[]} // TODO: Fetch weight history from vitals
+          weightEntries={weightEntries}
           showTargetStar={true}
         />
       </GlassCard>

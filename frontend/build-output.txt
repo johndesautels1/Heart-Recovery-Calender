@@ -1,0 +1,97 @@
+
+> frontend@1.0.0 build
+> tsc -b && vite build
+
+src/components/layout/Navbar.tsx(256,20): error TS2532: Object is possibly 'undefined'.
+src/components/layout/Navbar.tsx(256,58): error TS2532: Object is possibly 'undefined'.
+src/components/layout/Navbar.tsx(477,20): error TS2532: Object is possibly 'undefined'.
+src/components/layout/Navbar.tsx(477,58): error TS2532: Object is possibly 'undefined'.
+src/components/MedicationAutocomplete.tsx(155,71): error TS2322: Type '{ className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+src/components/RestTimer.tsx(15,30): error TS2503: Cannot find namespace 'NodeJS'.
+src/pages/CalendarPage.tsx(119,62): error TS2503: Cannot find namespace 'NodeJS'.
+src/pages/CalendarPage.tsx(294,26): error TS2554: Expected 0 arguments, but got 1.
+src/pages/CalendarPage.tsx(375,7): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '{ title: string; calendarId: number; startTime: string; endTime: string; isAllDay?: boolean | undefined; location?: string | undefined; description?: string | undefined; reminderMinutes?: number | undefined; notes?: string | undefined; sleepHours?: number | undefined; } | { ...; } | ResetAction<...>'.
+src/pages/CalendarPage.tsx(3400,29): error TS2322: Type 'string' is not assignable to type '"medications" | "appointments" | "exercise" | "vitals" | "diet" | "general"'.
+src/pages/CalendarPage.tsx(3408,29): error TS2322: Type 'string' is not assignable to type '"medications" | "appointments" | "exercise" | "vitals" | "diet" | "general" | undefined'.
+src/pages/CalendarPage.tsx(3571,70): error TS2783: 'id' is specified more than once, so this usage will be overwritten.
+src/pages/CalendarPage.tsx(3671,39): error TS2339: Property 'quality' does not exist on type 'SleepLog'.
+src/pages/CalendarPage.tsx(3674,104): error TS2339: Property 'quality' does not exist on type 'SleepLog'.
+src/pages/CalendarPage.tsx(3743,13): error TS2322: Type '"outline"' is not assignable to type '"success" | "glass" | "primary" | "secondary" | "danger" | undefined'.
+src/pages/DashboardPage.tsx(372,36): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
+src/pages/DashboardPage.tsx(373,19): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
+src/pages/DashboardPage.tsx(403,40): error TS2339: Property 'startingWeight' does not exist on type 'User | Patient'.
+  Property 'startingWeight' does not exist on type 'User'.
+src/pages/DashboardPage.tsx(403,67): error TS2339: Property 'targetWeight' does not exist on type 'User | Patient'.
+  Property 'targetWeight' does not exist on type 'User'.
+src/pages/DashboardPage.tsx(405,43): error TS2339: Property 'startingWeight' does not exist on type 'User | Patient'.
+  Property 'startingWeight' does not exist on type 'User'.
+src/pages/DashboardPage.tsx(406,47): error TS2339: Property 'startingWeight' does not exist on type 'User | Patient'.
+  Property 'startingWeight' does not exist on type 'User'.
+src/pages/DashboardPage.tsx(406,79): error TS2339: Property 'targetWeight' does not exist on type 'User | Patient'.
+  Property 'targetWeight' does not exist on type 'User'.
+src/pages/DashboardPage.tsx(444,29): error TS2554: Expected 0-1 arguments, but got 2.
+src/pages/DashboardPage.tsx(733,38): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(733,73): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(792,38): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(792,73): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(827,38): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(827,73): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(847,36): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(847,71): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(974,44): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/DashboardPage.tsx(974,79): error TS2339: Property 'recordedAt' does not exist on type 'VitalsSample'.
+src/pages/ExercisesPage.tsx(978,42): error TS2345: Argument of type 'Patient' is not assignable to parameter of type 'import("C:/Users/broke/Heart-Recovery-Calender/frontend/src/types/index").Patient'.
+  Type 'Patient' is missing the following properties from type 'Patient': therapistId, createdAt, updatedAt
+src/pages/FoodDiaryPage.tsx(85,11): error TS2353: Object literal may only specify known properties, and 'withinSpec' does not exist in type 'CreateMealInput'.
+src/pages/FoodDiaryPage.tsx(114,9): error TS2322: Type 'string' is not assignable to type '"breakfast" | "lunch" | "dinner" | "snack"'.
+src/pages/FoodDiaryPage.tsx(190,9): error TS2322: Type 'string' is not assignable to type '"breakfast" | "lunch" | "dinner" | "snack" | undefined'.
+src/pages/FoodDiaryPage.tsx(261,22): error TS2339: Property 'carbohydrates' does not exist on type '{ calories: number; sodium: number; protein: number; carbs: number; fat: number; fiber: number; }'.
+src/pages/FoodDiaryPage.tsx(262,20): error TS2339: Property 'totalFat' does not exist on type '{ calories: number; sodium: number; protein: number; carbs: number; fat: number; fiber: number; }'.
+src/pages/MealsPage.tsx(1306,38): error TS18046: 'outerRadius' is of type 'unknown'.
+src/pages/MealsPage.tsx(1307,33): error TS18048: 'cx' is possibly 'undefined'.
+src/pages/MealsPage.tsx(1307,33): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'number'.
+src/pages/MealsPage.tsx(1307,57): error TS18046: 'midAngle' is of type 'unknown'.
+src/pages/MealsPage.tsx(1308,33): error TS18048: 'cy' is possibly 'undefined'.
+src/pages/MealsPage.tsx(1308,33): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'number'.
+src/pages/MealsPage.tsx(1308,57): error TS18046: 'midAngle' is of type 'unknown'.
+src/pages/MealsPage.tsx(1315,43): error TS18048: 'cx' is possibly 'undefined'.
+src/pages/MealsPage.tsx(1334,34): error TS18046: 'percent' is of type 'unknown'.
+src/pages/MealsPage.tsx(1499,43): error TS2339: Property 'protein' does not exist on type '{ date: string; points: number; fill: string; }'.
+src/pages/MealsPage.tsx(1507,43): error TS2339: Property 'carbs' does not exist on type '{ date: string; points: number; fill: string; }'.
+src/pages/MealsPage.tsx(1515,43): error TS2339: Property 'fat' does not exist on type '{ date: string; points: number; fill: string; }'.
+src/pages/MealsPage.tsx(1525,62): error TS18046: 'percent' is of type 'unknown'.
+src/pages/MedicationsPage.tsx(1210,44): error TS2339: Property 'toFixed' does not exist on type 'ValueType'.
+  Property 'toFixed' does not exist on type 'string'.
+src/pages/MedicationsPage.tsx(1275,68): error TS18046: 'percent' is of type 'unknown'.
+src/pages/PatientCalendarView.tsx(486,36): error TS2322: Type '{ ringColor: string; } | {}' is not assignable to type 'CSSProperties | undefined'.
+  Object literal may only specify known properties, and 'ringColor' does not exist in type 'Properties<string | number, string & {}>'.
+src/pages/PatientProfilePage.tsx(204,65): error TS2345: Argument of type 'PatientData' is not assignable to parameter of type 'Partial<Patient>'.
+  Types of property 'gender' are incompatible.
+    Type 'string | undefined' is not assignable to type '"male" | "female" | "other" | undefined'.
+      Type 'string' is not assignable to type '"male" | "female" | "other" | undefined'.
+src/pages/PatientsPage.tsx(365,15): error TS2339: Property 'info' does not exist on type '{ (message: Message, opts?: Partial<Pick<Toast, "style" | "className" | "id" | "icon" | "duration" | "ariaProps" | "position" | "iconTheme" | "toasterId" | "removeDelay">> | undefined): string; ... 8 more ...; promise<T>(promise: Promise<...> | (() => Promise<...>), msgs: { ...; }, opts?: DefaultToastOptions | undef...'.
+src/pages/ProfilePage.tsx(118,69): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(119,82): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(259,18): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(262,53): error TS2353: Object literal may only specify known properties, and 'preferences' does not exist in type 'Partial<User>'.
+src/pages/ProfilePage.tsx(268,27): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(276,18): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(279,53): error TS2353: Object literal may only specify known properties, and 'preferences' does not exist in type 'Partial<User>'.
+src/pages/ProfilePage.tsx(285,29): error TS2339: Property 'preferences' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(418,18): error TS2532: Object is possibly 'undefined'.
+src/pages/ProfilePage.tsx(418,56): error TS2532: Object is possibly 'undefined'.
+src/pages/RegisterPage.tsx(16,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: readonly ["patient", "therapist", "admin"], params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; } | undefined): ZodEnum<...>', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; }'.
+  Overload 2 of 2, '(entries: Readonly<Record<string, EnumValue>>, params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; } | undefined): ZodEnum<...>', gave the following error.
+    Argument of type 'string[]' is not assignable to parameter of type 'Readonly<Record<string, EnumValue>>'.
+      Index signature for type 'string' is missing in type 'string[]'.
+src/pages/SleepPage.tsx(1156,63): error TS18046: 'percent' is of type 'unknown'.
+src/pages/SleepPage.tsx(1579,42): error TS2339: Property 'bedHour' does not exist on type '{ date: string; bedTime: number; wakeTime: number; duration: number; quality: string; }'.
+src/pages/SleepPage.tsx(1584,42): error TS2339: Property 'sleepDuration' does not exist on type '{ date: string; bedTime: number; wakeTime: number; duration: number; quality: string; }'.
+src/pages/SleepPage.tsx(1591,79): error TS2339: Property 'hours' does not exist on type '{ date: string; bedTime: number; wakeTime: number; duration: number; quality: string; }'.
+src/pages/SleepPage.tsx(1634,46): error TS2339: Property 'gradient' does not exist on type '{ level: string; count: number; color: string; layer: number; }'.
+src/pages/SleepPage.tsx(1634,94): error TS2339: Property 'border' does not exist on type '{ level: string; count: number; color: string; layer: number; }'.
+src/pages/SleepPage.tsx(1641,79): error TS2339: Property 'label' does not exist on type '{ level: string; count: number; color: string; layer: number; }'.
+src/pages/VitalsPage.tsx(71,34): error TS2554: Expected 0-1 arguments, but got 2.
