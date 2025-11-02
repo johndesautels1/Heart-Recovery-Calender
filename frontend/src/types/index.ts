@@ -35,6 +35,7 @@ export interface Calendar {
 export interface CalendarEvent {
   id: number;
   calendarId: number;
+  userId: number;  // User who created the event
   title: string;
   description?: string;
   startTime: string;
@@ -78,9 +79,12 @@ export interface MealEntry {
   sugar?: number;
   protein?: number;
   carbohydrates?: number;
+  carbs?: number;  // Alias for carbohydrates
   withinSpec: boolean;
+  heartHealthRating?: 'red' | 'yellow' | 'green';  // Heart health rating for the meal
   notes?: string;
   satisfactionRating?: number; // NEW: 1-5 scale for how satisfying the meal was
+  postSurgeryDay?: number;  // Days since surgery
   createdAt: string;
   updatedAt: string;
 }
@@ -89,6 +93,7 @@ export interface VitalsSample {
   id: number;
   userId: number;
   timestamp: string;
+  recordedAt?: string;  // Alias for timestamp (some API responses use this)
   bloodPressureSystolic?: number;
   bloodPressureDiastolic?: number;
   heartRate?: number;
@@ -103,6 +108,7 @@ export interface VitalsSample {
   cholesterolHDL?: number;        // API returns this name
   triglycerides?: number;
   respiratoryRate?: number;
+  postSurgeryDay?: number;  // Days since surgery
   notes?: string;
   symptoms?: string;
   medicationsTaken: boolean;
@@ -121,11 +127,17 @@ export interface Medication {
   prescribedBy?: string;
   startDate: string;
   endDate?: string;
+  refillDate?: string;
+  pharmacy?: string;
+  pharmacyPhone?: string;
   timeOfDay?: string;
   instructions?: string;
   sideEffects?: string;
   isActive: boolean;
   reminderEnabled: boolean;
+  isOTC?: boolean;  // Over-the-counter flag
+  effectiveness?: number;  // 1-10 rating for how effective the medication is
+  monthlyCost?: number;  // Monthly cost for cost tracking
   createdAt: string;
   updatedAt: string;
 }
@@ -300,7 +312,7 @@ export interface FoodStats {
 export interface Patient {
   id: number;
   therapistId: number;
-  userId?: number;  // Link to patient's user account
+  userId: number;  // Link to patient's user account (required)
   name: string;
   email?: string;
   phone?: string;
@@ -420,6 +432,7 @@ export interface SleepLog {
   date: string;
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  postSurgeryDay?: number;  // Days since surgery
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
