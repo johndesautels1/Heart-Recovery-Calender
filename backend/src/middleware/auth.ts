@@ -25,8 +25,16 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     });
   }
 
+  if (!process.env.JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is not set');
+    return res.status(500).json({
+      error: 'Server configuration error',
+      message: 'Authentication service is not properly configured'
+    });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
       id: number;
       email: string;
       role?: string;
@@ -47,9 +55,9 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (token) {
+  if (token && process.env.JWT_SECRET) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
         id: number;
         email: string;
         role?: string;

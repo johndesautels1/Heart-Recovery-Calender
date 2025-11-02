@@ -70,9 +70,17 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('FATAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'Authentication service is not properly configured'
+      });
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -108,9 +116,17 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('FATAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'Authentication service is not properly configured'
+      });
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
