@@ -98,6 +98,12 @@ export function CalendarPage() {
 
   // Phase 4 - Instruction tabs state
   const [instructionTab, setInstructionTab] = useState<'video' | 'images' | 'instructions'>('video');
+
+  // SET-001: Calendar view preference with localStorage persistence
+  const [calendarView, setCalendarView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>(() => {
+    const savedView = localStorage.getItem('calendarView');
+    return (savedView as 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay') || 'dayGridMonth';
+  });
   const [currentExercise, setCurrentExercise] = useState<any>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
 
@@ -1812,7 +1818,7 @@ See browser console for full configuration details.
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          initialView={calendarView}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
@@ -1831,6 +1837,14 @@ See browser console for full configuration details.
           weekends={true}
           height="auto"
           eventClassNames="cursor-pointer hover:opacity-80 transition-opacity"
+          datesSet={(arg) => {
+            // Save calendar view preference when user switches views (SET-001)
+            const view = arg.view.type as 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
+            if (view !== calendarView) {
+              setCalendarView(view);
+              localStorage.setItem('calendarView', view);
+            }
+          }}
         />
       </GlassCard>
 
