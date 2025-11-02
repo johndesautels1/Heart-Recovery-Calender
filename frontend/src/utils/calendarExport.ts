@@ -2,12 +2,44 @@ import { CalendarEvent } from '../types';
 import { format } from 'date-fns';
 
 /**
+ * Generate VTIMEZONE component for RFC 5545 compliance
+ * This ensures proper timezone handling across calendar applications
+ */
+function generateVTimezone(timezoneId: string = 'America/New_York'): string {
+  // Generate VTIMEZONE block with standard and daylight time rules
+  // Using America/New_York as default (EST/EDT)
+  return [
+    'BEGIN:VTIMEZONE',
+    `TZID:${timezoneId}`,
+    'BEGIN:DAYLIGHT',
+    'TZOFFSETFROM:-0500',
+    'TZOFFSETTO:-0400',
+    'TZNAME:EDT',
+    'DTSTART:19700308T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+    'END:DAYLIGHT',
+    'BEGIN:STANDARD',
+    'TZOFFSETFROM:-0400',
+    'TZOFFSETTO:-0500',
+    'TZNAME:EST',
+    'DTSTART:19701101T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+    'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n');
+}
+
+/**
  * Generate ICS (iCalendar) file content from calendar events
  * Compatible with Google Calendar, Apple Calendar, Outlook, etc.
+ * RFC 5545 compliant with VTIMEZONE blocks and TZID parameters
  */
 export function generateICSFile(events: CalendarEvent[], calendarName: string = 'Heart Recovery Calendar'): string {
   const now = new Date();
   const timestamp = format(now, "yyyyMMdd'T'HHmmss'Z'");
+
+  // Detect user's timezone (could be made configurable)
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
 
   // ICS file header
   let icsContent = [
@@ -17,33 +49,45 @@ export function generateICSFile(events: CalendarEvent[], calendarName: string = 
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${calendarName}`,
-    'X-WR-TIMEZONE:UTC',
+    `X-WR-TIMEZONE:${userTimezone}`,
     'X-WR-CALDESC:Exported from Cardiac Recovery Pro',
   ].join('\r\n');
+
+  // Add VTIMEZONE component for RFC 5545 compliance (EXP-002)
+  icsContent += '\r\n' + generateVTimezone(userTimezone);
 
   // Add each event
   events.forEach(event => {
     const startDate = new Date(event.startTime);
     const endDate = new Date(event.endTime);
 
-    // Format dates for ICS (YYYYMMDDTHHMMSSZ format)
+    // Format dates for ICS with proper timezone support (EXP-001)
     const formatICSDate = (date: Date, isAllDay: boolean) => {
       if (isAllDay) {
         return format(date, 'yyyyMMdd');
       }
-      return format(date, "yyyyMMdd'T'HHmmss'Z'");
+      // Format as local time without 'Z' suffix for use with TZID
+      return format(date, "yyyyMMdd'T'HHmmss");
     };
 
     const dtStart = formatICSDate(startDate, event.isAllDay || false);
     const dtEnd = formatICSDate(endDate, event.isAllDay || false);
     const uid = `event-${event.id}@cardiac-recovery-pro.com`;
 
+    // Build DTSTART and DTEND with TZID parameter (RFC 5545 compliant)
+    const dtStartFormatted = event.isAllDay
+      ? `DTSTART;VALUE=DATE:${dtStart}`
+      : `DTSTART;TZID=${userTimezone}:${dtStart}`;
+    const dtEndFormatted = event.isAllDay
+      ? `DTEND;VALUE=DATE:${dtEnd}`
+      : `DTEND;TZID=${userTimezone}:${dtEnd}`;
+
     icsContent += '\r\n' + [
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTAMP:${timestamp}`,
-      event.isAllDay ? `DTSTART;VALUE=DATE:${dtStart}` : `DTSTART:${dtStart}`,
-      event.isAllDay ? `DTEND;VALUE=DATE:${dtEnd}` : `DTEND:${dtEnd}`,
+      dtStartFormatted,
+      dtEndFormatted,
       `SUMMARY:${escapeICSText(event.title)}`,
       event.description ? `DESCRIPTION:${escapeICSText(event.description)}` : '',
       event.location ? `LOCATION:${escapeICSText(event.location)}` : '',

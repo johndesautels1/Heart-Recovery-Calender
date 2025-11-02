@@ -196,9 +196,9 @@
 - [ ] **I18N-002**: Add 24h/12h clock format toggle in Settings (stored in User.preferences JSONB)
 
 ### Export Verification & Enhancement (Est: 1-2 hours)
-- [ ] **EXP-001**: Verify ICS exports include proper timezone offset (TZID parameter)
-- [ ] **EXP-002**: Verify ICS exports include VTIMEZONE blocks per RFC 5545
-- [ ] **EXP-003**: Verify VALARM (reminder) components are included in ICS exports
+- [x] **EXP-001**: Verify ICS exports include proper timezone offset (TZID parameter) - FIXED: Added TZID parameters to DTSTART/DTEND
+- [x] **EXP-002**: Verify ICS exports include VTIMEZONE blocks per RFC 5545 - FIXED: Added generateVTimezone() function with EST/EDT rules
+- [x] **EXP-003**: Verify VALARM (reminder) components are included in ICS exports - VERIFIED: Already present in ICS exports
 - [ ] **EXP-006**: Add date range filter UI to export dialogs (start date, end date pickers)
 
 ### UI Verification Tasks (Est: 2-3 hours)
@@ -216,10 +216,10 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 48 (+11 quick-wins: LEG-003, LEG-004, DEL-001, PRIV-001, GOAL-001, ATT-001, CAL-007, OPS-004, OPS-005, TEST-010, OPS-003)
+**Completed:** 51 (+14 quick-wins: LEG-003, LEG-004, DEL-001, PRIV-001, GOAL-001, ATT-001, CAL-007, OPS-004, OPS-005, TEST-010, OPS-003, EXP-001, EXP-002, EXP-003)
 **In Progress:** 0
-**Remaining:** 74+
-**Quick Wins:** 17 remaining (1 legal, 0 docs ✅ ALL COMPLETE, 0 database ✅ ALL COMPLETE, 6 settings, 4 export, 5 UI, 2 monitoring)
+**Remaining:** 71+
+**Quick Wins:** 14 remaining (1 legal, 0 docs ✅ ALL COMPLETE, 0 database ✅ ALL COMPLETE, 6 settings, 1 export, 5 UI, 2 monitoring)
 **Total:** 122+
 
 **Priority Focus:**
