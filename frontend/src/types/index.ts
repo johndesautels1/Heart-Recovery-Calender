@@ -313,20 +313,103 @@ export interface Patient {
   id: number;
   therapistId: number;
   userId: number;  // Link to patient's user account (required)
+  
+  // Name fields
   name: string;
+  firstName?: string;
+  lastName?: string;
+  
+  // Demographics
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other';
+  age?: number;
+  
+  // Primary Contact
   email?: string;
-  phone?: string;
-  address?: string;
-  zoomHandle?: string;
+  phone?: string;  // Legacy field
+  primaryPhone?: string;
+  primaryPhoneType?: 'mobile' | 'home' | 'work';
+  alternatePhone?: string;
+  preferredContactMethod?: 'phone' | 'email' | 'text';
+  bestTimeToContact?: 'morning' | 'afternoon' | 'evening';
+  
+  // Mailing Address
+  address?: string;  // Legacy field
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  
+  // Emergency Contact #1
+  emergencyContact1Name?: string;
+  emergencyContact1Relationship?: string;
+  emergencyContact1Phone?: string;
+  emergencyContact1AlternatePhone?: string;
+  emergencyContact1Email?: string;
+  emergencyContact1SameAddress?: boolean;
+  
+  // Emergency Contact #2
+  emergencyContact2Name?: string;
+  emergencyContact2Relationship?: string;
+  emergencyContact2Phone?: string;
+  emergencyContact2AlternatePhone?: string;
+  emergencyContact2Email?: string;
+  emergencyContact2SameAddress?: boolean;
+  
+  // Physical Measurements
+  height?: number;
+  heightUnit?: 'in' | 'cm';
+  startingWeight?: number;
+  currentWeight?: number;
+  targetWeight?: number;
+  weightUnit?: 'kg' | 'lbs';
+  race?: string;
+  nationality?: string;
+  
+  // Prior Surgical Procedures
+  priorSurgicalProcedures?: string[];
+  devicesImplanted?: string[];
+  priorSurgeryNotes?: string;
+  hospitalName?: string;
+  surgeonName?: string;
   surgeryDate?: string;
+  dischargeDate?: string;
+  dischargeInstructions?: string;
+  
+  // Medical History
+  priorHealthConditions?: string[];
+  currentConditions?: string[];
+  nonCardiacMedications?: string;
+  allergies?: string;
+  
+  // Heart Condition
+  diagnosisDate?: string;
+  heartConditions?: string[];
+  currentTreatmentProtocol?: string[];
+  recommendedTreatments?: string[];
+  
+  // Cardiac Vitals
+  restingHeartRate?: number;
+  maxHeartRate?: number;
+  targetHeartRateMin?: number;
+  targetHeartRateMax?: number;
+  baselineBpSystolic?: number;
+  baselineBpDiastolic?: number;
+  ejectionFraction?: number;
+  cardiacDiagnosis?: string[];
+  medicationsAffectingHR?: string[];
+  activityRestrictions?: string;
+  
+  // Device Integration
+  polarDeviceId?: string;
+  samsungHealthAccount?: string;
+  preferredDataSource?: 'polar' | 'samsung' | 'manual';
+  
+  // Other
+  zoomHandle?: string;
   notes?: string;
   isActive: boolean;
-  height?: number;          // Height in inches or cm
-  heightUnit?: 'in' | 'cm'; // Unit of measurement
-  startingWeight?: number;  // Weight at start of therapy
-  currentWeight?: number;   // Most recent weight
-  targetWeight?: number;    // Goal weight
-  weightUnit?: 'kg' | 'lbs'; // Unit of measurement
   createdAt: string;
   updatedAt: string;
 }
@@ -356,6 +439,36 @@ export interface Provider {
   pharmacyLicenseNumber?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type NotificationType = 'email' | 'sms' | 'push' | 'in-app';
+export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'read';
+
+export interface Notification {
+  id: number;
+  userId: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  status: NotificationStatus;
+  sentAt?: string;
+  readAt?: string;
+  errorMessage?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNotificationInput {
+  userId: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+}
+
+export interface SendTestNotificationInput {
+  type?: NotificationType;
 }
 
 export interface CreateProviderInput {
