@@ -116,7 +116,7 @@ export function CalendarPage() {
   // Device connection state
   const [devicesConnected, setDevicesConnected] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
-  const [liveVitalsPolling, setLiveVitalsPolling] = useState<NodeJS.Timeout | null>(null);
+  const [liveVitalsPolling, setLiveVitalsPolling] = useState<number | null>(null);
 
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);

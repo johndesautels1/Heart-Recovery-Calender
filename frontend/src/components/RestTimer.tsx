@@ -12,7 +12,7 @@ export function RestTimer({ onClose, defaultSeconds = 60, isCompact = false }: R
   const [initialSeconds, setInitialSeconds] = useState(defaultSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {

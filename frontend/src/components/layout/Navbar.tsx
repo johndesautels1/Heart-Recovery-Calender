@@ -253,7 +253,7 @@ export function Navbar() {
               <Link to="/profile" className="flex flex-col items-start">
                 <span className="text-sm whitespace-nowrap">{user?.name || 'Profile'}</span>
                 <span className="text-xs font-medium whitespace-nowrap" style={{ color: '#ffa726' }}>
-                  {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                  {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
                 </span>
               </Link>
             </div>
@@ -474,7 +474,7 @@ export function Navbar() {
               >
                 <span>{user?.name || 'Profile'}</span>
                 <span className="text-sm font-medium" style={{ color: '#ffa726' }}>
-                  {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                  {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
                 </span>
               </Link>
             </div>

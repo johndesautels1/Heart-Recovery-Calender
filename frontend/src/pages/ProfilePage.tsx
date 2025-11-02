@@ -415,7 +415,7 @@ export function ProfilePage() {
                         '#ec4899'
                 }}
               >
-                {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
               </div>
 
               {patientData?.age && (

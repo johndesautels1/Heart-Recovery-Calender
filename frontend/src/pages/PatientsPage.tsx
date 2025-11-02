@@ -362,7 +362,7 @@ export function PatientsPage() {
 
       // If patient doesn't have a user account, create one automatically
       if (!patientUserId) {
-        toast.info('Creating user account for patient...');
+        toast('Creating user account for patient...', { icon: 'ℹ️' });
 
         // Generate a default password
         const defaultPassword = `${calendarPatient.name.replace(/\s+/g, '').toLowerCase()}123`;
