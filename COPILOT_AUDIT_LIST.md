@@ -191,7 +191,7 @@
 - [x] **SET-001**: Save last calendar view preference (month/week/day) to localStorage - IMPLEMENTED: Added state + localStorage persistence with datesSet callback
 - [ ] **SET-002**: Add per-category reminder defaults to User preferences (meds: 30min, exercise: 1hr, etc.)
 - [ ] **SET-005**: Enhance export format preference with user-selectable default (existing feature enhancement)
-- [ ] **SET-006**: Add `backupNotificationEmail` field to User model for export notifications
+- [x] **SET-006**: Add `backupNotificationEmail` field to User model for export notifications - IMPLEMENTED: Added optional email field with validation
 - [ ] **SET-007**: Add "Reset to Defaults" button in Settings page with confirmation dialog
 - [ ] **I18N-002**: Add 24h/12h clock format toggle in Settings (stored in User.preferences JSONB)
 
@@ -216,10 +216,10 @@
 
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 52 (+15 quick-wins: LEG-003, LEG-004, DEL-001, PRIV-001, GOAL-001, ATT-001, CAL-007, OPS-004, OPS-005, TEST-010, OPS-003, EXP-001, EXP-002, EXP-003, SET-001)
+**Completed:** 53 (+16 quick-wins: LEG-003, LEG-004, DEL-001, PRIV-001, GOAL-001, ATT-001, CAL-007, OPS-004, OPS-005, TEST-010, OPS-003, EXP-001, EXP-002, EXP-003, SET-001, SET-006)
 **In Progress:** 0
-**Remaining:** 70+
-**Quick Wins:** 13 remaining (1 legal, 0 docs ✅ ALL COMPLETE, 0 database ✅ ALL COMPLETE, 5 settings, 1 export, 5 UI, 2 monitoring)
+**Remaining:** 69+
+**Quick Wins:** 12 remaining (1 legal, 0 docs ✅ ALL COMPLETE, 0 database ✅ ALL COMPLETE, 4 settings, 1 export, 5 UI, 2 monitoring)
 **Total:** 122+
 
 **Priority Focus:**

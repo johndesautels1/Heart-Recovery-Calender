@@ -13,6 +13,7 @@ interface UserAttributes {
   doctorPhone?: string;
   profilePhoto?: string;
   timezone?: string;
+  backupNotificationEmail?: string;
   role?: 'patient' | 'therapist' | 'admin';
   createdAt?: Date;
   updatedAt?: Date;
@@ -32,6 +33,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public doctorPhone?: string;
   public profilePhoto?: string;
   public timezone?: string;
+  public backupNotificationEmail?: string;
   public role?: 'patient' | 'therapist' | 'admin';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -94,6 +96,14 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
         timezone: {
           type: DataTypes.STRING(50),
           defaultValue: 'America/New_York',
+        },
+        backupNotificationEmail: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+          validate: {
+            isEmail: true,
+          },
+          comment: 'Secondary email for backup and export notifications',
         },
         role: {
           type: DataTypes.ENUM('patient', 'therapist', 'admin'),
