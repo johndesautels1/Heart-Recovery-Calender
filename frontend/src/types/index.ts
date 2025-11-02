@@ -707,6 +707,147 @@ export interface ExerciseLogStats {
   scoreDistribution: any[];
 }
 
+// ==================== EXERCISE PRESCRIPTIONS ====================
+export type ExercisePrescriptionStatus = 'active' | 'completed' | 'discontinued';
+
+export interface ExercisePrescription {
+  id: number;
+  patientId: number;
+  exerciseId: number;
+  prescribedBy: number; // therapist user ID
+  startDate: string;
+  endDate?: string;
+  sets?: number;
+  reps?: number;
+  duration?: number; // in minutes
+  frequency: string; // e.g., "daily", "3x/week", "Mon/Wed/Fri"
+  notes?: string;
+  status: ExercisePrescriptionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== ACTIVITIES ====================
+export type ActivityType = 'adl' | 'mobility' | 'recreational' | 'social' | 'exercise';
+export type ActivityStatus = 'accomplished' | 'caution' | 'not_to_do' | 'issue';
+
+export interface Activity {
+  id: number;
+  userId: number;
+  activityType: ActivityType;
+  activityName: string;
+  activityCategory?: string;
+  activityDate: string;
+  activityTime?: string;
+  status: ActivityStatus;
+  duration?: number;
+  notes?: string;
+  symptoms?: string[];
+  heartRate?: number;
+  bloodPressure?: string;
+  painLevel?: number;
+  fatigueLevel?: number;
+  assistanceRequired: boolean;
+  milestone: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== ALERTS ====================
+export type AlertType = 'medication_missed' | 'activity_issue' | 'vital_concern' | 'goal_overdue' | 'routine_skipped' | 'other';
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+
+export interface Alert {
+  id: number;
+  userId: number;
+  therapistId?: number;
+  alertType: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  relatedEntityType?: string;
+  relatedEntityId?: number;
+  actionTaken?: string;
+  resolved: boolean;
+  resolvedAt?: string;
+  resolvedBy?: number;
+  notificationSent: boolean;
+  notificationMethods?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== THERAPY GOALS ====================
+export type TherapyGoalType = 'exercise' | 'activity' | 'mobility' | 'medication_adherence' | 'diet' | 'vitals' | 'other';
+export type TherapyGoalStatus = 'not_started' | 'in_progress' | 'achieved' | 'modified' | 'abandoned';
+export type TherapyGoalPriority = 'low' | 'medium' | 'high';
+
+export interface TherapyGoal {
+  id: number;
+  userId: number;
+  therapistId: number;
+  goalTitle: string;
+  goalDescription: string;
+  goalType: TherapyGoalType;
+  targetValue?: string;
+  currentValue?: string;
+  unit?: string;
+  targetDate?: string;
+  status: TherapyGoalStatus;
+  progressPercentage: number;
+  milestones?: any;
+  notes?: string;
+  achievedAt?: string;
+  priority: TherapyGoalPriority;
+  recurring: boolean;
+  frequency?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== PHYSICAL THERAPY PHASES ====================
+export type TherapyIntensityLevel = 'very_light' | 'light' | 'moderate' | 'vigorous';
+
+export interface PhysicalTherapyPhase {
+  id: number;
+  phaseNumber: number;
+  phaseName: string;
+  weekStart: number;
+  weekEnd: number;
+  description: string;
+  focusAreas: string[];
+  restrictions: string[];
+  exerciseLibrary: any;
+  targetHeartRate?: string;
+  intensityLevel: TherapyIntensityLevel;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== THERAPY ROUTINES ====================
+export type TherapyRoutineStatus = 'scheduled' | 'completed' | 'skipped' | 'issue';
+
+export interface TherapyRoutine {
+  id: number;
+  userId: number;
+  therapistId: number;
+  phaseId: number;
+  routineName: string;
+  exercises: any;
+  scheduledDate: string;
+  scheduledTime?: string;
+  durationMinutes: number;
+  completed: boolean;
+  completedAt?: string;
+  status: TherapyRoutineStatus;
+  completionNotes?: string;
+  painLevel?: number;
+  fatigueLevel?: number;
+  heartRateData?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== CALORIES / ENERGY BALANCE ====================
 export interface CalorieSummary {
   caloriesConsumed: number;
