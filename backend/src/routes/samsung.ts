@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { authenticateToken, Request } from '../middleware/auth';
 import { samsungService, syncSamsungData } from '../services/samsungService';
 import DeviceConnection from '../models/DeviceConnection';

@@ -1,6 +1,6 @@
-import { RRule, rrulestr } from 'rrule';
+import { RRule, rrulestr, Options as RRuleOptions } from 'rrule';
 
-export const createRecurrenceRule = (options: RRule.Options) => {
+export const createRecurrenceRule = (options: RRuleOptions) => {
   return new RRule(options);
 };
 
