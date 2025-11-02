@@ -1338,19 +1338,19 @@ export function MealsPage() {
                     outerRadius={220}
                     fill="#8884d8"
                     dataKey="value"
-                    label={(props) => {
+                    label={(props: any) => {
                       const { cx, cy, midAngle, innerRadius, outerRadius, name, percent } = props;
                       const RADIAN = Math.PI / 180;
-                      const radius = outerRadius + 35;
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      const radius = (outerRadius as number) + 35;
+                      const x = (cx as number) + radius * Math.cos(-(midAngle as number) * RADIAN);
+                      const y = (cy as number) + radius * Math.sin(-(midAngle as number) * RADIAN);
 
                       return (
                         <text
                           x={x}
                           y={y}
                           fill="#ffffff"
-                          textAnchor={x > cx ? 'start' : 'end'}
+                          textAnchor={x > (cx as number) ? 'start' : 'end'}
                           dominantBaseline="central"
                           style={{
                             fontSize: '14px',
@@ -1369,7 +1369,7 @@ export function MealsPage() {
                               fill: '#10b981'
                             }}
                           >
-                            {`${(percent * 100).toFixed(0)}%`}
+                            {`${((percent as number) * 100).toFixed(0)}%`}
                           </tspan>
                         </text>
                       );

@@ -49,12 +49,12 @@ export function PatientsPage() {
     address: '',
     surgeryDate: '',
     height: '',
-    heightUnit: 'in' as 'in' | 'cm',
+    heightUnit: 'in',
     notes: '',
     startingWeight: '',
     currentWeight: '',
     targetWeight: '',
-    weightUnit: 'lbs' as 'kg' | 'lbs',
+    weightUnit: 'lbs',
     createUserAccount: false,
     password: ''
   });
@@ -66,12 +66,12 @@ export function PatientsPage() {
     address: '',
     surgeryDate: '',
     height: '',
-    heightUnit: 'in' as 'in' | 'cm',
+    heightUnit: 'in',
     notes: '',
     startingWeight: '',
     currentWeight: '',
     targetWeight: '',
-    weightUnit: 'lbs' as 'kg' | 'lbs',
+    weightUnit: 'lbs',
     createUserAccount: false,
     password: ''
   });

@@ -258,8 +258,8 @@ export function FoodDiaryPage() {
       calories: (totals.calories || 0) + (meal.calories || 0),
       sodium: (totals.sodium || 0) + (meal.sodium || 0),
       protein: (totals.protein || 0) + (meal.protein || 0),
-      carbs: (totals.carbohydrates || 0) + (meal.carbohydrates || 0),
-      fat: (totals.totalFat || 0) + (meal.totalFat || 0),
+      carbs: (totals.carbs || 0) + (meal.carbohydrates || 0),
+      fat: (totals.fat || 0) + (meal.totalFat || 0),
       fiber: (totals.fiber || 0) + (meal.fiber || 0),
     }), { calories: 0, sodium: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
   };
