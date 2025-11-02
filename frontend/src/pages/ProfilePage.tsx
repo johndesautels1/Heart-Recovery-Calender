@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Heart, Stethoscope, Save, Camera,
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
-  Upload, FileText, CreditCard, AlertCircle
+  Upload, FileText, CreditCard, AlertCircle, Clock, Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -114,6 +114,7 @@ export function ProfilePage() {
   const [expandedSections, setExpandedSections] = useState<string[]>(['personal']);
   const [patientData, setPatientData] = useState<PatientData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(user?.preferences?.timeFormat || '12h');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Document upload refs
@@ -122,6 +123,7 @@ export function ProfilePage() {
   const allergyCardInputRef = useRef<HTMLInputElement>(null);
 
   const sections: Section[] = [
+    { id: 'settings', title: 'App Settings', icon: <Settings className="h-5 w-5" />, color: '#6366f1' },
     { id: 'personal', title: 'Personal Information', icon: <User className="h-5 w-5" />, color: '#3b82f6' },
     { id: 'contact', title: 'Contact & Address', icon: <MapPin className="h-5 w-5" />, color: '#10b981' },
     { id: 'emergency', title: 'Emergency Contacts', icon: <Users className="h-5 w-5" />, color: '#ef4444' },
@@ -246,6 +248,23 @@ export function ProfilePage() {
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleTimeFormatChange = async (format: '12h' | '24h') => {
+    try {
+      setTimeFormat(format);
+      const updatedPreferences = {
+        ...user?.preferences,
+        timeFormat: format
+      };
+      const updatedUser = await api.updateProfile({ preferences: updatedPreferences });
+      updateUser(updatedUser);
+      toast.success('Time format updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating time format:', error);
+      toast.error('Failed to update time format');
+      setTimeFormat(user?.preferences?.timeFormat || '12h'); // Revert on error
+    }
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,6 +436,51 @@ export function ProfilePage() {
 
               {expandedSections.includes(section.id) && (
                 <div className="p-6 pt-0 space-y-4 animate-slideDown">
+                  {section.id === 'settings' && (
+                    <>
+                      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Clock className="h-5 w-5" style={{ color: '#6366f1' }} />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Time Format
+                              </h4>
+                              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                                Choose how times are displayed throughout the app
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleTimeFormatChange('12h')}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                timeFormat === '12h'
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              12h
+                            </button>
+                            <button
+                              onClick={() => handleTimeFormatChange('24h')}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                timeFormat === '24h'
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              24h
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
+                          <strong>Preview:</strong> {timeFormat === '12h' ? '2:30 PM' : '14:30'}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {section.id === 'personal' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
