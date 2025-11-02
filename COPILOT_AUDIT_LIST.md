@@ -167,12 +167,60 @@
 
 ---
 
+## 🎯 QUICK WINS (Low Risk - High Value)
+
+### Legal & Compliance (Est: 2-4 hours)
+- [x] **LEG-003**: Add health disclaimer in UI footer (ALREADY EXISTS - comprehensive medical disclaimer in Footer.tsx)
+- [x] **LEG-004**: Review all UI copy for diagnosis/cure claims (COMPLETE - No problematic medical claims found)
+- [ ] **LEG-001**: Add legal notice to export dialogs (PENDING - Export UI dialogs don't exist yet; only backend utility functions)
+
+### Documentation & Operations (Est: 2-3 hours)
+- [x] **OPS-004**: Document git rollback procedure in README.md (Added comprehensive 6-method rollback guide with best practices)
+- [x] **OPS-005**: Add backup verification schedule to DATABASE_BACKUP.md (Added daily/weekly/monthly/quarterly/annual schedule with KPIs)
+- [x] **TEST-010**: Document cross-browser testing matrix (Added 270+ line comprehensive testing matrix with 6 browsers, critical flows, accessibility testing)
+- [x] **OPS-003**: Document migration backfill test procedure (Added 425+ line comprehensive guide: 7-step testing procedure, 4 backfill patterns, performance benchmarks, production checklist)
+
+### Database Schema Enhancements (Est: 1-2 hours)
+- [x] **DEL-001**: Add `deletedAt` TIMESTAMP to CalendarEvent for soft-delete (Model updated + paranoid mode enabled)
+- [x] **PRIV-001**: Add `privacyLevel` ENUM('private','shared','clinical') to CalendarEvent (Model updated with default 'private')
+- [x] **GOAL-001**: Add `therapyGoalId` INTEGER foreign key to CalendarEvent linking to TherapyGoal (Model updated)
+- [x] **ATT-001**: Add `attachments` JSONB field to CalendarEvent for future file support (Model updated)
+- [x] **CAL-007**: Add `tags` TEXT ARRAY to CalendarEvent for flexible categorization (Model updated)
+
+### User Settings & Preferences (Est: 3-4 hours)
+- [ ] **SET-001**: Save last calendar view preference (month/week/day) to localStorage
+- [ ] **SET-002**: Add per-category reminder defaults to User preferences (meds: 30min, exercise: 1hr, etc.)
+- [ ] **SET-005**: Enhance export format preference with user-selectable default (existing feature enhancement)
+- [ ] **SET-006**: Add `backupNotificationEmail` field to User model for export notifications
+- [ ] **SET-007**: Add "Reset to Defaults" button in Settings page with confirmation dialog
+- [ ] **I18N-002**: Add 24h/12h clock format toggle in Settings (stored in User.preferences JSONB)
+
+### Export Verification & Enhancement (Est: 1-2 hours)
+- [ ] **EXP-001**: Verify ICS exports include proper timezone offset (TZID parameter)
+- [ ] **EXP-002**: Verify ICS exports include VTIMEZONE blocks per RFC 5545
+- [ ] **EXP-003**: Verify VALARM (reminder) components are included in ICS exports
+- [ ] **EXP-006**: Add date range filter UI to export dialogs (start date, end date pickers)
+
+### UI Verification Tasks (Est: 2-3 hours)
+- [ ] **CAL-003**: Test and verify color-coding by calendar category displays correctly in all views
+- [ ] **CAL-006**: Verify FullCalendar snap-to-interval configuration (slotDuration setting)
+- [ ] **MOB-001**: Test mobile touch gestures on calendar (swipe week navigation, pinch zoom)
+- [ ] **I18N-001**: Verify week start day matches user locale settings (Sun vs Mon)
+- [ ] **I18N-007**: Audit all UI strings for proper i18next translation keys (no hardcoded English)
+
+### Monitoring & Observability (Est: 1 hour)
+- [ ] **PERF-006**: Install `web-vitals` npm package and log CLS/LCP/FID metrics to console
+- [ ] **MON-001**: Set up Sentry free tier for crash reporting and error tracking
+
+---
+
 ## 📈 PROGRESS SUMMARY
 
-**Completed:** 37
+**Completed:** 48 (+11 quick-wins: LEG-003, LEG-004, DEL-001, PRIV-001, GOAL-001, ATT-001, CAL-007, OPS-004, OPS-005, TEST-010, OPS-003)
 **In Progress:** 0
-**Remaining:** 57+
-**Total:** 94+
+**Remaining:** 74+
+**Quick Wins:** 17 remaining (1 legal, 0 docs ✅ ALL COMPLETE, 0 database ✅ ALL COMPLETE, 6 settings, 4 export, 5 UI, 2 monitoring)
+**Total:** 122+
 
 **Priority Focus:**
 1. ✅ Critical bugs (DONE)

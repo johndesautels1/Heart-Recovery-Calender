@@ -637,6 +637,425 @@ npm run migrate:undo
 npm run seed
 ```
 
+## Operations & Troubleshooting
+
+### Git Rollback Procedures
+
+If you need to revert changes after a problematic deployment or update, follow these procedures:
+
+#### 1. Rollback to Previous Commit (Soft Reset)
+
+**Use when:** You want to undo recent commits but keep the file changes
+
+```bash
+# View commit history
+git log --oneline -10
+
+# Soft reset to specific commit (keeps changes staged)
+git reset --soft <commit-hash>
+
+# Or reset to previous commit
+git reset --soft HEAD~1
+
+# Verify status
+git status
+
+# If satisfied, force push (⚠️ only on feature branches)
+git push origin <branch-name> --force
+```
+
+#### 2. Rollback to Previous Commit (Hard Reset)
+
+**Use when:** You want to completely undo changes and discard all modifications
+
+⚠️ **WARNING**: This permanently deletes uncommitted changes!
+
+```bash
+# View commit history
+git log --oneline -10
+
+# Create backup branch first (IMPORTANT!)
+git branch backup-$(date +%Y%m%d-%H%M%S)
+
+# Hard reset to specific commit (discards all changes)
+git reset --hard <commit-hash>
+
+# Or reset to previous commit
+git reset --hard HEAD~1
+
+# Force push (⚠️ be very careful on main branch)
+git push origin <branch-name> --force
+```
+
+#### 3. Revert Specific Commit (Safe Method)
+
+**Use when:** You want to undo a specific commit without rewriting history
+
+```bash
+# Find the commit to revert
+git log --oneline
+
+# Revert creates a new commit that undoes the changes
+git revert <commit-hash>
+
+# Edit the commit message if needed
+# Then push normally
+git push origin <branch-name>
+```
+
+#### 4. Rollback Database Migration
+
+**Use when:** A database migration caused issues
+
+```bash
+# Navigate to backend
+cd backend
+
+# Check migration status
+npx sequelize-cli db:migrate:status
+
+# Undo last migration
+npx sequelize-cli db:migrate:undo
+
+# Undo specific migration
+npx sequelize-cli db:migrate:undo:all --to <migration-name>.js
+
+# Verify database state
+npm run check-db
+```
+
+#### 5. Emergency Production Rollback
+
+**Use when:** Production is broken and needs immediate fix
+
+```bash
+# 1. Identify last working commit
+git log --oneline --graph
+
+# 2. Create emergency fix branch
+git checkout -b emergency-fix-$(date +%Y%m%d)
+
+# 3. Reset to last working commit
+git reset --hard <last-working-commit>
+
+# 4. Force push to trigger redeployment
+git push origin emergency-fix-$(date +%Y%m%d) --force
+
+# 5. Update main branch after verification
+git checkout main
+git reset --hard <last-working-commit>
+git push origin main --force  # ⚠️ Requires force push permissions
+```
+
+#### 6. Rollback npm Package Updates
+
+**Use when:** A package update broke functionality
+
+```bash
+# Backend rollback
+cd backend
+git checkout HEAD~1 -- package.json package-lock.json
+npm install
+
+# Frontend rollback
+cd ../frontend
+git checkout HEAD~1 -- package.json package-lock.json
+npm install
+
+# Test the application
+npm run dev
+```
+
+#### Best Practices
+
+1. **Always create backups** before major changes
+2. **Test rollbacks** in development/staging first
+3. **Document the reason** for rollback in commit message
+4. **Notify team members** before force pushing
+5. **Run tests** after rollback to verify stability
+6. **Check logs** for any residual issues
+
+#### Rollback Checklist
+
+- [ ] Identify the problematic commit or change
+- [ ] Create backup branch: `git branch backup-$(date +%Y%m%d-%H%M%S)`
+- [ ] Stop running servers (backend + frontend)
+- [ ] Perform rollback using appropriate method
+- [ ] Rollback database migrations if needed
+- [ ] Clear caches: `rm -rf node_modules/.cache`
+- [ ] Reinstall dependencies if package.json changed
+- [ ] Restart servers and test functionality
+- [ ] Update team and document incident
+- [ ] Plan fix for original issue
+
+### Cross-Browser Testing Matrix
+
+**Purpose:** Ensure consistent functionality and appearance across all supported browsers and devices.
+
+#### Supported Browsers (Desktop)
+
+| Browser | Minimum Version | Latest Tested | Support Status | Notes |
+|---------|----------------|---------------|----------------|-------|
+| **Chrome** | 90+ | 119 | ✅ Full Support | Primary development browser |
+| **Firefox** | 88+ | 119 | ✅ Full Support | Excellent compatibility |
+| **Safari** | 14+ | 17 | ✅ Full Support | macOS/iOS primary browser |
+| **Edge** | 90+ | 119 | ✅ Full Support | Chromium-based, same as Chrome |
+| **Opera** | 76+ | 104 | ⚠️ Limited Testing | Chromium-based, should work |
+| **Brave** | 1.25+ | 1.59 | ⚠️ Limited Testing | Chromium-based, should work |
+
+#### Supported Browsers (Mobile)
+
+| Browser | Minimum Version | Latest Tested | Support Status | Notes |
+|---------|----------------|---------------|----------------|-------|
+| **iOS Safari** | 14+ | 17 | ✅ Full Support | iPhone/iPad default browser |
+| **Chrome Mobile** | 90+ | 119 | ✅ Full Support | Android primary browser |
+| **Samsung Internet** | 14+ | 22 | ⚠️ Limited Testing | Samsung devices default browser |
+| **Firefox Mobile** | 88+ | 119 | ⚠️ Limited Testing | Good compatibility expected |
+
+#### Browser Feature Support
+
+| Feature | Chrome | Firefox | Safari | Edge | Mobile Safari | Chrome Mobile |
+|---------|--------|---------|--------|------|---------------|---------------|
+| Calendar Views | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Date Pickers | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ |
+| Chart.js Graphs | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| QR Code Generation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| File Upload | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PDF Export | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ICS Export | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Push Notifications | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| Service Workers | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ |
+| LocalStorage | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Legend:**
+- ✅ Full Support
+- ⚠️ Partial Support / Minor Issues
+- ❌ Not Supported
+
+#### Known Browser-Specific Issues
+
+**Safari (Desktop & iOS):**
+- Date input styling may differ from other browsers
+- Some CSS backdrop-filter effects may have reduced performance
+- Push notifications not supported on iOS
+- Service worker support limited in older versions
+
+**Firefox:**
+- Slightly different font rendering compared to Chromium browsers
+- May require additional configuration for secure contexts (HTTPS)
+
+**Edge Legacy (pre-Chromium):**
+- ❌ Not supported - recommend upgrading to Chromium-based Edge
+
+**Internet Explorer 11:**
+- ❌ Not supported - application requires modern browser features
+
+#### Critical User Flows to Test
+
+**Authentication & User Management:**
+- [ ] User registration (all fields, validation)
+- [ ] Login (email/password)
+- [ ] Password reset flow
+- [ ] Logout and session expiration
+- [ ] Therapist role switching
+
+**Calendar Operations:**
+- [ ] View month/week/day calendar
+- [ ] Create new event (all event types)
+- [ ] Edit existing event
+- [ ] Delete event with confirmation
+- [ ] Drag-and-drop event rescheduling
+- [ ] Recurring event creation
+- [ ] Event reminder notifications
+
+**Data Entry & Forms:**
+- [ ] Add medication with dosage
+- [ ] Log vital signs (BP, heart rate, weight)
+- [ ] Create meal entry with food lookup
+- [ ] Add exercise session with metrics
+- [ ] Upload files/attachments
+
+**Data Visualization:**
+- [ ] View analytics dashboard
+- [ ] Weight trend chart over time
+- [ ] Heart rate graph with min/max
+- [ ] Medication adherence chart
+- [ ] Exercise performance graphs
+
+**Export & Sharing:**
+- [ ] Export calendar to ICS format
+- [ ] Export calendar to JSON
+- [ ] Generate QR code for calendar sharing
+- [ ] Print calendar view (CSS print styles)
+- [ ] Download patient data (therapist view)
+
+**Mobile-Specific Features:**
+- [ ] Touch gestures (swipe, pinch zoom)
+- [ ] Mobile navigation menu
+- [ ] Responsive layout on small screens
+- [ ] File upload from mobile camera
+- [ ] Date picker on mobile devices
+
+#### Testing Procedure
+
+**Before Each Release:**
+
+1. **Desktop Testing** (Est: 2-3 hours)
+   ```bash
+   # Run development build
+   npm run dev
+
+   # Test in each browser:
+   # - Chrome: http://localhost:5173
+   # - Firefox: http://localhost:5173
+   # - Safari: http://localhost:5173
+   # - Edge: http://localhost:5173
+   ```
+   - Test critical user flows in each browser
+   - Verify responsive breakpoints (resize window)
+   - Check console for errors
+   - Test with browser dev tools throttling (slow 3G)
+
+2. **Mobile Testing** (Est: 2-3 hours)
+   ```bash
+   # Get local IP address
+   ipconfig  # Windows
+   ifconfig  # macOS/Linux
+
+   # Access from mobile device on same network
+   # http://<your-ip>:5173
+   ```
+   - Test on real iOS device (iPhone)
+   - Test on real Android device
+   - Test with Chrome DevTools mobile emulation
+   - Test touch gestures and swipe navigation
+   - Verify soft keyboard doesn't obscure inputs
+
+3. **Cross-Browser Automated Testing** (Future Enhancement)
+   ```bash
+   # Planned: Playwright or Cypress cross-browser tests
+   # npm run test:e2e:chrome
+   # npm run test:e2e:firefox
+   # npm run test:e2e:safari
+   ```
+
+#### Browser Testing Checklist
+
+**Pre-Testing Setup:**
+- [ ] Clear browser cache and cookies
+- [ ] Disable browser extensions (test in incognito/private mode)
+- [ ] Ensure using supported browser version
+- [ ] Check network tab for 404s or failed requests
+- [ ] Monitor console for JavaScript errors
+
+**Visual Testing:**
+- [ ] Header/navigation renders correctly
+- [ ] Footer appears at bottom of page
+- [ ] Calendar grid displays properly
+- [ ] Charts render without distortion
+- [ ] Modal dialogs center correctly
+- [ ] Buttons and form inputs styled consistently
+- [ ] Colors match design system
+- [ ] Fonts load correctly (no FOUT/FOIT)
+
+**Functional Testing:**
+- [ ] All links navigate correctly
+- [ ] Forms submit successfully
+- [ ] Validation messages display properly
+- [ ] Error handling works as expected
+- [ ] Loading states show during async operations
+- [ ] Optimistic UI updates work correctly
+
+**Performance Testing:**
+- [ ] Page load time < 3 seconds (on fast 3G)
+- [ ] No layout shift (CLS < 0.1)
+- [ ] Smooth scrolling and animations (60 FPS)
+- [ ] Large datasets render without freezing
+- [ ] Memory usage stays stable (no leaks)
+
+#### Browser-Specific Test Commands
+
+**Chrome DevTools Testing:**
+```javascript
+// Open Console (F12) and run performance checks
+performance.now();  // Check timing
+console.time('operation'); /* your test */ console.timeEnd('operation');
+```
+
+**Safari Web Inspector:**
+```javascript
+// Check for deprecated APIs
+console.warn('Testing Safari-specific features');
+```
+
+**Firefox Developer Tools:**
+```javascript
+// Check for security warnings
+console.info('Testing Firefox-specific features');
+```
+
+#### Accessibility Testing (Cross-Browser)
+
+**Keyboard Navigation:**
+- [ ] Tab through all interactive elements
+- [ ] Enter/Space activate buttons
+- [ ] Escape closes modals
+- [ ] Arrow keys navigate calendar
+
+**Screen Reader Testing:**
+- [ ] NVDA (Windows/Firefox)
+- [ ] JAWS (Windows/Chrome, Edge)
+- [ ] VoiceOver (macOS Safari, iOS Safari)
+- [ ] TalkBack (Android Chrome)
+
+**Accessibility Checklist:**
+- [ ] All images have alt text
+- [ ] Form inputs have labels
+- [ ] ARIA landmarks present
+- [ ] Color contrast meets WCAG AA
+- [ ] Focus indicators visible
+
+#### Reporting Browser Issues
+
+When you find a browser-specific issue, document it with:
+
+1. **Browser & Version:** Chrome 119, Safari 17, etc.
+2. **Operating System:** Windows 11, macOS 14, iOS 17, Android 13
+3. **Device:** Desktop, iPhone 14, Samsung Galaxy S23
+4. **Steps to Reproduce:** Exact steps to trigger issue
+5. **Expected Behavior:** What should happen
+6. **Actual Behavior:** What actually happens
+7. **Screenshots/Video:** Visual evidence
+8. **Console Errors:** JavaScript errors from console
+9. **Network Tab:** Failed requests or slow loading
+
+**Issue Template:**
+```
+Browser: [browser name and version]
+OS: [operating system and version]
+Device: [desktop/mobile device model]
+URL: [specific page where issue occurs]
+
+Steps to Reproduce:
+1. Go to...
+2. Click on...
+3. Observe...
+
+Expected: [expected behavior]
+Actual: [actual behavior]
+
+Console Errors: [paste errors]
+Screenshots: [attach images]
+```
+
+#### Browser Compatibility Resources
+
+- **Can I Use:** https://caniuse.com/ - Check feature support
+- **MDN Web Docs:** https://developer.mozilla.org/ - Browser compatibility tables
+- **BrowserStack:** https://www.browserstack.com/ - Live cross-browser testing (paid)
+- **LambdaTest:** https://www.lambdatest.com/ - Automated cross-browser testing (paid)
+- **Playwright:** https://playwright.dev/ - Cross-browser automation (free)
+
 ## Contributing
 
 1. Fork the repository

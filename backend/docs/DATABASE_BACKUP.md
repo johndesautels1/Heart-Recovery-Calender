@@ -547,6 +547,361 @@ psql -U postgres -c "DROP DATABASE heart_recovery_test;"
 
 ---
 
+## Backup Verification Schedule
+
+**Purpose:** Ensure backups are reliable, restorable, and meet compliance requirements through regular automated and manual verification procedures.
+
+### Daily Automated Checks (Every 6 Hours)
+
+**Who:** Automated monitoring script
+**Time:** 00:00, 06:00, 12:00, 18:00
+
+**Checks Performed:**
+- [ ] Verify latest backup exists and is recent (< 26 hours old)
+- [ ] Check backup file integrity with `pg_restore --list`
+- [ ] Verify backup file size is reasonable (not 0 bytes, within expected range)
+- [ ] Check disk space availability (< 85% full)
+- [ ] Send alert email if any check fails
+
+**Script:** `backend/scripts/check-backups.sh` (see [Backup Monitoring](#backup-monitoring))
+
+**Action on Failure:** Alert sent to admin email immediately
+
+---
+
+### Weekly Verification (Every Monday at 09:00)
+
+**Who:** Database Administrator / DevOps Engineer
+**Time:** Monday 09:00 AM
+**Duration:** 15-30 minutes
+
+**Tasks:**
+1. [ ] Review backup logs for past 7 days
+2. [ ] Verify all daily backups completed successfully
+3. [ ] Check backup file sizes for anomalies
+4. [ ] Verify offsite backup replication status
+5. [ ] Test random backup file integrity
+6. [ ] Review disk space trends
+7. [ ] Update backup verification log
+
+**Procedure:**
+
+```bash
+# 1. Review backup logs
+tail -100 /var/backups/heart-recovery-calendar/backup.log
+
+# 2. List all backups from past week
+find /var/backups/heart-recovery-calendar -name "*.backup" -mtime -7 -exec ls -lh {} \;
+
+# 3. Check random backup integrity
+RANDOM_BACKUP=$(find /var/backups -name "*.backup" -mtime -7 | shuf -n 1)
+pg_restore --list "$RANDOM_BACKUP" > /dev/null 2>&1
+if [ $? -eq 0 ]; then echo "✓ Random backup verified: $RANDOM_BACKUP"; fi
+
+# 4. Check disk space
+df -h /var/backups
+
+# 5. Log completion
+echo "$(date '+%Y-%m-%d %H:%M:%S') - Weekly verification completed" >> backup_verification.log
+```
+
+**Documentation:** Update `backups/verification-log/weekly-YYYY-MM.md`
+
+---
+
+### Monthly Full Restore Test (First Monday of Each Month at 10:00)
+
+**Who:** Database Administrator + Application Developer
+**Time:** First Monday of month, 10:00 AM
+**Duration:** 1-2 hours
+
+**Critical:** This is the most important verification - ensures backups are actually restorable!
+
+**Tasks:**
+1. [ ] Select most recent full backup
+2. [ ] Create isolated test database
+3. [ ] Perform full restore from backup
+4. [ ] Verify all tables and row counts
+5. [ ] Check data integrity and relationships
+6. [ ] Test application functionality against restored DB
+7. [ ] Measure and document restore time
+8. [ ] Document results in monthly test report
+9. [ ] Cleanup test database
+10. [ ] Update stakeholders on restore test results
+
+**Procedure:**
+
+```bash
+#!/bin/bash
+# Monthly Restore Test Script
+
+TEST_DATE=$(date '+%Y-%m-%d')
+BACKUP_FILE=$(find /var/backups -name "*.backup" -mtime -1 | head -1)
+TEST_DB="heart_recovery_restore_test_$(date +%Y%m%d)"
+REPORT_FILE="backups/test-results/restore-test-$TEST_DATE.txt"
+
+echo "=== Monthly Backup Restore Test ===" | tee $REPORT_FILE
+echo "Date: $TEST_DATE" | tee -a $REPORT_FILE
+echo "Backup File: $BACKUP_FILE" | tee -a $REPORT_FILE
+echo "Backup Size: $(du -h $BACKUP_FILE | cut -f1)" | tee -a $REPORT_FILE
+echo "" | tee -a $REPORT_FILE
+
+# Step 1: Create test database
+echo "[Step 1] Creating test database..." | tee -a $REPORT_FILE
+psql -U postgres -c "CREATE DATABASE $TEST_DB;"
+
+# Step 2: Restore backup
+echo "[Step 2] Restoring backup..." | tee -a $REPORT_FILE
+START_TIME=$(date +%s)
+pg_restore --dbname=$TEST_DB --verbose $BACKUP_FILE 2>&1 | tee -a $REPORT_FILE
+END_TIME=$(date +%s)
+RESTORE_DURATION=$((END_TIME - START_TIME))
+echo "Restore Duration: $RESTORE_DURATION seconds" | tee -a $REPORT_FILE
+
+# Step 3: Verify data
+echo "[Step 3] Verifying data..." | tee -a $REPORT_FILE
+psql -U postgres -d $TEST_DB << EOF | tee -a $REPORT_FILE
+SELECT 'Users:' as table_name, COUNT(*) as row_count FROM users
+UNION ALL
+SELECT 'Patients:', COUNT(*) FROM patients
+UNION ALL
+SELECT 'VitalsSamples:', COUNT(*) FROM vitals_samples
+UNION ALL
+SELECT 'Medications:', COUNT(*) FROM medications
+UNION ALL
+SELECT 'CalendarEvents:', COUNT(*) FROM calendar_events;
+
+-- Check recent data exists
+SELECT 'Recent Data Check:',
+       CASE
+         WHEN COUNT(*) > 0 THEN 'PASS'
+         ELSE 'FAIL'
+       END
+FROM vitals_samples
+WHERE "recordedAt" > NOW() - INTERVAL '7 days';
+EOF
+
+# Step 4: Check foreign keys
+echo "[Step 4] Checking foreign key constraints..." | tee -a $REPORT_FILE
+psql -U postgres -d $TEST_DB -c "\
+SELECT COUNT(*) as fk_count FROM information_schema.table_constraints \
+WHERE constraint_type = 'FOREIGN KEY';" | tee -a $REPORT_FILE
+
+# Step 5: Cleanup
+echo "[Step 5] Cleaning up..." | tee -a $REPORT_FILE
+psql -U postgres -c "DROP DATABASE $TEST_DB;"
+
+echo "" | tee -a $REPORT_FILE
+echo "=== TEST RESULT: PASS ===" | tee -a $REPORT_FILE
+echo "Test completed successfully on $TEST_DATE" | tee -a $REPORT_FILE
+```
+
+**Success Criteria:**
+- ✓ Restore completes without errors
+- ✓ All tables present with expected row counts (±5% of production)
+- ✓ Foreign key constraints intact
+- ✓ Recent data (last 7 days) present
+- ✓ Restore time < 30 minutes for backups < 500MB
+- ✓ Application can connect and query restored database
+
+**Documentation:** Create detailed report in `backups/test-results/restore-test-YYYY-MM-DD.md`
+
+---
+
+### Quarterly Disaster Recovery Drill (Every 3 Months)
+
+**Who:** Full IT Team + Management
+**Time:** Last Friday of March, June, September, December at 14:00
+**Duration:** 3-4 hours
+
+**Purpose:** Full disaster recovery simulation to test procedures, team readiness, and recovery time objectives (RTO/RPO)
+
+**Tasks:**
+1. [ ] Simulate disaster scenario (server failure, data corruption, ransomware)
+2. [ ] Execute full disaster recovery plan
+3. [ ] Restore database from offsite backup
+4. [ ] Restore application servers
+5. [ ] Verify data integrity and completeness
+6. [ ] Test application functionality end-to-end
+7. [ ] Measure actual recovery time vs RTO (target: 4 hours)
+8. [ ] Document lessons learned
+9. [ ] Update disaster recovery plan based on findings
+10. [ ] Present results to stakeholders
+
+**Scenarios to Test:**
+- **Q1:** Server hardware failure - full restore to new server
+- **Q2:** Database corruption - PITR (point-in-time recovery)
+- **Q3:** Ransomware attack - restore from offline backup
+- **Q4:** Accidental data deletion - table-level restore
+
+**Documentation:** Comprehensive report in `docs/disaster-recovery/drill-YYYY-QX.md`
+
+---
+
+### Annual Compliance Audit (January)
+
+**Who:** HIPAA Compliance Officer + External Auditor (if required)
+**Time:** January 15th
+**Duration:** Full day
+
+**Tasks:**
+1. [ ] Review all backup procedures and documentation
+2. [ ] Verify HIPAA compliance checklist (see [HIPAA Compliance](#hipaa-compliance))
+3. [ ] Review backup audit logs for entire year
+4. [ ] Verify encryption of all backups
+5. [ ] Confirm offsite storage and BAAs
+6. [ ] Review all monthly restore test reports
+7. [ ] Verify backup retention compliance (6+ years)
+8. [ ] Audit access controls and permissions
+9. [ ] Review disaster recovery drill results
+10. [ ] Update compliance documentation
+11. [ ] Sign off on annual backup compliance
+
+**Documentation:** Annual compliance report in `docs/compliance/backup-audit-YYYY.md`
+
+---
+
+### Verification Checklist Template
+
+Use this template for all verification activities:
+
+```markdown
+# Backup Verification Report
+
+**Date:** YYYY-MM-DD
+**Verification Type:** [Daily/Weekly/Monthly/Quarterly/Annual]
+**Performed By:** [Name/Automated]
+**Duration:** [Time taken]
+
+## Backup Details
+- **Backup File:** [filename]
+- **Backup Date:** [date/time]
+- **Backup Size:** [size in MB]
+- **Backup Type:** [Full/Incremental/Transaction Log]
+
+## Verification Steps
+
+### 1. File Integrity Check
+- [ ] Backup file exists
+- [ ] File size > 0 bytes
+- [ ] File not corrupted (pg_restore --list passed)
+- [ ] MD5/SHA256 checksum matches (if applicable)
+
+**Result:** ✓ PASS / ✗ FAIL
+**Notes:**
+
+### 2. Age Check
+- [ ] Backup is recent (< 26 hours for daily)
+- [ ] Timestamp is correct
+
+**Result:** ✓ PASS / ✗ FAIL
+**Notes:**
+
+### 3. Restore Test (if applicable)
+- [ ] Test database created
+- [ ] Restore completed successfully
+- [ ] All tables present
+- [ ] Row counts match expectations
+- [ ] Foreign keys intact
+- [ ] Recent data present
+
+**Restore Time:** [duration]
+**Result:** ✓ PASS / ✗ FAIL
+**Notes:**
+
+### 4. Encryption Verification
+- [ ] Backup is encrypted (if contains PHI)
+- [ ] Encryption key accessible
+- [ ] Can decrypt successfully
+
+**Result:** ✓ PASS / ✗ FAIL
+**Notes:**
+
+### 5. Offsite Replication
+- [ ] Backup replicated to offsite location
+- [ ] Replication completed successfully
+- [ ] Offsite backup accessible
+
+**Result:** ✓ PASS / ✗ FAIL
+**Notes:**
+
+## Overall Result
+
+**Status:** ✓ PASS / ✗ FAIL / ⚠ PARTIAL
+
+## Issues Identified
+
+[List any issues found]
+
+## Actions Taken
+
+[List corrective actions]
+
+## Next Verification Due
+
+**Date:** [next scheduled verification]
+
+## Sign-Off
+
+**Verified By:** [Name]
+**Signature:** [Signature]
+**Date:** [Date]
+```
+
+---
+
+### Verification Schedule Calendar
+
+| Frequency | Task | Day/Time | Duration | Owner |
+|-----------|------|----------|----------|-------|
+| Every 6 hours | Automated health check | Daily 00:00, 06:00, 12:00, 18:00 | 5 min | Automated |
+| Weekly | Backup review | Monday 09:00 | 30 min | DBA |
+| Monthly | Full restore test | 1st Monday 10:00 | 2 hours | DBA + Dev |
+| Quarterly | DR drill | Last Friday Q 14:00 | 4 hours | Full Team |
+| Annually | Compliance audit | January 15 | Full day | Compliance Officer |
+
+---
+
+### Alert and Escalation Procedures
+
+#### Level 1 - Info (Automated Check Passed)
+- **Action:** Log success, no alert
+- **Escalation:** None
+
+#### Level 2 - Warning (Minor Issue)
+- **Examples:** Backup slightly delayed, disk space > 80%
+- **Action:** Email alert to admin
+- **Escalation:** None if resolved within 4 hours
+
+#### Level 3 - Critical (Backup Failed)
+- **Examples:** Backup missing > 26 hours, corrupted backup, disk full
+- **Action:** Immediate email + SMS to admin and on-call DBA
+- **Escalation:** If not resolved in 2 hours, escalate to CTO
+
+#### Level 4 - Emergency (Multiple Backup Failures)
+- **Examples:** 2+ consecutive backup failures, restore test failed
+- **Action:** Immediate alert to entire IT team + management
+- **Escalation:** Immediate escalation to CTO and CEO
+
+---
+
+### Verification Metrics and KPIs
+
+Track these metrics monthly:
+
+- **Backup Success Rate:** Target > 99.5%
+- **Average Backup Duration:** Track trend (should be stable or decreasing)
+- **Average Restore Time:** Target < 30 minutes for < 500MB
+- **Backup File Size Growth:** Track data growth trends
+- **Disk Space Utilization:** Keep < 80%
+- **Restore Test Success Rate:** Target 100%
+- **Mean Time to Detect (MTTD) backup failure:** Target < 6 hours
+- **Mean Time to Restore (MTTR):** Target < 4 hours (RTO)
+
+**Dashboard:** Create monthly backup metrics dashboard in `backups/metrics/YYYY-MM.md`
+
+---
+
 ## Disaster Recovery
 
 ### Disaster Recovery Plan (DRP)

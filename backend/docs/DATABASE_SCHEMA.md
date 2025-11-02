@@ -976,6 +976,432 @@ module.exports = {
 npm run migrate:production
 ```
 
+### Migration Backfill Test Procedure
+
+**What is a Backfill Migration?**
+
+A backfill migration is a database migration that:
+1. Adds a new column to an existing table
+2. Populates (backfills) that column with calculated or default values for existing rows
+3. May add constraints (NOT NULL, UNIQUE, etc.) after backfilling
+
+Backfill migrations are common when adding required fields to tables that already contain data.
+
+**When to Use Backfill Migrations:**
+
+- Adding a new required column (`NOT NULL`) to a populated table
+- Migrating data from one column format to another
+- Computing derived values from existing data
+- Normalizing data (splitting columns, creating lookup tables)
+- Adding audit fields (`createdBy`, `lastModifiedAt`) to existing records
+
+**Why Testing is Critical:**
+
+❌ **Risks of Untested Backfills:**
+- Migration fails mid-execution on large tables (millions of rows)
+- Backfill logic has bugs, corrupting existing data
+- Performance issues cause application downtime
+- Memory exhaustion on large datasets
+- Deadlocks with concurrent transactions
+
+✅ **Benefits of Proper Testing:**
+- Verify backfill logic is correct before production
+- Identify performance bottlenecks
+- Validate rollback procedures work
+- Ensure data integrity constraints are met
+
+---
+
+### Backfill Testing Procedure
+
+#### Step 1: Create a Realistic Test Dataset
+
+**Generate test data that mirrors production:**
+
+```bash
+# Connect to development database
+psql -U postgres -d heartbeat_calendar_dev
+
+# Check current production data volume
+SELECT
+  'users' as table_name, COUNT(*) as row_count FROM users
+UNION ALL SELECT 'calendar_events', COUNT(*) FROM calendar_events
+UNION ALL SELECT 'vitals_samples', COUNT(*) FROM vitals_samples;
+```
+
+**Seed test data (if needed):**
+
+```javascript
+// backend/src/scripts/seed-test-data.js
+const { CalendarEvent } = require('../models');
+
+async function seedTestData() {
+  const testEvents = [];
+
+  // Create 10,000 test events (adjust to match production scale)
+  for (let i = 0; i < 10000; i++) {
+    testEvents.push({
+      calendarId: Math.floor(Math.random() * 100) + 1,
+      title: `Test Event ${i}`,
+      startTime: new Date(2025, 0, 1 + (i % 365)),
+      endTime: new Date(2025, 0, 1 + (i % 365)),
+      status: 'scheduled'
+    });
+  }
+
+  await CalendarEvent.bulkCreate(testEvents);
+  console.log(`Created ${testEvents.length} test events`);
+}
+
+seedTestData();
+```
+
+#### Step 2: Write the Backfill Migration
+
+**Example: Adding `privacyLevel` to CalendarEvent**
+
+```javascript
+// backend/src/migrations/20251102000001-add-privacy-level-to-calendar-events.js
+'use strict';
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    const transaction = await queryInterface.sequelize.transaction();
+
+    try {
+      // Step 1: Add column (nullable first)
+      await queryInterface.addColumn(
+        'calendar_events',
+        'privacyLevel',
+        {
+          type: Sequelize.ENUM('private', 'shared', 'clinical'),
+          allowNull: true, // Allow null during backfill
+          comment: 'Privacy level: private (patient only), shared (with therapist), clinical (medical records)'
+        },
+        { transaction }
+      );
+
+      // Step 2: Backfill existing records
+      // Strategy: Use batching to avoid memory issues
+      const BATCH_SIZE = 1000;
+      let offset = 0;
+      let hasMore = true;
+
+      console.log('Starting backfill of privacyLevel...');
+
+      while (hasMore) {
+        const result = await queryInterface.sequelize.query(
+          `
+          UPDATE calendar_events
+          SET "privacyLevel" = CASE
+            WHEN "createdBy" IS NOT NULL THEN 'clinical'  -- Therapist-created events
+            WHEN "patientId" IS NOT NULL THEN 'shared'    -- Patient-assigned events
+            ELSE 'private'                                 -- Default to private
+          END
+          WHERE id IN (
+            SELECT id FROM calendar_events
+            WHERE "privacyLevel" IS NULL
+            ORDER BY id
+            LIMIT :batchSize
+          )
+          `,
+          {
+            replacements: { batchSize: BATCH_SIZE },
+            transaction
+          }
+        );
+
+        const rowsAffected = result[1].rowCount || 0;
+        console.log(`Backfilled ${rowsAffected} rows (offset: ${offset})`);
+
+        if (rowsAffected < BATCH_SIZE) {
+          hasMore = false;
+        }
+
+        offset += BATCH_SIZE;
+      }
+
+      // Step 3: Add NOT NULL constraint (after backfill complete)
+      await queryInterface.changeColumn(
+        'calendar_events',
+        'privacyLevel',
+        {
+          type: Sequelize.ENUM('private', 'shared', 'clinical'),
+          allowNull: false,
+          defaultValue: 'private'
+        },
+        { transaction }
+      );
+
+      console.log('Backfill migration completed successfully');
+      await transaction.commit();
+
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Backfill migration failed:', error);
+      throw error;
+    }
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.removeColumn('calendar_events', 'privacyLevel');
+  }
+};
+```
+
+#### Step 3: Test the Migration in Development
+
+**Run migration and validate:**
+
+```bash
+# Backup development database first
+pg_dump -U postgres heartbeat_calendar_dev > backup_before_backfill.sql
+
+# Run the migration
+cd backend
+npx sequelize-cli db:migrate
+
+# Verify backfill results
+psql -U postgres -d heartbeat_calendar_dev << EOF
+-- Check all rows were backfilled
+SELECT COUNT(*) as total_rows FROM calendar_events;
+SELECT COUNT(*) as backfilled_rows FROM calendar_events WHERE "privacyLevel" IS NOT NULL;
+
+-- Validate backfill logic
+SELECT
+  CASE
+    WHEN "createdBy" IS NOT NULL THEN 'Should be clinical'
+    WHEN "patientId" IS NOT NULL THEN 'Should be shared'
+    ELSE 'Should be private'
+  END as expected_privacy,
+  "privacyLevel" as actual_privacy,
+  COUNT(*) as count
+FROM calendar_events
+GROUP BY expected_privacy, actual_privacy
+ORDER BY expected_privacy, actual_privacy;
+
+-- Check for null values (should be 0)
+SELECT COUNT(*) as null_count FROM calendar_events WHERE "privacyLevel" IS NULL;
+EOF
+```
+
+#### Step 4: Test Rollback
+
+**Verify the down migration works:**
+
+```bash
+# Undo the migration
+npx sequelize-cli db:migrate:undo
+
+# Verify column was removed
+psql -U postgres -d heartbeat_calendar_dev -c "\d calendar_events"
+
+# Restore from backup if needed
+psql -U postgres heartbeat_calendar_dev < backup_before_backfill.sql
+
+# Re-run migration
+npx sequelize-cli db:migrate
+```
+
+#### Step 5: Performance Testing
+
+**Test with production-scale data:**
+
+```bash
+# Measure migration time
+time npx sequelize-cli db:migrate
+
+# Monitor database performance during migration
+psql -U postgres -d heartbeat_calendar_dev << EOF
+-- Check for long-running queries
+SELECT pid, now() - pg_stat_activity.query_start AS duration, query
+FROM pg_stat_activity
+WHERE state = 'active'
+ORDER BY duration DESC;
+
+-- Check table locks
+SELECT * FROM pg_locks WHERE relation::regclass::text = 'calendar_events';
+EOF
+```
+
+**Expected Performance Benchmarks:**
+
+| Rows | Batch Size | Expected Time | Memory Usage |
+|------|------------|---------------|--------------|
+| 1,000 | 1000 | < 1 second | < 10 MB |
+| 10,000 | 1000 | < 10 seconds | < 50 MB |
+| 100,000 | 1000 | < 2 minutes | < 100 MB |
+| 1,000,000 | 1000 | < 20 minutes | < 500 MB |
+
+**If performance is poor:**
+- Reduce batch size (500 or 250)
+- Add temporary index on columns used in WHERE clause
+- Run during low-traffic hours
+- Consider application-level backfill instead
+
+#### Step 6: Validate Data Integrity
+
+**Check constraints and indexes:**
+
+```sql
+-- Verify NOT NULL constraint was added
+SELECT
+  column_name,
+  is_nullable,
+  column_default,
+  data_type
+FROM information_schema.columns
+WHERE table_name = 'calendar_events'
+  AND column_name = 'privacyLevel';
+
+-- Check ENUM values
+SELECT
+  e.enumlabel as enum_value
+FROM pg_type t
+JOIN pg_enum e ON t.oid = e.enumtypid
+JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+WHERE t.typname = 'enum_calendar_events_privacyLevel';
+
+-- Verify referential integrity (if foreign keys involved)
+SELECT COUNT(*) FROM calendar_events WHERE "privacyLevel" NOT IN ('private', 'shared', 'clinical');
+```
+
+#### Step 7: Document the Migration
+
+**Add comments to migration file:**
+
+```javascript
+/**
+ * Migration: Add privacyLevel to CalendarEvent
+ *
+ * BACKFILL STRATEGY:
+ * - Batched updates (1000 rows at a time) to prevent memory issues
+ * - Uses CASE statement for conditional backfill logic
+ * - Therapist-created events → 'clinical'
+ * - Patient-assigned events → 'shared'
+ * - Other events → 'private'
+ *
+ * TESTING NOTES:
+ * - Tested with 50,000 rows in development
+ * - Migration completed in 45 seconds
+ * - All rows successfully backfilled
+ * - Rollback verified working
+ *
+ * PRODUCTION ESTIMATE:
+ * - Expected rows: ~100,000
+ * - Estimated time: 90 seconds
+ * - Maintenance window: Not required (non-blocking migration)
+ */
+```
+
+---
+
+### Common Backfill Patterns
+
+#### Pattern 1: Simple Default Value
+
+```javascript
+// Add column with default value for all existing rows
+await queryInterface.addColumn('users', 'accountStatus', {
+  type: Sequelize.ENUM('active', 'inactive', 'suspended'),
+  allowNull: false,
+  defaultValue: 'active'  // Postgres will backfill automatically
+});
+```
+
+#### Pattern 2: Computed Value from Existing Columns
+
+```javascript
+// Calculate value from other columns
+await queryInterface.sequelize.query(
+  `
+  UPDATE calendar_events
+  SET "durationMinutes" = EXTRACT(EPOCH FROM ("endTime" - "startTime")) / 60
+  WHERE "durationMinutes" IS NULL
+  `
+);
+```
+
+#### Pattern 3: Lookup from Related Table
+
+```javascript
+// Backfill from joined table
+await queryInterface.sequelize.query(
+  `
+  UPDATE calendar_events e
+  SET "therapistId" = c."ownerId"
+  FROM calendars c
+  WHERE e."calendarId" = c.id
+    AND c."ownerType" = 'therapist'
+    AND e."therapistId" IS NULL
+  `
+);
+```
+
+#### Pattern 4: Incremental Backfill (Large Tables)
+
+```javascript
+// For tables with millions of rows
+let lastProcessedId = 0;
+const BATCH_SIZE = 5000;
+
+while (true) {
+  const result = await queryInterface.sequelize.query(
+    `
+    UPDATE large_table
+    SET "newColumn" = 'calculated_value'
+    WHERE id > :lastId
+      AND id <= (SELECT MIN(id) + :batchSize FROM large_table WHERE id > :lastId)
+      AND "newColumn" IS NULL
+    RETURNING id
+    `,
+    { replacements: { lastId: lastProcessedId, batchSize: BATCH_SIZE } }
+  );
+
+  if (result[0].length === 0) break;
+
+  lastProcessedId = result[0][result[0].length - 1].id;
+  console.log(`Processed up to ID: ${lastProcessedId}`);
+
+  // Pause between batches to avoid overwhelming database
+  await new Promise(resolve => setTimeout(resolve, 100));
+}
+```
+
+---
+
+### Backfill Migration Checklist
+
+**Before Writing Migration:**
+- [ ] Identify all affected tables and row counts
+- [ ] Determine backfill strategy (default, computed, lookup)
+- [ ] Estimate migration time based on data volume
+- [ ] Plan for transaction batching if > 10,000 rows
+
+**During Development:**
+- [ ] Write migration with both `up` and `down` methods
+- [ ] Add column as nullable initially
+- [ ] Implement batched updates (1000-5000 rows per batch)
+- [ ] Add progress logging
+- [ ] Wrap in transaction for atomicity
+- [ ] Add NOT NULL constraint after backfill complete
+
+**Testing:**
+- [ ] Seed realistic test data (match production scale)
+- [ ] Run migration in development
+- [ ] Validate backfill logic with SQL queries
+- [ ] Test rollback (`db:migrate:undo`)
+- [ ] Measure performance and memory usage
+- [ ] Check for NULL values after backfill
+
+**Production Deployment:**
+- [ ] Document expected migration time
+- [ ] Schedule during maintenance window (if > 5 minutes)
+- [ ] Backup database before migration
+- [ ] Monitor migration progress (check logs)
+- [ ] Verify data integrity post-migration
+- [ ] Monitor application errors for 24 hours
+
 ---
 
 ## Data Retention & Privacy

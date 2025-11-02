@@ -31,6 +31,11 @@ interface CalendarEventAttributes {
   heartRateMax?: number;
   caloriesBurned?: number;
   exerciseNotes?: string;
+  deletedAt?: Date; // Soft delete timestamp
+  privacyLevel?: 'private' | 'shared' | 'clinical'; // Privacy control
+  therapyGoalId?: number; // Link to therapy goals
+  attachments?: any; // JSONB field for file metadata
+  tags?: string[]; // Array of tags for categorization
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -67,6 +72,11 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
   public heartRateMax?: number;
   public caloriesBurned?: number;
   public exerciseNotes?: string;
+  public deletedAt?: Date;
+  public privacyLevel?: 'private' | 'shared' | 'clinical';
+  public therapyGoalId?: number;
+  public attachments?: any;
+  public tags?: string[];
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -228,12 +238,45 @@ class CalendarEvent extends Model<CalendarEventAttributes, CalendarEventCreation
           allowNull: true,
           comment: 'Additional notes about the exercise session',
         },
+        deletedAt: {
+          type: DataTypes.DATE,
+          allowNull: true,
+          comment: 'Soft delete timestamp - if set, event is considered deleted',
+        },
+        privacyLevel: {
+          type: DataTypes.ENUM('private', 'shared', 'clinical'),
+          allowNull: true,
+          defaultValue: 'private',
+          comment: 'Privacy level: private (patient only), shared (with therapist), clinical (medical records)',
+        },
+        therapyGoalId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'therapy_goals',
+            key: 'id',
+          },
+          comment: 'Link to therapy goal if this event is part of a therapy plan',
+        },
+        attachments: {
+          type: DataTypes.JSONB,
+          allowNull: true,
+          defaultValue: null,
+          comment: 'JSONB field for file attachments metadata (filename, url, type, size)',
+        },
+        tags: {
+          type: DataTypes.ARRAY(DataTypes.TEXT),
+          allowNull: true,
+          defaultValue: [],
+          comment: 'Array of tags for flexible categorization and filtering',
+        },
       },
       {
         sequelize,
         modelName: 'CalendarEvent',
         tableName: 'calendar_events',
         timestamps: true,
+        paranoid: true, // Enables soft deletes with deletedAt
       }
     );
   }
