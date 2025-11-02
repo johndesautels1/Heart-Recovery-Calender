@@ -46,13 +46,7 @@ export interface CalendarEvent {
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
   sleepHours?: number;
-  eventTemplateId?: number;
-  invitationStatus?: 'pending' | 'accepted' | 'declined';
-  createdBy?: number;
-  patientId?: number;
-  userId?: number; // For backward compatibility (patientId is the backend field)
   exerciseId?: number;
-  prescriptionId?: number; // Alias for exerciseId for consistency
   performanceScore?: number;
   exerciseIntensity?: number; // 1-10 scale
   distanceMiles?: number;
@@ -64,11 +58,6 @@ export interface CalendarEvent {
   heartRateMax?: number;
   caloriesBurned?: number;
   exerciseNotes?: string;
-  deletedAt?: string; // Soft delete timestamp
-  privacyLevel?: 'private' | 'shared' | 'clinical'; // Privacy control
-  therapyGoalId?: number; // Link to therapy goals
-  attachments?: any; // JSONB field for file metadata
-  tags?: string[]; // Array of tags for categorization
   createdAt: string;
   updatedAt: string;
   calendar?: Calendar;  // Optional joined data
@@ -90,10 +79,8 @@ export interface MealEntry {
   protein?: number;
   carbohydrates?: number;
   withinSpec: boolean;
-  postSurgeryDay?: number;
   notes?: string;
   satisfactionRating?: number; // NEW: 1-5 scale for how satisfying the meal was
-  heartHealthRating?: number; // frontend-only field for heart health rating
   createdAt: string;
   updatedAt: string;
 }
@@ -105,18 +92,17 @@ export interface VitalsSample {
   bloodPressureSystolic?: number;
   bloodPressureDiastolic?: number;
   heartRate?: number;
-  heartRateVariability?: number;  // API returns this name (backend field: hrVariability)
+  heartRateVariability?: number;  // API returns this name
   weight?: number;
   temperature?: number;
   oxygenSaturation?: number;
   bloodSugar?: number;
   hydrationStatus?: number;
-  cholesterolTotal?: number;      // API returns this name (backend field: cholesterol)
-  cholesterolLDL?: number;        // API returns this name (backend field: ldl)
-  cholesterolHDL?: number;        // API returns this name (backend field: hdl)
+  cholesterolTotal?: number;      // API returns this name
+  cholesterolLDL?: number;        // API returns this name
+  cholesterolHDL?: number;        // API returns this name
   triglycerides?: number;
   respiratoryRate?: number;
-  postSurgeryDay?: number;
   notes?: string;
   symptoms?: string;
   medicationsTaken: boolean;
@@ -136,20 +122,10 @@ export interface Medication {
   startDate: string;
   endDate?: string;
   timeOfDay?: string;
-  purpose?: string;
   instructions?: string;
   sideEffects?: string;
   isActive: boolean;
   reminderEnabled: boolean;
-  refillDate?: string;
-  remainingRefills?: number;
-  pharmacy?: string;
-  pharmacyPhone?: string;
-  notes?: string;
-  effectiveness?: number; // 1-10 rating (frontend-only)
-  monthlyCost?: number; // frontend-only
-  isOTC?: boolean; // prescription vs over-the-counter (frontend-only)
-  postSurgeryDay?: number; // CRITICAL for recovery tracking (frontend-only)
   createdAt: string;
   updatedAt: string;
 }
@@ -325,102 +301,20 @@ export interface Patient {
   id: number;
   therapistId: number;
   userId?: number;  // Link to patient's user account
-
-  // Name (split fields)
-  firstName?: string;
-  lastName?: string;
-  name: string; // Keep for backward compatibility
-
-  // Demographics
-  dateOfBirth?: string;
-  gender?: 'male' | 'female' | 'other';
-  age?: number; // Auto-calculated from DOB
-
-  // Primary Contact
+  name: string;
   email?: string;
-  primaryPhone?: string;
-  primaryPhoneType?: 'mobile' | 'home' | 'work';
-  alternatePhone?: string;
-  preferredContactMethod?: 'phone' | 'email' | 'text';
-  bestTimeToContact?: 'morning' | 'afternoon' | 'evening';
-  phone?: string; // Keep for backward compatibility
-
-  // Mailing Address
-  streetAddress?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
-  address?: string; // Keep for backward compatibility
-
-  // Emergency Contact #1
-  emergencyContact1Name?: string;
-  emergencyContact1Relationship?: string;
-  emergencyContact1Phone?: string;
-  emergencyContact1AlternatePhone?: string;
-  emergencyContact1Email?: string;
-  emergencyContact1SameAddress?: boolean;
-
-  // Emergency Contact #2
-  emergencyContact2Name?: string;
-  emergencyContact2Relationship?: string;
-  emergencyContact2Phone?: string;
-  emergencyContact2AlternatePhone?: string;
-  emergencyContact2Email?: string;
-  emergencyContact2SameAddress?: boolean;
-
-  // Physical Measurements
-  height?: number;
-  heightUnit?: 'in' | 'cm';
-  startingWeight?: number;
-  currentWeight?: number;
-  targetWeight?: number;
-  weightUnit?: 'kg' | 'lbs';
-  race?: string;
-  nationality?: string;
-
-  // Prior Surgical Procedures
-  priorSurgicalProcedures?: string[]; // CABG, Valve Replacement, etc.
-  devicesImplanted?: string[]; // Pacemaker, ICD, Stents, etc.
-  priorSurgeryNotes?: string;
-  hospitalName?: string;
-  surgeonName?: string;
-  surgeryDate?: string;
-  dischargeDate?: string;
-  dischargeInstructions?: string;
-
-  // Medical History
-  priorHealthConditions?: string[]; // Diabetes, CKD, COPD
-  currentConditions?: string[];
-  nonCardiacMedications?: string;
-  allergies?: string;
-
-  // Heart Condition
-  diagnosisDate?: string;
-  heartConditions?: string[]; // CAD, CHF, AFib, etc.
-  currentTreatmentProtocol?: string[];
-  recommendedTreatments?: string[];
-
-  // Cardiac Vitals (CRITICAL for MET calculations)
-  restingHeartRate?: number;
-  maxHeartRate?: number; // Override 220-age if doctor sets limit
-  targetHeartRateMin?: number;
-  targetHeartRateMax?: number;
-  baselineBpSystolic?: number;
-  baselineBpDiastolic?: number;
-  ejectionFraction?: number; // %
-  cardiacDiagnosis?: string[];
-  medicationsAffectingHR?: string[]; // Beta-blockers, etc.
-  activityRestrictions?: string;
-
-  // Device Integration
-  polarDeviceId?: string;
-  samsungHealthAccount?: string;
-  preferredDataSource?: 'polar' | 'samsung' | 'manual';
-
+  phone?: string;
+  address?: string;
   zoomHandle?: string;
+  surgeryDate?: string;
   notes?: string;
   isActive: boolean;
+  height?: number;          // Height in inches or cm
+  heightUnit?: 'in' | 'cm'; // Unit of measurement
+  startingWeight?: number;  // Weight at start of therapy
+  currentWeight?: number;   // Most recent weight
+  targetWeight?: number;    // Goal weight
+  weightUnit?: 'kg' | 'lbs'; // Unit of measurement
   createdAt: string;
   updatedAt: string;
 }
@@ -526,7 +420,6 @@ export interface SleepLog {
   date: string;
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
-  postSurgeryDay?: number;
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
