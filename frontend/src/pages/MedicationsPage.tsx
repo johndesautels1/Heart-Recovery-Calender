@@ -1207,7 +1207,7 @@ export function MedicationsPage() {
                       formatter={(value, name, props: any) => {
                         if (name === 'adherenceRate') {
                           const entry = props.payload;
-                          return [`${value.toFixed(0)}% (${entry.takenCount}/${entry.totalCount})`, 'Adherence'];
+                          return [`${typeof value === 'number' ? value.toFixed(0) : '0'}% (${entry.takenCount}/${entry.totalCount})`, 'Adherence'];
                         }
                         return [value, name];
                       }}
@@ -1272,7 +1272,7 @@ export function MedicationsPage() {
                           stroke: '#9ca3af',
                           strokeWidth: 2
                         }}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
                         outerRadius={90}
                         innerRadius={20}
                         fill="#8884d8"

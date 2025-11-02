@@ -438,10 +438,10 @@ export function SleepPage() {
 
   // 8. 3D Pyramid Data (quality distribution for isometric view)
   const pyramidData = [
-    { level: 'Excellent', count: qualityDistribution.excellent, color: '#10b981', layer: 4 },
-    { level: 'Good', count: qualityDistribution.good, color: '#3b82f6', layer: 3 },
-    { level: 'Fair', count: qualityDistribution.fair, color: '#f59e0b', layer: 2 },
-    { level: 'Poor', count: qualityDistribution.poor, color: '#ef4444', layer: 1 },
+    { level: 'Excellent', count: qualityDistribution.excellent, color: '#10b981', layer: 4, gradient: 'from-green-400', border: 'border-green-500', label: 'Excellent' },
+    { level: 'Good', count: qualityDistribution.good, color: '#3b82f6', layer: 3, gradient: 'from-blue-400', border: 'border-blue-500', label: 'Good' },
+    { level: 'Fair', count: qualityDistribution.fair, color: '#f59e0b', layer: 2, gradient: 'from-amber-400', border: 'border-amber-500', label: 'Fair' },
+    { level: 'Poor', count: qualityDistribution.poor, color: '#ef4444', layer: 1, gradient: 'from-red-400', border: 'border-red-500', label: 'Poor' },
   ].filter(item => item.count > 0);
 
   return (

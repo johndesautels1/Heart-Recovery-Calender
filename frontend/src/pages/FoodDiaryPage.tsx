@@ -82,7 +82,7 @@ export function FoodDiaryPage() {
           sugar: meal.sugar,
           protein: meal.protein,
           carbohydrates: meal.carbohydrates,
-          withinSpec: meal.withinSpec,
+          // withinSpec will be calculated on backend
           notes: meal.notes ? `${meal.notes} (Copied from ${selectedDate})` : `Copied from ${selectedDate}`,
         });
       }
@@ -111,7 +111,7 @@ export function FoodDiaryPage() {
 
       await api.createMeal({
         timestamp,
-        mealType: currentMealType,
+        mealType: currentMealType as 'breakfast' | 'lunch' | 'dinner' | 'snack',
         foodItems: newMeal.foodItems + (newMeal.isUnhealthy ? ' ⚠️' : ''),
         calories: newMeal.calories ? Number(newMeal.calories) : undefined,
         sodium: newMeal.sodium ? Number(newMeal.sodium) : undefined,
@@ -187,7 +187,7 @@ export function FoodDiaryPage() {
 
       await api.updateMeal(editingMeal.id, {
         timestamp,
-        mealType: currentMealType,
+        mealType: currentMealType as 'breakfast' | 'lunch' | 'dinner' | 'snack',
         foodItems: newMeal.foodItems + (newMeal.isUnhealthy ? ' ⚠️' : ''),
         calories: newMeal.calories ? Number(newMeal.calories) : undefined,
         sodium: newMeal.sodium ? Number(newMeal.sodium) : undefined,
