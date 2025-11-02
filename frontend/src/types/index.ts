@@ -10,6 +10,12 @@ export interface User {
   profilePhoto?: string;
   timezone: string;
   role?: 'patient' | 'therapist' | 'admin';
+  preferences?: {
+    emailNotifications?: boolean;
+    smsNotifications?: boolean;
+    theme?: string;
+    [key: string]: any;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +67,9 @@ export interface CalendarEvent {
   createdAt: string;
   updatedAt: string;
   calendar?: Calendar;  // Optional joined data
+  patientId?: number;   // Backend field - patient user ID
+  userId?: number;      // Convenience field - can be calendar.userId when joined
+  prescriptionId?: number; // Used in some components for exercise prescriptions
 }
 
 export interface MealEntry {
@@ -126,6 +135,15 @@ export interface Medication {
   sideEffects?: string;
   isActive: boolean;
   reminderEnabled: boolean;
+  effectiveness?: number;     // 1-5 rating scale
+  isOTC?: boolean;            // Over-the-counter vs prescription
+  monthlyCost?: number;       // Monthly cost in dollars
+  purpose?: string;           // What the medication is for
+  pharmacy?: string;          // Pharmacy name
+  pharmacyPhone?: string;     // Pharmacy contact
+  refillDate?: string;        // When to refill
+  remainingRefills?: number;  // Number of refills left
+  notes?: string;             // Additional notes
   createdAt: string;
   updatedAt: string;
 }
@@ -178,6 +196,7 @@ export interface CreateMealInput {
   sugar?: number;
   protein?: number;
   carbohydrates?: number;
+  withinSpec?: boolean;
   notes?: string;
 }
 
@@ -420,6 +439,7 @@ export interface SleepLog {
   date: string;
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  quality?: 'poor' | 'fair' | 'good' | 'excellent'; // Alias for sleepQuality
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
