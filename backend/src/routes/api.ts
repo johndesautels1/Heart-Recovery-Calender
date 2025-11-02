@@ -21,6 +21,7 @@ import * as exerciseLogsController from '../controllers/exerciseLogsController';
 import * as hydrationLogsController from '../controllers/hydrationLogsController';
 import * as dailyScoresController from '../controllers/dailyScoresController';
 import * as caloriesController from '../controllers/caloriesController';
+import * as notificationsController from '../controllers/notificationsController';
 import uploadRoutes from './upload';
 import devicesRoutes from './devices';
 import stravaRoutes from './strava';
@@ -220,6 +221,15 @@ router.get('/daily-scores/trends', dailyScoresController.getTrends);
 router.get('/daily-scores/date/:date', dailyScoresController.getDailyScoreByDate);
 router.get('/daily-scores/:id', dailyScoresController.getDailyScore);
 router.delete('/daily-scores/:id', dailyScoresController.deleteDailyScore);
+
+// ========== NOTIFICATIONS ROUTES ==========
+router.get('/notifications', notificationsController.getNotifications);
+router.get('/notifications/unread-count', notificationsController.getUnreadCount);
+router.post('/notifications/send', notificationsController.sendNotification);
+router.post('/notifications/test', notificationsController.sendTestNotification);
+router.patch('/notifications/mark-all-read', notificationsController.markAllAsRead);
+router.patch('/notifications/:id/read', notificationsController.markAsRead);
+router.delete('/notifications/:id', notificationsController.deleteNotification);
 
 // ========== UPLOAD ROUTES ==========
 router.use('/upload', uploadRoutes);

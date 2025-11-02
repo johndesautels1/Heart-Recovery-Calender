@@ -27,6 +27,7 @@ import EventTemplate from './EventTemplate';
 import DeviceConnection from './DeviceConnection';
 import DeviceSyncLog from './DeviceSyncLog';
 import Provider from './Provider';
+import Notification from './Notification';
 
 // Create models object
 const models = {
@@ -56,6 +57,7 @@ const models = {
   DeviceConnection,
   DeviceSyncLog,
   Provider,
+  Notification,
 };
 
 // Call associate methods for all models
