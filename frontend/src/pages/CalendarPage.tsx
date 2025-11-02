@@ -3723,7 +3723,7 @@ See browser console for full configuration details.
         {/* Action Buttons */}
         <div className="flex justify-between pt-4 mt-4 border-t">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setShowDateDetailsModal(false);
               // Switch to day view for this date
