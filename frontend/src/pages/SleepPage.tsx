@@ -1153,7 +1153,7 @@ export function SleepPage() {
                       stroke: '#9ca3af',
                       strokeWidth: 2
                     }}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
                     outerRadius={90}
                     innerRadius={20}
                     fill="#8884d8"
@@ -1576,19 +1576,19 @@ export function SleepPage() {
                       <div className="absolute inset-0 flex">
                         {/* Awake before bed */}
                         <div style={{
-                          width: `${(day.bedHour / 24) * 100}%`,
+                          width: `${((day as any).bedHour / 24) * 100}%`,
                           background: 'linear-gradient(90deg, rgba(107, 114, 128, 0.3), rgba(75, 85, 99, 0.3))'
                         }}></div>
                         {/* Sleep period */}
                         <div style={{
-                          width: `${(day.sleepDuration / 24) * 100}%`,
+                          width: `${((day as any).sleepDuration / 24) * 100}%`,
                           background: day.quality === 'excellent' ? 'linear-gradient(90deg, #10b981, #059669)' :
                                      day.quality === 'good' ? 'linear-gradient(90deg, #3b82f6, #1e40af)' :
                                      day.quality === 'fair' ? 'linear-gradient(90deg, #fbbf24, #d97706)' :
                                      'linear-gradient(90deg, #ef4444, #b91c1c)',
                           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                         }} className="flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">{day.hours}h</span>
+                          <span className="text-xs font-bold text-white">{(day as any).hours}h</span>
                         </div>
                       </div>
                     </div>
@@ -1631,14 +1631,14 @@ export function SleepPage() {
                   <div key={index}
                        className="relative transition-all duration-300 hover:scale-105"
                        style={{ width: `${width}px` }}>
-                    <div className={`${level.gradient} rounded-lg shadow-lg border-2 ${level.border} flex items-center justify-center`}
+                    <div className={`${(level as any).gradient} rounded-lg shadow-lg border-2 ${(level as any).border} flex items-center justify-center`}
                          style={{
                            height: `${height}px`,
                            boxShadow: `0 4px 16px ${level.color}40, inset 0 2px 8px rgba(255,255,255,0.1)`
                          }}>
                       <div className="text-center">
                         <div className="text-xl font-bold text-white">{level.count}</div>
-                        <div className="text-xs text-white opacity-90">{level.label}</div>
+                        <div className="text-xs text-white opacity-90">{(level as any).label}</div>
                       </div>
                     </div>
                   </div>

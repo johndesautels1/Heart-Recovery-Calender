@@ -1534,7 +1534,7 @@ export function MealsPage() {
                       name: 'Protein',
                       value: dailyMealQualityData.reduce((sum, day) => {
                         // Assuming 4 cal/g for protein
-                        return sum + (day.protein || 0);
+                        return sum + ((day as any).protein || 0);
                       }, 0),
                       color: '#3b82f6'
                     },
@@ -1542,7 +1542,7 @@ export function MealsPage() {
                       name: 'Carbs',
                       value: dailyMealQualityData.reduce((sum, day) => {
                         // Assuming 4 cal/g for carbs
-                        return sum + (day.carbs || 0);
+                        return sum + ((day as any).carbs || 0);
                       }, 0),
                       color: '#eab308'
                     },
@@ -1550,7 +1550,7 @@ export function MealsPage() {
                       name: 'Fat',
                       value: dailyMealQualityData.reduce((sum, day) => {
                         // Assuming 9 cal/g for fat
-                        return sum + (day.fat || 0);
+                        return sum + ((day as any).fat || 0);
                       }, 0),
                       color: '#ef4444'
                     }
@@ -1560,7 +1560,7 @@ export function MealsPage() {
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
                 >
                   {[
                     { color: '#3b82f6' },
