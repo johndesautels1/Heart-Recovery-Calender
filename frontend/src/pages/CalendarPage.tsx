@@ -1480,6 +1480,7 @@ See browser console for full configuration details.
           </Button>
           <Button
             size="sm"
+            variant="glass"
             onClick={() => {
               reset({ calendarId: calendars[0]?.id, reminderMinutes: 30 });
               setEditingEvent(null);

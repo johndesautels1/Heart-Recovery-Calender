@@ -83,6 +83,34 @@ export const createEvent = async (req: Request, res: Response) => {
       }
     }
 
+    // CRITICAL FIX: Ensure calendarId exists - find or create a calendar for the patient
+    if (!eventData.calendarId) {
+      const targetUserId = eventData.patientId || userId;
+
+      // Try to find an existing general calendar for this user
+      let calendar = await Calendar.findOne({
+        where: {
+          userId: targetUserId,
+          type: 'general',
+          isActive: true
+        }
+      });
+
+      // If no calendar exists, create one
+      if (!calendar) {
+        calendar = await Calendar.create({
+          userId: targetUserId,
+          name: 'My Calendar',
+          type: 'general',
+          color: '#3f51b5',
+          isActive: true,
+          isSharedWithDoctor: true
+        });
+      }
+
+      eventData.calendarId = calendar.id;
+    }
+
     const event = await CalendarEvent.create(eventData);
 
     // Fetch with relations if needed

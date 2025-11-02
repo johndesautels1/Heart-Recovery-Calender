@@ -30,7 +30,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import api from '../services/api';
 import { VitalsSample, Medication, CalendarEvent, MealEntry, Patient } from '../types';
-import { format, subDays, differenceInWeeks } from 'date-fns';
+import { format, subDays, differenceInWeeks, parseISO } from 'date-fns';
 import { WeightTrackingChart } from '../components/charts/WeightTrackingChart';
 import {
   RadarChart,

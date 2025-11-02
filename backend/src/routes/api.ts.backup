@@ -1,17 +1,239 @@
 import { Router } from 'express';
+import { authenticateToken, requirePatientProfile } from '../middleware/auth';
+import * as authController from '../controllers/authController';
+import * as userController from '../controllers/userController';
+import * as calendarsController from '../controllers/calendarsController';
 import * as eventsController from '../controllers/calendarController';
 import * as mealsController from '../controllers/mealController';
-import * as calendarsController from '../controllers/calendarsController';
+import * as vitalsController from '../controllers/vitalsController';
+import * as medicationsController from '../controllers/medicationsController';
+import * as therapyGoalsController from '../controllers/therapyGoalsController';
+import * as alertsController from '../controllers/alertsController';
+import * as foodCategoriesController from '../controllers/foodCategoriesController';
+import * as foodItemsController from '../controllers/foodItemsController';
+import * as patientsController from '../controllers/patientsController';
+import * as providersController from '../controllers/providersController';
+import * as exercisesController from '../controllers/exercisesController';
+import * as exercisePrescriptionsController from '../controllers/exercisePrescriptionsController';
+import * as eventTemplatesController from '../controllers/eventTemplatesController';
+import * as sleepLogsController from '../controllers/sleepLogsController';
+import * as exerciseLogsController from '../controllers/exerciseLogsController';
+import * as hydrationLogsController from '../controllers/hydrationLogsController';
+import * as dailyScoresController from '../controllers/dailyScoresController';
+import * as caloriesController from '../controllers/caloriesController';
+import uploadRoutes from './upload';
+import devicesRoutes from './devices';
+import stravaRoutes from './strava';
+// import polarRoutes from './polar';
+// import samsungRoutes from './samsung';
 
 const router = Router();
 
-router.get('/events', eventsController.getEvents);
-router.post('/events', eventsController.createEvent);
+// ========== AUTH ROUTES (PUBLIC) ==========
+router.post('/auth/register', authController.register);
+router.post('/auth/login', authController.login);
 
-router.get('/meals', mealsController.getMeals);
-router.post('/meals', mealsController.addMeal);
+// All routes below require authentication
+router.use(authenticateToken);
 
+// ========== AUTH ROUTES (PROTECTED) ==========
+router.get('/auth/me', authController.getCurrentUser);
+
+// Allow profile completion without patient record
+router.post('/patients/complete-profile', patientsController.completeProfile);
+
+// All routes below require patient profile for patient-role users
+router.use(requirePatientProfile);
+
+// ========== USER ROUTES ==========
+router.get('/users/profile', userController.getProfile);
+router.put('/users/profile', userController.updateProfile);
+router.delete('/users/account', userController.deleteAccount);
+
+// ========== CALENDARS ROUTES ==========
 router.get('/calendars', calendarsController.getCalendars);
 router.post('/calendars', calendarsController.createCalendar);
+router.get('/calendars/:id', calendarsController.getCalendar);
+router.put('/calendars/:id', calendarsController.updateCalendar);
+router.delete('/calendars/:id', calendarsController.deleteCalendar);
+
+// ========== EVENTS ROUTES ==========
+router.get('/events', eventsController.getEvents);
+router.post('/events', eventsController.createEvent);
+router.get('/events/pending-invitations', eventsController.getPendingInvitations);
+router.get('/events/stats/monthly', eventsController.getMonthlyStats);
+router.delete('/events/today', eventsController.deleteTodayEvents);
+router.delete('/events/history', eventsController.deleteHistoricEvents);
+router.get('/events/:id', eventsController.getEvent);
+router.put('/events/:id', eventsController.updateEvent);
+router.delete('/events/:id', eventsController.deleteEvent);
+router.patch('/events/:id/status', eventsController.updateEventStatus);
+router.patch('/events/:id/invitation-status', eventsController.updateInvitationStatus);
+router.post('/events/:id/instances', eventsController.getEventInstances);
+
+// ========== MEALS ROUTES ==========
+router.get('/meals', mealsController.getMeals);
+router.post('/meals', mealsController.addMeal);
+router.get('/meals/daily-summary', mealsController.getDailySummary);
+router.get('/meals/compliance', mealsController.getCompliance);
+router.get('/meals/:id', mealsController.getMeal);
+router.put('/meals/:id', mealsController.updateMeal);
+router.delete('/meals/:id', mealsController.deleteMeal);
+
+// ========== VITALS ROUTES ==========
+router.get('/vitals', vitalsController.getVitals);
+router.post('/vitals', vitalsController.addVital);
+router.get('/vitals/latest', vitalsController.getLatestVital);
+router.get('/vitals/trends', vitalsController.getTrends);
+router.get('/vitals/:id', vitalsController.getVital);
+router.put('/vitals/:id', vitalsController.updateVital);
+router.delete('/vitals/:id', vitalsController.deleteVital);
+
+// ========== MEDICATIONS ROUTES ==========
+router.get('/medications', medicationsController.getMedications);
+router.post('/medications', medicationsController.addMedication);
+router.get('/medications/schedule', medicationsController.getSchedule);
+router.get('/medications/logs', medicationsController.getMedicationLogs);
+router.get('/medications/:id', medicationsController.getMedication);
+router.put('/medications/:id', medicationsController.updateMedication);
+router.delete('/medications/:id', medicationsController.deleteMedication);
+router.patch('/medications/:id/toggle-active', medicationsController.toggleActive);
+router.post('/medications/:id/log-dose', medicationsController.logDose);
+router.put('/medications/logs/:logId', medicationsController.updateMedicationLog);
+
+// ========== THERAPY GOALS ROUTES ==========
+router.get('/therapy-goals', therapyGoalsController.getTherapyGoals);
+router.post('/therapy-goals', therapyGoalsController.createTherapyGoal);
+router.get('/therapy-goals/:id', therapyGoalsController.getTherapyGoal);
+router.put('/therapy-goals/:id', therapyGoalsController.updateTherapyGoal);
+router.delete('/therapy-goals/:id', therapyGoalsController.deleteTherapyGoal);
+router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
+
+// ========== ALERTS ROUTES ==========
+router.get('/alerts', alertsController.getAlerts);
+router.post('/alerts', alertsController.createAlert);
+router.get('/alerts/stats', alertsController.getAlertStats);
+router.get('/alerts/:id', alertsController.getAlert);
+router.put('/alerts/:id', alertsController.updateAlert);
+router.delete('/alerts/:id', alertsController.deleteAlert);
+router.put('/alerts/:id/resolve', alertsController.resolveAlert);
+router.put('/alerts/:id/unresolve', alertsController.unresolveAlert);
+router.put('/alerts/:id/mark-notified', alertsController.markNotified);
+
+// ========== FOOD CATEGORIES ROUTES ==========
+router.get('/food-categories', foodCategoriesController.getFoodCategories);
+router.post('/food-categories', foodCategoriesController.createFoodCategory);
+router.get('/food-categories/:id', foodCategoriesController.getFoodCategoryById);
+router.put('/food-categories/:id', foodCategoriesController.updateFoodCategory);
+router.delete('/food-categories/:id', foodCategoriesController.deleteFoodCategory);
+
+// ========== FOOD ITEMS ROUTES ==========
+router.get('/food-items', foodItemsController.getFoodItems);
+router.post('/food-items', foodItemsController.createFoodItem);
+router.get('/food-items/search', foodItemsController.searchFoodItems);
+router.get('/food-items/stats', foodItemsController.getFoodStats);
+router.get('/food-items/category/:categoryId', foodItemsController.getFoodItemsByCategory);
+router.get('/food-items/rating/:rating', foodItemsController.getFoodItemsByHealthRating);
+router.get('/food-items/:id', foodItemsController.getFoodItemById);
+router.put('/food-items/:id', foodItemsController.updateFoodItem);
+router.delete('/food-items/:id', foodItemsController.deleteFoodItem);
+
+// ========== PATIENTS ROUTES ==========
+router.get('/patients', patientsController.getPatients);
+router.post('/patients', patientsController.addPatient);
+router.get('/patients/:id', patientsController.getPatient);
+router.put('/patients/:id', patientsController.updatePatient);
+router.delete('/patients/:id', patientsController.deletePatient);
+router.patch('/patients/:id/toggle-active', patientsController.toggleActive);
+router.get('/patients/:id/post-op-week', patientsController.getPostOpWeek);
+router.get('/patients/:id/metrics', patientsController.getPatientMetrics);
+
+// ========== PROVIDERS ROUTES ==========
+router.get('/providers', providersController.getProviders);
+router.post('/providers', providersController.addProvider);
+router.get('/providers/upcoming', providersController.getUpcomingAppointments);
+router.get('/providers/:id', providersController.getProvider);
+router.put('/providers/:id', providersController.updateProvider);
+router.delete('/providers/:id', providersController.deleteProvider);
+
+// ========== EXERCISES ROUTES ==========
+router.get('/exercises', exercisesController.getExercises);
+router.post('/exercises', exercisesController.createExercise);
+router.get('/exercises/categories/list', exercisesController.getCategories);
+router.get('/exercises/stats', exercisesController.getExerciseStats);
+router.get('/exercises/:id', exercisesController.getExercise);
+router.put('/exercises/:id', exercisesController.updateExercise);
+router.delete('/exercises/:id', exercisesController.deleteExercise);
+router.patch('/exercises/:id/toggle-active', exercisesController.toggleActive);
+
+// ========== EXERCISE PRESCRIPTIONS ROUTES ==========
+router.get('/exercise-prescriptions', exercisePrescriptionsController.getPrescriptions);
+router.post('/exercise-prescriptions', exercisePrescriptionsController.createPrescription);
+router.get('/exercise-prescriptions/stats', exercisePrescriptionsController.getPrescriptionStats);
+router.get('/exercise-prescriptions/patient/:patientId', exercisePrescriptionsController.getPatientPrescriptions);
+router.get('/exercise-prescriptions/:id', exercisePrescriptionsController.getPrescription);
+router.put('/exercise-prescriptions/:id', exercisePrescriptionsController.updatePrescription);
+router.delete('/exercise-prescriptions/:id', exercisePrescriptionsController.deletePrescription);
+router.patch('/exercise-prescriptions/:id/status', exercisePrescriptionsController.updatePrescriptionStatus);
+router.get('/exercise-prescriptions/:id/logs', exercisePrescriptionsController.getPrescriptionLogs);
+
+// ========== EVENT TEMPLATES ROUTES ==========
+router.get('/event-templates', eventTemplatesController.getEventTemplates);
+router.post('/event-templates', eventTemplatesController.createEventTemplate);
+router.get('/event-templates/categories/list', eventTemplatesController.getCategories);
+router.get('/event-templates/stats', eventTemplatesController.getEventTemplateStats);
+router.get('/event-templates/:id', eventTemplatesController.getEventTemplate);
+router.put('/event-templates/:id', eventTemplatesController.updateEventTemplate);
+router.delete('/event-templates/:id', eventTemplatesController.deleteEventTemplate);
+router.patch('/event-templates/:id/toggle-active', eventTemplatesController.toggleActive);
+
+// ========== SLEEP LOGS ROUTES ==========
+router.get('/sleep-logs', sleepLogsController.getSleepLogs);
+router.post('/sleep-logs', sleepLogsController.addSleepLog);
+router.get('/sleep-logs/stats', sleepLogsController.getSleepStats);
+router.get('/sleep-logs/date/:date', sleepLogsController.getSleepLogByDate);
+router.get('/sleep-logs/:id', sleepLogsController.getSleepLog);
+router.put('/sleep-logs/:id', sleepLogsController.updateSleepLog);
+router.delete('/sleep-logs/:id', sleepLogsController.deleteSleepLog);
+
+// ========== EXERCISE LOGS ROUTES ==========
+router.get('/exercise-logs', exerciseLogsController.getExerciseLogs);
+router.post('/exercise-logs', exerciseLogsController.createExerciseLog);
+router.get('/exercise-logs/stats', exerciseLogsController.getExerciseLogStats);
+router.get('/exercise-logs/:id', exerciseLogsController.getExerciseLog);
+router.put('/exercise-logs/:id', exerciseLogsController.updateExerciseLog);
+router.delete('/exercise-logs/:id', exerciseLogsController.deleteExerciseLog);
+
+// ========== CALORIES / ENERGY BALANCE ROUTES ==========
+router.get('/calories/summary', caloriesController.getCalorieSummary);
+router.get('/calories/daily', caloriesController.getDailyCalories);
+router.get('/calories/weight-correlation', caloriesController.getWeightCorrelation);
+
+// ========== HYDRATION LOGS ROUTES ==========
+router.get('/hydration-logs', hydrationLogsController.getHydrationLogs);
+router.post('/hydration-logs', hydrationLogsController.createHydrationLog);
+router.get('/hydration-logs/stats', hydrationLogsController.getHydrationStats);
+router.get('/hydration-logs/date/:date', hydrationLogsController.getHydrationLogByDate);
+router.get('/hydration-logs/:id', hydrationLogsController.getHydrationLog);
+router.put('/hydration-logs/:id', hydrationLogsController.updateHydrationLog);
+router.delete('/hydration-logs/:id', hydrationLogsController.deleteHydrationLog);
+
+// ========== DAILY SCORES ROUTES ==========
+router.get('/daily-scores', dailyScoresController.getDailyScores);
+router.post('/daily-scores', dailyScoresController.createOrUpdateDailyScore);
+router.get('/daily-scores/stats', dailyScoresController.getDailyScoreStats);
+router.get('/daily-scores/trends', dailyScoresController.getTrends);
+router.get('/daily-scores/date/:date', dailyScoresController.getDailyScoreByDate);
+router.get('/daily-scores/:id', dailyScoresController.getDailyScore);
+router.delete('/daily-scores/:id', dailyScoresController.deleteDailyScore);
+
+// ========== UPLOAD ROUTES ==========
+router.use('/upload', uploadRoutes);
+
+// ========== DEVICE INTEGRATION ROUTES ==========
+router.use('/devices', devicesRoutes);
+router.use('/strava', stravaRoutes);
+// router.use('/polar', polarRoutes);  // Keep disabled for now
+// router.use('/samsung', samsungRoutes);  // Keep disabled for now
 
 export default router;

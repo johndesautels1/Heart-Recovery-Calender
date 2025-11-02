@@ -39,7 +39,7 @@ export function Button({
     <button
       className={clsx(
         baseClasses,
-        sizeClasses[size],
+        variant !== 'glass' && sizeClasses[size], // Don't apply size classes for glass buttons
         variantClasses[variant],
         fullWidth && 'w-full',
         (disabled || loading) && 'opacity-50 cursor-not-allowed',

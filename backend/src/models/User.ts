@@ -1,6 +1,22 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from './database';
 
+interface UserPreferences {
+  reminderDefaults?: {
+    medication?: number;     // Minutes before event
+    exercise?: number;
+    appointment?: number;
+    meal?: number;
+    vitals?: number;
+    hydration?: number;
+    mood?: number;
+    therapy?: number;
+    education?: number;
+  };
+  timeFormat?: '12h' | '24h';
+  exportFormat?: 'ics' | 'json' | 'csv';
+}
+
 interface UserAttributes {
   id: number;
   email: string;
@@ -14,6 +30,7 @@ interface UserAttributes {
   profilePhoto?: string;
   timezone?: string;
   backupNotificationEmail?: string;
+  preferences?: UserPreferences;
   role?: 'patient' | 'therapist' | 'admin';
   createdAt?: Date;
   updatedAt?: Date;
@@ -34,6 +51,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public profilePhoto?: string;
   public timezone?: string;
   public backupNotificationEmail?: string;
+  public preferences?: UserPreferences;
   public role?: 'patient' | 'therapist' | 'admin';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -104,6 +122,26 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
             isEmail: true,
           },
           comment: 'Secondary email for backup and export notifications',
+        },
+        preferences: {
+          type: DataTypes.JSONB,
+          allowNull: true,
+          defaultValue: {
+            reminderDefaults: {
+              medication: 30,      // 30 minutes before
+              exercise: 60,        // 1 hour before
+              appointment: 1440,   // 24 hours before (1 day)
+              meal: 15,            // 15 minutes before
+              vitals: 30,          // 30 minutes before
+              hydration: 0,        // At time of event
+              mood: 0,             // At time of event
+              therapy: 120,        // 2 hours before
+              education: 60,       // 1 hour before
+            },
+            timeFormat: '12h',     // 12-hour or 24-hour clock
+            exportFormat: 'ics',   // Default export format
+          },
+          comment: 'User preferences including per-category reminder defaults (SET-002), time format (I18N-002), and export format (SET-005)',
         },
         role: {
           type: DataTypes.ENUM('patient', 'therapist', 'admin'),
