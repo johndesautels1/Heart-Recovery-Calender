@@ -110,13 +110,20 @@ export function SleepPage() {
     try {
       setIsLoading(true);
 
+      // Clean the data: remove empty bedTime/wakeTime to prevent "Invalid date" errors
+      const cleanedData = {
+        ...data,
+        bedTime: data.bedTime?.trim() || undefined,
+        wakeTime: data.wakeTime?.trim() || undefined,
+      };
+
       if (editingLog) {
-        const updated = await api.updateSleepLog(editingLog.id, data);
+        const updated = await api.updateSleepLog(editingLog.id, cleanedData);
         setSleepLogs(sleepLogs.map(log => log.id === editingLog.id ? updated : log));
         toast.success('Sleep log updated successfully');
       } else {
         const newLogData = {
-          ...data,
+          ...cleanedData,
           // Always include userId: therapist uses selectedPatient, patient uses own user
           userId: isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id
         } as CreateSleepLogInput & { userId?: number };
@@ -147,8 +154,39 @@ export function SleepPage() {
     setValue('date', log.date);
     setValue('hoursSlept', parseFloat(log.hoursSlept.toString()));
     setValue('sleepQuality', log.sleepQuality);
-    setValue('bedTime', log.bedTime || '');
-    setValue('wakeTime', log.wakeTime || '');
+
+    // Format datetime-local inputs: they require "yyyy-MM-ddTHH:mm" format
+    // Convert ISO timestamps from database to the correct format
+    if (log.bedTime) {
+      try {
+        const bedTimeDate = new Date(log.bedTime);
+        if (!isNaN(bedTimeDate.getTime())) {
+          setValue('bedTime', format(bedTimeDate, "yyyy-MM-dd'T'HH:mm"));
+        } else {
+          setValue('bedTime', '');
+        }
+      } catch {
+        setValue('bedTime', '');
+      }
+    } else {
+      setValue('bedTime', '');
+    }
+
+    if (log.wakeTime) {
+      try {
+        const wakeTimeDate = new Date(log.wakeTime);
+        if (!isNaN(wakeTimeDate.getTime())) {
+          setValue('wakeTime', format(wakeTimeDate, "yyyy-MM-dd'T'HH:mm"));
+        } else {
+          setValue('wakeTime', '');
+        }
+      } catch {
+        setValue('wakeTime', '');
+      }
+    } else {
+      setValue('wakeTime', '');
+    }
+
     setValue('notes', log.notes || '');
     setIsModalOpen(true);
   };
@@ -1642,18 +1680,38 @@ export function SleepPage() {
                       <Moon className="h-4 w-4" />
                       {log.hoursSlept} hours
                     </span>
-                    {log.bedTime && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Bed: {format(parseISO(log.bedTime), 'h:mm a')}
-                      </span>
-                    )}
-                    {log.wakeTime && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Wake: {format(parseISO(log.wakeTime), 'h:mm a')}
-                      </span>
-                    )}
+                    {log.bedTime && (() => {
+                      try {
+                        const bedDate = new Date(log.bedTime);
+                        if (!isNaN(bedDate.getTime())) {
+                          return (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              Bed: {format(bedDate, 'h:mm a')}
+                            </span>
+                          );
+                        }
+                      } catch (e) {
+                        return null;
+                      }
+                      return null;
+                    })()}
+                    {log.wakeTime && (() => {
+                      try {
+                        const wakeDate = new Date(log.wakeTime);
+                        if (!isNaN(wakeDate.getTime())) {
+                          return (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              Wake: {format(wakeDate, 'h:mm a')}
+                            </span>
+                          );
+                        }
+                      } catch (e) {
+                        return null;
+                      }
+                      return null;
+                    })()}
                   </div>
                   {log.notes && (
                     <p className="text-gray-400 text-sm mt-2">{log.notes}</p>
