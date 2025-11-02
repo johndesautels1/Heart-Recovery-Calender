@@ -163,7 +163,7 @@ export interface PaginatedResponse<T> {
 // Form types for creating/updating entities
 export interface CreateCalendarInput {
   name: string;
-  type: Calendar['type'];
+  type: string; // Accept any string, backend will validate
   color?: string;
   description?: string;
   isSharedWithDoctor?: boolean;
@@ -179,13 +179,14 @@ export interface CreateEventInput {
   location?: string;
   recurrenceRule?: string;
   reminderMinutes?: number;
+  status?: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   notes?: string;
   sleepHours?: number;
 }
 
 export interface CreateMealInput {
   timestamp?: string;
-  mealType: MealEntry['mealType'];
+  mealType: string; // Accept any string, backend will validate
   foodItems: string;
   calories?: number;
   sodium?: number;
@@ -198,6 +199,7 @@ export interface CreateMealInput {
   carbohydrates?: number;
   withinSpec?: boolean;
   notes?: string;
+  satisfactionRating?: number;
 }
 
 export interface CreateVitalsInput {
@@ -329,11 +331,11 @@ export interface Patient {
   notes?: string;
   isActive: boolean;
   height?: number;          // Height in inches or cm
-  heightUnit?: 'in' | 'cm'; // Unit of measurement
+  heightUnit?: string;      // Unit of measurement (typically 'in' or 'cm')
   startingWeight?: number;  // Weight at start of therapy
   currentWeight?: number;   // Most recent weight
   targetWeight?: number;    // Goal weight
-  weightUnit?: 'kg' | 'lbs'; // Unit of measurement
+  weightUnit?: string;      // Unit of measurement (typically 'kg' or 'lbs')
   createdAt: string;
   updatedAt: string;
 }
