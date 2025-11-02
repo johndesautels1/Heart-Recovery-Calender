@@ -4,7 +4,8 @@ import {
   User, Mail, Phone, Heart, Stethoscope, Save, Camera,
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
-  Upload, FileText, CreditCard, AlertCircle, Clock, Settings
+  Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -115,6 +116,7 @@ export function ProfilePage() {
   const [patientData, setPatientData] = useState<PatientData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(user?.preferences?.timeFormat || '12h');
+  const [exportFormat, setExportFormat] = useState<'ics' | 'json' | 'csv'>(user?.preferences?.exportFormat || 'ics');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Document upload refs
@@ -264,6 +266,23 @@ export function ProfilePage() {
       console.error('Error updating time format:', error);
       toast.error('Failed to update time format');
       setTimeFormat(user?.preferences?.timeFormat || '12h'); // Revert on error
+    }
+  };
+
+  const handleExportFormatChange = async (format: 'ics' | 'json' | 'csv') => {
+    try {
+      setExportFormat(format);
+      const updatedPreferences = {
+        ...user?.preferences,
+        exportFormat: format
+      };
+      const updatedUser = await api.updateProfile({ preferences: updatedPreferences });
+      updateUser(updatedUser);
+      toast.success('Export format updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating export format:', error);
+      toast.error('Failed to update export format');
+      setExportFormat(user?.preferences?.exportFormat || 'ics'); // Revert on error
     }
   };
 
@@ -476,6 +495,60 @@ export function ProfilePage() {
                         </div>
                         <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
                           <strong>Preview:</strong> {timeFormat === '12h' ? '2:30 PM' : '14:30'}
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Download className="h-5 w-5" style={{ color: '#6366f1' }} />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Default Export Format
+                              </h4>
+                              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                                Choose the default format when exporting calendar data
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleExportFormatChange('ics')}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                exportFormat === 'ics'
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              ICS
+                            </button>
+                            <button
+                              onClick={() => handleExportFormatChange('json')}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                exportFormat === 'json'
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              JSON
+                            </button>
+                            <button
+                              onClick={() => handleExportFormatChange('csv')}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                exportFormat === 'csv'
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              CSV
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
+                          <strong>Format info:</strong>{' '}
+                          {exportFormat === 'ics' && 'iCalendar format - Compatible with Google Calendar, Outlook, Apple Calendar'}
+                          {exportFormat === 'json' && 'JSON format - Best for data analysis and custom integrations'}
+                          {exportFormat === 'csv' && 'CSV format - Compatible with Excel and spreadsheet applications'}
                         </div>
                       </div>
                     </>
