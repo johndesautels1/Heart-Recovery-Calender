@@ -408,7 +408,7 @@
   }
 
   .event-exercise {
-    @apply bg-green-500 text-white;
+    @apply bg-blue-600 text-white;
   }
 
   .event-vitals {
