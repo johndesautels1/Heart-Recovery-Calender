@@ -1210,6 +1210,26 @@ See browser console for full configuration details.
       };
     }
 
+    // For medication events - FORCE background color to show correctly
+    if (extendedProps.isMedicationEvent) {
+      const sizeClass = getTextSizeClass(title);
+      const bgColor = event.backgroundColor || '#ff9800';
+      const txtColor = event.textColor || '#ffffff';
+      return {
+        html: `<div class="event-text-wrapper ${sizeClass}"
+                    style="background-color: ${bgColor} !important;
+                           color: ${txtColor} !important;
+                           font-weight: 700 !important;
+                           padding: 4px 6px !important;
+                           border-radius: 4px !important;
+                           width: 100% !important;
+                           height: 100% !important;
+                           box-sizing: border-box !important;">
+                 ${title}
+               </div>`
+      };
+    }
+
     // For exercise events
     if (extendedProps.exerciseId && extendedProps.exercise) {
       const exercise = extendedProps.exercise;
