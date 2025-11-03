@@ -35,6 +35,7 @@ interface VitalsSampleAttributes {
   dizziness?: boolean;
   dizzinessSeverity?: number;
   dizzinessFrequency?: string;
+  energyLevel?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -75,6 +76,7 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public dizziness?: boolean;
   public dizzinessSeverity?: number;
   public dizzinessFrequency?: string;
+  public energyLevel?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -279,6 +281,15 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.TEXT,
           allowNull: true,
           comment: 'How often dizziness occurs',
+        },
+        energyLevel: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Energy level (1-10 scale, 1=exhausted, 10=energetic)',
+          validate: {
+            min: 1,
+            max: 10,
+          },
         },
       },
       {

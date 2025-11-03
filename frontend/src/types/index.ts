@@ -127,6 +127,7 @@ export interface VitalsSample {
   dizziness?: boolean;
   dizzinessSeverity?: number;
   dizzinessFrequency?: string;
+  energyLevel?: number;
   createdAt: string;
   updatedAt: string;
 }

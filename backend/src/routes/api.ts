@@ -9,6 +9,7 @@ import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
 import * as therapyGoalsController from '../controllers/therapyGoalsController';
 import * as goalTemplatesController from '../controllers/goalTemplatesController';
+import * as goalJournalController from '../controllers/goalJournalController';
 import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
@@ -270,6 +271,21 @@ router.put('/goal-templates/:id', goalTemplatesController.updateGoalTemplate);
 
 /** @route DELETE /api/goal-templates/:id - @desc Delete (deactivate) a goal template - @access Private */
 router.delete('/goal-templates/:id', goalTemplatesController.deleteGoalTemplate);
+
+/** @route GET /api/goal-journal - @desc Get all goal journal entries for the user - @access Private */
+router.get('/goal-journal', goalJournalController.getJournalEntries);
+
+/** @route GET /api/goal-journal/:id - @desc Get a specific journal entry - @access Private */
+router.get('/goal-journal/:id', goalJournalController.getJournalEntryById);
+
+/** @route POST /api/goal-journal - @desc Create a new journal entry - @access Private */
+router.post('/goal-journal', goalJournalController.createJournalEntry);
+
+/** @route PUT /api/goal-journal/:id - @desc Update a journal entry - @access Private */
+router.put('/goal-journal/:id', goalJournalController.updateJournalEntry);
+
+/** @route DELETE /api/goal-journal/:id - @desc Delete a journal entry - @access Private */
+router.delete('/goal-journal/:id', goalJournalController.deleteJournalEntry);
 router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
 
 // ========== ALERTS ROUTES ==========
