@@ -300,7 +300,15 @@ export function CalendarPage() {
         api.getVitals({ startDate, endDate, userId }),
       ]);
 
-      setCalendars(calendarsData);
+      // FORCE all exercise calendars to use blue color (#2563eb)
+      const calendarsWithFixedColors = calendarsData.map(cal => {
+        if (cal.type === 'exercise') {
+          return { ...cal, color: '#2563eb' };
+        }
+        return cal;
+      });
+
+      setCalendars(calendarsWithFixedColors);
       setEvents(eventsData);
       setAllMeals(mealsData);
       setMedications(medicationsData);
