@@ -1202,11 +1202,11 @@ See browser console for full configuration details.
       return 'event-text-very-long';
     };
 
-    // For meal events - FORCE background color to show correctly
+    // For meal events - FORCE VIVID background color to show correctly
     if (extendedProps.isMealEvent) {
       const sizeClass = getTextSizeClass(title);
-      const bgColor = event.backgroundColor || '#f0f9ff';
-      const txtColor = event.textColor || '#800020';
+      const bgColor = event.backgroundColor || '#2563eb';  // VIVID BLUE
+      const txtColor = event.textColor || '#ffffff';  // WHITE
       return {
         html: `<div class="event-text-wrapper ${sizeClass}"
                     style="background-color: ${bgColor} !important;
@@ -1419,7 +1419,7 @@ See browser console for full configuration details.
           },
         };
       }),
-    // Add meal indicators to calendar
+    // Add meal indicators to calendar - VIVID COLORS
     ...Object.entries(
       allMeals.reduce((acc, meal) => {
         const date = new Date(meal.timestamp).toISOString().split('T')[0];
@@ -1432,11 +1432,10 @@ See browser console for full configuration details.
       title: `🍽️ ${meals.length} meal${meals.length > 1 ? 's' : ''}`,
       start: date,
       allDay: true,
-      backgroundColor: '#f0f9ff',
-      borderColor: '#bae6fd',
-      textColor: '#800020',
+      backgroundColor: '#2563eb',  // VIVID BLUE instead of pale #f0f9ff
+      borderColor: '#1d4ed8',
+      textColor: '#ffffff',  // WHITE text for contrast
       classNames: ['font-bold', 'meal-indicator'],
-      display: 'background',
       extendedProps: {
         isMealEvent: true,
         meals,
