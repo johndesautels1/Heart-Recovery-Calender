@@ -8,6 +8,7 @@ import * as mealsController from '../controllers/mealController';
 import * as vitalsController from '../controllers/vitalsController';
 import * as medicationsController from '../controllers/medicationsController';
 import * as therapyGoalsController from '../controllers/therapyGoalsController';
+import * as goalTemplatesController from '../controllers/goalTemplatesController';
 import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
@@ -254,6 +255,21 @@ router.put('/therapy-goals/:id', therapyGoalsController.updateTherapyGoal);
 router.delete('/therapy-goals/:id', therapyGoalsController.deleteTherapyGoal);
 
 /** @route PUT /api/therapy-goals/:id/progress - @desc Update goal progress percentage - @access Private */
+router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
+/** @route GET /api/goal-templates - @desc Get all goal templates - @access Private */
+router.get('/goal-templates', goalTemplatesController.getGoalTemplates);
+
+/** @route GET /api/goal-templates/:id - @desc Get a specific goal template - @access Private */
+router.get('/goal-templates/:id', goalTemplatesController.getGoalTemplateById);
+
+/** @route POST /api/goal-templates - @desc Create a new goal template - @access Private */
+router.post('/goal-templates', goalTemplatesController.createGoalTemplate);
+
+/** @route PUT /api/goal-templates/:id - @desc Update a goal template - @access Private */
+router.put('/goal-templates/:id', goalTemplatesController.updateGoalTemplate);
+
+/** @route DELETE /api/goal-templates/:id - @desc Delete (deactivate) a goal template - @access Private */
+router.delete('/goal-templates/:id', goalTemplatesController.deleteGoalTemplate);
 router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
 
 // ========== ALERTS ROUTES ==========
