@@ -1210,7 +1210,7 @@ See browser console for full configuration details.
       };
     }
 
-    // For medication events - FORCE background color to show correctly with SMALLER size
+    // For medication events - FORCE background color to show correctly with NARROWER width (75% width)
     if (extendedProps.isMedicationEvent) {
       const bgColor = event.backgroundColor || '#ff9800';
       const txtColor = event.textColor || '#ffffff';
@@ -1218,20 +1218,18 @@ See browser console for full configuration details.
         html: `<div style="background-color: ${bgColor} !important;
                            color: ${txtColor} !important;
                            font-weight: 700 !important;
-                           font-size: 9px !important;
-                           line-height: 1.1 !important;
-                           padding: 1px 3px !important;
-                           border-radius: 3px !important;
-                           width: 100% !important;
+                           font-size: 11px !important;
+                           line-height: 1.2 !important;
+                           padding: 2px 4px !important;
+                           border-radius: 4px !important;
+                           width: 75% !important;
+                           max-width: 75% !important;
                            height: auto !important;
-                           min-height: 16px !important;
-                           max-height: 20px !important;
                            overflow: hidden !important;
                            text-overflow: ellipsis !important;
                            white-space: nowrap !important;
                            box-sizing: border-box !important;
-                           display: flex !important;
-                           align-items: center !important;">
+                           display: inline-block !important;">
                  ${title}
                </div>`
       };
