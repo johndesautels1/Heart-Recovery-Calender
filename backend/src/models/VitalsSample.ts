@@ -32,6 +32,9 @@ interface VitalsSampleAttributes {
   chestPainType?: string;
   dyspnea?: number;
   dyspneaTriggers?: string;
+  dizziness?: boolean;
+  dizzinessSeverity?: number;
+  dizzinessFrequency?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -69,6 +72,9 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public chestPainType?: string;
   public dyspnea?: number;
   public dyspneaTriggers?: string;
+  public dizziness?: boolean;
+  public dizzinessSeverity?: number;
+  public dizzinessFrequency?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -254,6 +260,25 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.TEXT,
           allowNull: true,
           comment: 'What triggers shortness of breath',
+        },
+        dizziness: {
+          type: DataTypes.BOOLEAN,
+          allowNull: true,
+          comment: 'Presence of dizziness/lightheadedness',
+        },
+        dizzinessSeverity: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Dizziness severity (1-10 scale)',
+          validate: {
+            min: 1,
+            max: 10,
+          },
+        },
+        dizzinessFrequency: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'How often dizziness occurs',
         },
       },
       {

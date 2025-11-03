@@ -124,6 +124,9 @@ export interface VitalsSample {
   chestPainType?: string;
   dyspnea?: number;
   dyspneaTriggers?: string;
+  dizziness?: boolean;
+  dizzinessSeverity?: number;
+  dizzinessFrequency?: string;
   createdAt: string;
   updatedAt: string;
 }

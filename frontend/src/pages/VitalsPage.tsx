@@ -39,6 +39,9 @@ const vitalsSchema = z.object({
   chestPainType: z.string().optional(),
   dyspnea: z.number().min(0).max(4).optional(),
   dyspneaTriggers: z.string().optional(),
+  dizziness: z.boolean().optional(),
+  dizzinessSeverity: z.number().min(1).max(10).optional(),
+  dizzinessFrequency: z.string().optional(),
 });
 
 type VitalsFormData = z.infer<typeof vitalsSchema>;
