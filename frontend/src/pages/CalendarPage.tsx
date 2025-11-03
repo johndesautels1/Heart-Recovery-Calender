@@ -1202,11 +1202,21 @@ See browser console for full configuration details.
       return 'event-text-very-long';
     };
 
-    // For meal events, show with auto-sizing
+    // For meal events - FORCE background color to show correctly
     if (extendedProps.isMealEvent) {
       const sizeClass = getTextSizeClass(title);
+      const bgColor = event.backgroundColor || '#f0f9ff';
+      const txtColor = event.textColor || '#800020';
       return {
-        html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+        html: `<div class="event-text-wrapper ${sizeClass}"
+                    style="background-color: ${bgColor} !important;
+                           color: ${txtColor} !important;
+                           font-weight: 700 !important;
+                           padding: 4px 6px !important;
+                           border-radius: 4px !important;
+                           box-sizing: border-box !important;">
+                 ${title}
+               </div>`
       };
     }
 
@@ -1239,6 +1249,8 @@ See browser console for full configuration details.
     if (extendedProps.exerciseId && extendedProps.exercise) {
       const exercise = extendedProps.exercise;
       const isCompleted = extendedProps.status === 'completed';
+      const bgColor = event.backgroundColor || '#607d8b';
+      const txtColor = event.textColor || '#ffffff';
 
       // ONLY show icon + checkmark if completed
       if (isCompleted) {
@@ -1254,18 +1266,36 @@ See browser console for full configuration details.
           `
         };
       } else {
-        // Show text for incomplete exercises with auto-sizing
+        // Show text for incomplete exercises with FORCED background color
         const sizeClass = getTextSizeClass(title);
         return {
-          html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+          html: `<div class="event-text-wrapper ${sizeClass}"
+                      style="background-color: ${bgColor} !important;
+                             color: ${txtColor} !important;
+                             font-weight: 700 !important;
+                             padding: 4px 6px !important;
+                             border-radius: 4px !important;
+                             box-sizing: border-box !important;">
+                   ${title}
+                 </div>`
         };
       }
     }
 
-    // Default for other events with auto-sizing
+    // Default for other events - FORCE background color to show correctly
     const sizeClass = getTextSizeClass(title);
+    const bgColor = event.backgroundColor || '#607d8b';
+    const txtColor = event.textColor || '#ffffff';
     return {
-      html: `<div class="event-text-wrapper ${sizeClass}">${title}</div>`
+      html: `<div class="event-text-wrapper ${sizeClass}"
+                  style="background-color: ${bgColor} !important;
+                         color: ${txtColor} !important;
+                         font-weight: 700 !important;
+                         padding: 4px 6px !important;
+                         border-radius: 4px !important;
+                         box-sizing: border-box !important;">
+               ${title}
+             </div>`
     };
   };
 
