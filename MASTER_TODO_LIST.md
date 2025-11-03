@@ -1,7 +1,14 @@
-# Master TODO List - Heart Recovery Calendar
-**Combined from:** COPILOT_AUDIT_LIST.md + Recovery-Improvements-List.txt
-**Last Updated:** November 2, 2025
+# ✅ MASTER TODO LIST - Heart Recovery Calendar
+**⚠️ THIS IS THE AUTHORITATIVE TODO LIST - USE THIS ONE ONLY**
+
 **Status:** In Progress
+**Last Updated:** November 3, 2025
+**Location:** `C:\Users\broke\Heart-Recovery-Calender\MASTER_TODO_LIST.md`
+
+**Source Files (archived for reference only):**
+- ~~COPILOT_AUDIT_LIST.md~~ → `docs/archive/COPILOT_AUDIT_LIST.md`
+- ~~Recovery-Improvements-List.txt~~ → `docs/archive/Recovery-Improvements-List.txt`
+- All agent reports → `docs/agent-reports/`
 
 ---
 
