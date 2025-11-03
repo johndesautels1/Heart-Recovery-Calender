@@ -11,6 +11,10 @@ interface SleepLogAttributes {
   notes?: string;
   bedTime?: Date;
   wakeTime?: Date;
+  isNap?: boolean;
+  napDuration?: number;
+  dreamNotes?: string;
+  sleepScore?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -27,6 +31,10 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
   public notes?: string;
   public bedTime?: Date;
   public wakeTime?: Date;
+  public isNap?: boolean;
+  public napDuration?: number;
+  public dreamNotes?: string;
+  public sleepScore?: number;
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
 
@@ -78,6 +86,31 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
           type: DataTypes.DATE,
           allowNull: true,
           comment: 'Time woke up',
+        },
+        isNap: {
+          type: DataTypes.BOOLEAN,
+          allowNull: true,
+          defaultValue: false,
+          comment: 'Whether this is a nap (not overnight sleep)',
+        },
+        napDuration: {
+          type: DataTypes.DECIMAL(4, 2),
+          allowNull: true,
+          comment: 'Duration of nap in hours',
+        },
+        dreamNotes: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'Dream journal notes',
+        },
+        sleepScore: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Calculated sleep score (0-100)',
+          validate: {
+            min: 0,
+            max: 100,
+          },
         },
       },
       {

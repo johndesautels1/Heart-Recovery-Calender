@@ -13,6 +13,7 @@ interface UserPreferences {
     therapy?: number;
     education?: number;
   };
+  sleepGoalHours?: number;
   timeFormat?: '12h' | '24h';
   exportFormat?: 'ics' | 'json' | 'csv';
 }

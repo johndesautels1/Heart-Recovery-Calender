@@ -458,6 +458,10 @@ export interface SleepLog {
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
+  isNap?: boolean;
+  napDuration?: number;
+  dreamNotes?: string;
+  sleepScore?: number;
   createdAt: string;
   updatedAt: string;
 }
