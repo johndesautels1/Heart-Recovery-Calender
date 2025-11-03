@@ -6,7 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
 import { RestTimer } from '../components/RestTimer';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer, Heart } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer, Heart, CheckCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -1223,56 +1223,131 @@ See browser console for full configuration details.
       return 'event-text-very-long';
     };
 
-    // For meal events - FORCE VIVID background color with 75% width like medications
+    // For meal events
     if (extendedProps.isMealEvent) {
-      const sizeClass = getTextSizeClass(title);
-      const bgColor = event.backgroundColor || '#10b981';  // VIVID GREEN
-      const txtColor = event.textColor || '#ffffff';  // WHITE
-      return {
-        html: `<div class="event-text-wrapper ${sizeClass}"
-                    style="background-color: ${bgColor} !important;
-                           color: ${txtColor} !important;
-                           font-weight: 700 !important;
-                           font-size: 11px !important;
-                           line-height: 1.2 !important;
-                           padding: 2px 4px !important;
-                           border-radius: 4px !important;
-                           width: 75% !important;
-                           max-width: 75% !important;
-                           height: auto !important;
-                           overflow: hidden !important;
-                           text-overflow: ellipsis !important;
-                           white-space: nowrap !important;
-                           box-sizing: border-box !important;
-                           display: inline-block !important;">
-                 ${title}
-               </div>`
-      };
+      const meals = extendedProps.meals || [];
+      const completedCount = meals.filter((m: any) => m.status === 'completed').length;
+      const allCompleted = meals.length > 0 && completedCount === meals.length;
+
+      // ONLY IF ALL MEALS COMPLETED: show WHITE CHECKBOX LEFT + BIG CENTERED DINNER PLATE with light green
+      if (allCompleted) {
+        return {
+          html: `
+            <div class="meal-event completed"
+                 style="display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        width: 100%;
+                        height: 100%;
+                        padding: 4px 8px;
+                        background: linear-gradient(135deg, rgba(134, 239, 172, 0.25) 0%, rgba(74, 222, 128, 0.35) 100%);
+                        border-radius: 8px;
+                        border: 2px solid rgba(74, 222, 128, 0.5);
+                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(74, 222, 128, 0.4);">
+              <!-- White checkbox LEFT -->
+              <span style="font-size: 22px;
+                           line-height: 1;
+                           color: #ffffff;
+                           font-weight: 900;
+                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
+              <!-- BIG CENTERED DINNER PLATE with silverware -->
+              <span style="font-size: 40px;
+                           line-height: 1;
+                           flex: 1;
+                           text-align: center;
+                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(74, 222, 128, 0.6));">🍽️</span>
+            </div>
+          `
+        };
+      } else {
+        // NOT COMPLETED: Show ORIGINAL STYLE with text and VIVID GREEN background
+        const sizeClass = getTextSizeClass(title);
+        const bgColor = event.backgroundColor || '#10b981';  // VIVID GREEN
+        const txtColor = event.textColor || '#ffffff';  // WHITE
+        const statusText = completedCount > 0 ? ` (${completedCount}/${meals.length} ✓)` : '';
+        return {
+          html: `<div class="event-text-wrapper ${sizeClass}"
+                      style="background-color: ${bgColor} !important;
+                             color: ${txtColor} !important;
+                             font-weight: 700 !important;
+                             font-size: 11px !important;
+                             line-height: 1.2 !important;
+                             padding: 2px 4px !important;
+                             border-radius: 4px !important;
+                             width: 75% !important;
+                             max-width: 75% !important;
+                             height: auto !important;
+                             overflow: hidden !important;
+                             text-overflow: ellipsis !important;
+                             white-space: nowrap !important;
+                             box-sizing: border-box !important;
+                             display: inline-block !important;">
+                   ${title}${statusText}
+                 </div>`
+        };
+      }
     }
 
-    // For medication events - FORCE background color to show correctly with NARROWER width (75% width)
+    // For medication events
     if (extendedProps.isMedicationEvent) {
-      const bgColor = event.backgroundColor || '#ff9800';
-      const txtColor = event.textColor || '#ffffff';
-      return {
-        html: `<div style="background-color: ${bgColor} !important;
-                           color: ${txtColor} !important;
-                           font-weight: 700 !important;
-                           font-size: 11px !important;
-                           line-height: 1.2 !important;
-                           padding: 2px 4px !important;
-                           border-radius: 4px !important;
-                           width: 75% !important;
-                           max-width: 75% !important;
-                           height: auto !important;
-                           overflow: hidden !important;
-                           text-overflow: ellipsis !important;
-                           white-space: nowrap !important;
-                           box-sizing: border-box !important;
-                           display: inline-block !important;">
-                 ${title}
-               </div>`
-      };
+      const medStatus = extendedProps.status;
+
+      // ONLY IF TAKEN (completed): show WHITE CHECKBOX LEFT + BIG CENTERED PILL with light orange
+      if (medStatus === 'taken' || medStatus === 'completed') {
+        return {
+          html: `
+            <div class="medication-event completed"
+                 style="display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        width: 100%;
+                        height: 100%;
+                        padding: 4px 8px;
+                        background: linear-gradient(135deg, rgba(255, 187, 102, 0.25) 0%, rgba(255, 152, 0, 0.35) 100%);
+                        border-radius: 8px;
+                        border: 2px solid rgba(255, 152, 0, 0.5);
+                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(255, 152, 0, 0.4);">
+              <!-- White checkbox LEFT -->
+              <span style="font-size: 22px;
+                           line-height: 1;
+                           color: #ffffff;
+                           font-weight: 900;
+                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
+              <!-- BIG CENTERED PILL -->
+              <span style="font-size: 40px;
+                           line-height: 1;
+                           flex: 1;
+                           text-align: center;
+                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255, 152, 0, 0.6));">💊</span>
+            </div>
+          `
+        };
+      } else {
+        // NOT TAKEN or MISSED: Show ORIGINAL STYLE with text
+        const bgColor = event.backgroundColor || '#ff9800';
+        const txtColor = event.textColor || '#ffffff';
+        return {
+          html: `<div style="background-color: ${bgColor} !important;
+                             color: ${txtColor} !important;
+                             font-weight: 700 !important;
+                             font-size: 11px !important;
+                             line-height: 1.2 !important;
+                             padding: 2px 4px !important;
+                             border-radius: 4px !important;
+                             width: 75% !important;
+                             max-width: 75% !important;
+                             height: auto !important;
+                             overflow: hidden !important;
+                             text-overflow: ellipsis !important;
+                             white-space: nowrap !important;
+                             box-sizing: border-box !important;
+                             display: inline-block !important;">
+                   ${title}
+                 </div>`
+        };
+      }
     }
 
     // For exercise events
@@ -1282,21 +1357,39 @@ See browser console for full configuration details.
       const bgColor = event.backgroundColor || '#607d8b';
       const txtColor = event.textColor || '#ffffff';
 
-      // ONLY show icon + checkmark if completed
+      // ONLY show bicep + white checkbox if completed
       if (isCompleted) {
-        const icon = getExerciseIcon(exercise.category);
         return {
           html: `
             <div class="exercise-event completed"
-                 style="display: flex; align-items: center; justify-content: center; gap: 4px;
-                        width: 100%; height: 100%; padding: 4px;">
-              <span style="font-size: 18px; line-height: 1;">${icon}</span>
-              <span style="font-size: 14px; line-height: 1; color: #10b981;">✓</span>
+                 style="display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        width: 100%;
+                        height: 100%;
+                        padding: 4px 8px;
+                        background: linear-gradient(135deg, rgba(147, 197, 253, 0.25) 0%, rgba(96, 165, 250, 0.35) 100%);
+                        border-radius: 8px;
+                        border: 2px solid rgba(96, 165, 250, 0.5);
+                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(96, 165, 250, 0.4);">
+              <!-- White checkbox LEFT -->
+              <span style="font-size: 22px;
+                           line-height: 1;
+                           color: #ffffff;
+                           font-weight: 900;
+                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
+              <!-- BIG CENTERED BICEP ARM -->
+              <span style="font-size: 40px;
+                           line-height: 1;
+                           flex: 1;
+                           text-align: center;
+                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(96, 165, 250, 0.6));">💪</span>
             </div>
           `
         };
       } else {
-        // Show text for incomplete exercises with FORCED background color and 75% width
+        // Show text for incomplete exercises - KEEP ORIGINAL STYLE showing specific exercise name
         const sizeClass = getTextSizeClass(title);
         return {
           html: `<div class="event-text-wrapper ${sizeClass}"
@@ -3951,6 +4044,16 @@ See browser console for full configuration details.
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="text-base font-bold text-green-900 capitalize">{meal.mealType}</span>
+                                {/* Meal Status Badge */}
+                                {meal.status === 'completed' && (
+                                  <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">✓ Ate It</span>
+                                )}
+                                {meal.status === 'missed' && (
+                                  <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">✗ Missed</span>
+                                )}
+                                {(!meal.status || meal.status === 'planned') && (
+                                  <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">◐ Planned</span>
+                                )}
                                 <span className="text-sm text-gray-600 font-medium">
                                   {new Date(meal.timestamp).toLocaleTimeString('en-US', {
                                     hour: 'numeric',
@@ -3976,6 +4079,41 @@ See browser console for full configuration details.
                                 </span>
                               )}
                               <div className="flex space-x-2">
+                                {/* Mark Complete Button */}
+                                <button
+                                  onClick={async () => {
+                                    const newStatus =
+                                      meal.status === 'planned' ? 'completed' :
+                                      meal.status === 'completed' ? 'missed' :
+                                      'planned';
+                                    try {
+                                      await api.updateMealStatus(meal.id, newStatus);
+                                      toast.success(`Meal marked as ${newStatus}`);
+                                      // Refresh both meals and calendar events
+                                      await loadCalendarsAndEvents();
+                                      const updatedMeals = await api.getMeals({
+                                        startDate: selectedDate,
+                                        endDate: selectedDate
+                                      });
+                                      setSelectedDateMeals(updatedMeals);
+                                    } catch (error) {
+                                      console.error('Failed to update meal status:', error);
+                                      toast.error('Failed to update status');
+                                    }
+                                  }}
+                                  className={`px-3 py-1 text-white text-xs font-bold rounded-lg transition-colors ${
+                                    meal.status === 'completed' ? 'bg-green-500 hover:bg-green-600' :
+                                    meal.status === 'missed' ? 'bg-red-500 hover:bg-red-600' :
+                                    'bg-blue-500 hover:bg-blue-600'
+                                  }`}
+                                  title="Click to cycle: Planned → Completed → Missed"
+                                >
+                                  <CheckCircle className="h-3 w-3 inline mr-1" />
+                                  {meal.status === 'completed' ? 'Ate It' :
+                                   meal.status === 'missed' ? 'Missed' :
+                                   'Mark Complete'}
+                                </button>
+
                                 <button
                                   onClick={() => {
                                     // Navigate to meals page to edit

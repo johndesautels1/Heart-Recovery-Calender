@@ -23,11 +23,11 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { Medication, CreateMedicationInput, MedicationLog, VitalsSample } from '../types';
+import { Medication, CreateMedicationInput, MedicationLog, VitalsSample, Patient } from '../types';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
@@ -49,15 +49,9 @@ const medicationSchema = z.object({
   sideEffects: z.string().optional(),
   reminderEnabled: z.boolean().optional(),
   // NEW: Additional tracking fields
-  effectiveness: z.preprocess(
-    (val) => (val === null || val === undefined || (typeof val === 'number' && isNaN(val)) || val === '') ? undefined : val,
-    z.number().min(1).max(5).optional()
-  ),
+  effectiveness: z.number().min(1).max(5).optional(),
   isOTC: z.boolean().optional(),
-  monthlyCost: z.preprocess(
-    (val) => (val === null || val === undefined || (typeof val === 'number' && isNaN(val)) || val === '') ? undefined : val,
-    z.number().min(0).optional()
-  ),
+  monthlyCost: z.number().min(0).optional(),
 });
 
 type MedicationFormData = z.infer<typeof medicationSchema>;
@@ -109,8 +103,8 @@ export function MedicationsPage() {
     const loadPatients = async () => {
       if (user?.role === 'therapist') {
         try {
-          const patients = await api.getPatients();
-          setAllPatients(patients);
+          const response = await api.getPatients();
+          setAllPatients(response.data);
         } catch (error) {
           console.error('Failed to load patients:', error);
         }
@@ -1701,13 +1695,13 @@ export function MedicationsPage() {
         title={editingMed ? 'Edit Medication' : 'Add Medication'}
         size="lg"
       >
-        <form onSubmit={handleSubmit(onSubmit, (errors) => {
+        <form onSubmit={handleSubmit(onSubmit, (errors: FieldErrors<MedicationFormData>) => {
           console.error('Form validation errors:', errors);
           console.log('Current form values:', {
             name: medicationName,
-            dosage: document.querySelector('select[name="dosage"], input[name="dosage"]')?.value,
-            frequency: document.querySelector('select[name="frequency"]')?.value,
-            startDate: document.querySelector('input[name="startDate"]')?.value
+            dosage: (document.querySelector('select[name="dosage"], input[name="dosage"]') as HTMLInputElement | HTMLSelectElement)?.value,
+            frequency: (document.querySelector('select[name="frequency"]') as HTMLSelectElement)?.value,
+            startDate: (document.querySelector('input[name="startDate"]') as HTMLInputElement)?.value
           });
           toast.error('Please fill in all required fields');
         })} className="space-y-4">

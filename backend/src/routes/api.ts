@@ -181,6 +181,9 @@ router.get('/meals/:id', mealsController.getMeal);
 /** @route PUT /api/meals/:id - @desc Update a meal entry - @access Private */
 router.put('/meals/:id', mealsController.updateMeal);
 
+/** @route PATCH /api/meals/:id/status - @desc Update meal completion status - @access Private */
+router.patch('/meals/:id/status', mealsController.updateMealStatus);
+
 /** @route DELETE /api/meals/:id - @desc Delete a meal entry - @access Private */
 router.delete('/meals/:id', mealsController.deleteMeal);
 

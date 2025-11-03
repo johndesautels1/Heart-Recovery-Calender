@@ -242,6 +242,11 @@ class ApiService {
     await this.api.delete(`meals/${id}`);
   }
 
+  async updateMealStatus(id: number, status: 'planned' | 'completed' | 'missed'): Promise<MealEntry> {
+    const response = await this.api.patch(`meals/${id}/status`, { status });
+    return response.data;
+  }
+
   // ==================== VITALS ENDPOINTS ====================
   async getVitals(filters?: { startDate?: string; endDate?: string; userId?: number }): Promise<VitalsSample[]> {
     const params = new URLSearchParams();

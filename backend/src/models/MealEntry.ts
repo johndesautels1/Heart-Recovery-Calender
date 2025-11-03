@@ -20,6 +20,7 @@ interface MealEntryAttributes {
   postSurgeryDay?: number;
   notes?: string;
   satisfactionRating?: number;
+  status?: 'planned' | 'completed' | 'missed';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,6 +46,7 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
   public postSurgeryDay?: number;
   public notes?: string;
   public satisfactionRating?: number;
+  public status?: 'planned' | 'completed' | 'missed';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -143,6 +145,12 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
             min: 1,
             max: 5,
           },
+        },
+        status: {
+          type: DataTypes.ENUM('planned', 'completed', 'missed'),
+          allowNull: true,
+          defaultValue: 'planned',
+          comment: 'Meal completion status',
         },
       },
       {

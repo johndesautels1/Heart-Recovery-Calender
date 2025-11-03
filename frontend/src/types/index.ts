@@ -90,6 +90,7 @@ export interface MealEntry {
   withinSpec: boolean;
   notes?: string;
   satisfactionRating?: number; // NEW: 1-5 scale for how satisfying the meal was
+  status?: 'planned' | 'completed' | 'missed';
   createdAt: string;
   updatedAt: string;
 }
@@ -213,6 +214,7 @@ export interface CreateMealInput {
   withinSpec?: boolean;
   notes?: string;
   satisfactionRating?: number;
+  status?: 'planned' | 'completed' | 'missed';
 }
 
 export interface CreateVitalsInput {
@@ -250,6 +252,9 @@ export interface CreateMedicationInput {
   sideEffects?: string;
   isActive?: boolean;
   reminderEnabled?: boolean;
+  effectiveness?: number;
+  isOTC?: boolean;
+  monthlyCost?: number;
 }
 
 // Dietary compliance limits

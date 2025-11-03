@@ -146,6 +146,27 @@ export const updateMeal = async (req: Request, res: Response) => {
   }
 };
 
+export const updateMealStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user?.id;
+
+    if (!status || !['planned', 'completed', 'missed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be: planned, completed, or missed' });
+    }
+
+    const meal = await MealEntry.findOne({ where: { id, userId } });
+    if (!meal) return res.status(404).json({ error: 'Meal not found' });
+
+    await meal.update({ status });
+    res.json(meal);
+  } catch (error) {
+    console.error('Error updating meal status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const deleteMeal = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
