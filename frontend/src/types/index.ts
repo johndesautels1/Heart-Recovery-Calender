@@ -264,7 +264,7 @@ export const DIETARY_LIMITS = {
 export const CALENDAR_COLORS = {
   medications: '#9c27b0',
   appointments: '#2196f3',
-  exercise: '#4caf50',
+  exercise: '#2563eb',
   vitals: '#f44336',
   diet: '#ff9800',
   general: '#607d8b',
