@@ -1821,7 +1821,8 @@ export function ExercisesPage() {
                           runningTotal,
                           exercises: exercises.join(', ')
                         };
-                      });
+                      })
+                      .slice(-90); // Limit to last 90 days for chart performance
                   })()}>
                     <defs>
                       <linearGradient id="calorieGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1938,8 +1939,8 @@ export function ExercisesPage() {
                             (log.distanceMiles && log.distanceMiles > 0)
                           );
 
-                          // Get the last 12 endurance logs
-                          return logsWithEndurance.slice(-12).map((log: any) => ({
+                          // Limit to last 90 days for chart performance
+                          return logsWithEndurance.slice(-90).map((log: any) => ({
                             date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                             duration: log.actualDuration || 0, // REAL duration in minutes
                             distance: log.distanceMiles || 0, // REAL distance in miles
@@ -2008,10 +2009,10 @@ export function ExercisesPage() {
                             new Date(a.startTime || a.completedAt).getTime() - new Date(b.startTime || b.completedAt).getTime()
                           );
 
-                          // Filter logs that have MET data and get the last 12
+                          // Filter logs that have MET data and limit to last 90 days
                           const logsWithMET = sortedLogs.filter((log: any) => log.actualMET !== null && log.actualMET !== undefined);
 
-                          return logsWithMET.slice(-12).map((log: any) => ({
+                          return logsWithMET.slice(-90).map((log: any) => ({
                             date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                             metLevel: log.actualMET || 0, // Real calculated MET from heart rate data
                             targetMin: log.targetMETMin || 0, // Minimum target MET zone

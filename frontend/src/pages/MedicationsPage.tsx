@@ -466,9 +466,10 @@ export function MedicationsPage() {
   const adherenceScore = calculateMonthlyAdherenceScore();
   const scoreColor = getScoreColor(adherenceScore.totalScore, adherenceScore.maxPossibleScore);
 
-  // Prepare chart data - one bar per date
+  // Prepare chart data - one bar per date (limit to 90 days for performance)
   const chartData = Object.keys(logsByDate)
     .sort()
+    .slice(-90)
     .map(dateStr => {
       const dayLogs = logsByDate[dateStr];
       const totalDoses = dayLogs.length;

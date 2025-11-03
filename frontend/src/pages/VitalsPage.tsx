@@ -125,7 +125,8 @@ export function VitalsPage() {
     return { status: 'Stage 2 Hypertension', className: 'text-red-500' };
   };
 
-  const chartData = vitals.map(v => ({
+  // Limit to last 90 days for chart performance (prevents slowdown with years of data)
+  const chartData = vitals.slice(-90).map(v => ({
     date: format(new Date(v.timestamp), 'MMM d'),
     systolic: v.bloodPressureSystolic,
     diastolic: v.bloodPressureDiastolic,

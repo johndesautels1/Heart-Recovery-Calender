@@ -309,8 +309,9 @@ export function SleepPage() {
   const sleepScore = calculateMonthlySleepScore();
   const scoreColor = getScoreColor(sleepScore.totalScore, sleepScore.maxPossibleScore);
 
+  // Limit to last 90 days for chart performance
   const chartData = sleepLogs
-    .slice()
+    .slice(-90)
     .reverse()
     .map(log => {
       const hours = parseFloat(log.hoursSlept.toString());
@@ -379,13 +380,13 @@ export function SleepPage() {
     return data;
   })();
 
-  // 3. Sleep Debt Wave Data
+  // 3. Sleep Debt Wave Data (limited to 90 days for performance)
   const sleepDebtData = (() => {
     const TARGET_HOURS = 8;
     let cumulativeDebt = 0;
 
     return sleepLogs
-      .slice()
+      .slice(-90)
       .reverse()
       .map((log, index) => {
         const hours = parseFloat(log.hoursSlept.toString());
