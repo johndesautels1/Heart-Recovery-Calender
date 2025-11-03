@@ -146,6 +146,7 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
         effectivenessRating: {
           type: DataTypes.INTEGER,
           allowNull: true,
+          field: 'effectiveness_rating',
           comment: 'Effectiveness rating (1-5 stars)',
           validate: {
             min: 1,
@@ -156,6 +157,7 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
           type: DataTypes.BOOLEAN,
           allowNull: true,
           defaultValue: false,
+          field: 'is_otc',
           comment: 'Whether this is an over-the-counter medication',
         },
       },
