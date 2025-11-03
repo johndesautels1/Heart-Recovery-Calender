@@ -19,7 +19,9 @@ import {
   Activity,
   TrendingUp,
   Target,
-  Zap
+  Zap,
+  Check,
+  X
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -241,12 +243,34 @@ export function MedicationsPage() {
     }
   };
 
+  const handleMarkMedication = async (medicationId: number, status: 'taken' | 'missed') => {
+    try {
+      const now = new Date().toISOString();
+      await api.createMedicationLog(medicationId, {
+        medicationId,
+        scheduledTime: now,
+        takenTime: status === 'taken' ? now : undefined,
+        status,
+      });
+
+      // Reload adherence data if we're on that tab
+      if (activeTab === 'adherence') {
+        await loadAdherenceData();
+      }
+
+      toast.success(`Medication marked as ${status}`);
+    } catch (error) {
+      console.error('Failed to log medication:', error);
+      toast.error('Failed to log medication');
+    }
+  };
+
   const displayedMeds = 
     viewMode === 'active' ? activeMeds :
     viewMode === 'inactive' ? inactiveMeds :
     medications;
 
-  const MedicationCard = ({ medication }: { medication: Medication }) => {
+  const MedicationCard = ({ medication, onMarkMedication }: { medication: Medication; onMarkMedication: (medicationId: number, status: 'taken' | 'missed') => void }) => {
     // 7. Get sparkline data for this medication
     const sparklineData = activeTab === 'medications' ? getSparklineData(medication.id) : [];
     const hasSparklineData = sparklineData.length > 0;
@@ -262,6 +286,30 @@ export function MedicationsPage() {
       )}
 
       <div className="space-y-3">
+        {/* Quick Action Buttons - Mark as Taken/Missed */}
+        {medication.isActive && (
+          <div className="flex gap-2 pb-3 border-b border-gray-200">
+            <Button
+              size="sm"
+              variant="success"
+              onClick={() => onMarkMedication(medication.id, 'taken')}
+              className="flex-1 flex items-center justify-center gap-1"
+            >
+              <Check className="h-4 w-4" />
+              Mark Taken
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => onMarkMedication(medication.id, 'missed')}
+              className="flex-1 flex items-center justify-center gap-1"
+            >
+              <X className="h-4 w-4" />
+              Mark Missed
+            </Button>
+          </div>
+        )}
+
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h3 className="text-lg font-bold" style={{ color: '#ffffff' }}>{medication.name}</h3>
@@ -986,7 +1034,7 @@ export function MedicationsPage() {
       {displayedMeds.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayedMeds.map((medication) => (
-            <MedicationCard key={medication.id} medication={medication} />
+            <MedicationCard key={medication.id} medication={medication} onMarkMedication={handleMarkMedication} />
           ))}
         </div>
       ) : (
