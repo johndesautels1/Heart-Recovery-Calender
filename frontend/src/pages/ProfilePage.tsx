@@ -612,7 +612,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.age || ''}
+                            value={patientData?.age !== undefined && patientData?.age !== null ? patientData.age : ''}
                             disabled
                             icon={<Calendar className="h-5 w-5" />}
                           />
@@ -915,7 +915,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.ejectionFraction || ''}
+                            value={patientData?.ejectionFraction !== undefined && patientData?.ejectionFraction !== null ? patientData.ejectionFraction : ''}
                             onChange={(e) => handleChange('ejectionFraction', parseFloat(e.target.value))}
                             icon={<Activity className="h-5 w-5" />}
                           />
@@ -928,7 +928,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.restingHeartRate || ''}
+                            value={patientData?.restingHeartRate !== undefined && patientData?.restingHeartRate !== null ? patientData.restingHeartRate : ''}
                             onChange={(e) => handleChange('restingHeartRate', parseInt(e.target.value))}
                             icon={<Heart className="h-5 w-5" />}
                           />
@@ -939,7 +939,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.maxHeartRate || ''}
+                            value={patientData?.maxHeartRate !== undefined && patientData?.maxHeartRate !== null ? patientData.maxHeartRate : ''}
                             onChange={(e) => handleChange('maxHeartRate', parseInt(e.target.value))}
                             icon={<Heart className="h-5 w-5" />}
                           />
@@ -950,7 +950,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.targetHeartRateMin || ''}
+                            value={patientData?.targetHeartRateMin !== undefined && patientData?.targetHeartRateMin !== null ? patientData.targetHeartRateMin : ''}
                             onChange={(e) => handleChange('targetHeartRateMin', parseInt(e.target.value))}
                             icon={<Heart className="h-5 w-5" />}
                           />
@@ -961,7 +961,7 @@ export function ProfilePage() {
                           </label>
                           <Input
                             type="number"
-                            value={patientData?.targetHeartRateMax || ''}
+                            value={patientData?.targetHeartRateMax !== undefined && patientData?.targetHeartRateMax !== null ? patientData.targetHeartRateMax : ''}
                             onChange={(e) => handleChange('targetHeartRateMax', parseInt(e.target.value))}
                             icon={<Heart className="h-5 w-5" />}
                           />
@@ -975,13 +975,13 @@ export function ProfilePage() {
                           <div className="grid grid-cols-2 gap-2">
                             <Input
                               type="number"
-                              value={patientData?.baselineBpSystolic || ''}
+                              value={patientData?.baselineBpSystolic !== undefined && patientData?.baselineBpSystolic !== null ? patientData.baselineBpSystolic : ''}
                               onChange={(e) => handleChange('baselineBpSystolic', parseInt(e.target.value))}
                                 placeholder="120"
                             />
                             <Input
                               type="number"
-                              value={patientData?.baselineBpDiastolic || ''}
+                              value={patientData?.baselineBpDiastolic !== undefined && patientData?.baselineBpDiastolic !== null ? patientData.baselineBpDiastolic : ''}
                               onChange={(e) => handleChange('baselineBpDiastolic', parseInt(e.target.value))}
                                 placeholder="80"
                             />
