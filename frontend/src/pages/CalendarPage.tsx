@@ -152,7 +152,6 @@ export function CalendarPage() {
 
   const isAllDay = watch('isAllDay');
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadCalendarsAndEvents();
