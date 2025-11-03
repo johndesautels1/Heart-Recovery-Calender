@@ -122,6 +122,8 @@ export interface VitalsSample {
   chestPain?: boolean;
   chestPainSeverity?: number;
   chestPainType?: string;
+  dyspnea?: number;
+  dyspneaTriggers?: string;
   createdAt: string;
   updatedAt: string;
 }
