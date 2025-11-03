@@ -21,6 +21,8 @@ interface MedicationAttributes {
   pharmacy?: string;
   pharmacyPhone?: string;
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -47,6 +49,8 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
   public pharmacy?: string;
   public pharmacyPhone?: string;
   public notes?: string;
+  public effectivenessRating?: number;
+  public isOTC?: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -138,6 +142,21 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
         notes: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        effectivenessRating: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Effectiveness rating (1-5 stars)',
+          validate: {
+            min: 1,
+            max: 5,
+          },
+        },
+        isOTC: {
+          type: DataTypes.BOOLEAN,
+          allowNull: true,
+          defaultValue: false,
+          comment: 'Whether this is an over-the-counter medication',
         },
       },
       {

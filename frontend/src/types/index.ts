@@ -297,6 +297,8 @@ export interface FoodItem {
   sugar?: number;
   servingSize?: string;
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt: string;
   updatedAt: string;
   category?: FoodCategory;
@@ -309,6 +311,8 @@ export interface MealItemEntry {
   portionSize: 'small' | 'medium' | 'large';
   quantity: number;
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt: string;
   updatedAt: string;
   foodItem?: FoodItem;
@@ -497,6 +501,8 @@ export interface MedicationLog {
   takenTime?: string;
   status: 'scheduled' | 'taken' | 'missed' | 'skipped';
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt: string;
   updatedAt: string;
   medication?: Medication;
@@ -652,6 +658,8 @@ export interface HydrationLog {
   targetOunces?: number;
   postSurgeryDay?: number;
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt: string;
   updatedAt: string;
   user?: User;
@@ -693,6 +701,8 @@ export interface DailyScore {
   totalDailyScore: number;
 
   notes?: string;
+  effectivenessRating?: number;
+  isOTC?: boolean;
   createdAt: string;
   updatedAt: string;
   user?: User;
