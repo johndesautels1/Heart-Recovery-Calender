@@ -1830,23 +1830,33 @@ See browser console for full configuration details.
 
             /* ========== END 4D GLASS MORPHIC CALENDAR DATE FRAMES ========== */
 
-            /* FORCE FullCalendar event containers to be transparent so inner content background shows */
-            .fc-event,
+            /* FORCE FullCalendar to use ONLY the background color from event data */
+            .fc-event .fc-event-main {
+              background: transparent !important;
+              padding: 0 !important;
+            }
+
+            /* Remove all FullCalendar default backgrounds and borders */
+            .fc-daygrid-event-harness,
             .fc-daygrid-event,
+            .fc-event,
             .fc-timegrid-event,
             .fc-h-event {
-              background: transparent !important;
+              background: none !important;
               border: none !important;
+              padding: 0 !important;
             }
 
-            /* Ensure event main frame is transparent */
+            /* Ensure the inner content wrapper has no background */
             .fc-event-main-frame {
-              background: transparent !important;
+              background: none !important;
+              padding: 0 !important;
             }
 
-            /* Ensure event content wrapper is transparent to show custom backgrounds */
-            .fc-event-main {
-              background: transparent !important;
+            /* Let event-text-wrapper divs control all background styling */
+            .event-text-wrapper {
+              display: block !important;
+              width: 100% !important;
             }
 
             /* LARGER Event text sizing for better visibility */
