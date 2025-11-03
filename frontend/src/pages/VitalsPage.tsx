@@ -43,6 +43,8 @@ const vitalsSchema = z.object({
   dizzinessSeverity: z.number().min(1).max(10).optional(),
   dizzinessFrequency: z.string().optional(),
   energyLevel: z.number().min(1).max(10).optional(),
+  stressLevel: z.number().min(1).max(10).optional(),
+  anxietyLevel: z.number().min(1).max(10).optional(),
 });
 
 type VitalsFormData = z.infer<typeof vitalsSchema>;

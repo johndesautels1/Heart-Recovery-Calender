@@ -10,6 +10,7 @@ import * as medicationsController from '../controllers/medicationsController';
 import * as therapyGoalsController from '../controllers/therapyGoalsController';
 import * as goalTemplatesController from '../controllers/goalTemplatesController';
 import * as goalJournalController from '../controllers/goalJournalController';
+import * as habitsController from '../controllers/habitsController';
 import * as alertsController from '../controllers/alertsController';
 import * as foodCategoriesController from '../controllers/foodCategoriesController';
 import * as foodItemsController from '../controllers/foodItemsController';
@@ -286,6 +287,27 @@ router.put('/goal-journal/:id', goalJournalController.updateJournalEntry);
 
 /** @route DELETE /api/goal-journal/:id - @desc Delete a journal entry - @access Private */
 router.delete('/goal-journal/:id', goalJournalController.deleteJournalEntry);
+
+/** @route GET /api/habits - @desc Get all habits for the user - @access Private */
+router.get('/habits', habitsController.getHabits);
+
+/** @route GET /api/habits/:id - @desc Get a specific habit - @access Private */
+router.get('/habits/:id', habitsController.getHabitById);
+
+/** @route POST /api/habits - @desc Create a new habit - @access Private */
+router.post('/habits', habitsController.createHabit);
+
+/** @route PUT /api/habits/:id - @desc Update a habit - @access Private */
+router.put('/habits/:id', habitsController.updateHabit);
+
+/** @route DELETE /api/habits/:id - @desc Deactivate a habit - @access Private */
+router.delete('/habits/:id', habitsController.deleteHabit);
+
+/** @route POST /api/habits/:habitId/log - @desc Log habit completion - @access Private */
+router.post('/habits/:habitId/log', habitsController.logHabitCompletion);
+
+/** @route GET /api/habits/:habitId/logs - @desc Get logs for a habit - @access Private */
+router.get('/habits/:habitId/logs', habitsController.getHabitLogs);
 router.put('/therapy-goals/:id/progress', therapyGoalsController.updateGoalProgress);
 
 // ========== ALERTS ROUTES ==========

@@ -128,6 +128,8 @@ export interface VitalsSample {
   dizzinessSeverity?: number;
   dizzinessFrequency?: string;
   energyLevel?: number;
+  stressLevel?: number;
+  anxietyLevel?: number;
   createdAt: string;
   updatedAt: string;
 }

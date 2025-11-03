@@ -36,6 +36,8 @@ interface VitalsSampleAttributes {
   dizzinessSeverity?: number;
   dizzinessFrequency?: string;
   energyLevel?: number;
+  stressLevel?: number;
+  anxietyLevel?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -77,6 +79,8 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public dizzinessSeverity?: number;
   public dizzinessFrequency?: string;
   public energyLevel?: number;
+  public stressLevel?: number;
+  public anxietyLevel?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -286,6 +290,24 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.INTEGER,
           allowNull: true,
           comment: 'Energy level (1-10 scale, 1=exhausted, 10=energetic)',
+          validate: {
+            min: 1,
+            max: 10,
+          },
+        },
+        stressLevel: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Stress level (1-10 scale, 1=relaxed, 10=very stressed)',
+          validate: {
+            min: 1,
+            max: 10,
+          },
+        },
+        anxietyLevel: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Anxiety level (1-10 scale, 1=calm, 10=very anxious)',
           validate: {
             min: 1,
             max: 10,
