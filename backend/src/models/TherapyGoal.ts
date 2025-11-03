@@ -20,6 +20,9 @@ interface TherapyGoalAttributes {
   priority: 'low' | 'medium' | 'high';
   recurring: boolean;
   frequency?: string;
+  reminderEnabled: boolean;
+  reminderFrequency?: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  lastReminded?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,6 +48,9 @@ class TherapyGoal extends Model<TherapyGoalAttributes, TherapyGoalCreationAttrib
   public priority!: 'low' | 'medium' | 'high';
   public recurring!: boolean;
   public frequency?: string;
+  public reminderEnabled!: boolean;
+  public reminderFrequency?: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  public lastReminded?: Date;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -147,6 +153,19 @@ class TherapyGoal extends Model<TherapyGoalAttributes, TherapyGoalCreationAttrib
           type: DataTypes.STRING(100),
           allowNull: true,
           comment: 'For recurring goals: daily, weekly, monthly, etc.',
+        },
+        reminderEnabled: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
+        },
+        reminderFrequency: {
+          type: DataTypes.ENUM('daily', 'weekly', 'biweekly', 'monthly'),
+          allowNull: true,
+        },
+        lastReminded: {
+          type: DataTypes.DATE,
+          allowNull: true,
         },
         createdAt: {
           type: DataTypes.DATE,
