@@ -1202,7 +1202,7 @@ See browser console for full configuration details.
       return 'event-text-very-long';
     };
 
-    // For meal events - FORCE VIVID background color to show correctly
+    // For meal events - FORCE VIVID background color with 75% width like medications
     if (extendedProps.isMealEvent) {
       const sizeClass = getTextSizeClass(title);
       const bgColor = event.backgroundColor || '#2563eb';  // VIVID BLUE
@@ -1212,9 +1212,18 @@ See browser console for full configuration details.
                     style="background-color: ${bgColor} !important;
                            color: ${txtColor} !important;
                            font-weight: 700 !important;
-                           padding: 4px 6px !important;
+                           font-size: 11px !important;
+                           line-height: 1.2 !important;
+                           padding: 2px 4px !important;
                            border-radius: 4px !important;
-                           box-sizing: border-box !important;">
+                           width: 75% !important;
+                           max-width: 75% !important;
+                           height: auto !important;
+                           overflow: hidden !important;
+                           text-overflow: ellipsis !important;
+                           white-space: nowrap !important;
+                           box-sizing: border-box !important;
+                           display: inline-block !important;">
                  ${title}
                </div>`
       };
@@ -1266,23 +1275,32 @@ See browser console for full configuration details.
           `
         };
       } else {
-        // Show text for incomplete exercises with FORCED background color
+        // Show text for incomplete exercises with FORCED background color and 75% width
         const sizeClass = getTextSizeClass(title);
         return {
           html: `<div class="event-text-wrapper ${sizeClass}"
                       style="background-color: ${bgColor} !important;
                              color: ${txtColor} !important;
                              font-weight: 700 !important;
-                             padding: 4px 6px !important;
+                             font-size: 11px !important;
+                             line-height: 1.2 !important;
+                             padding: 2px 4px !important;
                              border-radius: 4px !important;
-                             box-sizing: border-box !important;">
+                             width: 75% !important;
+                             max-width: 75% !important;
+                             height: auto !important;
+                             overflow: hidden !important;
+                             text-overflow: ellipsis !important;
+                             white-space: nowrap !important;
+                             box-sizing: border-box !important;
+                             display: inline-block !important;">
                    ${title}
                  </div>`
         };
       }
     }
 
-    // Default for other events - FORCE background color to show correctly
+    // Default for other events - FORCE background color with 75% width
     const sizeClass = getTextSizeClass(title);
     const bgColor = event.backgroundColor || '#607d8b';
     const txtColor = event.textColor || '#ffffff';
@@ -1291,9 +1309,18 @@ See browser console for full configuration details.
                   style="background-color: ${bgColor} !important;
                          color: ${txtColor} !important;
                          font-weight: 700 !important;
-                         padding: 4px 6px !important;
+                         font-size: 11px !important;
+                         line-height: 1.2 !important;
+                         padding: 2px 4px !important;
                          border-radius: 4px !important;
-                         box-sizing: border-box !important;">
+                         width: 75% !important;
+                         max-width: 75% !important;
+                         height: auto !important;
+                         overflow: hidden !important;
+                         text-overflow: ellipsis !important;
+                         white-space: nowrap !important;
+                         box-sizing: border-box !important;
+                         display: inline-block !important;">
                ${title}
              </div>`
     };
