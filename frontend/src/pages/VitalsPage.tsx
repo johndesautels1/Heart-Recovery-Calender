@@ -34,6 +34,9 @@ const vitalsSchema = z.object({
   medicationsTaken: z.boolean().optional(),
   edema: z.string().optional(),
   edemaSeverity: z.enum(['none', 'mild', 'moderate', 'severe']).optional(),
+  chestPain: z.boolean().optional(),
+  chestPainSeverity: z.number().min(1).max(10).optional(),
+  chestPainType: z.string().optional(),
 });
 
 type VitalsFormData = z.infer<typeof vitalsSchema>;

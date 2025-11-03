@@ -119,6 +119,9 @@ export interface VitalsSample {
   deviceId?: string;
   edema?: string;
   edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
+  chestPain?: boolean;
+  chestPainSeverity?: number;
+  chestPainType?: string;
   createdAt: string;
   updatedAt: string;
 }

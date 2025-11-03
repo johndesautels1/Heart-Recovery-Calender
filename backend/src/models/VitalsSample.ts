@@ -27,6 +27,9 @@ interface VitalsSampleAttributes {
   deviceId?: string;
   edema?: string;
   edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
+  chestPain?: boolean;
+  chestPainSeverity?: number;
+  chestPainType?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -59,6 +62,9 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public deviceId?: string;
   public edema?: string;
   public edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
+  public chestPain?: boolean;
+  public chestPainSeverity?: number;
+  public chestPainType?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -211,6 +217,25 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           type: DataTypes.ENUM('none', 'mild', 'moderate', 'severe'),
           allowNull: true,
           comment: 'Severity of edema/swelling',
+        },
+        chestPain: {
+          type: DataTypes.BOOLEAN,
+          allowNull: true,
+          comment: 'Presence of chest pain',
+        },
+        chestPainSeverity: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Chest pain severity (1-10 scale)',
+          validate: {
+            min: 1,
+            max: 10,
+          },
+        },
+        chestPainType: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: 'Type of chest pain (sharp/dull/pressure/burning)',
         },
       },
       {
