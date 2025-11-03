@@ -1438,9 +1438,14 @@ See browser console for full configuration details.
       .filter(event => selectedCalendarIds.length === 0 || selectedCalendarIds.includes(event.calendarId))
       .map(event => {
         const calendar = calendars.find(c => c.id === event.calendarId);
+        // Add checkmark to completed exercise events
+        const isExercise = calendar?.type === 'exercise';
+        const isCompleted = event.status === 'completed';
+        const displayTitle = (isExercise && isCompleted) ? `✓ ${event.title}` : event.title;
+
         return {
           id: event.id.toString(),
-          title: event.title,
+          title: displayTitle,
           start: event.startTime,
           end: event.endTime,
           allDay: event.isAllDay,
@@ -2023,6 +2028,17 @@ See browser console for full configuration details.
               font-size: 18px !important;
               text-shadow: 0px 0px 4px rgba(34,197,94,1), 0px 0px 8px rgba(74,222,128,0.8) !important;
               font-weight: 900 !important;
+            }
+
+            /* Completed Exercise Checkmark ✓ - Bright White on Blue */
+            .fc-event[style*="background: rgb(37, 99, 235)"] .fc-event-title::first-letter,
+            .fc-event[style*="background-color: rgb(37, 99, 235)"] .fc-event-title::first-letter,
+            .fc-event[style*="background-color: #2563eb"] .fc-event-title::first-letter {
+              filter: brightness(2) saturate(1.5) !important;
+              font-size: 18px !important;
+              text-shadow: 0px 0px 4px rgba(255,255,255,1), 0px 0px 8px rgba(255,255,255,0.8) !important;
+              font-weight: 900 !important;
+              color: #ffffff !important;
             }
 
             /* ========== COMPLETED EXERCISE STYLING ========== */
