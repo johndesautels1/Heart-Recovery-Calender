@@ -1210,21 +1210,28 @@ See browser console for full configuration details.
       };
     }
 
-    // For medication events - FORCE background color to show correctly
+    // For medication events - FORCE background color to show correctly with SMALLER size
     if (extendedProps.isMedicationEvent) {
-      const sizeClass = getTextSizeClass(title);
       const bgColor = event.backgroundColor || '#ff9800';
       const txtColor = event.textColor || '#ffffff';
       return {
-        html: `<div class="event-text-wrapper ${sizeClass}"
-                    style="background-color: ${bgColor} !important;
+        html: `<div style="background-color: ${bgColor} !important;
                            color: ${txtColor} !important;
                            font-weight: 700 !important;
-                           padding: 4px 6px !important;
-                           border-radius: 4px !important;
+                           font-size: 9px !important;
+                           line-height: 1.1 !important;
+                           padding: 1px 3px !important;
+                           border-radius: 3px !important;
                            width: 100% !important;
-                           height: 100% !important;
-                           box-sizing: border-box !important;">
+                           height: auto !important;
+                           min-height: 16px !important;
+                           max-height: 20px !important;
+                           overflow: hidden !important;
+                           text-overflow: ellipsis !important;
+                           white-space: nowrap !important;
+                           box-sizing: border-box !important;
+                           display: flex !important;
+                           align-items: center !important;">
                  ${title}
                </div>`
       };
@@ -1349,8 +1356,11 @@ See browser console for full configuration details.
           position: 'absolute',
           top: '4px',
           right: '8px',
-          fontSize: '14px',
-          fontWeight: 400
+          fontSize: '16px',
+          fontWeight: 900,
+          color: '#ffffff',
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5)',
+          zIndex: 100
         }}>
           {arg.dayNumberText}
         </div>
