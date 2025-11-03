@@ -19,6 +19,7 @@ interface MealEntryAttributes {
   withinSpec: boolean;
   postSurgeryDay?: number;
   notes?: string;
+  satisfactionRating?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -43,6 +44,7 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
   public withinSpec!: boolean;
   public postSurgeryDay?: number;
   public notes?: string;
+  public satisfactionRating?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -132,6 +134,15 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
         notes: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        satisfactionRating: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Meal satisfaction rating (1-5 stars)',
+          validate: {
+            min: 1,
+            max: 5,
+          },
         },
       },
       {
