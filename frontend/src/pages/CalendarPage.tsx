@@ -46,6 +46,7 @@ type EventFormData = z.infer<typeof eventSchema>;
 export function CalendarPage() {
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -3965,15 +3966,59 @@ See browser console for full configuration details.
                                 {meal.sodium && <span>{meal.sodium}mg sodium</span>}
                               </div>
                             </div>
-                            {meal.withinSpec !== null && (
-                              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                                meal.withinSpec
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {meal.withinSpec ? '✓ On track' : '⚠ Review'}
-                              </span>
-                            )}
+                            <div className="flex flex-col items-end space-y-2">
+                              {meal.withinSpec !== null && (
+                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                  meal.withinSpec
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {meal.withinSpec ? '✓ On track' : '⚠ Review'}
+                                </span>
+                              )}
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => {
+                                    // Navigate to meals page to edit
+                                    navigate('/meals', { state: { editMealId: meal.id } });
+                                  }}
+                                  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                >
+                                  <Edit className="h-3 w-3 inline mr-1" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm('Are you sure you want to delete this meal?')) {
+                                      try {
+                                        const token = localStorage.getItem('token');
+                                        const response = await fetch(`/api/meals/${meal.id}`, {
+                                          method: 'DELETE',
+                                          headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                          },
+                                        });
+
+                                        if (!response.ok) {
+                                          throw new Error('Failed to delete meal');
+                                        }
+
+                                        toast.success('Meal deleted');
+                                        await loadCalendarsAndEvents();
+                                        setSelectedDateMeals(mealsForDate.filter(m => m.id !== meal.id));
+                                      } catch (error) {
+                                        console.error('Failed to delete meal:', error);
+                                        toast.error('Failed to delete meal');
+                                      }
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="h-3 w-3 inline mr-1" />
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
