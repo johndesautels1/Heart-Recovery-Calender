@@ -1075,8 +1075,8 @@ See browser console for full configuration details.
             title = `⚠ ${med.name} - MISSED`;
             classNames = ['font-bold', 'cursor-pointer', 'missed-medication'];
           } else {
-            backgroundColor = '#fefce8'; // light yellow
-            textColor = '#1e40af'; // cobalt blue
+            backgroundColor = '#fbbf24'; // bright amber/orange for visibility
+            textColor = '#1e3a8a'; // dark blue for contrast
             title = `💊 ${med.name}`;
             classNames = ['font-bold', 'cursor-pointer'];
           }

@@ -47,16 +47,22 @@ const medicationSchema = z.object({
   sideEffects: z.string().optional(),
   reminderEnabled: z.boolean().optional(),
   // NEW: Additional tracking fields
-  effectiveness: z.number().min(1).max(5).optional(),
+  effectiveness: z.preprocess(
+    (val) => (val === null || val === undefined || (typeof val === 'number' && isNaN(val)) || val === '') ? undefined : val,
+    z.number().min(1).max(5).optional()
+  ),
   isOTC: z.boolean().optional(),
-  monthlyCost: z.number().min(0).optional(),
+  monthlyCost: z.preprocess(
+    (val) => (val === null || val === undefined || (typeof val === 'number' && isNaN(val)) || val === '') ? undefined : val,
+    z.number().min(0).optional()
+  ),
 });
 
 type MedicationFormData = z.infer<typeof medicationSchema>;
 
 export function MedicationsPage() {
   const { user } = useAuth();
-  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
+  const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [activeMeds, setActiveMeds] = useState<Medication[]>([]);
   const [inactiveMeds, setInactiveMeds] = useState<Medication[]>([]);
@@ -65,6 +71,7 @@ export function MedicationsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('active');
   const [activeTab, setActiveTab] = useState<'medications' | 'adherence'>('medications');
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
 
   // Adherence data
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
@@ -94,6 +101,21 @@ export function MedicationsPage() {
   useEffect(() => {
     loadMedications();
   }, [selectedPatient]); // Reload when selected patient changes
+
+  // Load all patients for therapists
+  useEffect(() => {
+    const loadPatients = async () => {
+      if (user?.role === 'therapist') {
+        try {
+          const patients = await api.getPatients();
+          setAllPatients(patients);
+        } catch (error) {
+          console.error('Failed to load patients:', error);
+        }
+      }
+    };
+    loadPatients();
+  }, [user]);
 
   const loadMedications = async () => {
     try {
@@ -674,19 +696,40 @@ export function MedicationsPage() {
         </Button>
       </div>
 
-      {/* Patient Selection Banner */}
-      {isViewingAsTherapist && selectedPatient && (
+      {/* Patient Selection Dropdown for Therapists */}
+      {user?.role === 'therapist' && (
         <div className="glass rounded-xl p-4 border-2" style={{ borderColor: 'var(--accent)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
-              <div>
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing medications for:</p>
-                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
-              </div>
-            </div>
-            <div className="text-sm" style={{ color: 'var(--muted)' }}>
-              Therapist View
+          <div className="flex items-center space-x-4">
+            <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+            <div className="flex-1">
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--muted)' }}>
+                Viewing Medications For:
+              </label>
+              <select
+                value={selectedPatient?.id || 'own'}
+                onChange={(e) => {
+                  if (e.target.value === 'own') {
+                    setSelectedPatient(null);
+                  } else {
+                    const patient = allPatients.find(p => p.id === parseInt(e.target.value));
+                    setSelectedPatient(patient || null);
+                  }
+                }}
+                className="w-full px-4 py-2 rounded-lg border-2 border-white/20 bg-white/10 backdrop-blur-md focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none font-bold text-white"
+              >
+                <option value="own" style={{ color: '#1e293b', fontWeight: 700, backgroundColor: '#ffffff' }}>
+                  📋 My Own Medications
+                </option>
+                {allPatients.map(patient => (
+                  <option
+                    key={patient.id}
+                    value={patient.id}
+                    style={{ color: '#1e293b', fontWeight: 700, backgroundColor: '#ffffff' }}
+                  >
+                    👤 {patient.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -1610,13 +1653,22 @@ export function MedicationsPage() {
         title={editingMed ? 'Edit Medication' : 'Add Medication'}
         size="lg"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, (errors) => {
+          console.error('Form validation errors:', errors);
+          console.log('Current form values:', {
+            name: medicationName,
+            dosage: document.querySelector('select[name="dosage"], input[name="dosage"]')?.value,
+            frequency: document.querySelector('select[name="frequency"]')?.value,
+            startDate: document.querySelector('input[name="startDate"]')?.value
+          });
+          toast.error('Please fill in all required fields');
+        })} className="space-y-4">
           {/* Medication Name Autocomplete */}
           <MedicationAutocomplete
             value={medicationName}
             onChange={(value) => {
               setMedicationName(value);
-              setValue('name', value);
+              setValue('name', value, { shouldValidate: true, shouldDirty: true });
             }}
             onMedicationSelect={(medInfo) => {
               setSelectedMedicationInfo(medInfo);
