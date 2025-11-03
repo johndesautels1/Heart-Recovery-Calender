@@ -367,8 +367,8 @@ export function CalendarPage() {
     reset({
       title: '',
       calendarId: defaultCalendar?.id || 0,
-      startTime: startTime.toISOString().slice(0, 16),
-      endTime: endTime.toISOString().slice(0, 16),
+      startTime: isAllDay ? startTime.toISOString().split('T')[0] : startTime.toISOString().slice(0, 16),
+      endTime: isAllDay ? endTime.toISOString().split('T')[0] : endTime.toISOString().slice(0, 16),
       isAllDay: isAllDay,
       location: '',
       description: '',
