@@ -25,8 +25,6 @@ interface VitalsSampleAttributes {
   medicationsTaken: boolean;
   source: 'manual' | 'device' | 'import';
   deviceId?: string;
-  edema?: string;
-  edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -57,8 +55,6 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public medicationsTaken!: boolean;
   public source!: 'manual' | 'device' | 'import';
   public deviceId?: string;
-  public edema?: string;
-  public edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -201,16 +197,6 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
         deviceId: {
           type: DataTypes.STRING(255),
           allowNull: true,
-        },
-        edema: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-          comment: 'Location of edema/swelling (ankles/feet/hands/abdomen)',
-        },
-        edemaSeverity: {
-          type: DataTypes.ENUM('none', 'mild', 'moderate', 'severe'),
-          allowNull: true,
-          comment: 'Severity of edema/swelling',
         },
       },
       {

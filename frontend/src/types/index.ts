@@ -117,6 +117,8 @@ export interface VitalsSample {
   medicationsTaken: boolean;
   source: 'manual' | 'device' | 'import';
   deviceId?: string;
+  edema?: string;
+  edemaSeverity?: 'none' | 'mild' | 'moderate' | 'severe';
   createdAt: string;
   updatedAt: string;
 }

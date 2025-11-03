@@ -32,6 +32,8 @@ const vitalsSchema = z.object({
   notes: z.string().optional(),
   symptoms: z.string().optional(),
   medicationsTaken: z.boolean().optional(),
+  edema: z.string().optional(),
+  edemaSeverity: z.enum(['none', 'mild', 'moderate', 'severe']).optional(),
 });
 
 type VitalsFormData = z.infer<typeof vitalsSchema>;
