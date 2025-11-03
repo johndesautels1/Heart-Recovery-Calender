@@ -1595,6 +1595,183 @@ See browser console for full configuration details.
       <GlassCard className="p-6">
         <style>
           {`
+            /* ========== 4D GLASS MORPHIC CALENDAR DATE FRAMES ========== */
+            /* Stunning high-end 3D glass effect that literally jumps off the page */
+
+            /* Parent container needs perspective for 3D transforms */
+            .fc-daygrid-body,
+            .fc-scrollgrid-sync-table {
+              perspective: 1500px !important;
+              perspective-origin: 50% 50% !important;
+            }
+
+            /* Individual date cell frames with 4D glass morphic effect */
+            .fc-daygrid-day-frame {
+              position: relative !important;
+              transform-style: preserve-3d !important;
+              transform: translateZ(15px) rotateX(2deg) rotateY(-1deg) !important;
+              transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+
+              /* Multi-layer glass morphism */
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.25) 0%,
+                rgba(255, 255, 255, 0.12) 50%,
+                rgba(255, 255, 255, 0.08) 100%
+              ) !important;
+              backdrop-filter: blur(12px) saturate(180%) !important;
+              -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+
+              /* Dramatic multi-layer shadows for 3D depth */
+              box-shadow:
+                0 2px 8px -2px rgba(0, 0, 0, 0.15),
+                0 4px 16px -4px rgba(0, 0, 0, 0.12),
+                0 8px 32px -8px rgba(0, 0, 0, 0.1),
+                0 16px 48px -12px rgba(0, 0, 0, 0.08),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.1) !important;
+
+              /* Stunning glass border with gradient */
+              border: 1px solid rgba(255, 255, 255, 0.3) !important;
+              border-image: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.4),
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.3)
+              ) 1 !important;
+              border-radius: 8px !important;
+
+              /* Subtle inner glow */
+              outline: 1px solid rgba(255, 255, 255, 0.15) !important;
+              outline-offset: -2px !important;
+            }
+
+            /* Enhanced hover effect - dramatically lifts and rotates */
+            .fc-daygrid-day-frame:hover {
+              transform: translateZ(35px) rotateX(-3deg) rotateY(2deg) scale(1.02) !important;
+
+              /* Intensified glass effect on hover */
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.35) 0%,
+                rgba(255, 255, 255, 0.18) 50%,
+                rgba(255, 255, 255, 0.12) 100%
+              ) !important;
+              backdrop-filter: blur(16px) saturate(200%) !important;
+              -webkit-backdrop-filter: blur(16px) saturate(200%) !important;
+
+              /* Dramatic shadow expansion */
+              box-shadow:
+                0 4px 12px -2px rgba(0, 0, 0, 0.2),
+                0 8px 24px -4px rgba(0, 0, 0, 0.18),
+                0 16px 48px -8px rgba(0, 0, 0, 0.15),
+                0 24px 72px -12px rgba(0, 0, 0, 0.12),
+                0 32px 96px -16px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+                0 0 40px rgba(147, 51, 234, 0.15) !important;
+
+              /* Brighter border on hover */
+              border: 1px solid rgba(255, 255, 255, 0.5) !important;
+              outline: 1px solid rgba(255, 255, 255, 0.25) !important;
+            }
+
+            /* Today's date gets special ultra-premium treatment */
+            .fc-day-today .fc-daygrid-day-frame {
+              transform: translateZ(25px) rotateX(3deg) rotateY(-2deg) scale(1.03) !important;
+
+              /* Vibrant gradient for today */
+              background: linear-gradient(
+                135deg,
+                rgba(147, 51, 234, 0.25) 0%,
+                rgba(99, 102, 241, 0.18) 50%,
+                rgba(59, 130, 246, 0.12) 100%
+              ) !important;
+              backdrop-filter: blur(14px) saturate(190%) !important;
+              -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
+
+              /* Purple-tinted glow for today */
+              box-shadow:
+                0 3px 10px -2px rgba(147, 51, 234, 0.25),
+                0 6px 20px -4px rgba(147, 51, 234, 0.2),
+                0 12px 40px -8px rgba(147, 51, 234, 0.15),
+                0 20px 60px -12px rgba(147, 51, 234, 0.12),
+                0 0 60px rgba(147, 51, 234, 0.2),
+                inset 0 1px 3px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 3px rgba(147, 51, 234, 0.2) !important;
+
+              /* Glowing purple border */
+              border: 1.5px solid rgba(147, 51, 234, 0.5) !important;
+              outline: 1px solid rgba(147, 51, 234, 0.3) !important;
+            }
+
+            /* Today hover - maximum impact */
+            .fc-day-today .fc-daygrid-day-frame:hover {
+              transform: translateZ(50px) rotateX(-4deg) rotateY(3deg) scale(1.05) !important;
+
+              background: linear-gradient(
+                135deg,
+                rgba(147, 51, 234, 0.35) 0%,
+                rgba(99, 102, 241, 0.25) 50%,
+                rgba(59, 130, 246, 0.18) 100%
+              ) !important;
+              backdrop-filter: blur(18px) saturate(210%) !important;
+              -webkit-backdrop-filter: blur(18px) saturate(210%) !important;
+
+              /* Explosive shadow on today hover */
+              box-shadow:
+                0 6px 16px -2px rgba(147, 51, 234, 0.3),
+                0 12px 32px -4px rgba(147, 51, 234, 0.25),
+                0 20px 56px -8px rgba(147, 51, 234, 0.2),
+                0 32px 84px -12px rgba(147, 51, 234, 0.18),
+                0 48px 112px -16px rgba(147, 51, 234, 0.15),
+                0 0 80px rgba(147, 51, 234, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.6),
+                inset 0 -2px 4px rgba(147, 51, 234, 0.3) !important;
+
+              border: 2px solid rgba(147, 51, 234, 0.7) !important;
+              outline: 1px solid rgba(147, 51, 234, 0.4) !important;
+            }
+
+            /* Date numbers get enhanced styling */
+            .fc-daygrid-day-top {
+              transform: translateZ(5px) !important;
+              text-shadow:
+                0 1px 2px rgba(0, 0, 0, 0.2),
+                0 2px 4px rgba(255, 255, 255, 0.3) !important;
+              font-weight: 600 !important;
+              transition: all 0.3s ease !important;
+            }
+
+            .fc-daygrid-day-frame:hover .fc-daygrid-day-top {
+              transform: translateZ(10px) scale(1.08) !important;
+              text-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                0 3px 6px rgba(255, 255, 255, 0.4),
+                0 0 10px rgba(147, 51, 234, 0.4) !important;
+            }
+
+            /* Smooth animation keyframes for subtle floating effect */
+            @keyframes float-subtle {
+              0%, 100% {
+                transform: translateZ(15px) rotateX(2deg) rotateY(-1deg) translateY(0px);
+              }
+              50% {
+                transform: translateZ(18px) rotateX(2.5deg) rotateY(-0.5deg) translateY(-2px);
+              }
+            }
+
+            .fc-daygrid-day-frame {
+              animation: float-subtle 6s ease-in-out infinite !important;
+            }
+
+            /* Disable animation on hover for better control */
+            .fc-daygrid-day-frame:hover {
+              animation: none !important;
+            }
+
+            /* ========== END 4D GLASS MORPHIC CALENDAR DATE FRAMES ========== */
+
             /* LARGER Event text sizing for better visibility */
             .fc-event-title,
             .fc-event-time {
