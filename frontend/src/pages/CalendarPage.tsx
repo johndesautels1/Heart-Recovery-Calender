@@ -447,6 +447,19 @@ export function CalendarPage() {
       return;
     }
 
+    // Check if it's a meal event
+    if (arg.event.extendedProps.isMealEvent) {
+      const meals = arg.event.extendedProps.meals || [];
+      const date = arg.event.startStr;
+
+      // Set selected date meals and open the day modal to show meals
+      setSelectedDateMeals(meals);
+      setSelectedDate(date);
+      setShowDateDetailsModal(true);
+
+      return;
+    }
+
     // Handle regular events - clicking on an event opens the details modal
     const event = events.find(e => e.id === parseInt(arg.event.id));
     if (event) {
