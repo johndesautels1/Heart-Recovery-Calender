@@ -2,6 +2,25 @@
 
 A comprehensive health tracking application designed for cardiac recovery patients and their therapists. Features include calendar management, vital signs tracking, medication management, meal planning, exercise prescriptions, QR code sharing, and more.
 
+---
+
+## ⚠️ FOR CLAUDE CODE ASSISTANTS - READ THIS FIRST
+
+**🚨 MANDATORY:** Before working on this project, read:
+**[`CLAUDE_WORKING_INSTRUCTIONS.md`](./CLAUDE_WORKING_INSTRUCTIONS.md)**
+
+This document contains CRITICAL instructions including:
+- Mandatory oath and commitments
+- Patient = User architecture (ONE entity, not separate)
+- Testing requirements before marking tasks done
+- Git commit and backup procedures
+- Session handoff procedures
+- How to avoid mistakes that caused financial damage
+
+**DO NOT START WORK WITHOUT READING THIS FILE.**
+
+---
+
 ## Features
 
 ### Patient Features
