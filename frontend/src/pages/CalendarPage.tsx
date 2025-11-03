@@ -1213,7 +1213,7 @@ See browser console for full configuration details.
     // For meal events - FORCE VIVID background color with 75% width like medications
     if (extendedProps.isMealEvent) {
       const sizeClass = getTextSizeClass(title);
-      const bgColor = event.backgroundColor || '#2563eb';  // VIVID BLUE
+      const bgColor = event.backgroundColor || '#10b981';  // VIVID GREEN
       const txtColor = event.textColor || '#ffffff';  // WHITE
       return {
         html: `<div class="event-text-wrapper ${sizeClass}"
@@ -1472,8 +1472,8 @@ See browser console for full configuration details.
       title: `🍽️ ${meals.length} meal${meals.length > 1 ? 's' : ''}`,
       start: date,
       allDay: true,
-      backgroundColor: '#2563eb',  // VIVID BLUE instead of pale #f0f9ff
-      borderColor: '#1d4ed8',
+      backgroundColor: '#10b981',  // VIVID GREEN
+      borderColor: '#059669',
       textColor: '#ffffff',  // WHITE text for contrast
       classNames: ['font-bold', 'meal-indicator'],
       extendedProps: {
