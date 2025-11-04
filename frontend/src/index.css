@@ -149,7 +149,7 @@
     @apply w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 placeholder:font-normal;
     background: #ffffff;
     border: 3px solid var(--accent);
-    color: #1e293b;
+    color: #000000;
     font-weight: 800;
     font-size: 1.1rem;
     min-height: 50px;
@@ -175,16 +175,16 @@
     transform: translateY(-2px);
   }
 
-  /* Dropdown styling - cobalt blue text for select and options */
+  /* Dropdown styling - black text for select and options */
   select.glass-input {
-    color: #1e40af !important;
-    font-weight: 700 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
   }
 
   .glass-input option {
-    color: #1e40af !important;
+    color: #000000 !important;
     background: #ffffff;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
   }
 
   /* Light mode adjustments - Enhanced styling for light backgrounds */

@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import { searchMedications, getMedicationInfo, type MedicationInfo } from '../data/medicationDatabase';
 
 interface PatientData {
   // Name
@@ -26,6 +27,7 @@ interface PatientData {
   primaryPhone?: string;
   primaryPhoneType?: string;
   alternatePhone?: string;
+  whatsAppNumber?: string;
   preferredContactMethod?: string;
   bestTimeToContact?: string;
 
@@ -128,7 +130,16 @@ export function ProfilePage() {
   const [showImportFormatsModal, setShowImportFormatsModal] = useState(false);
   const [showAddSettingModal, setShowAddSettingModal] = useState(false);
   const [newFormatName, setNewFormatName] = useState('');
+
+  // Medication autocomplete state
+  const [medInputValue, setMedInputValue] = useState('');
+  const [medSuggestions, setMedSuggestions] = useState<MedicationInfo[]>([]);
+  const [showMedSuggestions, setShowMedSuggestions] = useState(false);
+  const [highlightedMedIndex, setHighlightedMedIndex] = useState(-1);
+  const [originalMedications, setOriginalMedications] = useState<string[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const medAutocompleteRef = useRef<HTMLDivElement>(null);
 
   // Document upload refs
   const passportInputRef = useRef<HTMLInputElement>(null);
@@ -149,6 +160,18 @@ export function ProfilePage() {
 
   useEffect(() => {
     fetchPatientData();
+  }, []);
+
+  // Click outside handler for medication autocomplete
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (medAutocompleteRef.current && !medAutocompleteRef.current.contains(event.target as Node)) {
+        setShowMedSuggestions(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchPatientData = async () => {
@@ -187,6 +210,8 @@ export function ProfilePage() {
       // Get the patient record
       const patientData = patientsResponse.data[0];
       setPatientData(patientData as any);
+      // Store original medications for comparison when saving
+      setOriginalMedications(patientData.medicationsAffectingHR || []);
     } catch (error) {
       console.error('Error fetching patient data:', error);
       toast.error('Failed to load patient profile');
@@ -204,12 +229,194 @@ export function ProfilePage() {
   };
 
   const handleChange = (field: string, value: any) => {
-    setPatientData(prev => prev ? { ...prev, [field]: value } : null);
+    setPatientData(prev => {
+      if (!prev) return null;
+
+      const updated = { ...prev, [field]: value };
+
+      // Auto-calculate age when date of birth changes
+      if (field === 'dateOfBirth' && value) {
+        const birthDate = new Date(value);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+
+        updated.age = age;
+      }
+
+      return updated;
+    });
   };
 
   const handleArrayChange = (field: string, value: string) => {
     const items = value.split(',').map(item => item.trim()).filter(Boolean);
     setPatientData(prev => prev ? { ...prev, [field]: items } : null);
+  };
+
+  const handleCheckboxArrayChange = (field: string, value: string, checked: boolean) => {
+    setPatientData(prev => {
+      if (!prev) return null;
+
+      const currentArray = (prev[field as keyof typeof prev] as string[]) || [];
+      let updatedArray: string[];
+
+      if (checked) {
+        updatedArray = [...currentArray, value];
+      } else {
+        updatedArray = currentArray.filter(item => item !== value);
+      }
+
+      return { ...prev, [field]: updatedArray };
+    });
+  };
+
+  // Medication autocomplete handlers
+  const handleMedInputChange = (value: string) => {
+    setMedInputValue(value);
+
+    if (value.length >= 2) {
+      const results = searchMedications(value);
+      setMedSuggestions(results);
+      setShowMedSuggestions(true);
+      setHighlightedMedIndex(-1);
+    } else {
+      setMedSuggestions([]);
+      setShowMedSuggestions(false);
+    }
+  };
+
+  const handleSelectMedication = (medication: MedicationInfo) => {
+    // Add medication to the array if not already present
+    setPatientData(prev => {
+      if (!prev) return null;
+
+      const currentMeds = prev.medicationsAffectingHR || [];
+      if (!currentMeds.includes(medication.name)) {
+        return {
+          ...prev,
+          medicationsAffectingHR: [...currentMeds, medication.name]
+        };
+      }
+      return prev;
+    });
+
+    // Clear input and hide suggestions
+    setMedInputValue('');
+    setShowMedSuggestions(false);
+    setMedSuggestions([]);
+  };
+
+  const handleRemoveMedication = (medName: string) => {
+    setPatientData(prev => {
+      if (!prev) return null;
+
+      return {
+        ...prev,
+        medicationsAffectingHR: (prev.medicationsAffectingHR || []).filter(m => m !== medName)
+      };
+    });
+  };
+
+  const handleMedKeyDown = (e: React.KeyboardEvent) => {
+    if (!showMedSuggestions || medSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedMedIndex(prev =>
+          prev < medSuggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedMedIndex(prev => (prev > 0 ? prev - 1 : -1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedMedIndex >= 0 && highlightedMedIndex < medSuggestions.length) {
+          handleSelectMedication(medSuggestions[highlightedMedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowMedSuggestions(false);
+        break;
+    }
+  };
+
+  const handleClearPersonalInfo = () => {
+    if (!confirm('Clear all Personal Information fields? This will not save until you click Save Profile.')) {
+      return;
+    }
+
+    setPatientData(prev => prev ? {
+      ...prev,
+      firstName: '',
+      lastName: '',
+      dateOfBirth: '',
+      gender: '',
+      age: 0,
+      race: '',
+      nationality: '',
+      height: 0,
+      heightUnit: 'in'
+    } : null);
+
+    toast.success('Personal Information fields cleared. Click Save Profile to persist changes.');
+  };
+
+  const handleDeletePersonalInfo = async () => {
+    if (!confirm('⚠️ DELETE all Personal Information from the database? This CANNOT be undone!')) {
+      return;
+    }
+
+    if (!confirm('Are you ABSOLUTELY SURE? This will permanently delete: First Name, Last Name, Date of Birth, Gender, Age, Race, Nationality, and Height.')) {
+      return;
+    }
+
+    try {
+      const clearedData = {
+        ...patientData,
+        firstName: null,
+        lastName: null,
+        dateOfBirth: null,
+        gender: null,
+        age: null,
+        race: null,
+        nationality: null,
+        height: null,
+        heightUnit: null
+      };
+
+      const patientId = (patientData as any)?.id;
+      if (!patientId) {
+        toast.error('No patient profile found');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(clearedData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete personal information');
+      }
+
+      const updated = await response.json();
+      setPatientData(updated as any);
+      toast.success('Personal Information permanently deleted from database');
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete personal information');
+    }
   };
 
   const handleSave = async () => {
@@ -246,7 +453,65 @@ export function ProfilePage() {
 
       const updated = await response.json();
       setPatientData(updated as any);
-      toast.success('Profile updated successfully!');
+
+      // Auto-create medication cards for newly added cardiac medications
+      const currentMeds = patientData.medicationsAffectingHR || [];
+      const newMeds = currentMeds.filter(med => !originalMedications.includes(med));
+
+      if (newMeds.length > 0 && user?.id) {
+        toast.success(`Profile updated! Creating ${newMeds.length} medication card(s)...`);
+
+        // Create medication cards for each new medication
+        for (const medName of newMeds) {
+          try {
+            const medInfo = getMedicationInfo(medName);
+
+            if (medInfo) {
+              // Create medication card with default values from database
+              const medicationData = {
+                userId: user.id,
+                name: medInfo.name,
+                dosage: medInfo.commonDosages[0] || '10mg',  // Default to first common dosage
+                frequency: medInfo.commonFrequencies[0] || 'Once daily',
+                prescribedBy: '',
+                startDate: new Date().toISOString(),
+                timeOfDay: 'Morning',  // Default time
+                purpose: medInfo.description || medInfo.category,
+                sideEffects: medInfo.sideEffects?.map(se => se.effect).join(', ') || '',
+                instructions: medInfo.therapyWarnings?.join('. ') || 'Take as prescribed',
+                isActive: true,
+                reminderEnabled: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+
+              const medResponse = await fetch('http://localhost:4000/api/medications', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(medicationData)
+              });
+
+              if (medResponse.ok) {
+                console.log(`✓ Created medication card for ${medName}`);
+              } else {
+                console.error(`Failed to create medication card for ${medName}`);
+              }
+            }
+          } catch (medError) {
+            console.error(`Error creating medication card for ${medName}:`, medError);
+          }
+        }
+
+        toast.success(`Profile and ${newMeds.length} medication card(s) created successfully!`);
+      } else {
+        toast.success('Profile updated successfully!');
+      }
+
+      // Update the original medications list
+      setOriginalMedications(currentMeds);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
@@ -827,7 +1092,7 @@ export function ProfilePage() {
                             value={patientData?.gender || ''}
                             onChange={(e) => handleChange('gender', e.target.value)}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#1e293b', fontWeight: '800' }}
+                            style={{ color: '#000000', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="male">Male</option>
@@ -837,13 +1102,14 @@ export function ProfilePage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                            Age
+                            Age (Auto-calculated)
                           </label>
                           <Input
                             type="number"
                             value={patientData?.age !== undefined && patientData?.age !== null ? patientData.age : ''}
                             disabled
                             icon={<Calendar className="h-5 w-5" />}
+                            placeholder="Auto-calculated from Date of Birth"
                           />
                         </div>
                       </div>
@@ -852,27 +1118,194 @@ export function ProfilePage() {
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                             Race
                           </label>
-                          <Input
+                          <input
+                            type="text"
+                            list="race-suggestions"
                             value={patientData?.race || ''}
                             onChange={(e) => handleChange('race', e.target.value)}
+                            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
+                            style={{ color: '#000000', fontWeight: '800' }}
+                            placeholder="Start typing to see suggestions..."
                           />
+                          <datalist id="race-suggestions">
+                            <option value="American Indian or Alaska Native" />
+                            <option value="Asian" />
+                            <option value="Black or African American" />
+                            <option value="Hispanic or Latino" />
+                            <option value="Native Hawaiian or Other Pacific Islander" />
+                            <option value="White or Caucasian" />
+                            <option value="Two or More Races" />
+                            <option value="Other" />
+                            <option value="Prefer not to say" />
+                          </datalist>
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                             Nationality
                           </label>
-                          <Input
+                          <input
+                            type="text"
+                            list="nationality-suggestions"
                             value={patientData?.nationality || ''}
                             onChange={(e) => handleChange('nationality', e.target.value)}
+                            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
+                            style={{ color: '#000000', fontWeight: '800' }}
+                            placeholder="Start typing to see suggestions..."
+                          />
+                          <datalist id="nationality-suggestions">
+                            <option value="Afghan" />
+                            <option value="Albanian" />
+                            <option value="Algerian" />
+                            <option value="American" />
+                            <option value="Argentinian" />
+                            <option value="Australian" />
+                            <option value="Austrian" />
+                            <option value="Bangladeshi" />
+                            <option value="Belgian" />
+                            <option value="Brazilian" />
+                            <option value="British" />
+                            <option value="Bulgarian" />
+                            <option value="Cambodian" />
+                            <option value="Canadian" />
+                            <option value="Chilean" />
+                            <option value="Chinese" />
+                            <option value="Colombian" />
+                            <option value="Costa Rican" />
+                            <option value="Croatian" />
+                            <option value="Cuban" />
+                            <option value="Czech" />
+                            <option value="Danish" />
+                            <option value="Dominican" />
+                            <option value="Dutch" />
+                            <option value="Ecuadorian" />
+                            <option value="Egyptian" />
+                            <option value="English" />
+                            <option value="Ethiopian" />
+                            <option value="Filipino" />
+                            <option value="Finnish" />
+                            <option value="French" />
+                            <option value="German" />
+                            <option value="Ghanaian" />
+                            <option value="Greek" />
+                            <option value="Guatemalan" />
+                            <option value="Haitian" />
+                            <option value="Honduran" />
+                            <option value="Hungarian" />
+                            <option value="Icelandic" />
+                            <option value="Indian" />
+                            <option value="Indonesian" />
+                            <option value="Iranian" />
+                            <option value="Iraqi" />
+                            <option value="Irish" />
+                            <option value="Israeli" />
+                            <option value="Italian" />
+                            <option value="Jamaican" />
+                            <option value="Japanese" />
+                            <option value="Jordanian" />
+                            <option value="Kenyan" />
+                            <option value="Korean" />
+                            <option value="Lebanese" />
+                            <option value="Malaysian" />
+                            <option value="Mexican" />
+                            <option value="Moroccan" />
+                            <option value="Nepalese" />
+                            <option value="New Zealander" />
+                            <option value="Nigerian" />
+                            <option value="Norwegian" />
+                            <option value="Pakistani" />
+                            <option value="Palestinian" />
+                            <option value="Panamanian" />
+                            <option value="Paraguayan" />
+                            <option value="Peruvian" />
+                            <option value="Polish" />
+                            <option value="Portuguese" />
+                            <option value="Puerto Rican" />
+                            <option value="Romanian" />
+                            <option value="Russian" />
+                            <option value="Salvadoran" />
+                            <option value="Saudi Arabian" />
+                            <option value="Scottish" />
+                            <option value="Senegalese" />
+                            <option value="Serbian" />
+                            <option value="Singaporean" />
+                            <option value="Somali" />
+                            <option value="South African" />
+                            <option value="Spanish" />
+                            <option value="Sri Lankan" />
+                            <option value="Sudanese" />
+                            <option value="Swedish" />
+                            <option value="Swiss" />
+                            <option value="Syrian" />
+                            <option value="Taiwanese" />
+                            <option value="Thai" />
+                            <option value="Turkish" />
+                            <option value="Ukrainian" />
+                            <option value="Uruguayan" />
+                            <option value="Venezuelan" />
+                            <option value="Vietnamese" />
+                            <option value="Welsh" />
+                            <option value="Yemeni" />
+                            <option value="Zimbabwean" />
+                            <option value="Other" />
+                          </datalist>
+                        </div>
+                      </div>
+
+                      {/* Height Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                            Height
+                          </label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={patientData?.height !== undefined && patientData?.height !== null ? patientData.height : ''}
+                            onChange={(e) => handleChange('height', parseFloat(e.target.value) || 0)}
+                            placeholder="Enter height"
                           />
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                            Height Unit
+                          </label>
+                          <select
+                            value={patientData?.heightUnit || 'in'}
+                            onChange={(e) => handleChange('heightUnit', e.target.value)}
+                            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
+                            style={{ color: '#000000', fontWeight: '800' }}
+                          >
+                            <option value="in">Inches (in)</option>
+                            <option value="cm">Centimeters (cm)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Clear and Delete buttons for Personal Information */}
+                      <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
+                        <button
+                          onClick={handleClearPersonalInfo}
+                          className="flex-1 px-4 py-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400 text-yellow-100 font-semibold transition-colors flex items-center justify-center gap-2"
+                          title="Clear all fields (not saved until you click Save Profile)"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                          Clear Fields
+                        </button>
+                        <button
+                          onClick={handleDeletePersonalInfo}
+                          className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-400 text-red-100 font-semibold transition-colors flex items-center justify-center gap-2"
+                          title="Permanently delete from database"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete from DB
+                        </button>
                       </div>
                     </>
                   )}
 
                   {section.id === 'contact' && (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                             Email
@@ -895,6 +1328,18 @@ export function ProfilePage() {
                             icon={<Phone className="h-5 w-5" />}
                           />
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                            WhatsApp Number
+                          </label>
+                          <Input
+                            type="tel"
+                            value={patientData?.whatsAppNumber || ''}
+                            onChange={(e) => handleChange('whatsAppNumber', e.target.value)}
+                            placeholder="+1 234 567 8900"
+                            icon={<Phone className="h-5 w-5" />}
+                          />
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -905,7 +1350,7 @@ export function ProfilePage() {
                             value={patientData?.primaryPhoneType || ''}
                             onChange={(e) => handleChange('primaryPhoneType', e.target.value)}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#1e293b', fontWeight: '800' }}
+                            style={{ color: '#000000', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="mobile">Mobile</option>
@@ -921,12 +1366,13 @@ export function ProfilePage() {
                             value={patientData?.preferredContactMethod || ''}
                             onChange={(e) => handleChange('preferredContactMethod', e.target.value)}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#1e293b', fontWeight: '800' }}
+                            style={{ color: '#000000', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="phone">Phone</option>
                             <option value="email">Email</option>
                             <option value="text">Text</option>
+                            <option value="whatsapp">WhatsApp</option>
                           </select>
                         </div>
                         <div>
@@ -937,7 +1383,7 @@ export function ProfilePage() {
                             value={patientData?.bestTimeToContact || ''}
                             onChange={(e) => handleChange('bestTimeToContact', e.target.value)}
                             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
-                            style={{ color: '#1e293b', fontWeight: '800' }}
+                            style={{ color: '#000000', fontWeight: '800' }}
                           >
                             <option value="">Select...</option>
                             <option value="morning">Morning</option>
@@ -1227,16 +1673,105 @@ export function ProfilePage() {
                           placeholder="CAD, CHF, AFib"
                         />
                       </div>
-                      <div>
+                      <div ref={medAutocompleteRef}>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Medications Affecting HR (comma-separated)
+                          Cardiac Medications
                         </label>
-                        <Input
-                          value={patientData?.medicationsAffectingHR?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('medicationsAffectingHR', e.target.value)}
-                          placeholder="Beta-blockers, etc."
-                          icon={<Pill className="h-5 w-5" />}
-                        />
+
+                        {/* Selected medications as chips */}
+                        {patientData?.medicationsAffectingHR && patientData.medicationsAffectingHR.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {patientData.medicationsAffectingHR.map((medName, index) => (
+                              <div
+                                key={`${medName}-${index}`}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200"
+                                style={{
+                                  background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.08))',
+                                  border: '2px solid rgba(236, 72, 153, 0.4)',
+                                  color: '#000000',
+                                  fontWeight: '800',
+                                  fontSize: '0.875rem'
+                                }}
+                              >
+                                <Pill className="h-3.5 w-3.5" style={{ color: '#ec4899' }} />
+                                <span>{medName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMedication(medName)}
+                                  className="ml-1 hover:bg-pink-200 rounded-full p-0.5 transition-colors"
+                                  title="Remove medication"
+                                >
+                                  <X className="h-3.5 w-3.5" style={{ color: '#ec4899' }} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Autocomplete input */}
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={medInputValue}
+                            onChange={(e) => handleMedInputChange(e.target.value)}
+                            onKeyDown={handleMedKeyDown}
+                            onFocus={() => medInputValue.length >= 2 && setShowMedSuggestions(true)}
+                            placeholder="Start typing medication name (e.g., Metoprolol, Lisinopril)..."
+                            className="glass-input"
+                            style={{
+                              paddingLeft: '3rem',
+                              color: '#000000',
+                              fontWeight: '800'
+                            }}
+                            autoComplete="off"
+                          />
+                          <Pill className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-pink-500 pointer-events-none" />
+
+                          {/* Autocomplete dropdown */}
+                          {showMedSuggestions && medSuggestions.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border-2 border-pink-300 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
+                              {medSuggestions.map((medication, index) => {
+                                const alreadySelected = patientData?.medicationsAffectingHR?.includes(medication.name);
+
+                                return (
+                                  <div
+                                    key={`${medication.name}-${index}`}
+                                    className={`px-4 py-3 cursor-pointer transition-colors ${
+                                      index === highlightedMedIndex
+                                        ? 'bg-pink-100'
+                                        : alreadySelected
+                                        ? 'bg-gray-100 opacity-60'
+                                        : 'hover:bg-gray-50'
+                                    }`}
+                                    onClick={() => !alreadySelected && handleSelectMedication(medication)}
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="font-bold text-gray-900 flex items-center gap-2">
+                                          {medication.name}
+                                          {alreadySelected && (
+                                            <span className="text-xs bg-pink-200 text-pink-800 px-2 py-0.5 rounded-full">
+                                              Already added
+                                            </span>
+                                          )}
+                                        </div>
+                                        {medication.brandNames && medication.brandNames.length > 0 && (
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            Brand names: {medication.brandNames.join(', ')}
+                                          </div>
+                                        )}
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          {medication.category}
+                                          {medication.description && ` • ${medication.description}`}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
@@ -1247,7 +1782,7 @@ export function ProfilePage() {
                           onChange={(e) => handleChange('activityRestrictions', e.target.value)}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="Weight limits, movements to avoid, etc."
                         />
                       </div>
@@ -1256,16 +1791,6 @@ export function ProfilePage() {
 
                   {section.id === 'medical' && (
                     <>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Prior Health Conditions (comma-separated)
-                        </label>
-                        <Input
-                          value={patientData?.priorHealthConditions?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('priorHealthConditions', e.target.value)}
-                          placeholder="Diabetes, CKD, COPD"
-                        />
-                      </div>
                       <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                           Current Conditions (comma-separated)
@@ -1278,6 +1803,16 @@ export function ProfilePage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                          Prior Health Conditions (comma-separated)
+                        </label>
+                        <Input
+                          value={patientData?.priorHealthConditions?.join(', ') || ''}
+                          onChange={(e) => handleArrayChange('priorHealthConditions', e.target.value)}
+                          placeholder="Diabetes, CKD, COPD"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                           Non-Cardiac Medications
                         </label>
                         <textarea
@@ -1285,7 +1820,7 @@ export function ProfilePage() {
                           onChange={(e) => handleChange('nonCardiacMedications', e.target.value)}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="List all medications..."
                         />
                       </div>
@@ -1298,7 +1833,7 @@ export function ProfilePage() {
                           onChange={(e) => handleChange('allergies', e.target.value)}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="List all known allergies..."
                         />
                       </div>
@@ -1353,25 +1888,108 @@ export function ProfilePage() {
                           />
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Prior Surgical Procedures (comma-separated)
+                      {/* Prior Surgical Procedures */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
+                          Prior Surgical Procedures Performed
                         </label>
-                        <Input
-                          value={patientData?.priorSurgicalProcedures?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('priorSurgicalProcedures', e.target.value)}
-                          placeholder="CABG, Valve Replacement, etc."
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {[
+                            'CABG (Bypass)',
+                            'Valve Replacement',
+                            'Valve Repair',
+                            'Aortic Surgery',
+                            'Atrial Septal Defect Repair',
+                            'Maze Procedure for AFib',
+                            'Pacemaker Implantation',
+                            'ICD Implantation',
+                            'CRT Device',
+                            'Other'
+                          ].map((procedure) => (
+                            <label
+                              key={procedure}
+                              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))',
+                                border: '2px solid rgba(245, 158, 11, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(245, 158, 11, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={patientData?.priorSurgicalProcedures?.includes(procedure) || false}
+                                onChange={(e) => handleCheckboxArrayChange('priorSurgicalProcedures', procedure, e.target.checked)}
+                                className="w-5 h-5 rounded border-2 border-orange-400 bg-white/10 checked:bg-orange-500 checked:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer"
+                              />
+                              <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                                {procedure}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Devices Implanted (comma-separated)
+
+                      {/* Devices Implanted */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
+                          Devices in body that may affect imaging
                         </label>
-                        <Input
-                          value={patientData?.devicesImplanted?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('devicesImplanted', e.target.value)}
-                          placeholder="Pacemaker, ICD, Stents, etc."
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {[
+                            'Pacemaker',
+                            'ICD',
+                            'CRT',
+                            'Mechanical Valve',
+                            'Bioprosthetic Valve / TAVR',
+                            'Coronary Stents',
+                            'WATCHMAN / LAA occluder',
+                            'Cochlear Implant',
+                            'Insulin / Medication Pump',
+                            'Orthopedic Hardware'
+                          ].map((device) => (
+                            <label
+                              key={device}
+                              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))',
+                                border: '2px solid rgba(245, 158, 11, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(245, 158, 11, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={patientData?.devicesImplanted?.includes(device) || false}
+                                onChange={(e) => handleCheckboxArrayChange('devicesImplanted', device, e.target.checked)}
+                                className="w-5 h-5 rounded border-2 border-orange-400 bg-white/10 checked:bg-orange-500 checked:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer"
+                              />
+                              <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                                {device}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
@@ -1382,7 +2000,7 @@ export function ProfilePage() {
                           onChange={(e) => handleChange('priorSurgeryNotes', e.target.value)}
                           rows={3}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="Additional surgical notes..."
                         />
                       </div>
@@ -1395,7 +2013,7 @@ export function ProfilePage() {
                           onChange={(e) => handleChange('dischargeInstructions', e.target.value)}
                           rows={4}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="Post-discharge instructions..."
                         />
                       </div>
@@ -1436,7 +2054,7 @@ export function ProfilePage() {
                           value={patientData?.preferredDataSource || ''}
                           onChange={(e) => handleChange('preferredDataSource', e.target.value)}
                           className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all"
-                          style={{ color: '#1e293b', fontWeight: '800' }}
+                          style={{ color: '#000000', fontWeight: '800' }}
                         >
                           <option value="">Select...</option>
                           <option value="polar">Polar Heart Monitor</option>
