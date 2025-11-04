@@ -1295,7 +1295,7 @@ export function MealsPage() {
                   {/* Recommended (inner circle) - with 3D gradients */}
                   <Pie
                     data={foodGroupRecommended}
-                    cx="50%"
+                    cx="55%"
                     cy="50%"
                     innerRadius={0}
                     outerRadius={130}
@@ -1332,7 +1332,7 @@ export function MealsPage() {
                   {/* Actual (outer circle) - with enhanced styling */}
                   <Pie
                     data={foodGroupActual}
-                    cx="50%"
+                    cx="55%"
                     cy="50%"
                     innerRadius={145}
                     outerRadius={220}
