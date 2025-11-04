@@ -95,11 +95,37 @@ interface PatientData {
   cardiacDiagnosis?: string[];
   medicationsAffectingHR?: string[];
   activityRestrictions?: string;
+  cardiacNotes?: string;
 
-  // Device Integration
+  // Device Integration (Consumer wearables/fitness trackers)
   polarDeviceId?: string;
   samsungHealthAccount?: string;
   preferredDataSource?: string;
+
+  // Implanted Devices & Critical Medical IDs (Life-critical medical devices)
+  implantedDevices?: Array<{
+    deviceType: string; // e.g., "Heart Valve", "Pacemaker", "Loop Recorder", "Stent", "ICD", "CRT Device"
+    manufacturer: string;
+    model: string;
+    serialNumber: string;
+    size?: string;
+    implantDate?: string;
+    notes?: string;
+  }>;
+  medicalAlertBracelet?: {
+    hasDevice: boolean;
+    manufacturer?: string;
+    serialNumber?: string;
+    qrCode?: string;
+    emergencyAccessURL?: string;
+  };
+  criticalAccessInfo?: {
+    medicalRecordNumber?: string;
+    healthSystemPortalURL?: string;
+    healthSystemUsername?: string;
+    healthSystemPassword?: string;
+    additionalNotes?: string;
+  };
 }
 
 interface Section {
@@ -141,10 +167,15 @@ export function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const medAutocompleteRef = useRef<HTMLDivElement>(null);
 
-  // Document upload refs
-  const passportInputRef = useRef<HTMLInputElement>(null);
-  const insuranceInputRef = useRef<HTMLInputElement>(null);
-  const allergyCardInputRef = useRef<HTMLInputElement>(null);
+  // Document upload refs - front and back for each document
+  const passportFrontInputRef = useRef<HTMLInputElement>(null);
+  const passportBackInputRef = useRef<HTMLInputElement>(null);
+  const insuranceFrontInputRef = useRef<HTMLInputElement>(null);
+  const insuranceBackInputRef = useRef<HTMLInputElement>(null);
+  const allergyCardFrontInputRef = useRef<HTMLInputElement>(null);
+  const allergyCardBackInputRef = useRef<HTMLInputElement>(null);
+  const driverLicenseFrontInputRef = useRef<HTMLInputElement>(null);
+  const driverLicenseBackInputRef = useRef<HTMLInputElement>(null);
 
   const sections: Section[] = [
     { id: 'settings', title: 'App Settings', icon: <Settings className="h-5 w-5" />, color: '#6366f1' },
@@ -155,6 +186,7 @@ export function ProfilePage() {
     { id: 'medical', title: 'Medical History', icon: <Stethoscope className="h-5 w-5" />, color: '#8b5cf6' },
     { id: 'surgical', title: 'Surgical History', icon: <Hospital className="h-5 w-5" />, color: '#f59e0b' },
     { id: 'wallet', title: 'My Wallet', icon: <Wallet className="h-5 w-5" />, color: '#a855f7' },
+    { id: 'implantedDevices', title: 'Implanted Devices & Critical Medical IDs', icon: <Shield className="h-5 w-5" />, color: '#dc2626' },
   ];
 
   useEffect(() => {
@@ -619,7 +651,7 @@ export function ProfilePage() {
   const handlePhotoDelete = async () => {
     try {
       setIsUploadingPhoto(true);
-      const updatedUser = await api.updateProfile({ profilePhoto: null });
+      const updatedUser = await api.updateProfile({ profilePhoto: undefined });
       updateUser(updatedUser);
       toast.success('Profile photo removed successfully!');
     } catch (error: any) {
@@ -630,7 +662,11 @@ export function ProfilePage() {
     }
   };
 
-  const handleDocumentUpload = async (type: 'passport' | 'insurance' | 'allergyCard', file: File) => {
+  const handleDocumentUpload = async (
+    type: 'passport' | 'insurance' | 'allergyCard' | 'driverLicense',
+    side: 'front' | 'back',
+    file: File
+  ) => {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       toast.error('Please select an image or PDF file');
       return;
@@ -646,7 +682,10 @@ export function ProfilePage() {
       reader.onloadend = async () => {
         const base64String = reader.result as string;
         // TODO: Implement document storage API
-        toast.success(`${type} uploaded successfully!`);
+        const documentName = type === 'driverLicense' ? "Driver's License" :
+                           type === 'allergyCard' ? 'Allergy Card' :
+                           type === 'insurance' ? 'Insurance Card' : 'Passport';
+        toast.success(`${documentName} (${side === 'front' ? 'Front' : 'Back'}) uploaded successfully!`);
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -2210,24 +2249,50 @@ export function ProfilePage() {
                           <FileText className="h-5 w-5 text-purple-400" />
                           <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Passport</h4>
                         </div>
-                        <input
-                          ref={passportInputRef}
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleDocumentUpload('passport', file);
-                          }}
-                          className="hidden"
-                        />
-                        <Button
-                          onClick={() => passportInputRef.current?.click()}
-                          variant="secondary"
-                          className="w-full"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Passport Scan
-                        </Button>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Front Side */}
+                          <div>
+                            <input
+                              ref={passportFrontInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('passport', 'front', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => passportFrontInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Front Side
+                            </Button>
+                          </div>
+                          {/* Back Side */}
+                          <div>
+                            <input
+                              ref={passportBackInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('passport', 'back', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => passportBackInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Back Side
+                            </Button>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px dashed rgba(34, 197, 94, 0.3)' }}>
@@ -2235,24 +2300,50 @@ export function ProfilePage() {
                           <CreditCard className="h-5 w-5 text-green-400" />
                           <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Insurance Card</h4>
                         </div>
-                        <input
-                          ref={insuranceInputRef}
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleDocumentUpload('insurance', file);
-                          }}
-                          className="hidden"
-                        />
-                        <Button
-                          onClick={() => insuranceInputRef.current?.click()}
-                          variant="secondary"
-                          className="w-full"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Insurance Card
-                        </Button>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Front Side */}
+                          <div>
+                            <input
+                              ref={insuranceFrontInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('insurance', 'front', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => insuranceFrontInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Front Side
+                            </Button>
+                          </div>
+                          {/* Back Side */}
+                          <div>
+                            <input
+                              ref={insuranceBackInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('insurance', 'back', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => insuranceBackInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Back Side
+                            </Button>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px dashed rgba(239, 68, 68, 0.3)' }}>
@@ -2260,24 +2351,301 @@ export function ProfilePage() {
                           <AlertCircle className="h-5 w-5 text-red-400" />
                           <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Allergy Information</h4>
                         </div>
-                        <input
-                          ref={allergyCardInputRef}
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleDocumentUpload('allergyCard', file);
-                          }}
-                          className="hidden"
-                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Front Side */}
+                          <div>
+                            <input
+                              ref={allergyCardFrontInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('allergyCard', 'front', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => allergyCardFrontInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Front Side
+                            </Button>
+                          </div>
+                          {/* Back Side */}
+                          <div>
+                            <input
+                              ref={allergyCardBackInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('allergyCard', 'back', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => allergyCardBackInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Back Side
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px dashed rgba(59, 130, 246, 0.3)' }}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <CreditCard className="h-5 w-5 text-blue-400" />
+                          <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Driver's License</h4>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Front Side */}
+                          <div>
+                            <input
+                              ref={driverLicenseFrontInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('driverLicense', 'front', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => driverLicenseFrontInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Front Side
+                            </Button>
+                          </div>
+                          {/* Back Side */}
+                          <div>
+                            <input
+                              ref={driverLicenseBackInputRef}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDocumentUpload('driverLicense', 'back', file);
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              onClick={() => driverLicenseBackInputRef.current?.click()}
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Back Side
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {section.id === 'implantedDevices' && (
+                    <div className="space-y-6">
+                      {/* Implanted Devices List */}
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', border: '2px solid rgba(220, 38, 38, 0.3)' }}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <Heart className="h-6 w-6 text-red-500" />
+                          <h4 className="font-bold text-lg" style={{ color: 'var(--ink-bright)' }}>Implanted Medical Devices</h4>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Record all implanted medical devices (pacemakers, heart valves, stents, loop recorders, ICDs, etc.)
+                        </p>
+
+                        {/* List of Devices */}
+                        {patientData?.implantedDevices && patientData.implantedDevices.length > 0 ? (
+                          <div className="space-y-3 mb-4">
+                            {patientData.implantedDevices.map((device, index) => (
+                              <div key={index} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="font-semibold text-red-400">{device.deviceType}</span>
+                                  <button
+                                    onClick={() => {
+                                      const updated = patientData.implantedDevices?.filter((_, i) => i !== index);
+                                      setPatientData({ ...patientData, implantedDevices: updated });
+                                    }}
+                                    className="text-red-400 hover:text-red-300"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div><span className="text-gray-400">Manufacturer:</span> {device.manufacturer}</div>
+                                  <div><span className="text-gray-400">Model:</span> {device.model}</div>
+                                  <div><span className="text-gray-400">Serial #:</span> {device.serialNumber}</div>
+                                  {device.size && <div><span className="text-gray-400">Size:</span> {device.size}</div>}
+                                  {device.implantDate && <div><span className="text-gray-400">Implant Date:</span> {device.implantDate}</div>}
+                                  {device.notes && <div className="col-span-2"><span className="text-gray-400">Notes:</span> {device.notes}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic mb-4">No implanted devices recorded yet.</p>
+                        )}
+
+                        {/* Add New Device Button */}
                         <Button
-                          onClick={() => allergyCardInputRef.current?.click()}
+                          onClick={() => {
+                            const newDevice = {
+                              deviceType: '',
+                              manufacturer: '',
+                              model: '',
+                              serialNumber: '',
+                              size: '',
+                              implantDate: '',
+                              notes: ''
+                            };
+                            const updated = [...(patientData?.implantedDevices || []), newDevice];
+                            setPatientData({ ...patientData, implantedDevices: updated });
+                          }}
                           variant="secondary"
                           className="w-full"
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Allergy Card
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Implanted Device
                         </Button>
+                      </div>
+
+                      {/* Medical Alert Bracelet */}
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(251, 146, 60, 0.1)', border: '1px dashed rgba(251, 146, 60, 0.3)' }}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <AlertCircle className="h-5 w-5 text-orange-400" />
+                          <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Medical Alert Bracelet</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              id="hasMedicalAlert"
+                              checked={patientData?.medicalAlertBracelet?.hasDevice || false}
+                              onChange={(e) => handleChange('medicalAlertBracelet', {
+                                ...patientData?.medicalAlertBracelet,
+                                hasDevice: e.target.checked
+                              })}
+                              className="w-4 h-4"
+                            />
+                            <label htmlFor="hasMedicalAlert" className="font-semibold" style={{ color: 'var(--ink)' }}>
+                              I have a medical alert bracelet/device
+                            </label>
+                          </div>
+                          {patientData?.medicalAlertBracelet?.hasDevice && (
+                            <>
+                              <Input
+                                label="Manufacturer"
+                                value={patientData?.medicalAlertBracelet?.manufacturer || ''}
+                                onChange={(e) => handleChange('medicalAlertBracelet', {
+                                  ...patientData?.medicalAlertBracelet,
+                                  manufacturer: e.target.value
+                                })}
+                                placeholder="e.g., MedicAlert, Road ID"
+                              />
+                              <Input
+                                label="Serial Number"
+                                value={patientData?.medicalAlertBracelet?.serialNumber || ''}
+                                onChange={(e) => handleChange('medicalAlertBracelet', {
+                                  ...patientData?.medicalAlertBracelet,
+                                  serialNumber: e.target.value
+                                })}
+                                placeholder="Device serial number"
+                              />
+                              <Input
+                                label="QR Code / Tag Info"
+                                value={patientData?.medicalAlertBracelet?.qrCode || ''}
+                                onChange={(e) => handleChange('medicalAlertBracelet', {
+                                  ...patientData?.medicalAlertBracelet,
+                                  qrCode: e.target.value
+                                })}
+                                placeholder="QR code ID or tag number"
+                              />
+                              <Input
+                                label="Emergency Access URL"
+                                value={patientData?.medicalAlertBracelet?.emergencyAccessURL || ''}
+                                onChange={(e) => handleChange('medicalAlertBracelet', {
+                                  ...patientData?.medicalAlertBracelet,
+                                  emergencyAccessURL: e.target.value
+                                })}
+                                placeholder="https://..."
+                              />
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Critical Access Information */}
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <Shield className="h-5 w-5 text-indigo-400" />
+                          <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>Critical Access Information</h4>
+                        </div>
+                        <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
+                          Store medical record numbers, health system portals, and emergency access credentials
+                        </p>
+                        <div className="space-y-3">
+                          <Input
+                            label="Medical Record Number (MRN)"
+                            value={patientData?.criticalAccessInfo?.medicalRecordNumber || ''}
+                            onChange={(e) => handleChange('criticalAccessInfo', {
+                              ...patientData?.criticalAccessInfo,
+                              medicalRecordNumber: e.target.value
+                            })}
+                            placeholder="Your MRN"
+                          />
+                          <Input
+                            label="Health System Portal URL"
+                            value={patientData?.criticalAccessInfo?.healthSystemPortalURL || ''}
+                            onChange={(e) => handleChange('criticalAccessInfo', {
+                              ...patientData?.criticalAccessInfo,
+                              healthSystemPortalURL: e.target.value
+                            })}
+                            placeholder="https://myhealth.example.com"
+                          />
+                          <Input
+                            label="Portal Username"
+                            value={patientData?.criticalAccessInfo?.healthSystemUsername || ''}
+                            onChange={(e) => handleChange('criticalAccessInfo', {
+                              ...patientData?.criticalAccessInfo,
+                              healthSystemUsername: e.target.value
+                            })}
+                            placeholder="Username"
+                          />
+                          <Input
+                            label="Portal Password"
+                            type="password"
+                            value={patientData?.criticalAccessInfo?.healthSystemPassword || ''}
+                            onChange={(e) => handleChange('criticalAccessInfo', {
+                              ...patientData?.criticalAccessInfo,
+                              healthSystemPassword: e.target.value
+                            })}
+                            placeholder="Password (encrypted)"
+                          />
+                          <div>
+                            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+                              Additional Notes
+                            </label>
+                            <textarea
+                              value={patientData?.criticalAccessInfo?.additionalNotes || ''}
+                              onChange={(e) => handleChange('criticalAccessInfo', {
+                                ...patientData?.criticalAccessInfo,
+                                additionalNotes: e.target.value
+                              })}
+                              rows={3}
+                              className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all resize-none"
+                              style={{ color: '#000000', fontWeight: '800' }}
+                              placeholder="Other important access information or device IDs..."
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
