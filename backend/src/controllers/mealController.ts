@@ -1,12 +1,21 @@
 import { Request, Response } from 'express';
 import MealEntry from '../models/MealEntry';
+import User from '../models/User';
 import { Op } from 'sequelize';
+import { sendHeartHealthAlert } from '../services/notificationService';
 
 const DIETARY_LIMITS = {
   calories: 2000,
   sodium: 2300,
   cholesterol: 300,
   saturatedFat: 20
+};
+
+// Alert thresholds for heart-critical nutrients
+const ALERT_THRESHOLDS = {
+  warning: 80,   // 80% of daily limit
+  critical: 90,  // 90% of daily limit
+  exceeded: 100  // 100% of daily limit
 };
 
 export const getMeals = async (req: Request, res: Response) => {
@@ -46,6 +55,10 @@ export const addMeal = async (req: Request, res: Response) => {
     const withinSpec = checkCompliance(bodyWithoutUserId);
     const mealData = { userId, ...bodyWithoutUserId, withinSpec, timestamp: bodyWithoutUserId.timestamp || new Date() };
     const meal = await MealEntry.create(mealData);
+
+    // 🚨 HEART-CRITICAL: Check daily sodium and cholesterol limits after meal creation
+    await checkDailyLimitsAndAlert(userId, meal.timestamp);
+
     res.status(201).json(meal);
   } catch (error) {
     console.error('Error adding meal:', error);
@@ -186,4 +199,78 @@ function checkCompliance(mealData: any): boolean {
   const cholesterol = mealData.cholesterol || 0;
   const saturatedFat = mealData.saturatedFat || 0;
   return sodium <= DIETARY_LIMITS.sodium / 4 && cholesterol <= DIETARY_LIMITS.cholesterol / 4 && saturatedFat <= DIETARY_LIMITS.saturatedFat / 4;
+}
+
+/**
+ * 🚨 HEART-CRITICAL SAFETY FEATURE
+ * Check daily sodium and cholesterol totals and send alerts if approaching or exceeding limits
+ * This protects heart recovery patients from dangerous nutrient levels
+ */
+async function checkDailyLimitsAndAlert(userId: number, mealTimestamp: Date): Promise<void> {
+  try {
+    // Get user info for notifications
+    const user = await User.findByPk(userId);
+    if (!user || !user.email) {
+      console.warn('[HEART-SAFETY] Cannot send alerts: user or email not found for userId:', userId);
+      return;
+    }
+
+    // Calculate today's date range (start/end of day)
+    const dayStart = new Date(mealTimestamp);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(mealTimestamp);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    // Query all meals for today
+    const todaysMeals = await MealEntry.findAll({
+      where: {
+        userId,
+        timestamp: { [Op.gte]: dayStart, [Op.lte]: dayEnd }
+      }
+    });
+
+    // Calculate daily totals
+    let totalSodium = 0;
+    let totalCholesterol = 0;
+
+    todaysMeals.forEach(meal => {
+      totalSodium += meal.sodium || 0;
+      totalCholesterol += meal.cholesterol || 0;
+    });
+
+    // Calculate percentages
+    const sodiumPercentage = (totalSodium / DIETARY_LIMITS.sodium) * 100;
+    const cholesterolPercentage = (totalCholesterol / DIETARY_LIMITS.cholesterol) * 100;
+
+    console.log(`[HEART-SAFETY] Daily totals for user ${userId}: Sodium ${Math.round(totalSodium)}mg (${Math.round(sodiumPercentage)}%), Cholesterol ${Math.round(totalCholesterol)}mg (${Math.round(cholesterolPercentage)}%)`);
+
+    // Send alerts for sodium if at or exceeding 80% threshold
+    if (sodiumPercentage >= ALERT_THRESHOLDS.warning) {
+      console.log(`[HEART-SAFETY] 🚨 Sodium alert triggered at ${Math.round(sodiumPercentage)}% of daily limit`);
+      await sendHeartHealthAlert(
+        user.email,
+        user.phoneNumber,
+        'sodium',
+        totalSodium,
+        DIETARY_LIMITS.sodium,
+        sodiumPercentage
+      );
+    }
+
+    // Send alerts for cholesterol if at or exceeding 80% threshold
+    if (cholesterolPercentage >= ALERT_THRESHOLDS.warning) {
+      console.log(`[HEART-SAFETY] 🚨 Cholesterol alert triggered at ${Math.round(cholesterolPercentage)}% of daily limit`);
+      await sendHeartHealthAlert(
+        user.email,
+        user.phoneNumber,
+        'cholesterol',
+        totalCholesterol,
+        DIETARY_LIMITS.cholesterol,
+        cholesterolPercentage
+      );
+    }
+  } catch (error) {
+    // Don't throw - we don't want alerts to break meal creation
+    console.error('[HEART-SAFETY] Error checking daily limits and sending alerts:', error);
+  }
 }

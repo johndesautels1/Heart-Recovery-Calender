@@ -1,313 +1,154 @@
-import nodemailer from 'nodemailer';
 import twilio from 'twilio';
-import admin from 'firebase-admin';
-import logger from '../config/logger';
+import nodemailer from 'nodemailer';
 
-// ============================================================================
-// CONFIGURATION & INITIALIZATION
-// ============================================================================
+// Twilio configuration
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
 
-/**
- * Check if email service is configured
- */
-export const isEmailConfigured = (): boolean => {
-  return !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
-  );
-};
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-/**
- * Check if SMS service is configured
- */
-export const isSMSConfigured = (): boolean => {
-  return !!(
-    process.env.TWILIO_ACCOUNT_SID &&
-    process.env.TWILIO_AUTH_TOKEN &&
-    process.env.TWILIO_PHONE_NUMBER
-  );
-};
+// Nodemailer configuration
+const emailTransporter = process.env.SMTP_HOST && process.env.SMTP_USER
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : null;
 
 /**
- * Check if push notification service is configured
+ * Send SMS alert via Twilio
  */
-export const isPushConfigured = (): boolean => {
-  return !!(
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY
-  );
-};
-
-// Initialize Twilio client only if configured
-let twilioClient: twilio.Twilio | null = null;
-if (isSMSConfigured()) {
-  try {
-    twilioClient = twilio(
-      process.env.TWILIO_ACCOUNT_SID!,
-      process.env.TWILIO_AUTH_TOKEN!
-    );
-    logger.info('✅ Twilio SMS service initialized');
-  } catch (error) {
-    logger.error('❌ Failed to initialize Twilio:', error);
-  }
-} else {
-  logger.warn('⚠️ Twilio SMS not configured - SMS notifications disabled');
-}
-
-// Initialize Firebase Admin only if configured
-let firebaseInitialized = false;
-if (isPushConfigured()) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID!,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n')
-      }),
-    });
-    firebaseInitialized = true;
-    logger.info('✅ Firebase push notification service initialized');
-  } catch (error) {
-    logger.error('❌ Failed to initialize Firebase:', error);
-  }
-} else {
-  logger.warn('⚠️ Firebase not configured - Push notifications disabled');
-}
-
-// ============================================================================
-// EMAIL NOTIFICATION SERVICE
-// ============================================================================
-
-export interface EmailOptions {
-  to: string;
-  subject: string;
-  text?: string;
-  html?: string;
-}
-
-/**
- * Send an email notification
- * @param options Email configuration
- * @returns Success status
- */
-export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
-  if (!isEmailConfigured()) {
-    logger.warn('⚠️ Email not configured - Skipping email to:', options.to);
+export async function sendSMS(to: string, message: string): Promise<boolean> {
+  if (!twilioClient || !twilioPhoneNumber) {
+    console.warn('[NOTIFICATIONS] Twilio not configured, SMS not sent:', { to, message });
     return false;
   }
-
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST!,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASS!
-      }
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || `"Heart Recovery Calendar" <${process.env.SMTP_USER}>`,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html
-    });
-
-    logger.info(`✅ Email sent successfully to: ${options.to}`);
+    const result = await twilioClient.messages.create({ body: message, from: twilioPhoneNumber, to });
+    console.log('[NOTIFICATIONS] SMS sent successfully:', result.sid);
     return true;
   } catch (error) {
-    logger.error('❌ Failed to send email:', error);
+    console.error('[NOTIFICATIONS] Error sending SMS:', error);
     return false;
   }
-};
+}
 
 /**
- * Send medication reminder email
+ * Send email alert via nodemailer
  */
-export const sendMedicationReminderEmail = async (
+export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!emailTransporter) {
+    console.warn('[NOTIFICATIONS] Email not configured, email not sent:', { to, subject });
+    return false;
+  }
+  try {
+    const result = await emailTransporter.sendMail({
+      from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
+      to, subject, html
+    });
+    console.log('[NOTIFICATIONS] Email sent successfully:', result.messageId);
+    return true;
+  } catch (error) {
+    console.error('[NOTIFICATIONS] Error sending email:', error);
+    return false;
+  }
+}
+
+/**
+ * Send heart-health critical alert (both SMS and email)
+ */
+export async function sendHeartHealthAlert(
   userEmail: string,
-  medicationName: string,
-  dosage: string,
-  timeOfDay: string
-): Promise<boolean> => {
-  const subject = `💊 Medication Reminder: ${medicationName}`;
-  const text = `Hi there!\n\nThis is a reminder to take your medication:\n\nMedication: ${medicationName}\nDosage: ${dosage}\nTime: ${timeOfDay}\n\nStay on track with your recovery!\n\nBest regards,\nHeart Recovery Calendar Team`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
-      <div style="background: white; padding: 30px; border-radius: 8px;">
-        <h2 style="color: #667eea; margin-bottom: 20px;">💊 Medication Reminder</h2>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">Hi there!</p>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">This is a reminder to take your medication:</p>
-        <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-          <p style="margin: 5px 0;"><strong>Medication:</strong> ${medicationName}</p>
-          <p style="margin: 5px 0;"><strong>Dosage:</strong> ${dosage}</p>
-          <p style="margin: 5px 0;"><strong>Time:</strong> ${timeOfDay}</p>
-        </div>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">Stay on track with your recovery!</p>
-        <p style="font-size: 14px; color: #666; margin-top: 30px;">Best regards,<br><strong>Heart Recovery Calendar Team</strong></p>
-      </div>
-    </div>
-  `;
+  userPhone: string | null | undefined,
+  nutrient: 'sodium' | 'cholesterol',
+  currentDaily: number,
+  limit: number,
+  percentage: number
+): Promise<void> {
+  const unit = 'mg';
+  const nutrientLabel = nutrient.charAt(0).toUpperCase() + nutrient.slice(1);
+  const percentRounded = Math.round(percentage);
+  const currentRounded = Math.round(currentDaily);
+  const remaining = Math.max(0, limit - currentRounded);
 
-  return sendEmail({ to: userEmail, subject, text, html });
-};
-
-/**
- * Send therapy goal reminder email
- */
-export const sendGoalReminderEmail = async (
-  userEmail: string,
-  goalTitle: string,
-  goalDescription: string,
-  targetDate: string
-): Promise<boolean> => {
-  const subject = `🎯 Goal Reminder: ${goalTitle}`;
-  const text = `Hi there!\n\nThis is a reminder about your therapy goal:\n\nGoal: ${goalTitle}\nDescription: ${goalDescription}\nTarget Date: ${targetDate}\n\nKeep up the great work!\n\nBest regards,\nHeart Recovery Calendar Team`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px;">
-      <div style="background: white; padding: 30px; border-radius: 8px;">
-        <h2 style="color: #f5576c; margin-bottom: 20px;">🎯 Goal Reminder</h2>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">Hi there!</p>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">This is a reminder about your therapy goal:</p>
-        <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f5576c;">
-          <p style="margin: 5px 0;"><strong>Goal:</strong> ${goalTitle}</p>
-          <p style="margin: 5px 0;"><strong>Description:</strong> ${goalDescription}</p>
-          <p style="margin: 5px 0;"><strong>Target Date:</strong> ${targetDate}</p>
-        </div>
-        <p style="font-size: 16px; color: #333; line-height: 1.6;">Keep up the great work!</p>
-        <p style="font-size: 14px; color: #666; margin-top: 30px;">Best regards,<br><strong>Heart Recovery Calendar Team</strong></p>
-      </div>
-    </div>
-  `;
-
-  return sendEmail({ to: userEmail, subject, text, html });
-};
-
-// ============================================================================
-// SMS NOTIFICATION SERVICE
-// ============================================================================
-
-/**
- * Send an SMS notification
- * @param phone Phone number (E.164 format: +1234567890)
- * @param message SMS message content
- * @returns Success status
- */
-export const sendSMS = async (phone: string, message: string): Promise<boolean> => {
-  if (!isSMSConfigured() || !twilioClient) {
-    logger.warn('⚠️ SMS not configured - Skipping SMS to:', phone);
-    return false;
+  // Determine severity
+  let icon = '⚡';
+  let colorHex = '#eab308';
+  if (percentage >= 100) {
+    icon = '🚨';
+    colorHex = '#ef4444';
+  } else if (percentage >= 90) {
+    icon = '⚠️';
+    colorHex = '#f59e0b';
   }
 
-  try {
-    await twilioClient.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER!,
-      to: phone
-    });
+  // SMS (concise)
+  const smsMessage = `${icon} HEART HEALTH ALERT: You've consumed ${currentRounded}${unit} of ${nutrient} today (${percentRounded}% of ${limit}${unit} limit). ${nutrient === 'sodium' ? 'High sodium increases blood pressure risk.' : 'High cholesterol can clog arteries.'} Avoid ${nutrient}-rich foods for the rest of the day. - Heart Recovery Calendar`;
 
-    logger.info(`✅ SMS sent successfully to: ${phone}`);
-    return true;
-  } catch (error) {
-    logger.error('❌ Failed to send SMS:', error);
-    return false;
-  }
-};
+  // Email (detailed HTML)
+  const emailSubject = `${icon} Heart Health Alert: ${nutrientLabel} Intake at ${percentRounded}%`;
+  const emailHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;line-height:1.6;color:#333;}
+.container{max-width:600px;margin:0 auto;padding:20px;}
+.alert-box{border-left:5px solid ${colorHex};background:${colorHex}15;padding:20px;border-radius:8px;margin:20px 0;}
+.alert-header{font-size:24px;font-weight:bold;color:${colorHex};margin-bottom:10px;}
+.stats{background:white;padding:15px;border-radius:6px;margin:15px 0;}
+.stat-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;}
+.stat-label{font-weight:600;color:#666;}
+.stat-value{font-weight:bold;color:${colorHex};}
+.progress-bar{height:30px;background:#f0f0f0;border-radius:15px;overflow:hidden;margin:15px 0;}
+.progress-fill{height:100%;background:linear-gradient(to right,${colorHex},${colorHex}dd);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;}
+.recommendations{background:#f8f9fa;padding:15px;border-radius:6px;margin:15px 0;}
+.recommendations h3{margin-top:0;color:#333;}
+.recommendations ul{margin:10px 0;padding-left:20px;}
+.recommendations li{margin:8px 0;}
+.footer{margin-top:30px;padding-top:20px;border-top:2px solid #eee;font-size:12px;color:#666;text-align:center;}
+.cta-button{display:inline-block;padding:12px 24px;background:${colorHex};color:white;text-decoration:none;border-radius:6px;font-weight:bold;margin:15px 0;}
+</style></head><body><div class="container">
+<div class="alert-box"><div class="alert-header">${icon} Heart Health Alert</div>
+<p style="margin:5px 0 0 0;font-size:16px;">You are approaching your daily ${nutrient} limit. Your heart health depends on staying within recommended limits.</p></div>
+<div class="stats">
+<div class="stat-row"><span class="stat-label">${nutrientLabel} Consumed Today:</span><span class="stat-value">${currentRounded} ${unit}</span></div>
+<div class="stat-row"><span class="stat-label">Recommended Daily Limit:</span><span class="stat-value">${limit} ${unit}</span></div>
+<div class="stat-row"><span class="stat-label">Percentage of Limit:</span><span class="stat-value">${percentRounded}%</span></div>
+<div class="stat-row" style="border-bottom:none;"><span class="stat-label">Remaining Today:</span><span class="stat-value">${remaining} ${unit}</span></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(percentage, 100)}%;">${percentRounded}% of Daily Limit</div></div>
+${percentage >= 100 ? `<div class="alert-box" style="border-left-color:#dc2626;background:#dc262615;">
+<p style="margin:0;font-weight:bold;color:#dc2626;">⛔ You have EXCEEDED your daily ${nutrient} limit!</p>
+<p style="margin:10px 0 0 0;">Please avoid all ${nutrient}-rich foods for the rest of the day and consult your care team if you experience any symptoms.</p></div>` : ''}
+<div class="recommendations"><h3>🫀 Why This Matters for Your Heart</h3><p>
+${nutrient === 'sodium' ? '<strong>High sodium intake increases blood pressure</strong>, which forces your heart to work harder and increases risk of heart attack, stroke, and heart failure. For heart recovery patients, controlling sodium is critical.' : '<strong>Excess cholesterol can clog your arteries</strong> with plaque buildup, restricting blood flow to your heart and brain. This significantly increases risk of heart attack and stroke, especially during recovery.'}
+</p><h3>✅ What To Do Now</h3><ul>
+${nutrient === 'sodium' ? `<li>Avoid processed foods, canned soups, deli meats, cheese, and salty snacks</li>
+<li>Don't add salt to your meals</li>
+<li>Read nutrition labels carefully - "low sodium" means ≤140mg per serving</li>
+<li>Drink plenty of water to help flush excess sodium</li>
+<li>Choose fresh fruits and vegetables (naturally low in sodium)</li>` : `<li>Avoid red meat, full-fat dairy, butter, and fried foods</li>
+<li>Skip eggs (1 egg = ~185mg cholesterol)</li>
+<li>Choose plant-based proteins like beans and lentils</li>
+<li>Eat fish rich in omega-3s (salmon, mackerel) instead</li>
+<li>Load up on fiber-rich foods to help lower cholesterol</li>`}
+</ul>
+${percentage >= 100 ? `<p style="background:#fee2e2;padding:10px;border-radius:4px;margin:15px 0;color:#991b1b;">
+<strong>⚠️ IMPORTANT:</strong> You've exceeded your daily limit. If you experience chest pain, shortness of breath, rapid heartbeat, or unusual fatigue, contact your healthcare provider immediately.</p>` : ''}
+</div>
+<center><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/meals" class="cta-button">View My Nutrition Dashboard →</a></center>
+<div class="footer"><p><strong>Heart Recovery Calendar</strong></p>
+<p>This is an automated health alert from your Heart Recovery Calendar system.</p>
+<p>If you have questions or concerns, please contact your healthcare provider.</p>
+<p style="margin-top:15px;font-size:11px;color:#999;">You received this alert because your daily ${nutrient} intake reached ${percentRounded}% of the recommended limit. These alerts help protect your heart health during recovery.</p>
+</div></div></body></html>`;
 
-/**
- * Send medication reminder SMS
- */
-export const sendMedicationReminderSMS = async (
-  phone: string,
-  medicationName: string,
-  dosage: string,
-  timeOfDay: string
-): Promise<boolean> => {
-  const message = `💊 Medication Reminder: Take ${medicationName} (${dosage}) at ${timeOfDay}. Stay on track with your recovery! - Heart Recovery Calendar`;
-  return sendSMS(phone, message);
-};
+  // Send both SMS and email
+  const promises: Promise<boolean>[] = [];
+  if (userPhone) promises.push(sendSMS(userPhone, smsMessage));
+  promises.push(sendEmail(userEmail, emailSubject, emailHtml));
+  await Promise.all(promises);
 
-/**
- * Send therapy goal reminder SMS
- */
-export const sendGoalReminderSMS = async (
-  phone: string,
-  goalTitle: string,
-  targetDate: string
-): Promise<boolean> => {
-  const message = `🎯 Goal Reminder: "${goalTitle}" - Target: ${targetDate}. Keep up the great work! - Heart Recovery Calendar`;
-  return sendSMS(phone, message);
-};
-
-// ============================================================================
-// PUSH NOTIFICATION SERVICE
-// ============================================================================
-
-/**
- * Send a push notification
- * @param deviceToken FCM device token
- * @param title Notification title
- * @param body Notification body
- * @returns Success status
- */
-export const sendPush = async (
-  deviceToken: string,
-  title: string,
-  body: string
-): Promise<boolean> => {
-  if (!isPushConfigured() || !firebaseInitialized) {
-    logger.warn('⚠️ Push notifications not configured - Skipping push to:', deviceToken);
-    return false;
-  }
-
-  try {
-    await admin.messaging().send({
-      token: deviceToken,
-      notification: {
-        title,
-        body,
-      },
-    });
-
-    logger.info(`✅ Push notification sent successfully to: ${deviceToken}`);
-    return true;
-  } catch (error) {
-    logger.error('❌ Failed to send push notification:', error);
-    return false;
-  }
-};
-
-/**
- * Send medication reminder push notification
- */
-export const sendMedicationReminderPush = async (
-  deviceToken: string,
-  medicationName: string,
-  dosage: string,
-  timeOfDay: string
-): Promise<boolean> => {
-  return sendPush(
-    deviceToken,
-    '💊 Medication Reminder',
-    `Take ${medicationName} (${dosage}) at ${timeOfDay}`
-  );
-};
-
-/**
- * Send therapy goal reminder push notification
- */
-export const sendGoalReminderPush = async (
-  deviceToken: string,
-  goalTitle: string,
-  targetDate: string
-): Promise<boolean> => {
-  return sendPush(
-    deviceToken,
-    '🎯 Goal Reminder',
-    `"${goalTitle}" - Target: ${targetDate}`
-  );
-};
+  console.log(`[NOTIFICATIONS] Heart health alert sent for ${nutrient}: ${percentRounded}% of limit`);
+}
