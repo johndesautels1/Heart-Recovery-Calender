@@ -62,6 +62,7 @@ export const addPatient = async (req: Request, res: Response) => {
     // Remove fields that shouldn't be in patient data
     delete sanitizedData.createUserAccount;
     delete sanitizedData.password;
+    delete sanitizedData.therapistId; // Don't allow client to override therapistId
 
     if (sanitizedData.email === '') sanitizedData.email = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
@@ -192,6 +193,7 @@ export const updatePatient = async (req: Request, res: Response) => {
     // Remove fields that shouldn't be in patient data
     delete sanitizedData.createUserAccount;
     delete sanitizedData.password;
+    delete sanitizedData.therapistId; // Don't allow client to override therapistId
 
     if (sanitizedData.email === '') sanitizedData.email = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
