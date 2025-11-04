@@ -6,7 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { GlassCard, Button, Modal, Input, Select } from '../components/ui';
 import { RestTimer } from '../components/RestTimer';
-import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Printer, Share2, FileJson, QrCode, Timer, Heart, CheckCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Edit, Trash2, Clock, MapPin, UtensilsCrossed, Moon, AlertTriangle, Download, Upload, Printer, Share2, FileJson, QrCode, Timer, Heart, CheckCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,10 +22,13 @@ import {
   exportToAppleCalendar,
   exportToCalendly,
   exportAsJSON,
+  exportAsCSV,
+  exportCalendar,
   printCalendar,
   getCalendlyWebhookConfig,
   getGoogleCalendarOAuthConfig,
 } from '../utils/calendarExport';
+import { importCalendar } from '../utils/calendarImport';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -722,14 +725,21 @@ export function CalendarPage() {
     }
   };
 
-  // Export and Print Handlers
+  // Export and Print Handlers - NOW USING USER PREFERENCES
   const handleExportToGoogle = () => {
     if (events.length === 0) {
       toast.error('No events to export');
       return;
     }
-    exportToGoogleCalendar(events);
-    toast.success('Google Calendar file downloaded! Import it to Google Calendar.');
+    // Use user's preferred export format
+    const format = (user?.preferences?.exportFormat || 'ics') as 'ics' | 'json' | 'csv';
+    try {
+      exportCalendar(events, calendars, format, 'Google Calendar Export');
+      toast.success(`Calendar exported as ${format.toUpperCase()}! Import it to Google Calendar.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export calendar');
+    }
   };
 
   const handleExportToApple = () => {
@@ -737,8 +747,15 @@ export function CalendarPage() {
       toast.error('No events to export');
       return;
     }
-    exportToAppleCalendar(events);
-    toast.success('Apple Calendar file downloaded! Double-click to import.');
+    // Use user's preferred export format
+    const format = (user?.preferences?.exportFormat || 'ics') as 'ics' | 'json' | 'csv';
+    try {
+      exportCalendar(events, calendars, format, 'Apple Calendar Export');
+      toast.success(`Calendar exported as ${format.toUpperCase()}! Double-click to import.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export calendar');
+    }
   };
 
   const handleExportToCalendly = () => {
@@ -746,17 +763,97 @@ export function CalendarPage() {
       toast.error('No events to export');
       return;
     }
-    exportToCalendly(events);
+    // Use user's preferred export format
+    const format = (user?.preferences?.exportFormat || 'ics') as 'ics' | 'json' | 'csv';
+    try {
+      exportCalendar(events, calendars, format, 'Calendly Export');
 
-    // Show webhook configuration info
-    const webhookConfig = getCalendlyWebhookConfig();
-    console.log('Calendly Webhook Configuration:', webhookConfig);
-    toast.success('Calendly file downloaded! See console for webhook setup.');
+      // Show webhook configuration info
+      const webhookConfig = getCalendlyWebhookConfig();
+      console.log('Calendly Webhook Configuration:', webhookConfig);
+      toast.success(`Calendar exported as ${format.toUpperCase()}! See console for webhook setup.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export calendar');
+    }
   };
 
   const handlePrintCalendar = () => {
     printCalendar();
     toast.success('Print dialog opened');
+  };
+
+  // Import Handler - USES USER PREFERENCES
+  const handleImportCalendar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Determine format from file extension or use user preference
+      let format: 'ics' | 'json' | 'csv' = user?.preferences?.importFormat as any || 'ics';
+
+      const fileName = file.name.toLowerCase();
+      if (fileName.endsWith('.ics')) {
+        format = 'ics';
+      } else if (fileName.endsWith('.json')) {
+        format = 'json';
+      } else if (fileName.endsWith('.csv')) {
+        format = 'csv';
+      }
+
+      // Read file content
+      const fileContent = await file.text();
+
+      // Parse events
+      const importedEvents = importCalendar(fileContent, format);
+
+      if (importedEvents.length === 0) {
+        toast.error('No events found in the imported file');
+        return;
+      }
+
+      // Get default calendar or create one
+      let targetCalendar = calendars.find(c => c.name === 'My Calendar') || calendars[0];
+
+      if (!targetCalendar) {
+        toast.error('Please create a calendar first before importing events');
+        return;
+      }
+
+      // Create events in database
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const event of importedEvents) {
+        try {
+          await api.createEvent({
+            ...event,
+            calendarId: targetCalendar.id,
+            patientId: selectedPatient?.id,
+          } as CreateEventInput);
+          successCount++;
+        } catch (error) {
+          console.error('Failed to import event:', event.title, error);
+          errorCount++;
+        }
+      }
+
+      // Refresh events
+      fetchEvents();
+
+      // Show result
+      if (successCount > 0) {
+        toast.success(`Successfully imported ${successCount} event(s)!${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+      } else {
+        toast.error('Failed to import events');
+      }
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(error.message || 'Failed to import calendar file');
+    }
+
+    // Reset file input
+    event.target.value = '';
   };
 
   const handleBackupAsJSON = () => {
@@ -1825,6 +1922,23 @@ See browser console for full configuration details.
             Delete Historic
           </Button>
 
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={() => document.getElementById('import-calendar-file')?.click()}
+            className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400 whitespace-nowrap"
+            title="Import Calendar (ICS, JSON, CSV)"
+          >
+            <Upload className="h-4 w-4 mr-1" />
+            Import
+          </Button>
+          <input
+            id="import-calendar-file"
+            type="file"
+            accept=".ics,.json,.csv"
+            onChange={handleImportCalendar}
+            style={{ display: 'none' }}
+          />
           <Button
             size="sm"
             variant="glass"

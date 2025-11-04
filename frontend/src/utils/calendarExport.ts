@@ -236,6 +236,91 @@ To enable Google Calendar sync:
 }
 
 /**
+ * Unified export function that respects user's preferred format
+ * Reads from user.preferences.exportFormat and exports accordingly
+ */
+export function exportCalendar(
+  events: CalendarEvent[],
+  calendars: any[],
+  format: 'ics' | 'json' | 'csv',
+  calendarName: string = 'Heart Recovery Calendar'
+): void {
+  if (format === 'ics') {
+    const icsContent = generateICSFile(events, calendarName);
+    downloadICSFile(icsContent, `${calendarName.toLowerCase().replace(/\s+/g, '-')}.ics`);
+  } else if (format === 'json') {
+    exportAsJSON(events, calendars);
+  } else if (format === 'csv') {
+    exportAsCSV(events);
+  } else {
+    console.error('Unsupported export format:', format);
+    throw new Error(`Unsupported export format: ${format}`);
+  }
+}
+
+/**
+ * Export calendar as CSV for Excel/spreadsheet import
+ */
+export function exportAsCSV(events: CalendarEvent[]): void {
+  // CSV headers
+  const headers = [
+    'Title',
+    'Description',
+    'Start Date/Time',
+    'End Date/Time',
+    'All Day',
+    'Location',
+    'Status',
+    'Reminder (minutes)',
+    'Category',
+    'Notes'
+  ];
+
+  // Convert events to CSV rows
+  const rows = events.map(event => {
+    return [
+      escapeCSVField(event.title),
+      escapeCSVField(event.description || ''),
+      format(new Date(event.startTime), 'yyyy-MM-dd HH:mm:ss'),
+      format(new Date(event.endTime), 'yyyy-MM-dd HH:mm:ss'),
+      event.isAllDay ? 'Yes' : 'No',
+      escapeCSVField(event.location || ''),
+      event.status || 'confirmed',
+      event.reminderMinutes?.toString() || '0',
+      escapeCSVField(event.template?.category || ''),
+      escapeCSVField(event.notes || '')
+    ].join(',');
+  });
+
+  // Combine headers and rows
+  const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+  // Download CSV file
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `cardiac-recovery-calendar-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
+/**
+ * Escape CSV field - handle commas, quotes, and newlines
+ */
+function escapeCSVField(text: string): string {
+  if (!text) return '';
+
+  // If field contains comma, quote, or newline, wrap in quotes and escape existing quotes
+  if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+
+  return text;
+}
+
+/**
  * Print calendar view
  * Opens browser print dialog with calendar-optimized styling
  */
