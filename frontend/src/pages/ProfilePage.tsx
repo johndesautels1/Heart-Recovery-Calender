@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
-  Download, X, Edit2, Trash2, Plus
+  Download, X, Edit2, Trash2, Plus, Eye, Check
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -163,6 +163,18 @@ export function ProfilePage() {
   const [showMedSuggestions, setShowMedSuggestions] = useState(false);
   const [highlightedMedIndex, setHighlightedMedIndex] = useState(-1);
   const [originalMedications, setOriginalMedications] = useState<string[]>([]);
+
+  // Document upload state - stores base64 data URLs for previews
+  const [uploadedDocuments, setUploadedDocuments] = useState<{
+    passportFront?: string;
+    passportBack?: string;
+    insuranceFront?: string;
+    insuranceBack?: string;
+    allergyCardFront?: string;
+    allergyCardBack?: string;
+    driverLicenseFront?: string;
+    driverLicenseBack?: string;
+  }>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const medAutocompleteRef = useRef<HTMLDivElement>(null);
@@ -681,7 +693,16 @@ export function ProfilePage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        // TODO: Implement document storage API
+
+        // Store in state for preview
+        const key = `${type}${side.charAt(0).toUpperCase() + side.slice(1)}` as keyof typeof uploadedDocuments;
+        setUploadedDocuments(prev => ({
+          ...prev,
+          [key]: base64String
+        }));
+
+        // TODO: Implement document storage API to save to backend
+
         const documentName = type === 'driverLicense' ? "Driver's License" :
                            type === 'allergyCard' ? 'Allergy Card' :
                            type === 'insurance' ? 'Insurance Card' : 'Passport';
@@ -691,6 +712,30 @@ export function ProfilePage() {
     } catch (error) {
       console.error('Error uploading document:', error);
       toast.error('Failed to upload document');
+    }
+  };
+
+  const handleDocumentDelete = (
+    type: 'passport' | 'insurance' | 'allergyCard' | 'driverLicense',
+    side: 'front' | 'back'
+  ) => {
+    const key = `${type}${side.charAt(0).toUpperCase() + side.slice(1)}` as keyof typeof uploadedDocuments;
+    setUploadedDocuments(prev => ({
+      ...prev,
+      [key]: undefined
+    }));
+
+    const documentName = type === 'driverLicense' ? "Driver's License" :
+                       type === 'allergyCard' ? 'Allergy Card' :
+                       type === 'insurance' ? 'Insurance Card' : 'Passport';
+    toast.success(`${documentName} (${side === 'front' ? 'Front' : 'Back'}) deleted`);
+  };
+
+  const handleDocumentView = (dataUrl: string) => {
+    // Open in new tab
+    const win = window.open();
+    if (win) {
+      win.document.write(`<img src="${dataUrl}" style="max-width: 100%; height: auto;" />`);
     }
   };
 
@@ -2262,14 +2307,49 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => passportFrontInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Front Side
-                            </Button>
+                            {uploadedDocuments.passportFront ? (
+                              <div className="space-y-2">
+                                {/* Preview Thumbnail */}
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img
+                                    src={uploadedDocuments.passportFront}
+                                    alt="Passport Front"
+                                    className="w-full h-32 object-cover"
+                                  />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleDocumentView(uploadedDocuments.passportFront!)}
+                                    variant="secondary"
+                                    className="flex-1"
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDocumentDelete('passport', 'front')}
+                                    variant="danger"
+                                    className="flex-1"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => passportFrontInputRef.current?.click()}
+                                variant="secondary"
+                                className="w-full"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Front Side
+                              </Button>
+                            )}
                           </div>
                           {/* Back Side */}
                           <div>
@@ -2283,14 +2363,49 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => passportBackInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Back Side
-                            </Button>
+                            {uploadedDocuments.passportBack ? (
+                              <div className="space-y-2">
+                                {/* Preview Thumbnail */}
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img
+                                    src={uploadedDocuments.passportBack}
+                                    alt="Passport Back"
+                                    className="w-full h-32 object-cover"
+                                  />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleDocumentView(uploadedDocuments.passportBack!)}
+                                    variant="secondary"
+                                    className="flex-1"
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDocumentDelete('passport', 'back')}
+                                    variant="danger"
+                                    className="flex-1"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => passportBackInputRef.current?.click()}
+                                variant="secondary"
+                                className="w-full"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Back Side
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2313,14 +2428,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => insuranceFrontInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Front Side
-                            </Button>
+                            {uploadedDocuments.insuranceFront ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.insuranceFront} alt="Insurance Front" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.insuranceFront!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('insurance', 'front')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => insuranceFrontInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Front Side
+                              </Button>
+                            )}
                           </div>
                           {/* Back Side */}
                           <div>
@@ -2334,14 +2463,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => insuranceBackInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Back Side
-                            </Button>
+                            {uploadedDocuments.insuranceBack ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.insuranceBack} alt="Insurance Back" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.insuranceBack!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('insurance', 'back')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => insuranceBackInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Back Side
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2364,14 +2507,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => allergyCardFrontInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Front Side
-                            </Button>
+                            {uploadedDocuments.allergyCardFront ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.allergyCardFront} alt="Allergy Card Front" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.allergyCardFront!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('allergyCard', 'front')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => allergyCardFrontInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Front Side
+                              </Button>
+                            )}
                           </div>
                           {/* Back Side */}
                           <div>
@@ -2385,14 +2542,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => allergyCardBackInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Back Side
-                            </Button>
+                            {uploadedDocuments.allergyCardBack ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.allergyCardBack} alt="Allergy Card Back" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.allergyCardBack!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('allergyCard', 'back')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => allergyCardBackInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Back Side
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2415,14 +2586,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => driverLicenseFrontInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Front Side
-                            </Button>
+                            {uploadedDocuments.driverLicenseFront ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.driverLicenseFront} alt="Driver's License Front" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.driverLicenseFront!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('driverLicense', 'front')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => driverLicenseFrontInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Front Side
+                              </Button>
+                            )}
                           </div>
                           {/* Back Side */}
                           <div>
@@ -2436,14 +2621,28 @@ export function ProfilePage() {
                               }}
                               className="hidden"
                             />
-                            <Button
-                              onClick={() => driverLicenseBackInputRef.current?.click()}
-                              variant="secondary"
-                              className="w-full"
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              Back Side
-                            </Button>
+                            {uploadedDocuments.driverLicenseBack ? (
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden border-2 border-green-500">
+                                  <img src={uploadedDocuments.driverLicenseBack} alt="Driver's License Back" className="w-full h-32 object-cover" />
+                                  <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                                    <Check className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleDocumentView(uploadedDocuments.driverLicenseBack!)} variant="secondary" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-2" />View
+                                  </Button>
+                                  <Button onClick={() => handleDocumentDelete('driverLicense', 'back')} variant="danger" className="flex-1">
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button onClick={() => driverLicenseBackInputRef.current?.click()} variant="secondary" className="w-full">
+                                <Upload className="h-4 w-4 mr-2" />Back Side
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
