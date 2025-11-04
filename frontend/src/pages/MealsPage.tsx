@@ -313,44 +313,87 @@ export function MealsPage() {
     });
   };
 
-  // Aggregate macro nutrient data from meals (current month view)
+  // Aggregate macro nutrient data from meals (respects date range selector)
   const getMacroNutrientData = () => {
-    // Use current calendar month
-    const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
+    // Use date range from selector (7d, 30d, 90d)
+    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+    const startDate = subDays(new Date(), days);
+    const endDate = new Date();
 
-    // Filter meals within the current month
+    // Filter meals within the date range
     const mealsInRange = meals.filter(meal => {
       const mealDate = parseISO(meal.timestamp);
-      return mealDate >= monthStart && mealDate <= monthEnd;
+      return mealDate >= startDate && mealDate <= endDate;
     });
 
     // Sum up macro nutrients from all meals
     const totalProtein = mealsInRange.reduce((sum, meal) => sum + (meal.protein || 0), 0);
     const totalCarbs = mealsInRange.reduce((sum, meal) => sum + (meal.carbohydrates || 0), 0);
     const totalFat = mealsInRange.reduce((sum, meal) => sum + (meal.totalFat || 0), 0);
+    const totalSaturatedFat = mealsInRange.reduce((sum, meal) => sum + (meal.saturatedFat || 0), 0);
+    const totalSugar = mealsInRange.reduce((sum, meal) => sum + (meal.sugar || 0), 0);
+    const totalFiber = mealsInRange.reduce((sum, meal) => sum + (meal.fiber || 0), 0);
+
+    // Calculate totals for percentage calculations
+    // Break down fats: unsaturated = total - saturated
+    const unsaturatedFat = Math.max(0, totalFat - totalSaturatedFat);
+    // Break down carbs: other carbs = total - sugar - fiber
+    const otherCarbs = Math.max(0, totalCarbs - totalSugar - totalFiber);
+
+    // Total of all nutrients for pie chart
+    const totalNutrients = totalProtein + otherCarbs + totalSugar + totalFiber + unsaturatedFat + totalSaturatedFat;
 
     return {
       data: [
         {
           name: 'Protein',
           value: totalProtein,
-          color: '#3b82f6'
+          color: '#3b82f6',  // blue
+          percentage: totalNutrients > 0 ? ((totalProtein / totalNutrients) * 100).toFixed(1) : 0
         },
         {
-          name: 'Carbs',
-          value: totalCarbs,
-          color: '#eab308'
+          name: 'Complex Carbs',
+          value: otherCarbs,
+          color: '#8b5cf6',  // purple
+          percentage: totalNutrients > 0 ? ((otherCarbs / totalNutrients) * 100).toFixed(1) : 0
         },
         {
-          name: 'Fat',
-          value: totalFat,
-          color: '#ef4444'
+          name: 'Sugar',
+          value: totalSugar,
+          color: '#ec4899',  // pink
+          percentage: totalNutrients > 0 ? ((totalSugar / totalNutrients) * 100).toFixed(1) : 0
+        },
+        {
+          name: 'Fiber',
+          value: totalFiber,
+          color: '#10b981',  // green
+          percentage: totalNutrients > 0 ? ((totalFiber / totalNutrients) * 100).toFixed(1) : 0
+        },
+        {
+          name: 'Unsaturated Fat',
+          value: unsaturatedFat,
+          color: '#f59e0b',  // orange
+          percentage: totalNutrients > 0 ? ((unsaturatedFat / totalNutrients) * 100).toFixed(1) : 0
+        },
+        {
+          name: 'Saturated Fat',
+          value: totalSaturatedFat,
+          color: '#ef4444',  // red
+          percentage: totalNutrients > 0 ? ((totalSaturatedFat / totalNutrients) * 100).toFixed(1) : 0
         }
       ],
+      // Also return totals for the detail cards
+      totals: {
+        protein: totalProtein,
+        carbs: totalCarbs,
+        totalFat: totalFat,
+        saturatedFat: totalSaturatedFat,
+        sugar: totalSugar,
+        fiber: totalFiber
+      },
       mealCount: mealsInRange.length,
-      dateRange: format(now, 'MMMM yyyy')
+      dateRange: `Last ${days} days`,
+      totalMacros: totalNutrients
     };
   };
 
@@ -1664,70 +1707,171 @@ export function MealsPage() {
               <PieChartIcon className="h-6 w-6" style={{ color: 'var(--accent)' }} />
               Macro Nutrient Breakdown
             </h3>
-            <div className="mb-3 text-xs font-medium opacity-70" style={{ color: 'var(--ink)' }}>
+            <div className="mb-3 text-xs font-medium opacity-90" style={{ color: 'var(--ink)' }}>
               {macroDateRange} • {macroMealCount} meals analyzed
             </div>
-            <div className="mb-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                <span>Protein</span>
+
+            {/* Detailed nutrient breakdown table */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#3b82f615', border: '1px solid #3b82f640' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Protein</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {(macroNutrientChartData[0]?.value || 0).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  {macroNutrientChartData[0]?.percentage || 0}% of total
+                </div>
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                <span>Carbohydrates</span>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#8b5cf615', border: '1px solid #8b5cf640' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Total Carbs</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {((macroNutrientChartData[1]?.value || 0) + (macroNutrientChartData[2]?.value || 0) + (macroNutrientChartData[3]?.value || 0)).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Complex + Sugar + Fiber
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                <span>Fat</span>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#ec489915', border: '1px solid #ec489940' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Sugar</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {(macroNutrientChartData[2]?.value || 0).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  {macroNutrientChartData[2]?.percentage || 0}% of total
+                </div>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#10b98115', border: '1px solid #10b98140' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Fiber</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {(macroNutrientChartData[3]?.value || 0).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  {macroNutrientChartData[3]?.percentage || 0}% of total
+                </div>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#f59e0b15', border: '1px solid #f59e0b40' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Total Fat</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {((macroNutrientChartData[4]?.value || 0) + (macroNutrientChartData[5]?.value || 0)).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  Unsaturated + Saturated
+                </div>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#ef444415', border: '1px solid #ef444440' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="font-bold text-xs" style={{ color: 'var(--ink)' }}>Saturated Fat</span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                  {(macroNutrientChartData[5]?.value || 0).toFixed(1)}g
+                </div>
+                <div className="text-xs opacity-70" style={{ color: 'var(--ink)' }}>
+                  {macroNutrientChartData[5]?.percentage || 0}% of total
+                </div>
               </div>
             </div>
+
             <div className="mb-3 p-3 rounded-lg" style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
               color: 'var(--ink)'
             }}>
-              <div className="text-xs font-semibold mb-2 opacity-80">Recommended Distribution (Heart-Healthy):</div>
-              <div className="text-xs space-y-1">
+              <div className="text-xs font-semibold mb-2 opacity-90">Heart-Healthy Daily Guidelines (per day):</div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs opacity-80">
                 <div className="flex justify-between">
-                  <span>Protein:</span>
-                  <span className="font-semibold">20-30% of total intake</span>
+                  <span>🔵 Protein:</span>
+                  <span className="font-semibold">46-56g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Carbohydrates:</span>
-                  <span className="font-semibold">45-55% of total intake</span>
+                  <span>🟣 Total Carbs:</span>
+                  <span className="font-semibold">225-325g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Fat:</span>
-                  <span className="font-semibold">20-30% of total intake</span>
+                  <span>🩷 Sugar:</span>
+                  <span className="font-semibold">&lt;50g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>🟢 Fiber:</span>
+                  <span className="font-semibold">25-30g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>🟠 Total Fat:</span>
+                  <span className="font-semibold">44-78g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>🔴 Saturated Fat:</span>
+                  <span className="font-semibold">&lt;13g</span>
                 </div>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={350}>
               <PieChart>
                 <Pie
                   data={macroNutrientChartData}
                   cx="50%"
-                  cy="50%"
+                  cy="45%"
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent, value }: any) => `${name}: ${value.toFixed(1)}g (${((percent as number) * 100).toFixed(0)}%)`}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, value, name }: any) => {
+                    // Only show label if value is significant (>1g)
+                    if (value < 1) return null;
+
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius + 30;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="var(--ink)"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        style={{ fontSize: '10px', fontWeight: 600 }}
+                      >
+                        {`${name}: ${value.toFixed(0)}g`}
+                      </text>
+                    );
+                  }}
+                  labelLine={false}
                 >
                   {macroNutrientChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.95)',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     padding: '12px',
-                    color: '#fff'
+                    color: '#fff',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                   }}
-                  labelStyle={{ color: '#fff', fontWeight: 'bold' }}
-                  itemStyle={{ color: '#fff' }}
-                  formatter={(value: number) => `${value.toFixed(1)}g`}
+                  labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '8px' }}
+                  itemStyle={{ color: '#fff', padding: '2px 0' }}
+                  formatter={(value: number, name: string, props: any) => [
+                    `${value.toFixed(1)}g (${props.payload.percentage}%)`,
+                    name
+                  ]}
                 />
               </PieChart>
             </ResponsiveContainer>
