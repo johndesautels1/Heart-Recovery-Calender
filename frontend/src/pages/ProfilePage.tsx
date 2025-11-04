@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
-  Download, X, Edit2, Trash2, Plus, Eye, Check
+  Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -190,6 +190,7 @@ export function ProfilePage() {
   const driverLicenseBackInputRef = useRef<HTMLInputElement>(null);
 
   const sections: Section[] = [
+    { id: 'apiCredentials', title: 'Login Credentials & API Calls', icon: <Key className="h-5 w-5" />, color: '#0ea5e9' },
     { id: 'settings', title: 'App Settings', icon: <Settings className="h-5 w-5" />, color: '#6366f1' },
     { id: 'personal', title: 'Personal Information', icon: <User className="h-5 w-5" />, color: '#3b82f6' },
     { id: 'contact', title: 'Contact & Address', icon: <MapPin className="h-5 w-5" />, color: '#10b981' },
@@ -1063,6 +1064,421 @@ export function ProfilePage() {
 
               {expandedSections.includes(section.id) && (
                 <div className="p-6 pt-0 space-y-4 animate-slideDown">
+                  {section.id === 'apiCredentials' && (
+                    <>
+                      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(14, 165, 233, 0.1)' }}>
+                        <h4 className="font-semibold mb-2" style={{ color: 'var(--ink-bright)' }}>
+                          Centralized Credentials Management
+                        </h4>
+                        <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                          Store and manage all third-party API credentials in one secure location. Credentials are listed alphabetically.
+                        </p>
+                      </div>
+
+                      {/* Twilio SMS - FIRST AND CRITICAL */}
+                      <div className="p-5 rounded-lg border-2 border-red-500" style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Phone className="h-6 w-6 text-red-500" />
+                            <div>
+                              <h4 className="font-bold text-lg" style={{ color: 'var(--ink-bright)' }}>
+                                Twilio SMS
+                              </h4>
+                              <div className="flex gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500 text-white">
+                                  CRITICAL
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-orange-500 text-white">
+                                  Heart-Health Alerts
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <a
+                            href="https://console.twilio.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Sends real-time SMS alerts when patients approach or exceed sodium/cholesterol limits. REQUIRED for patient safety.
+                        </p>
+
+                        <div className="space-y-3">
+                          <Input
+                            label="Google Account Email"
+                            type="email"
+                            value="brokerpinellas@gmail.com"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Recovery Code"
+                            type="password"
+                            value="LXF1ULP2C8KZWBXR2ZM3YZA3"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Account SID"
+                            placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Auth Token"
+                            type="password"
+                            placeholder="Enter Twilio Auth Token"
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Phone Number"
+                            placeholder="+1234567890"
+                            className="bg-white/5"
+                          />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+                        </p>
+                      </div>
+
+                      {/* Apple Sign In */}
+                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Smartphone className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Apple Sign In
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                READY
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://developer.apple.com/account/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          OAuth authentication for iOS users. Optional but recommended for iOS app distribution.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Client ID" placeholder="com.yourapp.identifier" className="bg-white/5" />
+                          <Input label="Team ID" placeholder="XXXXXXXXXX" className="bg-white/5" />
+                          <Input label="Key ID" placeholder="XXXXXXXXXX" className="bg-white/5" />
+                          <Input label="Private Key" placeholder="Paste .p8 key contents" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                          ENV Variables: APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY
+                        </p>
+                      </div>
+
+                      {/* Firebase */}
+                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <AlertCircle className="h-5 w-5 text-orange-400" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Firebase Admin SDK
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-500 text-white">
+                                INSTALLED
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://console.firebase.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Push notifications (installed but not implemented). Optional enhancement for mobile alerts.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Project ID" placeholder="your-firebase-project-id" className="bg-white/5" />
+                          <Input label="Client Email" placeholder="firebase-adminsdk@project.iam.gserviceaccount.com" className="bg-white/5" />
+                          <Input label="Private Key" placeholder="Paste private key from service account JSON" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                          ENV Variables: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
+                        </p>
+                      </div>
+
+                      {/* Google OAuth 2.0 */}
+                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <User className="h-5 w-5 text-blue-400" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Google OAuth 2.0
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                READY
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://console.cloud.google.com/apis/credentials"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Sign in with Google authentication. Optional but recommended for easier user onboarding.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Client ID" placeholder="xxxxxx.apps.googleusercontent.com" className="bg-white/5" />
+                          <Input label="Client Secret" placeholder="Enter Google OAuth client secret" type="password" className="bg-white/5" />
+                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/auth/google/callback" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                          ENV Variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+                        </p>
+                      </div>
+
+                      {/* JWT Secret */}
+                      <div className="p-5 rounded-lg border border-green-600" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Shield className="h-5 w-5 text-green-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                JWT Secret Key
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500 text-white">
+                                REQUIRED
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Token signing key for authentication. REQUIRED for the app to function. Generate with: <code className="bg-white/10 px-1 rounded">node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code>
+                        </p>
+                        <div className="space-y-3">
+                          <Input
+                            label="JWT Secret"
+                            type="password"
+                            placeholder="Generate a secure random 64-character hex string"
+                            className="bg-white/5"
+                          />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variable: JWT_SECRET
+                        </p>
+                      </div>
+
+                      {/* Polar API */}
+                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Activity className="h-5 w-5 text-blue-400" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Polar API
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                READY
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://admin.polaraccesslink.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Heart rate data sync from Polar devices. Optional but useful for patients with Polar fitness trackers.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Client ID" placeholder="Enter Polar client ID" className="bg-white/5" />
+                          <Input label="Client Secret" placeholder="Enter Polar client secret" type="password" className="bg-white/5" />
+                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/polar/callback" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                          ENV Variables: POLAR_CLIENT_ID, POLAR_CLIENT_SECRET, POLAR_REDIRECT_URI
+                        </p>
+                      </div>
+
+                      {/* PostgreSQL */}
+                      <div className="p-5 rounded-lg border-2 border-green-500" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Server className="h-5 w-5 text-green-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                PostgreSQL Database
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500 text-white">
+                                REQUIRED
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Primary database for all application data. REQUIRED for the app to function.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Host" placeholder="localhost" className="bg-white/5" />
+                          <Input label="Port" placeholder="5432" className="bg-white/5" />
+                          <Input label="Database Name" placeholder="heart_recovery_calendar" className="bg-white/5" />
+                          <Input label="Username" placeholder="postgres" className="bg-white/5" />
+                          <Input label="Password" type="password" placeholder="Enter database password" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variables: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+                        </p>
+                      </div>
+
+                      {/* Samsung Health */}
+                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Smartphone className="h-5 w-5 text-blue-400" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Samsung Health API
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                READY
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://developer.samsung.com/health"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Comprehensive health data sync from Samsung devices. Optional but useful for Samsung users.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Client ID" placeholder="Enter Samsung Health client ID" className="bg-white/5" />
+                          <Input label="Client Secret" placeholder="Enter Samsung Health client secret" type="password" className="bg-white/5" />
+                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/samsung/callback" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                          ENV Variables: SAMSUNG_CLIENT_ID, SAMSUNG_CLIENT_SECRET, SAMSUNG_REDIRECT_URI
+                        </p>
+                      </div>
+
+                      {/* SMTP Email */}
+                      <div className="p-5 rounded-lg border-2 border-orange-500" style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Mail className="h-5 w-5 text-orange-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                SMTP Email
+                              </h4>
+                              <div className="flex gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-orange-500 text-white">
+                                  CRITICAL
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500 text-white">
+                                  Heart-Health Alerts
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <a
+                            href="https://myaccount.google.com/apppasswords"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+                          >
+                            Gmail App Password →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Sends detailed email alerts when patients approach or exceed sodium/cholesterol limits. REQUIRED for patient safety.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="SMTP Host" placeholder="smtp.gmail.com" className="bg-white/5" />
+                          <Input label="SMTP Port" placeholder="587" className="bg-white/5" />
+                          <Input label="SMTP User (Email)" placeholder="your_email@gmail.com" className="bg-white/5" />
+                          <Input label="SMTP Password (App Password)" type="password" placeholder="Enter Gmail App Password" className="bg-white/5" />
+                          <Input label="From Email" placeholder="noreply@heartrecovery.com" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variables: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL
+                        </p>
+                      </div>
+
+                      {/* Strava API */}
+                      <div className="p-5 rounded-lg border border-green-600" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Activity className="h-5 w-5 text-orange-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Strava API
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500 text-white">
+                                CONFIGURED
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://www.strava.com/settings/api"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get Credentials →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Heart rate and exercise data sync. Optional but useful for patients using Strava to track workouts.
+                        </p>
+                        <div className="space-y-3">
+                          <Input label="Client ID" placeholder="Enter Strava client ID" className="bg-white/5" />
+                          <Input label="Client Secret" placeholder="Enter Strava client secret" type="password" className="bg-white/5" />
+                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/strava/callback" className="bg-white/5" />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REDIRECT_URI
+                        </p>
+                      </div>
+
+                      <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(14, 165, 233, 0.1)' }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="h-5 w-5 text-sky-400" />
+                          <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                            Security Note
+                          </h4>
+                        </div>
+                        <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                          These credentials are currently stored in your local browser. For production deployment, all credentials should be stored securely in environment variables on your server. Never commit credentials to version control.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
                   {section.id === 'settings' && (
                     <>
                       <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
