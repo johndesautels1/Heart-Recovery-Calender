@@ -95,6 +95,68 @@ export function VitalsPage() {
     }
   };
 
+  // Sync vitals to patient profile (2-way sync)
+  const syncVitalsToProfile = async (vital: VitalsSample) => {
+    try {
+      // Get the patient profile for the current user
+      const patientsResponse = await fetch(
+        `http://localhost:4000/api/patients?userId=${vital.userId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (!patientsResponse.ok) return;
+
+      const patientsData = await patientsResponse.json();
+      const patientProfile = patientsData.data?.[0];
+
+      if (!patientProfile) return;
+
+      // Update patient profile with latest vitals
+      const updates: any = {};
+
+      // Sync weight
+      if (vital.weight !== undefined && vital.weight !== null) {
+        updates.currentWeight = vital.weight;
+      }
+
+      // Sync resting heart rate (use lowest value as resting HR)
+      if (vital.heartRate !== undefined && vital.heartRate !== null) {
+        if (!patientProfile.restingHeartRate || vital.heartRate < patientProfile.restingHeartRate) {
+          updates.restingHeartRate = vital.heartRate;
+        }
+      }
+
+      // Sync baseline blood pressure
+      if (vital.bloodPressureSystolic && vital.bloodPressureDiastolic) {
+        updates.baselineBpSystolic = vital.bloodPressureSystolic;
+        updates.baselineBpDiastolic = vital.bloodPressureDiastolic;
+      }
+
+      // Only update if there are changes
+      if (Object.keys(updates).length > 0) {
+        await fetch(`http://localhost:4000/api/patients/${patientProfile.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            ...patientProfile,
+            ...updates
+          })
+        });
+
+        console.log('✓ Synced vitals to profile:', updates);
+      }
+    } catch (error) {
+      console.error('Failed to sync vitals to profile:', error);
+    }
+  };
+
   const onSubmit = async (data: VitalsFormData) => {
     try {
       setIsLoading(true);
@@ -103,9 +165,13 @@ export function VitalsPage() {
         timestamp: new Date().toISOString(),
         source: 'manual',
       } as CreateVitalsInput);
-      
+
       setVitals([...vitals, newVital]);
       setLatestVitals(newVital);
+
+      // Sync to profile in real-time
+      await syncVitalsToProfile(newVital);
+
       toast.success('Vitals recorded successfully');
       setIsModalOpen(false);
       reset();

@@ -462,6 +462,85 @@ export function ProfilePage() {
     }
   };
 
+  // Sync profile vitals to Vitals Tab (2-way sync)
+  const syncProfileToVitals = async (updatedProfile: any) => {
+    try {
+      // Only sync if there are vitals fields to sync
+      const hasVitalsData =
+        updatedProfile.currentWeight ||
+        updatedProfile.restingHeartRate ||
+        (updatedProfile.baselineBpSystolic && updatedProfile.baselineBpDiastolic);
+
+      if (!hasVitalsData) return;
+
+      // Check if there's already a vital record for today
+      const today = new Date().toISOString().split('T')[0];
+      const vitalsResponse = await fetch(
+        `http://localhost:4000/api/vitals?startDate=${today}&endDate=${today}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (!vitalsResponse.ok) return;
+
+      const vitalsData = await vitalsResponse.json();
+      const todayVital = vitalsData.data?.[0];
+
+      const vitalUpdate: any = {
+        timestamp: new Date().toISOString(),
+        source: 'profile',
+      };
+
+      // Sync weight
+      if (updatedProfile.currentWeight) {
+        vitalUpdate.weight = updatedProfile.currentWeight;
+      }
+
+      // Sync resting heart rate
+      if (updatedProfile.restingHeartRate) {
+        vitalUpdate.heartRate = updatedProfile.restingHeartRate;
+      }
+
+      // Sync baseline blood pressure
+      if (updatedProfile.baselineBpSystolic && updatedProfile.baselineBpDiastolic) {
+        vitalUpdate.bloodPressureSystolic = updatedProfile.baselineBpSystolic;
+        vitalUpdate.bloodPressureDiastolic = updatedProfile.baselineBpDiastolic;
+      }
+
+      if (todayVital) {
+        // Update today's vital record
+        await fetch(`http://localhost:4000/api/vitals/${todayVital.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            ...todayVital,
+            ...vitalUpdate
+          })
+        });
+        console.log('✓ Updated today\'s vital record from profile');
+      } else {
+        // Create new vital record
+        await fetch('http://localhost:4000/api/vitals', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(vitalUpdate)
+        });
+        console.log('✓ Created new vital record from profile');
+      }
+    } catch (error) {
+      console.error('Failed to sync profile to vitals:', error);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!patientData) {
@@ -506,6 +585,9 @@ export function ProfilePage() {
 
         updated = await response.json();
         setPatientData(updated as any);
+
+        // Sync profile vitals to Vitals Tab
+        await syncProfileToVitals(updated);
       } else {
         // Update existing patient profile
         response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
@@ -523,6 +605,9 @@ export function ProfilePage() {
 
         updated = await response.json();
         setPatientData(updated as any);
+
+        // Sync profile vitals to Vitals Tab
+        await syncProfileToVitals(updated);
       }
 
       // Auto-create medication cards for newly added cardiac medications
