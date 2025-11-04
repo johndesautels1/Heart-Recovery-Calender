@@ -349,14 +349,44 @@ export function CalendarPage() {
 
   const handleDateClick = async (arg: any) => {
     // When a date is clicked, open the day details modal
-    const clickedDate = arg.dateStr;
+    // Extract just the date part (YYYY-MM-DD) from the dateStr which may include time
+    const clickedDate = arg.dateStr.split('T')[0];
+
+    console.log('[handleDateClick] Clicked date:', clickedDate);
+    console.log('[handleDateClick] Total events:', events.length);
+    console.log('[handleDateClick] Total meals:', allMeals.length);
+    console.log('[handleDateClick] Total sleep logs:', sleepLogs.length);
+    console.log('[handleDateClick] Total vitals:', vitals.length);
+
+    // Debug: show sample event dates to see format
+    if (events.length > 0) {
+      console.log('[handleDateClick] Sample events:', events.slice(0, 3).map(e => ({
+        title: e.title,
+        startTime: e.startTime,
+        dateOnly: new Date(e.startTime).toISOString().split('T')[0]
+      })));
+    }
+
+    if (allMeals.length > 0) {
+      console.log('[handleDateClick] Sample meals:', allMeals.slice(0, 3).map(m => ({
+        timestamp: m.timestamp,
+        dateOnly: new Date(m.timestamp).toISOString().split('T')[0]
+      })));
+    }
+
     setSelectedDate(clickedDate);
 
     // Filter meals for this date
     const mealsForDate = allMeals.filter(meal => {
       const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
-      return mealDate === clickedDate;
+      const matches = mealDate === clickedDate;
+      if (matches) {
+        console.log('[handleDateClick] Found meal:', meal);
+      }
+      return matches;
     });
+
+    console.log('[handleDateClick] Meals for this date:', mealsForDate.length);
     setSelectedDateMeals(mealsForDate);
 
     // Open the modal
@@ -389,6 +419,24 @@ export function CalendarPage() {
   };
 
   const handleEventClick = async (arg: any) => {
+    // For weekly/daily views, show the day's events modal instead of individual event actions
+    const isTimeGrid = calendarView === 'timeGridWeek' || calendarView === 'timeGridDay';
+    if (isTimeGrid) {
+      const eventDate = new Date(arg.event.start).toISOString().split('T')[0];
+      setSelectedDate(eventDate);
+
+      // Get meals for this date if it's a meal event
+      if (arg.event.extendedProps.isMealEvent) {
+        setSelectedDateMeals(arg.event.extendedProps.meals || []);
+      } else {
+        setSelectedDateMeals([]);
+      }
+
+      setShowDateDetailsModal(true);
+      return;
+    }
+
+    // For monthly view, use the original behavior
     // Check if it's a medication event
     if (arg.event.extendedProps.isMedicationEvent) {
       const { medication, status, scheduledTime, log } = arg.event.extendedProps;
@@ -442,6 +490,21 @@ export function CalendarPage() {
       } catch (error) {
         console.error('Failed to log medication:', error);
         toast.error('Failed to log medication');
+      }
+
+      return;
+    }
+
+    // Check if it's a sleep event
+    if (arg.event.extendedProps.isSleepEvent) {
+      const { status, sleepLog, date } = arg.event.extendedProps;
+
+      if (status === 'logged' && sleepLog) {
+        // Sleep already logged - navigate to edit
+        navigate('/sleep', { state: { editDate: sleepLog.date } });
+      } else if (status === 'unlogged' && date) {
+        // Sleep not logged - navigate to add
+        navigate('/sleep', { state: { addDate: date } });
       }
 
       return;
@@ -1168,6 +1231,68 @@ See browser console for full configuration details.
     }
   };
 
+  // Generate sleep events for the calendar (reminders + logged)
+  const generateSleepEvents = () => {
+    const sleepEvents: any[] = [];
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+
+    // Create a map of sleep logs by date for quick lookup
+    const sleepLogsByDateMap = sleepLogs.reduce((acc, log) => {
+      acc[log.date] = log;
+      return acc;
+    }, {} as Record<string, SleepLog>);
+
+    // Generate events for each day
+    let currentDate = new Date(monthStart);
+    while (currentDate <= monthEnd) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const sleepLog = sleepLogsByDateMap[dateStr];
+      const isPast = currentDate < new Date(now.toDateString());
+
+      if (sleepLog) {
+        // Sleep logged - show with checkmark, bed icon, and hours
+        sleepEvents.push({
+          id: `sleep-${sleepLog.id}`,
+          title: `✓  🛏️  ${sleepLog.hoursSlept}h`,
+          start: dateStr,
+          allDay: true,
+          backgroundColor: '#c084fc', // light purple (purple-400)
+          borderColor: '#a855f7', // purple-500
+          textColor: '#ffffff',
+          classNames: ['font-bold', 'sleep-indicator', 'cursor-pointer'],
+          extendedProps: {
+            isSleepEvent: true,
+            sleepLog,
+            status: 'logged',
+          },
+        });
+      } else if (!isPast) {
+        // Sleep not logged yet (future/today) - show purple reminder
+        sleepEvents.push({
+          id: `sleep-reminder-${dateStr}`,
+          title: 'SLEEP',
+          start: dateStr,
+          allDay: true,
+          backgroundColor: '#9333ea', // purple-600
+          borderColor: '#7e22ce', // purple-700
+          textColor: '#ffffff',
+          classNames: ['font-bold', 'sleep-indicator', 'cursor-pointer'],
+          extendedProps: {
+            isSleepEvent: true,
+            status: 'unlogged',
+            date: dateStr,
+          },
+        });
+      }
+
+      currentDate = addDays(currentDate, 1);
+    }
+
+    return sleepEvents;
+  };
+
   // Create a map of vitals by date for medication tracking
   const vitalsByDate = vitals.reduce((acc, vital) => {
     if (vital.timestamp) {
@@ -1208,19 +1333,132 @@ See browser console for full configuration details.
     return iconMap[category] || '🏋️';
   };
 
-  // Custom event content renderer - shows icons ONLY for COMPLETED exercises
+  // Custom event content renderer - UNIFORM SIZING for all event types
   const renderEventContent = (eventInfo: any) => {
     const event = eventInfo.event;
     const extendedProps = event.extendedProps;
     const title = event.title || '';
 
-    // Determine font size class based on text length
-    const getTextSizeClass = (text: string) => {
+    // Detect if we're in weekly or daily view (time grid views)
+    const isTimeGridView = calendarView === 'timeGridWeek' || calendarView === 'timeGridDay';
+
+    // Determine font size based on text length to fit within tab
+    const getDynamicFontSize = (text: string) => {
       const length = text.length;
-      if (length <= 15) return 'event-text-default';
-      if (length <= 25) return 'event-text-medium';
-      if (length <= 35) return 'event-text-long';
-      return 'event-text-very-long';
+      if (length <= 15) return '11px';
+      if (length <= 20) return '10px';
+      if (length <= 25) return '9px';
+      if (length <= 30) return '8.5px';
+      if (length <= 35) return '8px';
+      if (length <= 40) return '7.5px';
+      return '7px';
+    };
+
+    // UNIFORM completed event template - responsive sizing for different views
+    const renderCompletedEvent = (emoji: string, backgroundColor: string, borderColor: string, shadowColor: string, customMarginLeft: string = '22px', emojiFilter: string = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))', emojiFontSize: string = '28px', isMedication: boolean = false) => {
+      // Adjust sizing based on view type - smaller for time grid to handle overlapping events
+      // Medications are 50% smaller than other widgets in time grid views
+      const width = isTimeGridView ? (isMedication ? '22.5%' : '45%') : '80%';
+      const height = isTimeGridView ? 'auto' : '32px';
+      const minHeight = isTimeGridView ? '20px' : '32px';
+      const maxHeight = isTimeGridView ? '24px' : '32px';
+      const padding = isTimeGridView ? '1px 3px' : '4px 8px';
+      const borderRadius = isTimeGridView ? '4px' : '6px';
+      const borderWidth = isTimeGridView ? '1px' : '2px';
+
+      // Smaller emoji and checkmark for time grid views
+      const adjustedEmojiSize = isTimeGridView ? '14px' : emojiFontSize;
+      const checkmarkSize = isTimeGridView ? '12px' : '18px';
+      const checkmarkLeft = isTimeGridView ? '3px' : '8px';
+      const emojiMarginLeft = isTimeGridView ? '14px' : customMarginLeft;
+
+      return {
+        html: `
+          <div class="event-completed-uniform"
+               style="position: relative;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      width: ${width};
+                      height: ${height};
+                      min-height: ${minHeight};
+                      max-height: ${maxHeight};
+                      padding: ${padding};
+                      margin-left: ${isTimeGridView ? '8px' : '0'};
+                      background: ${backgroundColor};
+                      border-radius: ${borderRadius};
+                      border: ${borderWidth} solid ${borderColor};
+                      box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px ${shadowColor};">
+            <span style="position: absolute;
+                         left: ${checkmarkLeft};
+                         font-size: ${checkmarkSize};
+                         line-height: 1;
+                         color: #fefefe;
+                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                         font-weight: 900;
+                         text-rendering: optimizeLegibility;
+                         -webkit-font-smoothing: antialiased;
+                         -moz-osx-font-smoothing: grayscale;
+                         text-shadow: 0 0 1px rgba(255, 255, 255, 0.6);
+                         filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));">✓</span>
+            <span style="font-size: ${adjustedEmojiSize};
+                         line-height: 1;
+                         margin-left: ${emojiMarginLeft};
+                         transform: translateY(${isTimeGridView ? '0px' : '-3px'});
+                         filter: ${emojiFilter};">${emoji}</span>
+          </div>
+        `
+      };
+    };
+
+    // UNIFORM non-completed event template - responsive sizing for different views
+    const renderPendingEvent = (bgColor: string, txtColor: string, displayText: string, isMedication: boolean = false) => {
+      // Smaller font sizes for time grid views
+      const baseFontSize = getDynamicFontSize(displayText);
+      const fontSize = isTimeGridView ? '8px' : baseFontSize;
+
+      // Adjust sizing based on view type - compact for time grid
+      // Medications are 50% smaller than other widgets in time grid views
+      const width = isTimeGridView ? (isMedication ? '22.5%' : '45%') : '80%';
+      const maxWidth = isTimeGridView ? (isMedication ? '22.5%' : '45%') : '80%';
+      const height = isTimeGridView ? 'auto' : '32px';
+      const minHeight = isTimeGridView ? '18px' : '32px';
+      const maxHeight = isTimeGridView ? '24px' : '32px';
+      const padding = isTimeGridView ? '1px 3px' : '3px 6px';
+      const whiteSpace = isTimeGridView ? 'nowrap' : 'nowrap';
+      const borderRadius = isTimeGridView ? '3px' : '4px';
+
+      return {
+        html: `<div class="event-text-wrapper"
+                    style="background-color: ${bgColor} !important;
+                           color: #fefefe !important;
+                           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+                           font-weight: 800 !important;
+                           font-size: ${fontSize} !important;
+                           line-height: 1.2 !important;
+                           letter-spacing: 0.01em !important;
+                           text-rendering: optimizeLegibility !important;
+                           -webkit-font-smoothing: antialiased !important;
+                           -moz-osx-font-smoothing: grayscale !important;
+                           text-shadow: 0 0 1px rgba(255, 255, 255, 0.5) !important;
+                           padding: ${padding} !important;
+                           margin-left: ${isTimeGridView ? '8px' : '0'} !important;
+                           border-radius: ${borderRadius} !important;
+                           width: ${width} !important;
+                           max-width: ${maxWidth} !important;
+                           height: ${height} !important;
+                           min-height: ${minHeight} !important;
+                           max-height: ${maxHeight} !important;
+                           overflow: hidden !important;
+                           text-overflow: ellipsis !important;
+                           white-space: ${whiteSpace} !important;
+                           box-sizing: border-box !important;
+                           display: flex !important;
+                           align-items: center !important;
+                           justify-content: center !important;">
+                 ${displayText}
+               </div>`
+      };
     };
 
     // For meal events
@@ -1229,63 +1467,20 @@ See browser console for full configuration details.
       const completedCount = meals.filter((m: any) => m.status === 'completed').length;
       const allCompleted = meals.length > 0 && completedCount === meals.length;
 
-      // ONLY IF ALL MEALS COMPLETED: show WHITE CHECKBOX LEFT + BIG CENTERED DINNER PLATE with light green
       if (allCompleted) {
-        return {
-          html: `
-            <div class="meal-event completed"
-                 style="display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        width: 100%;
-                        height: 100%;
-                        padding: 4px 8px;
-                        background: linear-gradient(135deg, rgba(134, 239, 172, 0.25) 0%, rgba(74, 222, 128, 0.35) 100%);
-                        border-radius: 8px;
-                        border: 2px solid rgba(74, 222, 128, 0.5);
-                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(74, 222, 128, 0.4);">
-              <!-- White checkbox LEFT -->
-              <span style="font-size: 22px;
-                           line-height: 1;
-                           color: #ffffff;
-                           font-weight: 900;
-                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
-              <!-- BIG CENTERED DINNER PLATE with silverware -->
-              <span style="font-size: 40px;
-                           line-height: 1;
-                           flex: 1;
-                           text-align: center;
-                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(74, 222, 128, 0.6));">🍽️</span>
-            </div>
-          `
-        };
+        return renderCompletedEvent(
+          '🍽️',
+          'linear-gradient(135deg, rgba(74, 222, 128, 0.7) 0%, rgba(34, 197, 94, 0.8) 100%)',
+          'rgba(34, 197, 94, 0.9)',
+          'rgba(34, 197, 94, 0.5)',
+          '26px',  // Custom positioning for dinner plate icon
+          'brightness(2) saturate(1.8) hue-rotate(-30deg) drop-shadow(0 0 3px rgba(255, 215, 0, 0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.4))'  // Bright gold plate with silver silverware
+        );
       } else {
-        // NOT COMPLETED: Show ORIGINAL STYLE with text and VIVID GREEN background
-        const sizeClass = getTextSizeClass(title);
-        const bgColor = event.backgroundColor || '#10b981';  // VIVID GREEN
-        const txtColor = event.textColor || '#ffffff';  // WHITE
+        const bgColor = event.backgroundColor || '#10b981';
+        const txtColor = event.textColor || '#ffffff';
         const statusText = completedCount > 0 ? ` (${completedCount}/${meals.length} ✓)` : '';
-        return {
-          html: `<div class="event-text-wrapper ${sizeClass}"
-                      style="background-color: ${bgColor} !important;
-                             color: ${txtColor} !important;
-                             font-weight: 700 !important;
-                             font-size: 11px !important;
-                             line-height: 1.2 !important;
-                             padding: 2px 4px !important;
-                             border-radius: 4px !important;
-                             width: 75% !important;
-                             max-width: 75% !important;
-                             height: auto !important;
-                             overflow: hidden !important;
-                             text-overflow: ellipsis !important;
-                             white-space: nowrap !important;
-                             box-sizing: border-box !important;
-                             display: inline-block !important;">
-                   ${title}${statusText}
-                 </div>`
-        };
+        return renderPendingEvent(bgColor, txtColor, title + statusText);
       }
     }
 
@@ -1293,60 +1488,21 @@ See browser console for full configuration details.
     if (extendedProps.isMedicationEvent) {
       const medStatus = extendedProps.status;
 
-      // ONLY IF TAKEN (completed): show WHITE CHECKBOX LEFT + BIG CENTERED PILL with light orange
       if (medStatus === 'taken' || medStatus === 'completed') {
-        return {
-          html: `
-            <div class="medication-event completed"
-                 style="display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        width: 100%;
-                        height: 100%;
-                        padding: 4px 8px;
-                        background: linear-gradient(135deg, rgba(255, 187, 102, 0.25) 0%, rgba(255, 152, 0, 0.35) 100%);
-                        border-radius: 8px;
-                        border: 2px solid rgba(255, 152, 0, 0.5);
-                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(255, 152, 0, 0.4);">
-              <!-- White checkbox LEFT -->
-              <span style="font-size: 22px;
-                           line-height: 1;
-                           color: #ffffff;
-                           font-weight: 900;
-                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
-              <!-- BIG CENTERED PILL -->
-              <span style="font-size: 40px;
-                           line-height: 1;
-                           flex: 1;
-                           text-align: center;
-                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255, 152, 0, 0.6));">💊</span>
-            </div>
-          `
-        };
+        return renderCompletedEvent(
+          '💊',
+          'linear-gradient(135deg, rgba(255, 187, 102, 0.3) 0%, rgba(255, 152, 0, 0.4) 100%)',
+          'rgba(255, 152, 0, 0.6)',
+          'rgba(255, 152, 0, 0.3)',
+          '22px',
+          'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          '28px',
+          true // isMedication = true
+        );
       } else {
-        // NOT TAKEN or MISSED: Show ORIGINAL STYLE with text
         const bgColor = event.backgroundColor || '#ff9800';
         const txtColor = event.textColor || '#ffffff';
-        return {
-          html: `<div style="background-color: ${bgColor} !important;
-                             color: ${txtColor} !important;
-                             font-weight: 700 !important;
-                             font-size: 11px !important;
-                             line-height: 1.2 !important;
-                             padding: 2px 4px !important;
-                             border-radius: 4px !important;
-                             width: 75% !important;
-                             max-width: 75% !important;
-                             height: auto !important;
-                             overflow: hidden !important;
-                             text-overflow: ellipsis !important;
-                             white-space: nowrap !important;
-                             box-sizing: border-box !important;
-                             display: inline-block !important;">
-                   ${title}
-                 </div>`
-        };
+        return renderPendingEvent(bgColor, txtColor, title, true); // isMedication = true
       }
     }
 
@@ -1357,87 +1513,40 @@ See browser console for full configuration details.
       const bgColor = event.backgroundColor || '#607d8b';
       const txtColor = event.textColor || '#ffffff';
 
-      // ONLY show bicep + white checkbox if completed
       if (isCompleted) {
-        return {
-          html: `
-            <div class="exercise-event completed"
-                 style="display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        width: 100%;
-                        height: 100%;
-                        padding: 4px 8px;
-                        background: linear-gradient(135deg, rgba(147, 197, 253, 0.25) 0%, rgba(96, 165, 250, 0.35) 100%);
-                        border-radius: 8px;
-                        border: 2px solid rgba(96, 165, 250, 0.5);
-                        box-shadow: inset 0 1px 3px rgba(255,255,255,0.4), 0 2px 8px rgba(96, 165, 250, 0.4);">
-              <!-- White checkbox LEFT -->
-              <span style="font-size: 22px;
-                           line-height: 1;
-                           color: #ffffff;
-                           font-weight: 900;
-                           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-                           text-shadow: 0 0 8px rgba(255,255,255,0.8);">✓</span>
-              <!-- BIG CENTERED BICEP ARM -->
-              <span style="font-size: 40px;
-                           line-height: 1;
-                           flex: 1;
-                           text-align: center;
-                           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(96, 165, 250, 0.6));">💪</span>
-            </div>
-          `
-        };
+        return renderCompletedEvent(
+          '💪',
+          'linear-gradient(135deg, rgba(147, 197, 253, 0.3) 0%, rgba(96, 165, 250, 0.4) 100%)',
+          'rgba(96, 165, 250, 0.6)',
+          'rgba(96, 165, 250, 0.3)'
+        );
       } else {
-        // Show text for incomplete exercises - KEEP ORIGINAL STYLE showing specific exercise name
-        const sizeClass = getTextSizeClass(title);
-        return {
-          html: `<div class="event-text-wrapper ${sizeClass}"
-                      style="background-color: ${bgColor} !important;
-                             color: ${txtColor} !important;
-                             font-weight: 700 !important;
-                             font-size: 11px !important;
-                             line-height: 1.2 !important;
-                             padding: 2px 4px !important;
-                             border-radius: 4px !important;
-                             width: 75% !important;
-                             max-width: 75% !important;
-                             height: auto !important;
-                             overflow: hidden !important;
-                             text-overflow: ellipsis !important;
-                             white-space: nowrap !important;
-                             box-sizing: border-box !important;
-                             display: inline-block !important;">
-                   ${title}
-                 </div>`
-        };
+        return renderPendingEvent(bgColor, txtColor, title);
       }
     }
 
-    // Default for other events - FORCE background color with 75% width
-    const sizeClass = getTextSizeClass(title);
+    // For sleep events
+    if (extendedProps.isSleepEvent) {
+      const { status, sleepLog } = extendedProps;
+
+      if (status === 'logged' && sleepLog) {
+        return renderCompletedEvent(
+          '🛏️',
+          'linear-gradient(135deg, rgba(192, 132, 252, 0.3) 0%, rgba(168, 85, 247, 0.4) 100%)',
+          'rgba(168, 85, 247, 0.6)',
+          'rgba(168, 85, 247, 0.3)'
+        );
+      } else {
+        const bgColor = event.backgroundColor || '#9333ea';
+        const txtColor = event.textColor || '#ffffff';
+        return renderPendingEvent(bgColor, txtColor, title);
+      }
+    }
+
+    // Default for other events - use uniform template
     const bgColor = event.backgroundColor || '#607d8b';
     const txtColor = event.textColor || '#ffffff';
-    return {
-      html: `<div class="event-text-wrapper ${sizeClass}"
-                  style="background-color: ${bgColor} !important;
-                         color: ${txtColor} !important;
-                         font-weight: 700 !important;
-                         font-size: 11px !important;
-                         line-height: 1.2 !important;
-                         padding: 2px 4px !important;
-                         border-radius: 4px !important;
-                         width: 75% !important;
-                         max-width: 75% !important;
-                         height: auto !important;
-                         overflow: hidden !important;
-                         text-overflow: ellipsis !important;
-                         white-space: nowrap !important;
-                         box-sizing: border-box !important;
-                         display: inline-block !important;">
-               ${title}
-             </div>`
-    };
+    return renderPendingEvent(bgColor, txtColor, title);
   };
 
   // Custom day cell content to show sleep hours
@@ -1613,7 +1722,9 @@ See browser console for full configuration details.
       },
     })),
     // Add medication events
-    ...generateMedicationEvents()
+    ...generateMedicationEvents(),
+    // Add sleep events (reminders + logged)
+    ...generateSleepEvents()
   ];
 
   // Determine whose calendar is being viewed
@@ -2003,6 +2114,7 @@ See browser console for full configuration details.
               display: block !important;
               width: 100% !important;
             }
+
 
             /* LARGER Event text sizing for better visibility */
             .fc-event-title,
@@ -3944,8 +4056,21 @@ See browser console for full configuration details.
             // Get all activities for this date
             const eventsForDate = events.filter(event => {
               const eventDate = new Date(event.startTime).toISOString().split('T')[0];
-              return eventDate === selectedDate;
+              const matches = eventDate === selectedDate;
+              if (matches) {
+                console.log('[Modal Filter] Matched event:', event.title, 'eventDate:', eventDate, 'selectedDate:', selectedDate);
+              }
+              return matches;
             });
+
+            // Debug: show sample of all event dates
+            if (events.length > 0 && eventsForDate.length === 0) {
+              console.log('[Modal Filter] No matches found. Sample of all events:', events.slice(0, 5).map(e => ({
+                title: e.title,
+                startTime: e.startTime,
+                dateOnly: new Date(e.startTime).toISOString().split('T')[0]
+              })));
+            }
 
             const mealsForDate = selectedDateMeals;
 
@@ -3959,8 +4084,16 @@ See browser console for full configuration details.
               return vitalDate === selectedDate;
             });
 
+            // Debug logging
+            console.log('[Modal] Selected date:', selectedDate);
+            console.log('[Modal] Events for date:', eventsForDate.length);
+            console.log('[Modal] Meals for date:', mealsForDate.length);
+            console.log('[Modal] Sleep for date:', sleepForDate ? 'YES' : 'NO');
+            console.log('[Modal] Vitals for date:', vitalsForDate.length);
+
             // Check if there's anything to display
             const hasActivities = eventsForDate.length > 0 || mealsForDate.length > 0 || sleepForDate || vitalsForDate.length > 0;
+            console.log('[Modal] Has activities:', hasActivities);
 
             if (!hasActivities) {
               return (
@@ -4164,7 +4297,7 @@ See browser console for full configuration details.
                 )}
 
                 {/* Sleep */}
-                {sleepForDate && (
+                {sleepForDate ? (
                   <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 shadow-sm">
                     <div className="flex items-center space-x-3 mb-4">
                       <div className="p-2 bg-purple-500 rounded-lg">
@@ -4173,21 +4306,75 @@ See browser console for full configuration details.
                       <h3 className="font-bold text-lg text-gray-900">Sleep & Recovery</h3>
                     </div>
                     <div className="bg-white rounded-lg border-2 border-purple-200 p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-600 font-medium">Hours Slept</p>
-                          <p className="text-2xl font-bold text-purple-900">{sleepForDate.hoursSlept}h</p>
-                        </div>
-                        {sleepForDate.quality && (
-                          <div>
-                            <p className="text-sm text-gray-600 font-medium">Quality</p>
-                            <p className="text-2xl font-bold text-purple-900 capitalize">{sleepForDate.quality}</p>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-600 font-medium">Hours Slept</p>
+                              <p className="text-2xl font-bold text-purple-900">{sleepForDate.hoursSlept}h</p>
+                            </div>
+                            {sleepForDate.quality && (
+                              <div>
+                                <p className="text-sm text-gray-600 font-medium">Quality</p>
+                                <p className="text-2xl font-bold text-purple-900 capitalize">{sleepForDate.quality}</p>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          {sleepForDate.notes && (
+                            <p className="text-sm text-gray-700 mt-3 italic">"{sleepForDate.notes}"</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              navigate('/sleep', { state: { editDate: sleepForDate.date } });
+                            }}
+                            className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold rounded-lg transition-colors"
+                          >
+                            <Edit className="h-3 w-3 inline mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to delete this sleep entry?')) {
+                                try {
+                                  await api.deleteSleepLog(sleepForDate.id);
+                                  toast.success('Sleep entry deleted');
+                                  await loadCalendarsAndEvents();
+                                } catch (error) {
+                                  console.error('Failed to delete sleep entry:', error);
+                                  toast.error('Failed to delete sleep entry');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3 inline mr-1" />
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                      {sleepForDate.notes && (
-                        <p className="text-sm text-gray-700 mt-3 italic">"{sleepForDate.notes}"</p>
-                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-purple-500 rounded-lg">
+                        <Moon className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900">Sleep & Recovery</h3>
+                    </div>
+                    <div className="bg-white rounded-lg border-2 border-purple-200 p-4 text-center">
+                      <p className="text-gray-500 mb-3">No sleep logged for this day</p>
+                      <button
+                        onClick={() => {
+                          navigate('/sleep', { state: { addDate: selectedDate } });
+                        }}
+                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold rounded-lg transition-colors"
+                      >
+                        <Plus className="h-4 w-4 inline mr-1" />
+                        Log Sleep
+                      </button>
                     </div>
                   </div>
                 )}

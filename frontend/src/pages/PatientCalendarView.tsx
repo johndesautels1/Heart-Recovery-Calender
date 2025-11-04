@@ -46,6 +46,7 @@ export function PatientCalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [isDayViewModalOpen, setIsDayViewModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -279,14 +280,22 @@ export function PatientCalendarView() {
     }
   };
 
-  // Handle date click to add event
+  // Handle date click to show day view
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    setIsDayViewModalOpen(true);
+  };
+
+  // Handle adding new event from day view
+  const handleAddEventFromDayView = () => {
+    if (!selectedDate) return;
+
+    setIsDayViewModalOpen(false);
     setIsAddEventModalOpen(true);
     setNewEvent({
       title: '',
-      startTime: format(date, "yyyy-MM-dd'T'HH:mm"),
-      endTime: format(date, "yyyy-MM-dd'T'HH:mm"),
+      startTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
+      endTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
       location: '',
       description: '',
     });
@@ -614,6 +623,91 @@ export function PatientCalendarView() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Day View Modal */}
+      <Modal
+        isOpen={isDayViewModalOpen}
+        onClose={() => {
+          setIsDayViewModalOpen(false);
+          setSelectedDate(null);
+        }}
+        title={selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Day View'}
+      >
+        <div className="space-y-4">
+          {/* Day's Events */}
+          {selectedDate ? (
+            <>
+              {getEventsForDay(selectedDate).length === 0 ? (
+                <div className="text-center py-8">
+                  <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-40" style={{ color: 'var(--accent)' }} />
+                  <p className="text-lg mb-2" style={{ color: 'var(--ink)' }}>
+                    No activities scheduled for this day
+                  </p>
+                  <p className="text-sm opacity-70 mb-4" style={{ color: 'var(--ink)' }}>
+                    Click the button below to create an event
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide opacity-70" style={{ color: 'var(--ink)' }}>
+                    Activities ({getEventsForDay(selectedDate).length})
+                  </h4>
+
+                  {getEventsForDay(selectedDate).map(event => {
+                    const status = getStatusColor(event.status);
+                    const StatusIcon = status.icon;
+
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => {
+                          setIsDayViewModalOpen(false);
+                          handleEventClick(event);
+                        }}
+                        className="w-full p-4 rounded-lg glass border border-white/10 hover:border-white/20 transition-all hover:scale-[1.02] text-left"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h5 className="font-semibold text-lg" style={{ color: 'var(--ink)' }}>
+                            {event.title}
+                          </h5>
+                          <div className="flex items-center space-x-1 ml-3">
+                            <StatusIcon className="h-5 w-5" style={{ color: status.text }} />
+                            <span className="text-xs font-medium capitalize" style={{ color: status.text }}>
+                              {event.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {event.notes && (
+                          <p className="text-sm opacity-70 mb-2" style={{ color: 'var(--ink)' }}>
+                            {event.notes}
+                          </p>
+                        )}
+
+                        <div className="flex items-center text-xs opacity-60" style={{ color: 'var(--ink)' }}>
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>Click to view details</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : null}
+
+          {/* Actions */}
+          <div className="flex justify-between space-x-3 pt-4 border-t border-white/10">
+            <Button variant="glass" onClick={() => setIsDayViewModalOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={handleAddEventFromDayView}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Event
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Add Event Modal */}

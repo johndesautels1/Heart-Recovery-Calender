@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { GlassCard, Button, Modal, Input } from '../components/ui';
 import {
   Moon,
@@ -44,6 +45,7 @@ type SleepFormData = z.infer<typeof sleepSchema>;
 export function SleepPage() {
   const { user } = useAuth();
   const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
+  const location = useLocation();
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [stats, setStats] = useState<SleepStats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,10 +66,48 @@ export function SleepPage() {
     },
   });
 
+  // Handle navigation from calendar page
+  useEffect(() => {
+    const state = location.state as { editDate?: string; addDate?: string } | null;
+    if (state) {
+      if (state.editDate) {
+        // Load and edit sleep log for this date
+        const loadAndEditSleep = async () => {
+          try {
+            const sleepLog = await api.getSleepLogByDate(state.editDate!);
+            handleEdit(sleepLog);
+          } catch (error) {
+            console.error('Failed to load sleep log:', error);
+            toast.error('Sleep log not found for this date');
+          }
+        };
+        loadAndEditSleep();
+      } else if (state.addDate) {
+        // Open modal with pre-filled date
+        reset({
+          date: state.addDate,
+          hoursSlept: 0,
+        });
+        setEditingLog(null);
+        setIsModalOpen(true);
+      }
+      // Clear the navigation state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   useEffect(() => {
     loadSleepLogs();
     loadStats();
   }, [dateRange, selectedPatient]); // Reload when selected patient changes
+
+  // Reload data when navigating back to sleep page
+  useEffect(() => {
+    if (location.pathname === '/sleep') {
+      loadSleepLogs();
+      loadStats();
+    }
+  }, [location.pathname]);
 
   const loadSleepLogs = async () => {
     try {
