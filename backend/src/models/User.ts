@@ -16,6 +16,12 @@ interface UserPreferences {
   sleepGoalHours?: number;
   timeFormat?: '12h' | '24h';
   exportFormat?: 'ics' | 'json' | 'csv';
+  importFormat?: string;  // User-selected default import format
+  availableExportFormats?: string[];  // User-customizable export formats
+  availableImportFormats?: string[];  // User-customizable import formats
+  customSettings?: {
+    [key: string]: any;  // For extensible custom settings
+  };
 }
 
 interface UserAttributes {
@@ -141,6 +147,10 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
             },
             timeFormat: '12h',     // 12-hour or 24-hour clock
             exportFormat: 'ics',   // Default export format
+            importFormat: 'ics',   // Default import format
+            availableExportFormats: ['ics', 'json', 'csv', 'xlsx', 'pdf'],  // Available export formats
+            availableImportFormats: ['ics', 'json', 'csv'],  // Available import formats
+            customSettings: {},    // Custom user settings
           },
           comment: 'User preferences including per-category reminder defaults (SET-002), time format (I18N-002), and export format (SET-005)',
         },

@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
-  Download
+  Download, X, Edit2, Trash2, Plus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -117,6 +117,17 @@ export function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(user?.preferences?.timeFormat || '12h');
   const [exportFormat, setExportFormat] = useState<'ics' | 'json' | 'csv'>(user?.preferences?.exportFormat || 'ics');
+  const [importFormat, setImportFormat] = useState<string>(user?.preferences?.importFormat || 'ics');
+  const [availableExportFormats, setAvailableExportFormats] = useState<string[]>(
+    user?.preferences?.availableExportFormats || ['ics', 'json', 'csv', 'xlsx', 'pdf']
+  );
+  const [availableImportFormats, setAvailableImportFormats] = useState<string[]>(
+    user?.preferences?.availableImportFormats || ['ics', 'json', 'csv']
+  );
+  const [showExportFormatsModal, setShowExportFormatsModal] = useState(false);
+  const [showImportFormatsModal, setShowImportFormatsModal] = useState(false);
+  const [showAddSettingModal, setShowAddSettingModal] = useState(false);
+  const [newFormatName, setNewFormatName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Document upload refs
@@ -286,6 +297,23 @@ export function ProfilePage() {
     }
   };
 
+  const handleImportFormatChange = async (format: string) => {
+    try {
+      setImportFormat(format);
+      const updatedPreferences = {
+        ...user?.preferences,
+        importFormat: format
+      };
+      const updatedUser = await api.updateProfile({ preferences: updatedPreferences });
+      updateUser(updatedUser);
+      toast.success('Import format updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating import format:', error);
+      toast.error('Failed to update import format');
+      setImportFormat(user?.preferences?.importFormat || 'ics'); // Revert on error
+    }
+  };
+
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -324,6 +352,20 @@ export function ProfilePage() {
     }
   };
 
+  const handlePhotoDelete = async () => {
+    try {
+      setIsUploadingPhoto(true);
+      const updatedUser = await api.updateProfile({ profilePhoto: null });
+      updateUser(updatedUser);
+      toast.success('Profile photo removed successfully!');
+    } catch (error: any) {
+      console.error('Error deleting photo:', error);
+      toast.error(error.response?.data?.error || 'Failed to remove photo');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
   const handleDocumentUpload = async (type: 'passport' | 'insurance' | 'allergyCard', file: File) => {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       toast.error('Please select an image or PDF file');
@@ -346,6 +388,88 @@ export function ProfilePage() {
     } catch (error) {
       console.error('Error uploading document:', error);
       toast.error('Failed to upload document');
+    }
+  };
+
+  const handleAddExportFormat = async () => {
+    if (!newFormatName.trim()) {
+      toast.error('Please enter a format name');
+      return;
+    }
+    if (availableExportFormats.includes(newFormatName.toLowerCase())) {
+      toast.error('Format already exists');
+      return;
+    }
+    const updated = [...availableExportFormats, newFormatName.toLowerCase()];
+    setAvailableExportFormats(updated);
+    try {
+      const updatedUser = await api.updateProfile({
+        preferences: { ...user?.preferences, availableExportFormats: updated }
+      });
+      updateUser(updatedUser);
+      toast.success(`Export format '${newFormatName}' added successfully!`);
+      setNewFormatName('');
+    } catch (error: any) {
+      console.error('Error adding export format:', error);
+      toast.error('Failed to add export format');
+      setAvailableExportFormats(availableExportFormats);
+    }
+  };
+
+  const handleRemoveExportFormat = async (format: string) => {
+    const updated = availableExportFormats.filter(f => f !== format);
+    setAvailableExportFormats(updated);
+    try {
+      const updatedUser = await api.updateProfile({
+        preferences: { ...user?.preferences, availableExportFormats: updated }
+      });
+      updateUser(updatedUser);
+      toast.success(`Export format '${format}' removed successfully!`);
+    } catch (error: any) {
+      console.error('Error removing export format:', error);
+      toast.error('Failed to remove export format');
+      setAvailableExportFormats(availableExportFormats);
+    }
+  };
+
+  const handleAddImportFormat = async () => {
+    if (!newFormatName.trim()) {
+      toast.error('Please enter a format name');
+      return;
+    }
+    if (availableImportFormats.includes(newFormatName.toLowerCase())) {
+      toast.error('Format already exists');
+      return;
+    }
+    const updated = [...availableImportFormats, newFormatName.toLowerCase()];
+    setAvailableImportFormats(updated);
+    try {
+      const updatedUser = await api.updateProfile({
+        preferences: { ...user?.preferences, availableImportFormats: updated }
+      });
+      updateUser(updatedUser);
+      toast.success(`Import format '${newFormatName}' added successfully!`);
+      setNewFormatName('');
+    } catch (error: any) {
+      console.error('Error adding import format:', error);
+      toast.error('Failed to add import format');
+      setAvailableImportFormats(availableImportFormats);
+    }
+  };
+
+  const handleRemoveImportFormat = async (format: string) => {
+    const updated = availableImportFormats.filter(f => f !== format);
+    setAvailableImportFormats(updated);
+    try {
+      const updatedUser = await api.updateProfile({
+        preferences: { ...user?.preferences, availableImportFormats: updated }
+      });
+      updateUser(updatedUser);
+      toast.success(`Import format '${format}' removed successfully!`);
+    } catch (error: any) {
+      console.error('Error removing import format:', error);
+      toast.error('Failed to remove import format');
+      setAvailableImportFormats(availableImportFormats);
     }
   };
 
@@ -386,11 +510,34 @@ export function ProfilePage() {
                     <User className="h-16 w-16 text-white" />
                   )}
                 </div>
+                {user?.profilePhoto && (
+                  <button
+                    onClick={handlePhotoDelete}
+                    disabled={isUploadingPhoto}
+                    className="absolute w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
+                    style={{
+                      boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+                      top: '0',
+                      left: '-16px'
+                    }}
+                    title="Delete photo"
+                  >
+                    {isUploadingPhoto ? (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4 text-white" />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={handlePhotoClick}
                   disabled={isUploadingPhoto}
-                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center transition-colors"
-                  style={{ boxShadow: '0 2px 8px rgba(236, 72, 153, 0.4)' }}
+                  className="absolute w-10 h-10 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center transition-colors"
+                  style={{
+                    boxShadow: '0 2px 8px rgba(236, 72, 153, 0.4)',
+                    bottom: '0',
+                    right: '-16px'
+                  }}
                 >
                   {isUploadingPhoto ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -458,7 +605,7 @@ export function ProfilePage() {
                   {section.id === 'settings' && (
                     <>
                       <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <Clock className="h-5 w-5" style={{ color: '#6366f1' }} />
                             <div>
@@ -472,26 +619,42 @@ export function ProfilePage() {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleTimeFormatChange('12h')}
-                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                timeFormat === '12h'
-                                  ? 'bg-indigo-500 text-white shadow-lg'
-                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
-                              }`}
+                              onClick={() => toast.success('Edit time format settings')}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Edit"
                             >
-                              12h
+                              <Edit2 className="h-4 w-4 text-blue-400" />
                             </button>
                             <button
-                              onClick={() => handleTimeFormatChange('24h')}
-                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                timeFormat === '24h'
-                                  ? 'bg-indigo-500 text-white shadow-lg'
-                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
-                              }`}
+                              onClick={() => toast.success('Delete time format setting')}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Delete"
                             >
-                              24h
+                              <Trash2 className="h-4 w-4 text-red-400" />
                             </button>
                           </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleTimeFormatChange('12h')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                              timeFormat === '12h'
+                                ? 'bg-indigo-500 text-white shadow-lg'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                          >
+                            12h
+                          </button>
+                          <button
+                            onClick={() => handleTimeFormatChange('24h')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                              timeFormat === '24h'
+                                ? 'bg-indigo-500 text-white shadow-lg'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                          >
+                            24h
+                          </button>
                         </div>
                         <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
                           <strong>Preview:</strong> {timeFormat === '12h' ? '2:30 PM' : '14:30'}
@@ -499,7 +662,7 @@ export function ProfilePage() {
                       </div>
 
                       <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <Download className="h-5 w-5" style={{ color: '#6366f1' }} />
                             <div>
@@ -513,42 +676,108 @@ export function ProfilePage() {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleExportFormatChange('ics')}
-                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                exportFormat === 'ics'
-                                  ? 'bg-indigo-500 text-white shadow-lg'
-                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
-                              }`}
+                              onClick={() => setShowExportFormatsModal(true)}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Edit Export Formats"
                             >
-                              ICS
+                              <Edit2 className="h-4 w-4 text-blue-400" />
                             </button>
                             <button
-                              onClick={() => handleExportFormatChange('json')}
-                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                exportFormat === 'json'
-                                  ? 'bg-indigo-500 text-white shadow-lg'
-                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
-                              }`}
+                              onClick={() => setShowExportFormatsModal(true)}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Manage Export Formats"
                             >
-                              JSON
-                            </button>
-                            <button
-                              onClick={() => handleExportFormatChange('csv')}
-                              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                exportFormat === 'csv'
-                                  ? 'bg-indigo-500 text-white shadow-lg'
-                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
-                              }`}
-                            >
-                              CSV
+                              <Trash2 className="h-4 w-4 text-red-400" />
                             </button>
                           </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleExportFormatChange('ics')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                              exportFormat === 'ics'
+                                ? 'bg-indigo-500 text-white shadow-lg'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                          >
+                            ICS
+                          </button>
+                          <button
+                            onClick={() => handleExportFormatChange('json')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                              exportFormat === 'json'
+                                ? 'bg-indigo-500 text-white shadow-lg'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                          >
+                            JSON
+                          </button>
+                          <button
+                            onClick={() => handleExportFormatChange('csv')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                              exportFormat === 'csv'
+                                ? 'bg-indigo-500 text-white shadow-lg'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                          >
+                            CSV
+                          </button>
                         </div>
                         <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
                           <strong>Format info:</strong>{' '}
                           {exportFormat === 'ics' && 'iCalendar format - Compatible with Google Calendar, Outlook, Apple Calendar'}
                           {exportFormat === 'json' && 'JSON format - Best for data analysis and custom integrations'}
                           {exportFormat === 'csv' && 'CSV format - Compatible with Excel and spreadsheet applications'}
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Download className="h-5 w-5" style={{ color: '#6366f1' }} />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                Default Import Format
+                              </h4>
+                              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                                Choose the default format when importing calendar data
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowAddSettingModal(true)}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Edit Import Formats"
+                            >
+                              <Edit2 className="h-4 w-4 text-blue-400" />
+                            </button>
+                            <button
+                              onClick={() => setShowAddSettingModal(true)}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                              title="Manage Import Formats"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {availableImportFormats.map((format) => (
+                            <button
+                              key={format}
+                              onClick={() => handleImportFormatChange(format)}
+                              className={`px-4 py-2 rounded-lg font-semibold uppercase transition-all ${
+                                importFormat === format
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                              }`}
+                            >
+                              {format}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-3 p-3 rounded bg-white/5 text-sm" style={{ color: 'var(--muted)' }}>
+                          <strong>Current format:</strong> {importFormat.toUpperCase()} - Click "Manage Import Formats" above to add or remove formats
                         </div>
                       </div>
                     </>
@@ -1322,6 +1551,71 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Export Formats Modal */}
+      {showExportFormatsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowExportFormatsModal(false)}>
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--ink-bright)' }}>Manage Export Formats</h3>
+            <div className="space-y-2 mb-4">
+              {availableExportFormats.map((format) => (
+                <div key={format} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                  <span className="font-semibold uppercase" style={{ color: 'var(--ink)' }}>{format}</span>
+                  <button
+                    onClick={() => handleRemoveExportFormat(format)}
+                    className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                  >
+                    <X className="h-4 w-4 text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-4">
+              <Input
+                value={newFormatName}
+                onChange={(e) => setNewFormatName(e.target.value)}
+                placeholder="Enter new format (e.g., xlsx)"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddExportFormat()}
+              />
+              <Button onClick={handleAddExportFormat}>Add</Button>
+            </div>
+            <Button onClick={() => setShowExportFormatsModal(false)} variant="secondary" className="w-full">Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Setting Modal - Import Formats */}
+      {showAddSettingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddSettingModal(false)}>
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--ink-bright)' }}>Import Formats</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>Manage file formats that can be imported into the application</p>
+            <div className="space-y-2 mb-4">
+              {availableImportFormats.map((format) => (
+                <div key={format} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                  <span className="font-semibold uppercase" style={{ color: 'var(--ink)' }}>{format}</span>
+                  <button
+                    onClick={() => handleRemoveImportFormat(format)}
+                    className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                  >
+                    <X className="h-4 w-4 text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-4">
+              <Input
+                value={newFormatName}
+                onChange={(e) => setNewFormatName(e.target.value)}
+                placeholder="Enter new format (e.g., xml)"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddImportFormat()}
+              />
+              <Button onClick={handleAddImportFormat}>Add</Button>
+            </div>
+            <Button onClick={() => setShowAddSettingModal(false)} variant="secondary" className="w-full">Close</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
