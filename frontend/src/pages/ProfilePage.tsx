@@ -474,28 +474,56 @@ export function ProfilePage() {
       // Get patient ID from the data
       const patientId = (patientData as any).id;
 
+      let response;
+      let updated;
+
       if (!patientId) {
-        // No patient record exists yet - need to create one
-        toast.error('Please contact your therapist to set up your patient profile');
-        return;
+        // No patient record exists yet - create one
+        console.log('Creating new patient record for user:', user?.id);
+
+        // Prepare data for new patient creation
+        const newPatientData = {
+          ...patientData,
+          userId: user?.id, // Link to current user
+          name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || user?.name || 'Unknown',
+          email: patientData.email || user?.email,
+          therapistId: user?.role === 'therapist' ? user?.id : null // If user is therapist, they're their own therapist
+        };
+
+        response = await fetch(`http://localhost:4000/api/patients`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(newPatientData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create patient profile');
+        }
+
+        updated = await response.json();
+        setPatientData(updated as any);
+      } else {
+        // Update existing patient profile
+        response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(patientData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update profile');
+        }
+
+        updated = await response.json();
+        setPatientData(updated as any);
       }
-
-      // Update patient profile using fetch
-      const response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(patientData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      const updated = await response.json();
-      setPatientData(updated as any);
 
       // Auto-create medication cards for newly added cardiac medications
       const currentMeds = patientData.medicationsAffectingHR || [];
