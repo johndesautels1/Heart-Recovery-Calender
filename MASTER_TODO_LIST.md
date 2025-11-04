@@ -232,6 +232,57 @@
 - **Files:** `ExercisesPage.tsx` (+129 lines, -5 lines)
 - **Commit:** `5819834` - Implement physical limitations cross-reference for exercise modals
 
+### ✅ Food Group Charts Refactor - Comprehensive Analytics
+- **What:** Complete redesign of Food Group visualizations with enhanced analytics and reference lines
+- **Removed Old Design:**
+  - Old donut chart with inner/outer circles showing recommended vs actual
+  - Complex 3D gradients and shadow effects
+- **Added Comprehensive Metrics Table:**
+  - Shows 5 food groups: Vegetables, Fruits, Grains, Protein, Dairy
+  - Total servings this month
+  - Your daily average (servings/day)
+  - Heart-healthy goal (recommended daily servings)
+  - Meal frequency (% of meals containing each group)
+  - Color-coded adherence badges (green ≥80%, yellow ≥50%, blue <50%)
+  - Enhanced keyword matching (100+ keywords) for accurate food categorization
+- **Added Daily Food Group Tracking Line Chart:**
+  - 5 color-coded solid lines showing actual daily intake throughout current month
+  - Y-axis scale: 0-5 servings (fixed from auto-scaling 0-1)
+  - Full month timeline with all days displayed
+  - Reference lines (dashed) showing recommended daily goals:
+    * Green dashed line at 4 servings/day (Vegetables Goal)
+    * Red dashed line at 3 servings/day (Fruits Goal)
+    * Purple dashed line at 3 servings/day (Grains Goal)
+    * Orange dashed line at 2 servings/day (Protein Goal)
+    * Blue dashed line at 2 servings/day (Dairy Goal)
+  - Small labels on each reference line for clarity
+  - Explanatory note: "Solid lines = Your actual intake | Dashed lines = Recommended daily goals"
+- **Enhanced Contrast & Readability:**
+  - Increased opacity on all text labels (60% → 80%, 70% → 90%)
+  - Reference line labels now fully opaque (100%) with bold weight (700)
+  - Chart axis labels more visible (60% → 80% opacity)
+- **Technical Improvements:**
+  - Refactored `getFoodGroupData()` with comprehensive metrics calculation
+  - Added `getMacroNutrientData()` for macro nutrient aggregation
+  - Current month view for all visualizations (startOfMonth to endOfMonth)
+  - Adherence percentage calculation based on daily averages vs recommendations
+- **Files:** `frontend/src/pages/MealsPage.tsx` (+391 lines, -275 lines)
+- **Impact:** Users can easily see if they're meeting heart-healthy food group goals with visual comparison between actual intake and recommendations
+- **Location:** Meals & Nutrition page → Visuals tab → Food Group Analysis section
+- **Commit:** `99c7c24` - feat: Refactor Food Group charts with comprehensive analytics and reference lines
+
+### ✅ Daily Calorie Tracking Scale Fix
+- **What:** Increased Y-axis scale to accommodate high-calorie consumers
+- **Problem:** Vertical axis stopped at 2000 calories, cutting off data for users consuming 3000-4000+ calories
+- **Solution:** Set Y-axis domain to [0, 4500] to support users with high calorie intake
+- **Changes:**
+  - Added `domain={[0, 4500]}` to YAxis component
+  - Added "Calories" label to Y-axis (rotated -90 degrees)
+- **Files:** `frontend/src/pages/MealsPage.tsx` (1 line changed)
+- **Impact:** Chart now displays full calorie range for all users without data truncation
+- **Location:** Meals & Nutrition page → Visuals tab → Daily Calorie Tracking
+- **Commit:** `a11ea29` - fix: Increase Daily Calorie Tracking Y-axis scale to 4500 calories
+
 ---
 
 ## 🔴 CRITICAL (Must Fix/Do First)
