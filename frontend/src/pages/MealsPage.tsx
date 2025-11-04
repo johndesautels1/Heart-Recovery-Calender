@@ -604,7 +604,7 @@ export function MealsPage() {
     });
   })();
 
-  // 4. Nutrient Target Radial Progress - Achievement percentages for key nutrients
+  // 4. Heart-Healthy Nutrient Goals - Detailed analysis with educational context
   const nutrientTargets = (() => {
     const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
     const startDate = subDays(new Date(), days);
@@ -615,6 +615,11 @@ export function MealsPage() {
     let fiberGoodDays = 0;
     let proteinGoodDays = 0;
 
+    let totalSodium = 0;
+    let totalCholesterol = 0;
+    let totalFiber = 0;
+    let totalProtein = 0;
+
     dateRange_dates.forEach(date => {
       const dateKey = format(date, 'yyyy-MM-dd');
       const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateKey);
@@ -624,6 +629,11 @@ export function MealsPage() {
       const dailyFiber = dayMeals.reduce((sum, m) => sum + (m.fiber || 0), 0);
       const dailyProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
 
+      totalSodium += dailySodium;
+      totalCholesterol += dailyCholesterol;
+      totalFiber += dailyFiber;
+      totalProtein += dailyProtein;
+
       if (dailySodium <= 2300) sodiumGoodDays++;
       if (dailyCholesterol <= 300) cholesterolGoodDays++;
       if (dailyFiber >= 25) fiberGoodDays++;
@@ -632,10 +642,46 @@ export function MealsPage() {
 
     const totalDays = dateRange_dates.length;
     return {
-      sodium: (sodiumGoodDays / totalDays) * 100,
-      cholesterol: (cholesterolGoodDays / totalDays) * 100,
-      fiber: (fiberGoodDays / totalDays) * 100,
-      protein: (proteinGoodDays / totalDays) * 100,
+      sodium: {
+        percentDaysMeetingTarget: (sodiumGoodDays / totalDays) * 100,
+        avgDaily: totalSodium / totalDays,
+        target: 2300,
+        daysMetTarget: sodiumGoodDays,
+        totalDays: totalDays,
+        targetType: 'max',
+        unit: 'mg',
+        why: 'High sodium increases blood pressure and heart disease risk',
+      },
+      cholesterol: {
+        percentDaysMeetingTarget: (cholesterolGoodDays / totalDays) * 100,
+        avgDaily: totalCholesterol / totalDays,
+        target: 300,
+        daysMetTarget: cholesterolGoodDays,
+        totalDays: totalDays,
+        targetType: 'max',
+        unit: 'mg',
+        why: 'Excess cholesterol can clog arteries and lead to heart attacks',
+      },
+      fiber: {
+        percentDaysMeetingTarget: (fiberGoodDays / totalDays) * 100,
+        avgDaily: totalFiber / totalDays,
+        target: 25,
+        daysMetTarget: fiberGoodDays,
+        totalDays: totalDays,
+        targetType: 'min',
+        unit: 'g',
+        why: 'Fiber lowers cholesterol and reduces heart disease risk',
+      },
+      protein: {
+        percentDaysMeetingTarget: (proteinGoodDays / totalDays) * 100,
+        avgDaily: totalProtein / totalDays,
+        target: 50,
+        daysMetTarget: proteinGoodDays,
+        totalDays: totalDays,
+        targetType: 'min',
+        unit: 'g',
+        why: 'Adequate protein supports heart muscle health and recovery',
+      },
     };
   })();
 
@@ -1984,55 +2030,210 @@ export function MealsPage() {
                   </div>
                 </GlassCard>
 
-                {/* Nutrient Target Radial Progress */}
+                {/* Heart-Healthy Nutrient Goals */}
                 <GlassCard>
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Target className="h-5 w-5 text-green-400" />
-                    Nutrient Goals
-                  </h3>
-                  <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Target className="h-5 w-5 text-green-400" />
+                        Heart-Healthy Nutrient Goals
+                      </h3>
+                      <p className="text-xs mt-1" style={{ color: 'var(--ink)', opacity: 0.8 }}>
+                        Track days meeting heart-healthy targets over {dateRange === '7d' ? '7 days' : dateRange === '30d' ? '30 days' : '90 days'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
                     {/* Sodium */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white font-semibold">Sodium ≤2300mg</span>
-                        <span className="text-white">{Math.round(nutrientTargets.sodium)}%</span>
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span className="text-white font-bold text-sm">Sodium</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                              backgroundColor: nutrientTargets.sodium.percentDaysMeetingTarget >= 70 ? 'rgba(34, 197, 94, 0.2)' : nutrientTargets.sodium.percentDaysMeetingTarget >= 40 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: nutrientTargets.sodium.percentDaysMeetingTarget >= 70 ? '#22c55e' : nutrientTargets.sodium.percentDaysMeetingTarget >= 40 ? '#eab308' : '#ef4444',
+                              fontWeight: 700
+                            }}>
+                              {nutrientTargets.sodium.percentDaysMeetingTarget >= 70 ? 'Good' : nutrientTargets.sodium.percentDaysMeetingTarget >= 40 ? 'Fair' : 'Needs Work'}
+                            </span>
+                          </div>
+                          <p className="text-xs mb-2" style={{ color: 'var(--ink)', opacity: 0.9, lineHeight: '1.4' }}>
+                            {nutrientTargets.sodium.why}
+                          </p>
+                        </div>
                       </div>
-                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-red-400 to-red-600"
-                             style={{ width: `${nutrientTargets.sodium}%`, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.5)' }}></div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Your Avg Daily</div>
+                          <div className="text-lg font-bold text-white">{Math.round(nutrientTargets.sodium.avgDaily)}{nutrientTargets.sodium.unit}</div>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Target (max)</div>
+                          <div className="text-lg font-bold text-white">≤{nutrientTargets.sodium.target}{nutrientTargets.sodium.unit}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-white font-bold">Days Meeting Target</span>
+                          <span className="text-white font-bold">{nutrientTargets.sodium.daysMetTarget} of {nutrientTargets.sodium.totalDays} days ({Math.round(nutrientTargets.sodium.percentDaysMeetingTarget)}%)</span>
+                        </div>
+                        <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                          <div className="absolute inset-0 h-full rounded-full transition-all duration-500"
+                               style={{
+                                 width: `${nutrientTargets.sodium.percentDaysMeetingTarget}%`,
+                                 background: nutrientTargets.sodium.percentDaysMeetingTarget >= 70 ? 'linear-gradient(to right, #22c55e, #16a34a)' : nutrientTargets.sodium.percentDaysMeetingTarget >= 40 ? 'linear-gradient(to right, #eab308, #ca8a04)' : 'linear-gradient(to right, #ef4444, #dc2626)',
+                                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                               }}></div>
+                        </div>
                       </div>
                     </div>
+
                     {/* Cholesterol */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white font-semibold">Cholesterol ≤300mg</span>
-                        <span className="text-white">{Math.round(nutrientTargets.cholesterol)}%</span>
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(251, 146, 60, 0.08)', border: '1px solid rgba(251, 146, 60, 0.2)' }}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                            <span className="text-white font-bold text-sm">Cholesterol</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                              backgroundColor: nutrientTargets.cholesterol.percentDaysMeetingTarget >= 70 ? 'rgba(34, 197, 94, 0.2)' : nutrientTargets.cholesterol.percentDaysMeetingTarget >= 40 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: nutrientTargets.cholesterol.percentDaysMeetingTarget >= 70 ? '#22c55e' : nutrientTargets.cholesterol.percentDaysMeetingTarget >= 40 ? '#eab308' : '#ef4444',
+                              fontWeight: 700
+                            }}>
+                              {nutrientTargets.cholesterol.percentDaysMeetingTarget >= 70 ? 'Good' : nutrientTargets.cholesterol.percentDaysMeetingTarget >= 40 ? 'Fair' : 'Needs Work'}
+                            </span>
+                          </div>
+                          <p className="text-xs mb-2" style={{ color: 'var(--ink)', opacity: 0.9, lineHeight: '1.4' }}>
+                            {nutrientTargets.cholesterol.why}
+                          </p>
+                        </div>
                       </div>
-                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600"
-                             style={{ width: `${nutrientTargets.cholesterol}%`, boxShadow: '0 2px 8px rgba(251, 146, 60, 0.5)' }}></div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Your Avg Daily</div>
+                          <div className="text-lg font-bold text-white">{Math.round(nutrientTargets.cholesterol.avgDaily)}{nutrientTargets.cholesterol.unit}</div>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Target (max)</div>
+                          <div className="text-lg font-bold text-white">≤{nutrientTargets.cholesterol.target}{nutrientTargets.cholesterol.unit}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-white font-bold">Days Meeting Target</span>
+                          <span className="text-white font-bold">{nutrientTargets.cholesterol.daysMetTarget} of {nutrientTargets.cholesterol.totalDays} days ({Math.round(nutrientTargets.cholesterol.percentDaysMeetingTarget)}%)</span>
+                        </div>
+                        <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                          <div className="absolute inset-0 h-full rounded-full transition-all duration-500"
+                               style={{
+                                 width: `${nutrientTargets.cholesterol.percentDaysMeetingTarget}%`,
+                                 background: nutrientTargets.cholesterol.percentDaysMeetingTarget >= 70 ? 'linear-gradient(to right, #22c55e, #16a34a)' : nutrientTargets.cholesterol.percentDaysMeetingTarget >= 40 ? 'linear-gradient(to right, #eab308, #ca8a04)' : 'linear-gradient(to right, #ef4444, #dc2626)',
+                                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                               }}></div>
+                        </div>
                       </div>
                     </div>
+
                     {/* Fiber */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white font-semibold">Fiber ≥25g</span>
-                        <span className="text-white">{Math.round(nutrientTargets.fiber)}%</span>
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span className="text-white font-bold text-sm">Fiber</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                              backgroundColor: nutrientTargets.fiber.percentDaysMeetingTarget >= 70 ? 'rgba(34, 197, 94, 0.2)' : nutrientTargets.fiber.percentDaysMeetingTarget >= 40 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: nutrientTargets.fiber.percentDaysMeetingTarget >= 70 ? '#22c55e' : nutrientTargets.fiber.percentDaysMeetingTarget >= 40 ? '#eab308' : '#ef4444',
+                              fontWeight: 700
+                            }}>
+                              {nutrientTargets.fiber.percentDaysMeetingTarget >= 70 ? 'Good' : nutrientTargets.fiber.percentDaysMeetingTarget >= 40 ? 'Fair' : 'Needs Work'}
+                            </span>
+                          </div>
+                          <p className="text-xs mb-2" style={{ color: 'var(--ink)', opacity: 0.9, lineHeight: '1.4' }}>
+                            {nutrientTargets.fiber.why}
+                          </p>
+                        </div>
                       </div>
-                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-green-400 to-green-600"
-                             style={{ width: `${nutrientTargets.fiber}%`, boxShadow: '0 2px 8px rgba(34, 197, 94, 0.5)' }}></div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Your Avg Daily</div>
+                          <div className="text-lg font-bold text-white">{Math.round(nutrientTargets.fiber.avgDaily)}{nutrientTargets.fiber.unit}</div>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Target (min)</div>
+                          <div className="text-lg font-bold text-white">≥{nutrientTargets.fiber.target}{nutrientTargets.fiber.unit}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-white font-bold">Days Meeting Target</span>
+                          <span className="text-white font-bold">{nutrientTargets.fiber.daysMetTarget} of {nutrientTargets.fiber.totalDays} days ({Math.round(nutrientTargets.fiber.percentDaysMeetingTarget)}%)</span>
+                        </div>
+                        <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                          <div className="absolute inset-0 h-full rounded-full transition-all duration-500"
+                               style={{
+                                 width: `${nutrientTargets.fiber.percentDaysMeetingTarget}%`,
+                                 background: nutrientTargets.fiber.percentDaysMeetingTarget >= 70 ? 'linear-gradient(to right, #22c55e, #16a34a)' : nutrientTargets.fiber.percentDaysMeetingTarget >= 40 ? 'linear-gradient(to right, #eab308, #ca8a04)' : 'linear-gradient(to right, #ef4444, #dc2626)',
+                                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                               }}></div>
+                        </div>
                       </div>
                     </div>
+
                     {/* Protein */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white font-semibold">Protein ≥50g</span>
-                        <span className="text-white">{Math.round(nutrientTargets.protein)}%</span>
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span className="text-white font-bold text-sm">Protein</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                              backgroundColor: nutrientTargets.protein.percentDaysMeetingTarget >= 70 ? 'rgba(34, 197, 94, 0.2)' : nutrientTargets.protein.percentDaysMeetingTarget >= 40 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: nutrientTargets.protein.percentDaysMeetingTarget >= 70 ? '#22c55e' : nutrientTargets.protein.percentDaysMeetingTarget >= 40 ? '#eab308' : '#ef4444',
+                              fontWeight: 700
+                            }}>
+                              {nutrientTargets.protein.percentDaysMeetingTarget >= 70 ? 'Good' : nutrientTargets.protein.percentDaysMeetingTarget >= 40 ? 'Fair' : 'Needs Work'}
+                            </span>
+                          </div>
+                          <p className="text-xs mb-2" style={{ color: 'var(--ink)', opacity: 0.9, lineHeight: '1.4' }}>
+                            {nutrientTargets.protein.why}
+                          </p>
+                        </div>
                       </div>
-                      <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
-                             style={{ width: `${nutrientTargets.protein}%`, boxShadow: '0 2px 8px rgba(59, 130, 246, 0.5)' }}></div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Your Avg Daily</div>
+                          <div className="text-lg font-bold text-white">{Math.round(nutrientTargets.protein.avgDaily)}{nutrientTargets.protein.unit}</div>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <div className="text-xs opacity-80" style={{ color: 'var(--ink)' }}>Target (min)</div>
+                          <div className="text-lg font-bold text-white">≥{nutrientTargets.protein.target}{nutrientTargets.protein.unit}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-white font-bold">Days Meeting Target</span>
+                          <span className="text-white font-bold">{nutrientTargets.protein.daysMetTarget} of {nutrientTargets.protein.totalDays} days ({Math.round(nutrientTargets.protein.percentDaysMeetingTarget)}%)</span>
+                        </div>
+                        <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                          <div className="absolute inset-0 h-full rounded-full transition-all duration-500"
+                               style={{
+                                 width: `${nutrientTargets.protein.percentDaysMeetingTarget}%`,
+                                 background: nutrientTargets.protein.percentDaysMeetingTarget >= 70 ? 'linear-gradient(to right, #22c55e, #16a34a)' : nutrientTargets.protein.percentDaysMeetingTarget >= 40 ? 'linear-gradient(to right, #eab308, #ca8a04)' : 'linear-gradient(to right, #ef4444, #dc2626)',
+                                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                               }}></div>
+                        </div>
                       </div>
                     </div>
                   </div>
