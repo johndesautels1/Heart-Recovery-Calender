@@ -1638,6 +1638,7 @@ export function ProfilePage() {
                             'Congenital Heart Disease',
                             'Pericarditis',
                             'Peripheral Artery Disease (PAD)',
+                            'Rheumatic Fever',
                             'Other (specify in notes)'
                           ].map((condition) => (
                             <label
@@ -1671,6 +1672,38 @@ export function ProfilePage() {
                               </span>
                             </label>
                           ))}
+                        </div>
+
+                        {/* Critical Notes Field for Section 1 */}
+                        <div className="mt-6">
+                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                            Clinical Notes & Additional Details
+                            <span className="ml-2 text-xs font-normal text-pink-600">(Critical information about your conditions)</span>
+                          </label>
+                          <textarea
+                            value={patientData?.cardiacNotes || ''}
+                            onChange={(e) => handleChange('cardiacNotes', e.target.value)}
+                            rows={4}
+                            className="w-full px-4 py-3 rounded-xl transition-all duration-200 resize-none"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05), rgba(219, 39, 119, 0.02))',
+                              border: '2px solid rgba(236, 72, 153, 0.3)',
+                              color: '#000000',
+                              fontWeight: '700',
+                              fontSize: '0.95rem',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                              backdropFilter: 'blur(8px)',
+                            }}
+                            placeholder="Enter important details about your cardiac conditions, symptoms, triggers, or any other critical information your care team should know..."
+                            onFocus={(e) => {
+                              e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
+                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(236, 72, 153, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
+                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                            }}
+                          />
                         </div>
                       </div>
 
