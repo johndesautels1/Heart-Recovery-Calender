@@ -176,6 +176,8 @@ export function ExercisesPage() {
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [scheduleDuration, setScheduleDuration] = useState(30);
   const [schedulePatientId, setSchedulePatientId] = useState('');
+  const [limitationWarning, setLimitationWarning] = useState<string | null>(null);
+  const [warningOverridden, setWarningOverridden] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
   const [isRestTimerOpen, setIsRestTimerOpen] = useState(false);
@@ -693,15 +695,92 @@ export function ExercisesPage() {
     setIsAddModalOpen(true);
   };
 
-  const handleScheduleExercise = (exercise: Exercise) => {
+  // Check for physical limitations conflicts
+  const checkPhysicalLimitations = async (exercise: Exercise, patientId: string) => {
+    try {
+      // Reset warning state
+      setLimitationWarning(null);
+      setWarningOverridden(false);
+
+      if (!patientId) return;
+
+      // Get the patient's profile to check activity restrictions
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:4000/api/patients?userId=${patientId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) return;
+
+      const patientsData = await response.json();
+      const patientProfile = patientsData.data?.[0];
+
+      if (!patientProfile?.activityRestrictions) return;
+
+      const restrictions = patientProfile.activityRestrictions.toLowerCase();
+      const exerciseName = exercise.name.toLowerCase();
+      const exerciseCategory = exercise.category.toLowerCase();
+      const exerciseDescription = (exercise.description || '').toLowerCase();
+
+      // Check if exercise conflicts with restrictions
+      const conflictKeywords = ['no', 'avoid', 'restrict', 'limit', 'prohibit', 'cannot', 'do not', 'contraindicated'];
+
+      // Check if the exercise name/category appears in restrictions with conflict keywords nearby
+      let hasConflict = false;
+
+      // Check exercise name in restrictions
+      if (restrictions.includes(exerciseName)) {
+        // Look for conflict keywords near the exercise name
+        const nameIndex = restrictions.indexOf(exerciseName);
+        const contextBefore = restrictions.substring(Math.max(0, nameIndex - 50), nameIndex);
+        const contextAfter = restrictions.substring(nameIndex, Math.min(restrictions.length, nameIndex + 50));
+
+        if (conflictKeywords.some(kw => contextBefore.includes(kw) || contextAfter.includes(kw))) {
+          hasConflict = true;
+        }
+      }
+
+      // Check exercise category
+      if (restrictions.includes(exerciseCategory)) {
+        const catIndex = restrictions.indexOf(exerciseCategory);
+        const contextBefore = restrictions.substring(Math.max(0, catIndex - 50), catIndex);
+        const contextAfter = restrictions.substring(catIndex, Math.min(restrictions.length, catIndex + 50));
+
+        if (conflictKeywords.some(kw => contextBefore.includes(kw) || contextAfter.includes(kw))) {
+          hasConflict = true;
+        }
+      }
+
+      // Check contra indications from exercise
+      if (exercise.contraindications) {
+        const contraLower = exercise.contraindications.toLowerCase();
+        if (restrictions.split(/\W+/).some(word => contraLower.includes(word) && word.length > 3)) {
+          hasConflict = true;
+        }
+      }
+
+      if (hasConflict) {
+        setLimitationWarning(
+          `This exercise may not comply with the patient's physical limitations: "${patientProfile.activityRestrictions}"`
+        );
+      }
+    } catch (error) {
+      console.error('Failed to check physical limitations:', error);
+    }
+  };
+
+  const handleScheduleExercise = async (exercise: Exercise) => {
     setSchedulingExercise(exercise);
 
     // For patients, automatically use their own user ID
     // For therapists, use the selected patient ID
+    let patientId = '';
     if (user?.role === 'patient') {
-      setSchedulePatientId(user.id.toString());
+      patientId = user.id.toString();
+      setSchedulePatientId(patientId);
     } else {
-      setSchedulePatientId(selectedPatientId || '');
+      patientId = selectedPatientId || '';
+      setSchedulePatientId(patientId);
     }
 
     // Set default date to tomorrow
@@ -709,6 +788,10 @@ export function ExercisesPage() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     setScheduleDate(tomorrow.toISOString().split('T')[0]);
     setScheduleDuration(exercise.defaultDuration || 30);
+
+    // Check for physical limitations conflicts
+    await checkPhysicalLimitations(exercise, patientId);
+
     setIsScheduleModalOpen(true);
   };
 
@@ -2928,11 +3011,41 @@ export function ExercisesPage() {
         onClose={() => {
           setIsScheduleModalOpen(false);
           setSchedulingExercise(null);
+          setLimitationWarning(null);
+          setWarningOverridden(false);
         }}
         title={`Schedule: ${schedulingExercise?.name || ''}`}
         size="md"
       >
         <div className="space-y-4">
+          {/* Physical Limitations Warning */}
+          {limitationWarning && (
+            <div className="p-4 rounded-lg border-2 border-red-500 bg-red-500 bg-opacity-10 space-y-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-red-500 mb-1">Physical Limitation Warning</h4>
+                  <p className="text-sm text-red-400">{limitationWarning}</p>
+                </div>
+              </div>
+              {!warningOverridden && (
+                <Button
+                  onClick={() => setWarningOverridden(true)}
+                  variant="danger"
+                  className="w-full"
+                >
+                  I Understand - Override Warning
+                </Button>
+              )}
+              {warningOverridden && (
+                <div className="flex items-center gap-2 text-yellow-500 text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="font-medium">Warning acknowledged. You may proceed.</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Patient Selection - Only show for therapists */}
           {user?.role !== 'patient' && (
             <div>
@@ -2942,7 +3055,13 @@ export function ExercisesPage() {
               <select
                 className="glass-input"
                 value={schedulePatientId}
-                onChange={(e) => setSchedulePatientId(e.target.value)}
+                onChange={async (e) => {
+                  setSchedulePatientId(e.target.value);
+                  // Re-check limitations when patient changes
+                  if (schedulingExercise && e.target.value) {
+                    await checkPhysicalLimitations(schedulingExercise, e.target.value);
+                  }
+                }}
               >
                 <option value="">Select Patient</option>
                 {patients.filter(p => p.isActive).map(patient => (
@@ -3018,11 +3137,16 @@ export function ExercisesPage() {
               onClick={() => {
                 setIsScheduleModalOpen(false);
                 setSchedulingExercise(null);
+                setLimitationWarning(null);
+                setWarningOverridden(false);
               }}
             >
               Cancel
             </Button>
-            <Button onClick={handleScheduleSubmit}>
+            <Button
+              onClick={handleScheduleSubmit}
+              disabled={limitationWarning !== null && !warningOverridden}
+            >
               Schedule Exercise
             </Button>
           </div>
