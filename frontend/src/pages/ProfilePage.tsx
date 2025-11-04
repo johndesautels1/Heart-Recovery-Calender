@@ -1572,10 +1572,27 @@ export function ProfilePage() {
 
                   {section.id === 'cardiac' && (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                          Ejection Fraction (%)
+                        </label>
+                        <Input
+                          type="number"
+                          value={patientData?.ejectionFraction !== undefined && patientData?.ejectionFraction !== null ? patientData.ejectionFraction : ''}
+                          onChange={(e) => handleChange('ejectionFraction', parseFloat(e.target.value))}
+                          icon={<Activity className="h-5 w-5" />}
+                          placeholder="Enter ejection fraction percentage"
+                        />
+                      </div>
+                      {/* Current Heart Condition */}
+                      <div className="mt-6">
+                        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--ink)' }}>
+                          Current Heart Condition
+                        </h3>
+
+                        <div className="mb-4">
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                            Diagnosis Date
+                            Date of Diagnosis
                           </label>
                           <Input
                             type="date"
@@ -1584,27 +1601,162 @@ export function ProfilePage() {
                             icon={<Calendar className="h-5 w-5" />}
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                            Ejection Fraction (%)
-                          </label>
-                          <Input
-                            type="number"
-                            value={patientData?.ejectionFraction !== undefined && patientData?.ejectionFraction !== null ? patientData.ejectionFraction : ''}
-                            onChange={(e) => handleChange('ejectionFraction', parseFloat(e.target.value))}
-                            icon={<Activity className="h-5 w-5" />}
-                          />
+
+                        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
+                          Heart Condition(s)
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {[
+                            'Coronary Artery Disease (CAD)',
+                            'Heart Failure',
+                            'Atrial Fibrillation (AFib)',
+                            'Hypertension (High Blood Pressure)',
+                            'Myocardial Infarction (Heart Attack)',
+                            'Angina',
+                            'Arrhythmia',
+                            'Cardiomyopathy',
+                            'Valvular Heart Disease',
+                            'Congenital Heart Disease',
+                            'Pericarditis',
+                            'Peripheral Artery Disease (PAD)',
+                            'Other (specify in notes)'
+                          ].map((condition) => (
+                            <label
+                              key={condition}
+                              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.05))',
+                                border: '2px solid rgba(236, 72, 153, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(236, 72, 153, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={patientData?.cardiacDiagnosis?.includes(condition) || false}
+                                onChange={(e) => handleCheckboxArrayChange('cardiacDiagnosis', condition, e.target.checked)}
+                                className="w-5 h-5 rounded border-2 border-pink-400 bg-white/10 checked:bg-pink-500 checked:border-pink-500 focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer"
+                              />
+                              <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                                {condition}
+                              </span>
+                            </label>
+                          ))}
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Heart Conditions (comma-separated)
+
+                      {/* Current Planned Treatment Protocol */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
+                          Current Planned Treatment Protocol
                         </label>
-                        <Input
-                          value={patientData?.heartConditions?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('heartConditions', e.target.value)}
-                          placeholder="CAD, CHF, AFib"
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {[
+                            'No treatment presently',
+                            'Lifestyle & Diet Modifications',
+                            'Nutraceuticals',
+                            'Managed Medications',
+                            'Non-Invasive Medical Procedures'
+                          ].map((protocol) => (
+                            <label
+                              key={protocol}
+                              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.05))',
+                                border: '2px solid rgba(236, 72, 153, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(236, 72, 153, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={patientData?.currentTreatmentProtocol?.includes(protocol) || false}
+                                onChange={(e) => handleCheckboxArrayChange('currentTreatmentProtocol', protocol, e.target.checked)}
+                                className="w-5 h-5 rounded border-2 border-pink-400 bg-white/10 checked:bg-pink-500 checked:border-pink-500 focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer"
+                              />
+                              <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                                {protocol}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Recommended Long-Term Treatment Options */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
+                          Recommended Long-Term Treatment Options
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {[
+                            'Coronary Artery Bypass Grafting (CABG)',
+                            'Percutaneous Coronary Intervention (PCI/Stenting)',
+                            'Heart Valve Repair/Replacement',
+                            'Implantable Cardioverter Defibrillator (ICD)',
+                            'Pacemaker Implantation',
+                            'Cardiac Rehabilitation Program',
+                            'Anticoagulation Therapy',
+                            'Beta Blocker Therapy',
+                            'ACE Inhibitor/ARB Therapy',
+                            'Statin Therapy',
+                            'Catheter Ablation',
+                            'Left Ventricular Assist Device (LVAD)',
+                            'Heart Transplant Evaluation',
+                            'Regular Cardiac Monitoring',
+                            'Weight Management Program'
+                          ].map((treatment) => (
+                            <label
+                              key={treatment}
+                              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.05))',
+                                border: '2px solid rgba(236, 72, 153, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(236, 72, 153, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={patientData?.recommendedTreatments?.includes(treatment) || false}
+                                onChange={(e) => handleCheckboxArrayChange('recommendedTreatments', treatment, e.target.checked)}
+                                className="w-5 h-5 rounded border-2 border-pink-400 bg-white/10 checked:bg-pink-500 checked:border-pink-500 focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer"
+                              />
+                              <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                                {treatment}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                       <div ref={medAutocompleteRef}>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
