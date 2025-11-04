@@ -154,7 +154,6 @@ export function ProfilePage() {
     { id: 'cardiac', title: 'Cardiac Profile', icon: <Heart className="h-5 w-5" />, color: '#ec4899' },
     { id: 'medical', title: 'Medical History', icon: <Stethoscope className="h-5 w-5" />, color: '#8b5cf6' },
     { id: 'surgical', title: 'Surgical History', icon: <Hospital className="h-5 w-5" />, color: '#f59e0b' },
-    { id: 'devices', title: 'Device Integration', icon: <Smartphone className="h-5 w-5" />, color: '#06b6d4' },
     { id: 'wallet', title: 'My Wallet', icon: <Wallet className="h-5 w-5" />, color: '#a855f7' },
   ];
 
@@ -2200,51 +2199,6 @@ export function ProfilePage() {
                           style={{ color: '#000000', fontWeight: '800' }}
                           placeholder="Post-discharge instructions..."
                         />
-                      </div>
-                    </>
-                  )}
-
-                  {section.id === 'devices' && (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                            Polar Device ID
-                          </label>
-                          <Input
-                            value={patientData?.polarDeviceId || ''}
-                            onChange={(e) => handleChange('polarDeviceId', e.target.value)}
-                            icon={<Smartphone className="h-5 w-5" />}
-                            placeholder="Enter Polar heart monitor ID"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                            Samsung Health Account
-                          </label>
-                          <Input
-                            value={patientData?.samsungHealthAccount || ''}
-                            onChange={(e) => handleChange('samsungHealthAccount', e.target.value)}
-                            icon={<Smartphone className="h-5 w-5" />}
-                            placeholder="Samsung account email"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Preferred Data Source
-                        </label>
-                        <select
-                          value={patientData?.preferredDataSource || ''}
-                          onChange={(e) => handleChange('preferredDataSource', e.target.value)}
-                          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all"
-                          style={{ color: '#000000', fontWeight: '800' }}
-                        >
-                          <option value="">Select...</option>
-                          <option value="polar">Polar Heart Monitor</option>
-                          <option value="samsung">Samsung Galaxy Watch</option>
-                          <option value="manual">Manual Entry</option>
-                        </select>
                       </div>
                     </>
                   )}

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { GlassCard, Button } from '../components/ui';
-import { Smartphone, Watch, Heart, Activity, RefreshCw, Trash2, Settings, CheckCircle, XCircle, AlertCircle, Clock, Plus, Edit, QrCode, AlertTriangle, FileText, X } from 'lucide-react';
+import { GlassCard, Button, Input } from '../components/ui';
+import { Smartphone, Watch, Heart, Activity, RefreshCw, Trash2, Settings, CheckCircle, XCircle, AlertCircle, Clock, Plus, Edit, QrCode, AlertTriangle, FileText, X, Save } from 'lucide-react';
 import { api } from '../services/api';
 import { DeviceConnection, DeviceSyncLog } from '../types';
 import { toast } from 'sonner';
 import { QRGenerator } from '../components/QRGenerator';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 
 export function DevicesPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'implants' | 'trackers'>('implants');
   const [devices, setDevices] = useState<DeviceConnection[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<DeviceConnection | null>(null);
@@ -16,6 +18,13 @@ export function DevicesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState<number | null>(null);
+
+  // Device Integration state
+  const [patientId, setPatientId] = useState<number | null>(null);
+  const [polarDeviceId, setPolarDeviceId] = useState('');
+  const [samsungHealthAccount, setSamsungHealthAccount] = useState('');
+  const [preferredDataSource, setPreferredDataSource] = useState('');
+  const [isSavingIntegration, setIsSavingIntegration] = useState(false);
 
   // Medical Implants state
   const [implants, setImplants] = useState<any[]>([]);
@@ -47,6 +56,74 @@ export function DevicesPage() {
       loadSyncHistory(selectedDevice.id);
     }
   }, [selectedDevice]);
+
+  useEffect(() => {
+    loadPatientData();
+  }, [user]);
+
+  const loadPatientData = async () => {
+    try {
+      if (!user?.id) return;
+
+      const queryParams = new URLSearchParams({ userId: user.id.toString() });
+      const response = await fetch(`http://localhost:4000/api/patients?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch patient data');
+      }
+
+      const patientsResponse = await response.json();
+
+      if (patientsResponse.data && patientsResponse.data.length > 0) {
+        const patientData = patientsResponse.data[0];
+        setPatientId(patientData.id);
+        setPolarDeviceId(patientData.polarDeviceId || '');
+        setSamsungHealthAccount(patientData.samsungHealthAccount || '');
+        setPreferredDataSource(patientData.preferredDataSource || '');
+      }
+    } catch (error) {
+      console.error('Error loading patient data:', error);
+    }
+  };
+
+  const saveDeviceIntegration = async () => {
+    try {
+      if (!patientId) {
+        toast.error('No patient profile found. Please complete your profile first.');
+        return;
+      }
+
+      setIsSavingIntegration(true);
+
+      const response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          polarDeviceId,
+          samsungHealthAccount,
+          preferredDataSource
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save device integration settings');
+      }
+
+      toast.success('Device integration settings saved successfully!');
+    } catch (error: any) {
+      console.error('Error saving device integration:', error);
+      toast.error('Failed to save device integration settings');
+    } finally {
+      setIsSavingIntegration(false);
+    }
+  };
 
   const loadDevices = async () => {
     try {
@@ -777,6 +854,75 @@ export function DevicesPage() {
               </div>
             </GlassCard>
           )}
+
+          {/* Device Integration Section */}
+          <div className="mt-8">
+            <GlassCard>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
+                      Device Integration Settings
+                    </h2>
+                    <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                      Configure your device IDs and preferred data source for health tracking
+                    </p>
+                  </div>
+                  <Button
+                    onClick={saveDeviceIntegration}
+                    disabled={isSavingIntegration}
+                    className="bg-cyan-500 hover:bg-cyan-600"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSavingIntegration ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                        Polar Device ID
+                      </label>
+                      <Input
+                        value={polarDeviceId}
+                        onChange={(e) => setPolarDeviceId(e.target.value)}
+                        icon={<Smartphone className="h-5 w-5" />}
+                        placeholder="Enter Polar heart monitor ID"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                        Samsung Health Account
+                      </label>
+                      <Input
+                        value={samsungHealthAccount}
+                        onChange={(e) => setSamsungHealthAccount(e.target.value)}
+                        icon={<Smartphone className="h-5 w-5" />}
+                        placeholder="Samsung account email"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                      Preferred Data Source
+                    </label>
+                    <select
+                      value={preferredDataSource}
+                      onChange={(e) => setPreferredDataSource(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none transition-all"
+                      style={{ color: '#000000', fontWeight: '800' }}
+                    >
+                      <option value="">Select...</option>
+                      <option value="polar">Polar Heart Monitor</option>
+                      <option value="samsung">Samsung Galaxy Watch</option>
+                      <option value="manual">Manual Entry</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
         </>
       )}
 
