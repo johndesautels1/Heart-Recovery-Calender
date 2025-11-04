@@ -2,7 +2,7 @@
 **⚠️ THIS IS THE AUTHORITATIVE TODO LIST - USE THIS ONE ONLY**
 
 **Status:** In Progress
-**Last Updated:** November 3, 2025
+**Last Updated:** November 4, 2025
 **Location:** `C:\Users\broke\Heart-Recovery-Calender\MASTER_TODO_LIST.md`
 
 **Source Files (archived for reference only):**
@@ -20,6 +20,62 @@
 **Completion Rate:** 51.1% (was 38.5% - VERIFIED Nov 2, 2025)
 **TypeScript Compilation:** ✅ Frontend: 0 errors | ✅ Backend: 0 errors | ✅ Security: 0 vulnerabilities
 **Next Focus:** Notification delivery (nodemailer+Twilio ready), enable device sync, PDF generation
+
+---
+
+## 🎉 COMPLETED TODAY (November 4, 2025)
+
+### ✅ Cardiac Medications Autocomplete + Auto-Create Cards
+- **What:** Replaced comma-separated medication input with smart autocomplete
+- **Features:**
+  - Multi-select autocomplete using comprehensive medication database (372 medications)
+  - Shows medication chips with remove buttons (pink-themed)
+  - Displays brand names, category, description in dropdown
+  - Keyboard navigation (arrow keys, enter, escape)
+  - Auto-creates medication cards on Medications page when saved
+  - Pre-fills dosage, frequency, side effects, instructions from database
+- **Files:** `ProfilePage.tsx` (added autocomplete UI + auto-create logic)
+- **Impact:** Major UX improvement - users can now easily select cardiac medications from database
+- **Commit:** `42d5450` - feat: Add cardiac medications autocomplete + WhatsApp contact field
+
+### ✅ WhatsApp Contact Field
+- **What:** Added WhatsApp number field to Contact & Address section
+- **Changes:**
+  - Added `whatsAppNumber` field to PatientData interface
+  - Added WhatsApp Number input (with phone icon and placeholder)
+  - Added "WhatsApp" option to Preferred Contact Method dropdown
+  - Updated layout from 2-column to 3-column grid (Email/Phone/WhatsApp)
+- **Files:** `ProfilePage.tsx`
+- **Impact:** Better communication options for international patients
+- **Commit:** `42d5450` - feat: Add cardiac medications autocomplete + WhatsApp contact field
+
+### ✅ Removed Vitals from Cardiac Profile
+- **What:** Moved vitals tracking to dedicated Vitals page for better organization
+- **Fields Removed:**
+  - Resting HR (bpm)
+  - Max HR (bpm)
+  - Target HR Min
+  - Target HR Max
+  - Baseline BP (Systolic/Diastolic)
+- **Cardiac Profile Now Contains:**
+  - Diagnosis Date
+  - Ejection Fraction (%)
+  - Heart Conditions
+  - Cardiac Medications (with autocomplete)
+  - Activity Restrictions
+- **Files:** `ProfilePage.tsx` (67 lines removed)
+- **Impact:** Cleaner cardiac profile focused on diagnosis, not vitals tracking
+- **Commit:** `7ffccdd` - refactor: Remove vitals fields from Cardiac Profile section
+
+### ✅ Bold Black Input Styling
+- **What:** Changed all input text from dark gray to bold black for better readability
+- **Changes:**
+  - All `.glass-input` fields now use #000000 (black) instead of #1e293b (dark gray)
+  - Font weight set to 800 (extra bold)
+  - Applied to selects and options consistently
+- **Files:** `index.css`
+- **Impact:** Improved readability across entire ProfilePage
+- **Commit:** `42d5450` - feat: Add cardiac medications autocomplete + WhatsApp contact field
 
 ---
 
