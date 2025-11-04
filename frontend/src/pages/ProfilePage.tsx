@@ -1584,11 +1584,30 @@ export function ProfilePage() {
                           placeholder="Enter ejection fraction percentage"
                         />
                       </div>
-                      {/* Current Heart Condition */}
-                      <div className="mt-6">
-                        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--ink)' }}>
-                          Current Heart Condition
-                        </h3>
+                      {/* SECTION 1: Current Heart Condition */}
+                      <div
+                        className="mt-8 p-6 rounded-2xl transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.04))',
+                          border: '2px solid rgba(236, 72, 153, 0.25)',
+                          boxShadow: '0 8px 16px rgba(236, 72, 153, 0.12), inset 0 2px 0 rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-5 pb-4 border-b-2" style={{ borderColor: 'rgba(236, 72, 153, 0.2)' }}>
+                          <div
+                            className="px-4 py-2 rounded-lg"
+                            style={{
+                              background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                              boxShadow: '0 4px 8px rgba(236, 72, 153, 0.3)',
+                            }}
+                          >
+                            <span className="text-white font-bold text-sm">SECTION 1</span>
+                          </div>
+                          <h3 className="text-xl font-extrabold" style={{ color: '#ec4899' }}>
+                            Current Diagnosed Conditions
+                          </h3>
+                        </div>
 
                         <div className="mb-4">
                           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
@@ -1603,7 +1622,7 @@ export function ProfilePage() {
                         </div>
 
                         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
-                          Heart Condition(s)
+                          Select Your Heart Condition(s)
                         </label>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {[
@@ -1655,10 +1674,33 @@ export function ProfilePage() {
                         </div>
                       </div>
 
-                      {/* Current Planned Treatment Protocol */}
-                      <div className="mt-6">
+                      {/* SECTION 2: Current Planned Treatment Protocol */}
+                      <div
+                        className="mt-8 p-6 rounded-2xl transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(124, 58, 237, 0.04))',
+                          border: '2px solid rgba(139, 92, 246, 0.25)',
+                          boxShadow: '0 8px 16px rgba(139, 92, 246, 0.12), inset 0 2px 0 rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-5 pb-4 border-b-2" style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                          <div
+                            className="px-4 py-2 rounded-lg"
+                            style={{
+                              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                              boxShadow: '0 4px 8px rgba(139, 92, 246, 0.3)',
+                            }}
+                          >
+                            <span className="text-white font-bold text-sm">SECTION 2</span>
+                          </div>
+                          <h3 className="text-xl font-extrabold" style={{ color: '#8b5cf6' }}>
+                            Active Treatment Plan
+                          </h3>
+                        </div>
+
                         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
-                          Current Planned Treatment Protocol
+                          Current Treatment Methods
                         </label>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {[
@@ -1672,27 +1714,27 @@ export function ProfilePage() {
                               key={protocol}
                               className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
                               style={{
-                                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.05))',
-                                border: '2px solid rgba(236, 72, 153, 0.3)',
-                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05))',
+                                border: '2px solid rgba(139, 92, 246, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                                 backdropFilter: 'blur(10px)',
                               }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
-                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(236, 72, 153, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                                e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(139, 92, 246, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
-                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                                e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
                               }}
                             >
                               <input
                                 type="checkbox"
                                 checked={patientData?.currentTreatmentProtocol?.includes(protocol) || false}
                                 onChange={(e) => handleCheckboxArrayChange('currentTreatmentProtocol', protocol, e.target.checked)}
-                                className="w-5 h-5 rounded border-2 border-pink-400 bg-white/10 checked:bg-pink-500 checked:border-pink-500 focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer"
+                                className="w-5 h-5 rounded border-2 border-purple-400 bg-white/10 checked:bg-purple-500 checked:border-purple-500 focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer"
                               />
                               <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                                 {protocol}
@@ -1702,10 +1744,33 @@ export function ProfilePage() {
                         </div>
                       </div>
 
-                      {/* Recommended Long-Term Treatment Options */}
-                      <div className="mt-6">
+                      {/* SECTION 3: Recommended Long-Term Treatment Options */}
+                      <div
+                        className="mt-8 p-6 rounded-2xl transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.04))',
+                          border: '2px solid rgba(59, 130, 246, 0.25)',
+                          boxShadow: '0 8px 16px rgba(59, 130, 246, 0.12), inset 0 2px 0 rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-5 pb-4 border-b-2" style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+                          <div
+                            className="px-4 py-2 rounded-lg"
+                            style={{
+                              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                              boxShadow: '0 4px 8px rgba(59, 130, 246, 0.3)',
+                            }}
+                          >
+                            <span className="text-white font-bold text-sm">SECTION 3</span>
+                          </div>
+                          <h3 className="text-xl font-extrabold" style={{ color: '#3b82f6' }}>
+                            Future Treatment Options
+                          </h3>
+                        </div>
+
                         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--ink)' }}>
-                          Recommended Long-Term Treatment Options
+                          Long-Term Interventions & Therapies
                         </label>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {[
@@ -1729,27 +1794,27 @@ export function ProfilePage() {
                               key={treatment}
                               className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300"
                               style={{
-                                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.05))',
-                                border: '2px solid rgba(236, 72, 153, 0.3)',
-                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05))',
+                                border: '2px solid rgba(59, 130, 246, 0.3)',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                                 backdropFilter: 'blur(10px)',
                               }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.6)';
-                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(236, 72, 153, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
+                                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.6)';
+                                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(59, 130, 246, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.15)';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
-                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
                               }}
                             >
                               <input
                                 type="checkbox"
                                 checked={patientData?.recommendedTreatments?.includes(treatment) || false}
                                 onChange={(e) => handleCheckboxArrayChange('recommendedTreatments', treatment, e.target.checked)}
-                                className="w-5 h-5 rounded border-2 border-pink-400 bg-white/10 checked:bg-pink-500 checked:border-pink-500 focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer"
+                                className="w-5 h-5 rounded border-2 border-blue-400 bg-white/10 checked:bg-blue-500 checked:border-blue-500 focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
                               />
                               <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
                                 {treatment}
@@ -1758,7 +1823,8 @@ export function ProfilePage() {
                           ))}
                         </div>
                       </div>
-                      <div ref={medAutocompleteRef}>
+
+                      <div ref={medAutocompleteRef} className="mt-8">
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
                           Cardiac Medications
                         </label>
