@@ -39,6 +39,7 @@ interface UserAttributes {
   backupNotificationEmail?: string;
   preferences?: UserPreferences;
   role?: 'patient' | 'therapist' | 'admin';
+  surgeryDate?: Date;  // Day 0 - the date of heart surgery (for patient users)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -60,6 +61,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public backupNotificationEmail?: string;
   public preferences?: UserPreferences;
   public role?: 'patient' | 'therapist' | 'admin';
+  public surgeryDate?: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -158,6 +160,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
           type: DataTypes.ENUM('patient', 'therapist', 'admin'),
           allowNull: false,
           defaultValue: 'patient',
+        },
+        surgeryDate: {
+          type: DataTypes.DATE,
+          allowNull: true,
+          comment: 'Day 0 - the date of heart surgery (for patient users)',
         },
       },
       {

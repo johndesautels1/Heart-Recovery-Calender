@@ -10,6 +10,7 @@ export interface User {
   profilePhoto?: string;
   timezone: string;
   role?: 'patient' | 'therapist' | 'admin';
+  surgeryDate?: string;  // Day 0 - the date of heart surgery (for patient users)
   preferences?: {
     emailNotifications?: boolean;
     smsNotifications?: boolean;

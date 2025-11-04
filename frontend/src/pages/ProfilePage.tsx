@@ -218,6 +218,20 @@ export function ProfilePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Helper function to format dates from ISO to YYYY-MM-DD for date inputs
+  const formatDateForInput = (date: any) => {
+    if (!date) return '';
+    try {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return '';
+    }
+  };
+
   const fetchPatientData = async () => {
     try {
       setIsLoading(true);
@@ -251,8 +265,23 @@ export function ProfilePage() {
         return;
       }
 
-      // Get the patient record
+      // Get the patient record and format date fields for HTML date inputs
       const patientData = patientsResponse.data[0];
+
+      // Format date fields from ISO to YYYY-MM-DD for date inputs
+      if (patientData.surgeryDate) {
+        patientData.surgeryDate = formatDateForInput(patientData.surgeryDate);
+      }
+      if (patientData.dischargeDate) {
+        patientData.dischargeDate = formatDateForInput(patientData.dischargeDate);
+      }
+      if (patientData.dateOfBirth) {
+        patientData.dateOfBirth = formatDateForInput(patientData.dateOfBirth);
+      }
+      if (patientData.diagnosisDate) {
+        patientData.diagnosisDate = formatDateForInput(patientData.diagnosisDate);
+      }
+
       setPatientData(patientData as any);
       // Store original medications for comparison when saving
       setOriginalMedications(patientData.medicationsAffectingHR || []);
@@ -585,6 +614,13 @@ export function ProfilePage() {
         }
 
         updated = await response.json();
+
+        // Format date fields from ISO to YYYY-MM-DD for date inputs
+        if (updated.surgeryDate) updated.surgeryDate = formatDateForInput(updated.surgeryDate);
+        if (updated.dischargeDate) updated.dischargeDate = formatDateForInput(updated.dischargeDate);
+        if (updated.dateOfBirth) updated.dateOfBirth = formatDateForInput(updated.dateOfBirth);
+        if (updated.diagnosisDate) updated.diagnosisDate = formatDateForInput(updated.diagnosisDate);
+
         setPatientData(updated as any);
 
         // Sync profile vitals to Vitals Tab
@@ -605,6 +641,13 @@ export function ProfilePage() {
         }
 
         updated = await response.json();
+
+        // Format date fields from ISO to YYYY-MM-DD for date inputs
+        if (updated.surgeryDate) updated.surgeryDate = formatDateForInput(updated.surgeryDate);
+        if (updated.dischargeDate) updated.dischargeDate = formatDateForInput(updated.dischargeDate);
+        if (updated.dateOfBirth) updated.dateOfBirth = formatDateForInput(updated.dateOfBirth);
+        if (updated.diagnosisDate) updated.diagnosisDate = formatDateForInput(updated.diagnosisDate);
+
         setPatientData(updated as any);
 
         // Sync profile vitals to Vitals Tab
