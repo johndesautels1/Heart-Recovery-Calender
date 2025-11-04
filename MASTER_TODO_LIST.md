@@ -25,6 +25,37 @@
 
 ## 🎉 COMPLETED TODAY (November 4, 2025)
 
+### ✅ Admin Role Authorization for Patient Management
+- **What:** Added admin role support to all patient management endpoints
+- **Problem:** Admin users were getting "403 Forbidden" when trying to manage patient records
+- **Solution:** Updated authorization logic in 6 patient endpoints to include admin role checks
+- **Endpoints Updated:**
+  - `GET /api/patients/:id` - View patient details
+  - `PUT /api/patients/:id` - Update patient record
+  - `DELETE /api/patients/:id` - Delete patient
+  - `PATCH /api/patients/:id/toggle-active` - Toggle patient status
+  - `GET /api/patients/:id/post-op-week` - Get post-op week data
+  - `GET /api/patients/:id/metrics` - Get compliance metrics
+- **Authorization Hierarchy:**
+  - **Admin:** Full access to all patient records (no restrictions)
+  - **Therapist:** Can only manage their own patients (where therapistId = their user ID)
+  - **Patient:** Can only view/update their own record (where userId = their user ID)
+- **Files:** `backend/src/controllers/patientsController.ts` (+72 lines, -24 lines)
+- **Impact:** Admins can now fully manage all patient records without authorization errors
+- **Commit:** `e27dfe8` - Fix: Add admin role authorization and UI improvements
+
+### ✅ Fix Food Group Distribution Chart Label Cutoff
+- **What:** Fixed "Dairy" label being cut off on left side of pie chart
+- **Problem:** Food Group Distribution pie chart was centered at 50%, causing left-side labels to be cut off
+- **Solution:** Shifted pie chart center from 50% to 55% (5% right adjustment)
+- **Changes:**
+  - Inner circle (recommended servings) cx: 50% → 55%
+  - Outer ring (actual intake) cx: 50% → 55%
+- **Files:** `frontend/src/pages/MealsPage.tsx` (2 lines changed)
+- **Impact:** All food group labels now fully visible, including "Dairy" on the left side
+- **Location:** Meals & Nutrition page → Food Group Distribution chart
+- **Commit:** `e27dfe8` - Fix: Add admin role authorization and UI improvements
+
 ### ✅ Cardiac Medications Autocomplete + Auto-Create Cards
 - **What:** Replaced comma-separated medication input with smart autocomplete
 - **Features:**
