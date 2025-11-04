@@ -1558,14 +1558,22 @@ export function MealsPage() {
                 <TrendingUp className="h-5 w-5" />
                 Daily Calorie Tracking
               </h3>
-              <div className="mb-2 flex flex-wrap gap-3 text-xs">
+              <div className="mb-2 flex flex-wrap gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Recommended (2000 cal)</span>
+                </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Your Calories</span>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Within 20% (good)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>20-50% off (caution)</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>Recommended (2000 cal)</span>
+                  <span className="font-semibold" style={{ color: 'var(--ink)' }}>50%+ off (alert)</span>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -1595,25 +1603,52 @@ export function MealsPage() {
                     cursor={{ fill: 'rgba(16, 185, 129, 0.1)', stroke: '#10b981', strokeWidth: 2 }}
                   />
                   <Legend iconType="circle" />
-                  <Line
-                    type="monotone"
-                    dataKey="calories"
-                    stroke="#3b82f6"
-                    strokeWidth={4}
-                    name="Your Calories"
-                    dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 9, strokeWidth: 3 }}
-                    filter="url(#mealLineGlow)"
+                  <ReferenceLine
+                    y={2000}
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: 'Recommended (2000 cal)',
+                      position: 'insideTopRight',
+                      fill: '#10b981',
+                      fontSize: 11,
+                      fontWeight: 700
+                    }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="average"
-                    stroke="#ef4444"
+                    dataKey="calories"
+                    stroke="#6b7280"
                     strokeWidth={3}
-                    strokeDasharray="5 5"
-                    name="Recommended"
-                    dot={{ fill: '#ef4444', r: 5, strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 8, strokeWidth: 3 }}
+                    name="Your Calories"
+                    dot={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      const calories = payload.calories;
+                      const recommended = 2000;
+                      const deviation = Math.abs((calories - recommended) / recommended);
+
+                      // Color logic: <20% = blue, 20-50% = yellow, >50% = red
+                      let color = '#3b82f6'; // blue (good)
+                      if (deviation >= 0.5) {
+                        color = '#ef4444'; // red (50%+ off)
+                      } else if (deviation >= 0.2) {
+                        color = '#eab308'; // yellow (20-50% off)
+                      }
+
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={6}
+                          fill={color}
+                          stroke="#fff"
+                          strokeWidth={2}
+                        />
+                      );
+                    }}
+                    activeDot={{ r: 9, strokeWidth: 3 }}
+                    filter="url(#mealLineGlow)"
                   />
                 </LineChart>
               </ResponsiveContainer>
