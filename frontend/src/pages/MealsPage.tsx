@@ -313,48 +313,144 @@ export function MealsPage() {
     });
   };
 
-  // Prepare data for Food Group Pie Chart
-  const getFoodGroupData = () => {
-    // Extract food categories from meals
-    const categoryCount: Record<string, number> = {};
+  // Aggregate macro nutrient data from meals (current month view)
+  const getMacroNutrientData = () => {
+    // Use current calendar month
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
 
-    meals.forEach(meal => {
-      // Simple categorization based on food items text
+    // Filter meals within the current month
+    const mealsInRange = meals.filter(meal => {
+      const mealDate = parseISO(meal.timestamp);
+      return mealDate >= monthStart && mealDate <= monthEnd;
+    });
+
+    // Sum up macro nutrients from all meals
+    const totalProtein = mealsInRange.reduce((sum, meal) => sum + (meal.protein || 0), 0);
+    const totalCarbs = mealsInRange.reduce((sum, meal) => sum + (meal.carbohydrates || 0), 0);
+    const totalFat = mealsInRange.reduce((sum, meal) => sum + (meal.totalFat || 0), 0);
+
+    return {
+      data: [
+        {
+          name: 'Protein',
+          value: totalProtein,
+          color: '#3b82f6'
+        },
+        {
+          name: 'Carbs',
+          value: totalCarbs,
+          color: '#eab308'
+        },
+        {
+          name: 'Fat',
+          value: totalFat,
+          color: '#ef4444'
+        }
+      ],
+      mealCount: mealsInRange.length,
+      dateRange: format(now, 'MMMM yyyy')
+    };
+  };
+
+  // Prepare comprehensive food group analysis (current month view)
+  const getFoodGroupData = () => {
+    // Use current calendar month
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const daysInPeriod = getDaysInMonth(now);
+
+    // Filter meals to current month
+    const mealsInRange = meals.filter(meal => {
+      const mealDate = parseISO(meal.timestamp);
+      return mealDate >= monthStart && mealDate <= monthEnd;
+    });
+
+    // Extract food categories from meals - initialize all categories to 0
+    const categoryCount: Record<string, number> = {
+      'Vegetables': 0,
+      'Fruits': 0,
+      'Grains': 0,
+      'Protein': 0,
+      'Dairy': 0
+    };
+
+    mealsInRange.forEach(meal => {
+      // Broad categorization based on food items text - count each meal once per category it contains
       const foodText = meal.foodItems.toLowerCase();
 
-      if (foodText.includes('chicken') || foodText.includes('beef') || foodText.includes('fish') || foodText.includes('turkey') || foodText.includes('protein')) {
-        categoryCount['Protein'] = (categoryCount['Protein'] || 0) + 1;
+      // Skip empty meals
+      if (!foodText || foodText.trim() === '') return;
+
+      // Protein keywords - meats, fish, eggs, legumes, nuts
+      const proteinKeywords = ['chicken', 'beef', 'fish', 'turkey', 'protein', 'egg', 'meat', 'pork', 'lamb', 'salmon', 'tuna', 'shrimp', 'tofu', 'bean', 'lentil', 'nut', 'peanut', 'almond', 'sausage', 'bacon', 'ham'];
+      if (proteinKeywords.some(keyword => foodText.includes(keyword))) {
+        categoryCount['Protein'] += 1;
       }
-      if (foodText.includes('rice') || foodText.includes('bread') || foodText.includes('pasta') || foodText.includes('grain') || foodText.includes('oat')) {
-        categoryCount['Grains'] = (categoryCount['Grains'] || 0) + 1;
+
+      // Grains keywords - bread, rice, pasta, cereals
+      const grainsKeywords = ['rice', 'bread', 'pasta', 'grain', 'oat', 'cereal', 'wheat', 'bagel', 'toast', 'tortilla', 'noodle', 'quinoa', 'barley', 'cracker', 'roll', 'bun', 'muffin', 'waffle', 'pancake'];
+      if (grainsKeywords.some(keyword => foodText.includes(keyword))) {
+        categoryCount['Grains'] += 1;
       }
-      if (foodText.includes('broccoli') || foodText.includes('spinach') || foodText.includes('lettuce') || foodText.includes('vegetable') || foodText.includes('salad')) {
-        categoryCount['Vegetables'] = (categoryCount['Vegetables'] || 0) + 1;
+
+      // Vegetables keywords - all veggies
+      const vegetableKeywords = ['broccoli', 'spinach', 'lettuce', 'vegetable', 'salad', 'carrot', 'tomato', 'pepper', 'onion', 'cucumber', 'celery', 'kale', 'cabbage', 'squash', 'zucchini', 'bean', 'pea', 'corn', 'potato', 'veggie', 'greens'];
+      if (vegetableKeywords.some(keyword => foodText.includes(keyword))) {
+        categoryCount['Vegetables'] += 1;
       }
-      if (foodText.includes('apple') || foodText.includes('banana') || foodText.includes('berry') || foodText.includes('fruit') || foodText.includes('orange')) {
-        categoryCount['Fruits'] = (categoryCount['Fruits'] || 0) + 1;
+
+      // Fruits keywords - all fruits
+      const fruitsKeywords = ['apple', 'banana', 'berry', 'fruit', 'orange', 'grape', 'strawberry', 'blueberry', 'raspberry', 'peach', 'pear', 'melon', 'watermelon', 'mango', 'pineapple', 'cherry', 'plum', 'kiwi', 'lemon', 'lime'];
+      if (fruitsKeywords.some(keyword => foodText.includes(keyword))) {
+        categoryCount['Fruits'] += 1;
       }
-      if (foodText.includes('milk') || foodText.includes('cheese') || foodText.includes('yogurt') || foodText.includes('dairy')) {
-        categoryCount['Dairy'] = (categoryCount['Dairy'] || 0) + 1;
+
+      // Dairy keywords - milk products
+      const dairyKeywords = ['milk', 'cheese', 'yogurt', 'dairy', 'cream', 'butter', 'ice cream', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan'];
+      if (dairyKeywords.some(keyword => foodText.includes(keyword))) {
+        categoryCount['Dairy'] += 1;
       }
     });
 
-    const actualData = Object.entries(categoryCount).map(([name, value]) => ({
-      name,
-      value,
-      fill: name === 'Protein' ? '#f59e0b' : name === 'Grains' ? '#8b5cf6' : name === 'Vegetables' ? '#10b981' : name === 'Fruits' ? '#ef4444' : '#3b82f6'
-    }));
+    // Recommended daily servings for heart-healthy diet
+    const recommendedDaily: Record<string, number> = {
+      'Vegetables': 4,  // 4-5 servings per day
+      'Fruits': 3,      // 3-4 servings per day
+      'Grains': 3,      // 3-4 servings per day (whole grains)
+      'Protein': 2,     // 2-3 servings per day (lean protein)
+      'Dairy': 2        // 2-3 servings per day (low-fat)
+    };
 
-    // Recommended servings (example data)
-    const recommendedData = [
-      { name: 'Protein', value: 15, fill: '#f59e0b' },
-      { name: 'Grains', value: 20, fill: '#8b5cf6' },
-      { name: 'Vegetables', value: 25, fill: '#10b981' },
-      { name: 'Fruits', value: 20, fill: '#ef4444' },
-      { name: 'Dairy', value: 15, fill: '#3b82f6' },
-    ];
+    // Calculate comprehensive metrics
+    const chartData = Object.entries(categoryCount).map(([name, totalCount]) => {
+      const dailyAverage = totalCount / daysInPeriod;
+      const recommended = recommendedDaily[name];
+      const percentOfMeals = mealsInRange.length > 0 ? (totalCount / mealsInRange.length) * 100 : 0;
+      const adherencePercent = recommended > 0 ? (dailyAverage / recommended) * 100 : 0;
 
-    return { actualData, recommendedData };
+      return {
+        name,
+        'Your Daily Avg': parseFloat(dailyAverage.toFixed(2)),
+        'Recommended': recommended,
+        totalCount,
+        percentOfMeals: parseFloat(percentOfMeals.toFixed(1)),
+        adherencePercent: parseFloat(adherencePercent.toFixed(0)),
+        color: name === 'Vegetables' ? '#10b981' :
+               name === 'Fruits' ? '#ef4444' :
+               name === 'Grains' ? '#8b5cf6' :
+               name === 'Protein' ? '#f59e0b' : '#3b82f6'
+      };
+    });
+
+    return {
+      chartData,
+      mealCount: mealsInRange.length,
+      dateRange: format(now, 'MMMM yyyy'),
+      daysInPeriod
+    };
   };
 
   // Prepare data for Calorie Line Graph
@@ -379,7 +475,8 @@ export function MealsPage() {
   const foodScore = calculateMonthlyFoodScore();
   const scoreColor = getScoreColor(foodScore.totalScore, foodScore.maxPossibleScore);
   const dailyMealQualityData = getDailyMealQualityData();
-  const { actualData: foodGroupActual, recommendedData: foodGroupRecommended } = getFoodGroupData();
+  const { chartData: foodGroupChartData, mealCount: foodGroupMealCount, dateRange: foodGroupDateRange, daysInPeriod: foodGroupDays } = getFoodGroupData();
+  const { data: macroNutrientChartData, mealCount: macroMealCount, dateRange: macroDateRange } = getMacroNutrientData();
   const calorieData = getCalorieData();
 
   // ==================== NEW MEAL VISUALIZATION DATA ====================
@@ -1201,234 +1298,254 @@ export function MealsPage() {
 
           {/* Charts 2 & 3: Food Groups and Calories */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 2: Food Group Distribution */}
+            {/* Chart 2: Food Group Comprehensive Analysis */}
             <GlassCard>
               <h3
-                className="text-xl font-bold mb-4 flex items-center gap-2"
+                className="text-xl font-bold mb-2 flex items-center gap-2"
                 style={{ color: 'var(--ink)' }}
               >
-                <PieChartIcon className="h-6 w-6 text-emerald-400" />
-                Food Group Distribution
+                <BarChart3 className="h-6 w-6 text-emerald-400" />
+                Food Group Analysis
               </h3>
-              <div className="mb-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg"></div>
-                  <span>Outer Ring: Your Actual Intake</span>
+              <div className="mb-3 text-xs font-medium opacity-90" style={{ color: 'var(--ink)' }}>
+                {foodGroupDateRange} • {foodGroupDays} days • {foodGroupMealCount} meals analyzed
+              </div>
+
+              {/* Comprehensive metrics table */}
+              <div className="mb-4 space-y-3">
+                {foodGroupChartData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="p-3 rounded-lg"
+                    style={{
+                      backgroundColor: `${item.color}15`,
+                      border: `1px solid ${item.color}40`
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                        <span className="font-bold text-sm" style={{ color: 'var(--ink)' }}>{item.name}</span>
+                      </div>
+                      <div className="text-xs font-semibold px-2 py-1 rounded" style={{
+                        backgroundColor: item.adherencePercent >= 80 ? '#10b98130' : item.adherencePercent >= 50 ? '#f59e0b30' : '#fde047',
+                        color: item.adherencePercent >= 80 ? '#10b981' : item.adherencePercent >= 50 ? '#f59e0b' : '#1e40af'
+                      }}>
+                        {item.adherencePercent}% of goal
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-xs" style={{ color: 'var(--ink)' }}>
+                      <div>
+                        <div className="opacity-80">Total This Month</div>
+                        <div className="font-bold">{item.totalCount} servings</div>
+                      </div>
+                      <div>
+                        <div className="opacity-80">Your Daily Avg</div>
+                        <div className="font-bold">{item['Your Daily Avg']} servings/day</div>
+                      </div>
+                      <div>
+                        <div className="opacity-80">Heart-Healthy Goal</div>
+                        <div className="font-bold">{item.Recommended} servings/day</div>
+                      </div>
+                      <div>
+                        <div className="opacity-80">Meal Frequency</div>
+                        <div className="font-bold">Found in {item.percentOfMeals}% of meals</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Timeline chart showing daily food group tracking */}
+              <div className="mb-3 mt-6">
+                <div className="text-sm font-bold mb-1" style={{ color: 'var(--ink)' }}>
+                  Daily Food Group Tracking - {foodGroupDateRange}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 shadow-lg opacity-60"></div>
-                  <span>Inner Circle: Recommended Daily Servings</span>
+                <div className="text-xs opacity-80 mb-1" style={{ color: 'var(--ink)' }}>
+                  Track which food groups you consumed each day throughout the month
+                </div>
+                <div className="text-xs font-semibold" style={{ color: 'var(--ink)', opacity: 0.9 }}>
+                  📊 Solid lines = Your actual intake | Dashed lines = Recommended daily goals
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={650}>
-                <PieChart>
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={(() => {
+                  // Create daily timeline data
+                  const now = new Date();
+                  const monthStart = startOfMonth(now);
+                  const monthEnd = endOfMonth(now);
+                  const dateRange_dates = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+                  return dateRange_dates.map(date => {
+                    const dateKey = format(date, 'yyyy-MM-dd');
+                    const dayMeals = meals.filter(m => format(parseISO(m.timestamp), 'yyyy-MM-dd') === dateKey);
+
+                    // Count food groups for this day
+                    const counts = { Vegetables: 0, Fruits: 0, Grains: 0, Protein: 0, Dairy: 0 };
+
+                    dayMeals.forEach(meal => {
+                      const foodText = meal.foodItems.toLowerCase();
+                      if (!foodText || foodText.trim() === '') return;
+
+                      const proteinKeywords = ['chicken', 'beef', 'fish', 'turkey', 'protein', 'egg', 'meat', 'pork', 'lamb', 'salmon', 'tuna', 'shrimp', 'tofu', 'bean', 'lentil', 'nut', 'peanut', 'almond', 'sausage', 'bacon', 'ham'];
+                      const grainsKeywords = ['rice', 'bread', 'pasta', 'grain', 'oat', 'cereal', 'wheat', 'bagel', 'toast', 'tortilla', 'noodle', 'quinoa', 'barley', 'cracker', 'roll', 'bun', 'muffin', 'waffle', 'pancake'];
+                      const vegetableKeywords = ['broccoli', 'spinach', 'lettuce', 'vegetable', 'salad', 'carrot', 'tomato', 'pepper', 'onion', 'cucumber', 'celery', 'kale', 'cabbage', 'squash', 'zucchini', 'bean', 'pea', 'corn', 'potato', 'veggie', 'greens'];
+                      const fruitsKeywords = ['apple', 'banana', 'berry', 'fruit', 'orange', 'grape', 'strawberry', 'blueberry', 'raspberry', 'peach', 'pear', 'melon', 'watermelon', 'mango', 'pineapple', 'cherry', 'plum', 'kiwi', 'lemon', 'lime'];
+                      const dairyKeywords = ['milk', 'cheese', 'yogurt', 'dairy', 'cream', 'butter', 'ice cream', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan'];
+
+                      if (proteinKeywords.some(k => foodText.includes(k))) counts.Protein++;
+                      if (grainsKeywords.some(k => foodText.includes(k))) counts.Grains++;
+                      if (vegetableKeywords.some(k => foodText.includes(k))) counts.Vegetables++;
+                      if (fruitsKeywords.some(k => foodText.includes(k))) counts.Fruits++;
+                      if (dairyKeywords.some(k => foodText.includes(k))) counts.Dairy++;
+                    });
+
+                    return {
+                      date: format(date, 'MMM d'),
+                      Vegetables: counts.Vegetables,
+                      Fruits: counts.Fruits,
+                      Grains: counts.Grains,
+                      Protein: counts.Protein,
+                      Dairy: counts.Dairy
+                    };
+                  });
+                })()} margin={{ top: 10, right: 30, left: 10, bottom: 40 }}>
                   <defs>
-                    {/* Ultra 3D shadow with multiple layers for raised effect */}
-                    <filter id="mealPieShadow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
-                      <feOffset dx="0" dy="10" result="offsetblur"/>
-                      <feComponentTransfer>
-                        <feFuncA type="linear" slope="0.7"/>
-                      </feComponentTransfer>
-                      <feMerge>
-                        <feMergeNode/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-
-                    {/* Additional highlight for top edge to create raised appearance */}
-                    <filter id="pieHighlight">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-                      <feOffset dx="0" dy="-2" result="offsetblur"/>
-                      <feFlood floodColor="#ffffff" floodOpacity="0.3"/>
-                      <feComposite in2="offsetblur" operator="in"/>
-                      <feMerge>
-                        <feMergeNode/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-
-                    {/* Radial gradients for each food group - creates 3D lighting effect */}
-                    <radialGradient id="pieGradientVegetables" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#6ee7b7" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#10b981" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#047857" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientFruits" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#fca5a5" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#ef4444" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#b91c1c" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientGrains" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#c4b5fd" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#8b5cf6" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#6b21a8" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientProtein" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#fcd34d" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#f59e0b" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientDairy" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#93c5fd" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#3b82f6" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#1e40af" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientFats" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#c084fc" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#a855f7" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#7e22ce" stopOpacity={1}/>
-                    </radialGradient>
-                    <radialGradient id="pieGradientOther" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#cbd5e1" stopOpacity={1}/>
-                      <stop offset="50%" stopColor="#94a3b8" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#475569" stopOpacity={1}/>
-                    </radialGradient>
-
-                    {/* Bevel/Highlight effect for top of slices */}
-                    <linearGradient id="pieBevelHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ffffff" stopOpacity={0.4}/>
-                      <stop offset="50%" stopColor="#ffffff" stopOpacity={0.1}/>
-                      <stop offset="100%" stopColor="#000000" stopOpacity={0.2}/>
+                    <linearGradient id="vegetablesGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="fruitsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="grainsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="proteinGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="dairyGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  {/* Recommended (inner circle) - with 3D gradients */}
-                  <Pie
-                    data={foodGroupRecommended}
-                    cx="55%"
-                    cy="50%"
-                    innerRadius={0}
-                    outerRadius={130}
-                    fill="#8884d8"
-                    dataKey="value"
-                    strokeWidth={2}
-                    stroke="#d1d5db"
-                    paddingAngle={2}
-                  >
-                    {foodGroupRecommended.map((entry, index) => {
-                      // Map food group name to gradient ID for 3D effect
-                      const gradientId = entry.name.toLowerCase().includes('vegetable') ? 'pieGradientVegetables'
-                        : entry.name.toLowerCase().includes('fruit') ? 'pieGradientFruits'
-                        : entry.name.toLowerCase().includes('grain') ? 'pieGradientGrains'
-                        : entry.name.toLowerCase().includes('protein') ? 'pieGradientProtein'
-                        : entry.name.toLowerCase().includes('dairy') ? 'pieGradientDairy'
-                        : entry.name.toLowerCase().includes('fat') || entry.name.toLowerCase().includes('oil') ? 'pieGradientFats'
-                        : 'pieGradientOther';
-
-                      return (
-                        <Cell
-                          key={`rec-${index}`}
-                          fill={`url(#${gradientId})`}
-                          stroke="#ffffff"
-                          strokeWidth={4}
-                          opacity={0.65}
-                          style={{
-                            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))'
-                          }}
-                        />
-                      );
-                    })}
-                  </Pie>
-                  {/* Actual (outer circle) - with enhanced styling */}
-                  <Pie
-                    data={foodGroupActual}
-                    cx="55%"
-                    cy="50%"
-                    innerRadius={145}
-                    outerRadius={220}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={(props: any) => {
-                      const { cx, cy, midAngle, innerRadius, outerRadius, name, percent } = props;
-                      const RADIAN = Math.PI / 180;
-                      const radius = (outerRadius as number) + 35;
-                      const x = (cx as number) + radius * Math.cos(-(midAngle as number) * RADIAN);
-                      const y = (cy as number) + radius * Math.sin(-(midAngle as number) * RADIAN);
-
-                      return (
-                        <text
-                          x={x}
-                          y={y}
-                          fill="#ffffff"
-                          textAnchor={x > (cx as number) ? 'start' : 'end'}
-                          dominantBaseline="central"
-                          style={{
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))'
-                          }}
-                        >
-                          {`${name}`}
-                          <tspan
-                            x={x}
-                            dy="1.2em"
-                            style={{
-                              fontSize: '16px',
-                              fontWeight: '800',
-                              fill: '#10b981'
-                            }}
-                          >
-                            {`${((percent as number) * 100).toFixed(0)}%`}
-                          </tspan>
-                        </text>
-                      );
-                    }}
-                    labelLine={{
-                      stroke: '#d1d5db',
-                      strokeWidth: 2,
-                      strokeDasharray: '3 3'
-                    }}
-                    paddingAngle={4}
-                    filter="url(#mealPieShadow)"
-                  >
-                    {foodGroupActual.map((entry, index) => {
-                      // Map food group name to gradient ID for 3D effect
-                      const gradientId = entry.name.toLowerCase().includes('vegetable') ? 'pieGradientVegetables'
-                        : entry.name.toLowerCase().includes('fruit') ? 'pieGradientFruits'
-                        : entry.name.toLowerCase().includes('grain') ? 'pieGradientGrains'
-                        : entry.name.toLowerCase().includes('protein') ? 'pieGradientProtein'
-                        : entry.name.toLowerCase().includes('dairy') ? 'pieGradientDairy'
-                        : entry.name.toLowerCase().includes('fat') || entry.name.toLowerCase().includes('oil') ? 'pieGradientFats'
-                        : 'pieGradientOther';
-
-                      return (
-                        <Cell
-                          key={`act-${index}`}
-                          fill={`url(#${gradientId})`}
-                          stroke="#d1d5db"
-                          strokeWidth={2}
-                          style={{
-                            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }}
-                        />
-                      );
-                    })}
-                  </Pie>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="var(--ink)"
+                    opacity={0.8}
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    stroke="var(--ink)"
+                    opacity={0.8}
+                    domain={[0, 5]}
+                    label={{ value: 'Servings', angle: -90, position: 'insideLeft', style: { fill: 'var(--ink)', opacity: 0.9 } }}
+                  />
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98))',
-                      border: '2px solid #10b981',
-                      borderRadius: '16px',
-                      boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.4)',
-                      backdropFilter: 'blur(12px)',
-                      padding: '12px 16px'
+                      backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                     }}
-                    labelStyle={{
-                      color: '#ffffff',
-                      fontWeight: '700',
-                      fontSize: '15px',
-                      marginBottom: '4px'
-                    }}
-                    itemStyle={{
-                      color: '#10b981',
-                      fontWeight: '600',
-                      fontSize: '14px'
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '8px' }}
+                    itemStyle={{ color: '#fff', padding: '2px 0' }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: '10px' }}
+                    iconType="circle"
+                  />
+                  {/* Reference lines showing recommended daily servings */}
+                  <ReferenceLine
+                    y={4}
+                    stroke="#10b981"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    opacity={0.7}
+                    label={{
+                      value: 'Vegetables Goal (4/day)',
+                      position: 'insideTopRight',
+                      fill: '#10b981',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      opacity: 1
                     }}
                   />
-                </PieChart>
+                  <ReferenceLine
+                    y={3}
+                    stroke="#ef4444"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    opacity={0.7}
+                    label={{
+                      value: 'Fruits Goal (3/day)',
+                      position: 'insideTopRight',
+                      fill: '#ef4444',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      opacity: 1
+                    }}
+                  />
+                  <ReferenceLine
+                    y={3}
+                    stroke="#8b5cf6"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    opacity={0.7}
+                    label={{
+                      value: 'Grains Goal (3/day)',
+                      position: 'insideTopLeft',
+                      fill: '#8b5cf6',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      opacity: 1
+                    }}
+                  />
+                  <ReferenceLine
+                    y={2}
+                    stroke="#f59e0b"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    opacity={0.7}
+                    label={{
+                      value: 'Protein Goal (2/day)',
+                      position: 'insideBottomRight',
+                      fill: '#f59e0b',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      opacity: 1
+                    }}
+                  />
+                  <ReferenceLine
+                    y={2}
+                    stroke="#3b82f6"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    opacity={0.7}
+                    label={{
+                      value: 'Dairy Goal (2/day)',
+                      position: 'insideBottomLeft',
+                      fill: '#3b82f6',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      opacity: 1
+                    }}
+                  />
+                  {/* Actual daily intake lines */}
+                  <Line type="monotone" dataKey="Vegetables" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Fruits" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Grains" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Protein" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Dairy" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
               </ResponsiveContainer>
             </GlassCard>
 
@@ -1506,12 +1623,15 @@ export function MealsPage() {
           {/* NEW: Chart 4: Macro Ratio Pie Chart */}
           <GlassCard>
             <h3
-              className="text-xl font-bold mb-4 flex items-center gap-2"
+              className="text-xl font-bold mb-2 flex items-center gap-2"
               style={{ color: 'var(--ink)' }}
             >
               <PieChartIcon className="h-6 w-6" style={{ color: 'var(--accent)' }} />
               Macro Nutrient Breakdown
             </h3>
+            <div className="mb-3 text-xs font-medium opacity-70" style={{ color: 'var(--ink)' }}>
+              {macroDateRange} • {macroMealCount} meals analyzed
+            </div>
             <div className="mb-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-4 h-4 rounded-full bg-blue-500"></div>
@@ -1526,47 +1646,39 @@ export function MealsPage() {
                 <span>Fat</span>
               </div>
             </div>
+            <div className="mb-3 p-3 rounded-lg" style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              color: 'var(--ink)'
+            }}>
+              <div className="text-xs font-semibold mb-2 opacity-80">Recommended Distribution (Heart-Healthy):</div>
+              <div className="text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span>Protein:</span>
+                  <span className="font-semibold">20-30% of total intake</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Carbohydrates:</span>
+                  <span className="font-semibold">45-55% of total intake</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fat:</span>
+                  <span className="font-semibold">20-30% of total intake</span>
+                </div>
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={[
-                    {
-                      name: 'Protein',
-                      value: dailyMealQualityData.reduce((sum, day) => {
-                        // Assuming 4 cal/g for protein
-                        return sum + ((day as any).protein || 0);
-                      }, 0),
-                      color: '#3b82f6'
-                    },
-                    {
-                      name: 'Carbs',
-                      value: dailyMealQualityData.reduce((sum, day) => {
-                        // Assuming 4 cal/g for carbs
-                        return sum + ((day as any).carbs || 0);
-                      }, 0),
-                      color: '#eab308'
-                    },
-                    {
-                      name: 'Fat',
-                      value: dailyMealQualityData.reduce((sum, day) => {
-                        // Assuming 9 cal/g for fat
-                        return sum + ((day as any).fat || 0);
-                      }, 0),
-                      color: '#ef4444'
-                    }
-                  ]}
+                  data={macroNutrientChartData}
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }: any) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
+                  label={({ name, percent, value }: any) => `${name}: ${value.toFixed(1)}g (${((percent as number) * 100).toFixed(0)}%)`}
                 >
-                  {[
-                    { color: '#3b82f6' },
-                    { color: '#eab308' },
-                    { color: '#ef4444' }
-                  ].map((entry, index) => (
+                  {macroNutrientChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -1575,9 +1687,12 @@ export function MealsPage() {
                     backgroundColor: 'rgba(0, 0, 0, 0.9)',
                     border: 'none',
                     borderRadius: '8px',
-                    padding: '12px'
+                    padding: '12px',
+                    color: '#fff'
                   }}
                   labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  itemStyle={{ color: '#fff' }}
+                  formatter={(value: number) => `${value.toFixed(1)}g`}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -2065,3 +2180,4 @@ export function MealsPage() {
     </div>
   );
 }
+
