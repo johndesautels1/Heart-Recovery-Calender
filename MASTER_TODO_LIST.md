@@ -133,6 +133,74 @@
 - **Distinction:** This is NOT the "My Devices" tab (fitness trackers) - this is for IMPLANTED devices
 - **Commit:** `4f1b36b` - feat: Add document uploads (front/back) and Implanted Devices section
 
+### ✅ Fix: Profile Save Error - therapistId Cannot Be Null
+- **What:** Fixed critical bug preventing users from saving profile data in admin section
+- **Problem:**
+  - Both admin/therapist AND patient/user roles received "internal server error" when saving
+  - Backend error: "ValidationError: Patient.therapistId cannot be null"
+  - Root cause: Code set therapistId to null for non-therapist users when auto-creating patient record
+- **Solution:**
+  - Changed therapistId assignment from conditional to always use current user's ID
+  - Line 490 in ProfilePage.tsx: `therapistId: user?.id` (was: `user?.role === 'therapist' ? user?.id : null`)
+  - Makes all users "self-managed" for their own profile data
+- **Impact:** Users can now save their own profile data without requiring separate therapist assignment
+- **Files:** `ProfilePage.tsx` (1 line changed)
+- **Testing:** Backend requires Patient.therapistId to be non-null (database constraint enforced)
+- **Commit:** `7817e1e` - Fix: Resolve 'therapistId cannot be null' error in Profile save
+
+### ✅ 2-Way Real-Time Vitals Sync (Profile ↔ Vitals Tab)
+- **What:** Implemented bidirectional synchronization of vitals data between Profile and Vitals Tab
+- **Profile → Vitals Tab Sync:**
+  - Added `syncProfileToVitals()` function in ProfilePage.tsx
+  - When user saves profile with vitals data (weight, resting HR, baseline BP), automatically syncs to Vitals Tab
+  - Updates existing vital record for today OR creates new one if none exists
+  - Syncs: currentWeight → weight, restingHeartRate → heartRate, baselineBp → bloodPressure
+  - Called automatically after profile save (both create and update operations)
+- **Vitals Tab → Profile Sync:**
+  - Added `syncVitalsToProfile()` function in VitalsPage.tsx
+  - When user records new vitals, automatically syncs back to Profile
+  - Updates: weight → currentWeight, heartRate → restingHeartRate (only if lower), BP → baselineBp
+  - Called automatically after vital recording
+  - Smart resting HR logic: only updates if new HR is lower (true resting rate)
+- **Features:**
+  - Real-time sync, no manual action required
+  - Silent sync (no extra toasts, logged to console)
+  - Handles both creation and update scenarios
+  - Only syncs when relevant data exists
+  - Prevents unnecessary API calls
+- **Impact:** Eliminates duplicate data entry - vitals stay synchronized across Profile and Vitals Tab
+- **Files:** `ProfilePage.tsx` (+78 lines), `VitalsPage.tsx` (+62 lines)
+- **Commit:** `0183b00` - Implement 2-way real-time vitals sync between Profile and Vitals Tab
+
+### ✅ Physical Limitations Warning for Exercise Modals
+- **What:** Added intelligent warning system that checks patient's physical limitations against exercises being scheduled
+- **Core Functionality:**
+  - Added `checkPhysicalLimitations()` function that fetches patient profile and analyzes activityRestrictions
+  - Intelligent conflict detection using keyword analysis (e.g., "no", "avoid", "restrict", "prohibit")
+  - Checks exercise name, category, and contraindications against patient restrictions
+  - Contextual matching: looks for conflict keywords near exercise terms within restrictions text
+- **UI Warning System:**
+  - Red triangle warning banner with AlertTriangle icon at top of Schedule Modal
+  - Displays full restriction text for context
+  - "I Understand - Override Warning" button (danger variant)
+  - Green checkmark confirmation when override clicked
+  - Schedule button disabled until warning acknowledged
+  - Warning resets when modal closes or patient changes
+- **Workflow:**
+  1. User clicks "Schedule Exercise" on any exercise
+  2. System automatically fetches patient profile and checks activityRestrictions
+  3. If conflict detected, shows warning banner at top of Schedule Modal
+  4. User must click "Override Warning" to enable "Schedule Exercise" button
+  5. User can then proceed with scheduling or cancel
+- **Smart Conflict Detection Examples:**
+  - "No heavy lifting" will warn for "Strength Training" category
+  - "Avoid running" will warn for "Running" exercise
+  - Checks both exercise name AND category
+  - Checks exercise contraindications against patient restrictions
+- **Impact:** Prevents patients from scheduling exercises that violate their physical limitations while allowing override for flexibility
+- **Files:** `ExercisesPage.tsx` (+129 lines, -5 lines)
+- **Commit:** `5819834` - Implement physical limitations cross-reference for exercise modals
+
 ---
 
 ## 🔴 CRITICAL (Must Fix/Do First)
