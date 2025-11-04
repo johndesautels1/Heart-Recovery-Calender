@@ -2,7 +2,7 @@
 **⚠️ THIS IS THE AUTHORITATIVE TODO LIST - USE THIS ONE ONLY**
 
 **Status:** In Progress
-**Last Updated:** November 4, 2025
+**Last Updated:** November 4, 2025 - 10:30 PM Session
 **Location:** `C:\Users\broke\Heart-Recovery-Calender\MASTER_TODO_LIST.md`
 
 **Source Files (archived for reference only):**
@@ -24,6 +24,117 @@
 ---
 
 ## 🎉 COMPLETED TODAY (November 4, 2025)
+
+### ✅ EVENING SESSION: Comprehensive Vitals & Profile Enhancements (10:30 PM)
+- **Commit:** `b581d7e` - feat: Comprehensive vitals and profile enhancements
+- **Files Changed:** 5 files, +1126 insertions, -181 deletions
+- **Impact:** MAJOR vitals tracking improvements + profile data persistence fixes
+
+#### 1. Fixed Profile Page Surgery Date Persistence ✅
+- **What:** Surgery dates now persist correctly after saving
+- **Problem:** Dates were being erased after save due to format mismatch
+- **Root Cause:** Backend returns ISO timestamps (2024-11-04T00:00:00.000Z), but HTML date inputs require YYYY-MM-DD
+- **Solution:**
+  - Added `formatDateForInput()` helper function to convert ISO → YYYY-MM-DD
+  - Applied to all date fields: surgeryDate, dischargeDate, dateOfBirth, diagnosisDate
+  - Format applied on initial load AND after save to ensure persistence
+- **Files:** `ProfilePage.tsx` (lines 221-233, 618-622, 645-649)
+- **Testing:** ✅ Verified surgery date saves and persists across page refreshes
+
+#### 2. Fixed Resting Heart Rate Display ✅
+- **What:** Now shows absolute latest HR reading across all devices
+- **Problem:** "Lowest in last 7 days" was showing old filtered data instead of most recent
+- **Solution:** Changed from `filteredVitals` to `vitals` (unfiltered data)
+- **Files:** `VitalsPage.tsx` (lines 790-869)
+- **Impact:** Users now see their most recent resting HR from any connected device
+
+#### 3. Added Surgery Date Visibility & Edit on Vitals Page ✅
+- **What:** Surgery date now visible on VitalsPage with direct edit capability
+- **Features:**
+  - Shows "Day 0" surgery date with timeline info
+  - Edit button navigates to Profile page
+  - Displays timeline range: 1 month before surgery → current date + 1 month
+  - Warning indicator if no surgery date set
+- **Files:** `VitalsPage.tsx` (lines 1193-1223)
+- **Impact:** Users can quickly see and edit surgery date without leaving vitals tracking
+
+#### 4. Integrated Patient Profile Data Flow ✅
+- **What:** Surgery date now pulls from patient profile first, falls back to user profile
+- **Features:**
+  - Added Patient type import from types/index.ts
+  - Created `patientData` state with `api.checkPatientProfile()` loading
+  - Computed `surgeryDate` variable prioritizes: patientData?.surgeryDate || user?.surgeryDate
+  - All vitals timeline calculations use unified surgery date
+- **Files:** `VitalsPage.tsx` (lines 71, 89-108)
+- **Impact:** Consistent surgery date across all user roles (patient, therapist, admin)
+
+#### 5. Chart Y-Axis Scale Adjustments (6 Metrics) ✅
+- **What:** All chart scales adjusted to accommodate real-world patient data ranges
+- **Changes:**
+  - **Blood Pressure:** 60-180 → 60-200 mmHg (line 1272)
+  - **Heart Rate:** Auto → 0-180 bpm (line 1326)
+  - **Weight:** Auto → 0-320 lbs (lines 1327, 1530)
+  - **Blood Sugar:** Auto → 0-300 mg/dL (lines 1328, 1762)
+  - **Temperature:** Auto → 90-108°F (line 1329)
+  - **O2 Saturation:** Auto → 50-100% (line 1330)
+- **Impact:** Charts no longer truncate data for high/low readings
+
+#### 6. Normal Range Reference Lines Added (All Charts) ✅
+- **What:** Medical reference lines showing normal/healthy ranges on ALL vitals charts
+- **Implementation:**
+
+  **Blood Pressure Chart** (lines 1311-1312):
+  - Green dashed line at 120 mmHg (Normal Systolic)
+  - Green dashed line at 80 mmHg (Normal Diastolic)
+
+  **Main Vitals Overview Chart** (lines 1392-1409) - Conditional by metric:
+  - **Heart Rate:** 60 bpm (min) & 100 bpm (max) green lines
+  - **Blood Sugar:** 70 mg/dL (min) & 100 mg/dL (max) green lines
+  - **Temperature:** 98.6°F green reference line
+  - **O2 Saturation:** 95% minimum green line
+
+  **Glucose Journal Chart** (lines 1786-1788):
+  - 70 mg/dL (Normal Min) - green
+  - 100 mg/dL (Normal Max) - green
+  - 126 mg/dL (Pre-diabetic threshold) - red
+
+- **Visual Design:**
+  - Dashed lines for clear distinction from data
+  - Green for healthy ranges, red for warning thresholds
+  - Labels positioned to not overlap with data
+  - Bold, high-contrast text for readability
+- **Impact:** Users can instantly see if their vitals are within healthy ranges
+
+#### 7. Fixed Record Vitals Modal (All Tabs Accessible) ✅
+- **What:** Modal now accessible from ALL tabs, not just overview
+- **Problem:** Modal was nested inside overview tab conditional, breaking buttons in Weight/Glucose/Medical tabs
+- **Solution:** Moved Modal from lines 1399-1557 (inside overview) → lines 1853-2011 (outside all tab conditionals)
+- **Impact:** "Log Weight" and other buttons now functional across all journal tabs
+
+#### 8. Database Migration: Surgery Date for Users Table ✅
+- **What:** Added surgeryDate column to users table
+- **Migration:** `20251104000001-add-surgery-date-to-users.js` (NEW FILE)
+- **Schema:**
+  - Type: DATE (allows NULL)
+  - Comment: "Day 0 - the date of heart surgery (for patient users)"
+  - Up migration: adds column
+  - Down migration: removes column (rollback support)
+- **Model Update:** `User.ts` (+7 lines) - Added surgeryDate to UserAttributes interface and model definition
+- **Impact:** Surgery date can now be stored at both User level AND Patient level
+
+#### Statistics for Evening Session:
+- **Files Modified:** 5 (3 frontend, 2 backend)
+- **Lines Added:** 1,126 lines
+- **Lines Removed:** 181 lines
+- **Net Change:** +945 lines
+- **Charts Enhanced:** 3 (Blood Pressure, Main Vitals, Glucose Journal)
+- **Reference Lines Added:** 9 total across all charts
+- **Y-Axis Scales Fixed:** 6 metrics
+- **Data Persistence Bugs Fixed:** 4 date fields (surgery, discharge, DOB, diagnosis)
+- **TypeScript Compilation:** ✅ 0 errors frontend/backend
+- **Hot Reload Status:** ✅ All changes compiled and tested live
+
+---
 
 ### ✅ Admin Role Authorization for Patient Management
 - **What:** Added admin role support to all patient management endpoints
