@@ -487,7 +487,7 @@ export function ProfilePage() {
           userId: user?.id, // Link to current user
           name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || user?.name || 'Unknown',
           email: patientData.email || user?.email,
-          therapistId: user?.role === 'therapist' ? user?.id : null // If user is therapist, they're their own therapist
+          therapistId: user?.id // Self-managed: user is their own therapist for profile management
         };
 
         response = await fetch(`http://localhost:4000/api/patients`, {
