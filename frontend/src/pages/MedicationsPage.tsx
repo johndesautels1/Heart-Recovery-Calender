@@ -155,15 +155,64 @@ export function MedicationsPage() {
     }
   }, [activeTab, dateRange]);
 
+  // Sync medications to patient profile (2-way sync)
+  const syncMedicationsToProfile = async (medicationsList: Medication[]) => {
+    try {
+      const targetUserId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+
+      if (!targetUserId) return;
+
+      // Get the patient profile for this user
+      const patientsResponse = await fetch(
+        `http://localhost:4000/api/patients?userId=${targetUserId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (!patientsResponse.ok) return;
+
+      const patientsData = await patientsResponse.json();
+      const patientProfile = patientsData.data?.[0];
+
+      if (!patientProfile) return;
+
+      // Extract medication names from the medications list
+      const medNames = medicationsList.map(m => m.name);
+
+      // Update patient profile with medications list
+      await fetch(`http://localhost:4000/api/patients/${patientProfile.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ...patientProfile,
+          medicationsAffectingHR: medNames
+        })
+      });
+
+      console.log('✓ Synced medications to profile:', medNames);
+    } catch (error) {
+      console.error('Failed to sync medications to profile:', error);
+    }
+  };
+
   const onSubmit = async (data: MedicationFormData) => {
     try {
       setIsLoading(true);
 
       console.log('Form data being submitted:', data);
 
+      let updatedMedsList;
+
       if (editingMed) {
         const updated = await api.updateMedication(editingMed.id, data);
-        setMedications(medications.map(m => m.id === updated.id ? updated : m));
+        updatedMedsList = medications.map(m => m.id === updated.id ? updated : m);
+        setMedications(updatedMedsList);
         toast.success('Medication updated successfully');
       } else {
         const newMedData = {
@@ -176,9 +225,13 @@ export function MedicationsPage() {
         console.log('Creating medication with data:', newMedData);
 
         const newMed = await api.createMedication(newMedData);
-        setMedications([...medications, newMed]);
+        updatedMedsList = [...medications, newMed];
+        setMedications(updatedMedsList);
         toast.success('Medication added successfully');
       }
+
+      // Sync to profile in real-time
+      await syncMedicationsToProfile(updatedMedsList);
 
       loadMedications();
       setIsModalOpen(false);
@@ -213,10 +266,15 @@ export function MedicationsPage() {
 
   const handleDelete = async (medication: Medication) => {
     if (!window.confirm('Are you sure you want to delete this medication?')) return;
-    
+
     try {
       await api.deleteMedication(medication.id);
-      setMedications(medications.filter(m => m.id !== medication.id));
+      const updatedMeds = medications.filter(m => m.id !== medication.id);
+      setMedications(updatedMeds);
+
+      // Sync to profile in real-time
+      await syncMedicationsToProfile(updatedMeds);
+
       loadMedications();
       toast.success('Medication deleted successfully');
     } catch (error) {
