@@ -77,6 +77,62 @@
 - **Impact:** Improved readability across entire ProfilePage
 - **Commit:** `42d5450` - feat: Add cardiac medications autocomplete + WhatsApp contact field
 
+### ✅ Document Uploads (Front & Back) - 4 Document Types
+- **What:** Added front and back upload capability for all critical documents
+- **Documents:**
+  - Passport (front & back)
+  - Insurance Card (front & back)
+  - Allergy Card (front & back)
+  - Driver's License (NEW - front & back)
+- **Features:**
+  - Upload both sides of each document
+  - Accepts images (JPG, PNG) and PDFs
+  - 10MB file size limit
+  - Separate upload buttons for front and back
+- **Files:** `ProfilePage.tsx` (added front/back refs, updated handleDocumentUpload)
+- **Impact:** Complete document management system for critical ID/medical documents
+- **Commit:** `4f1b36b` - feat: Add document uploads (front/back) and Implanted Devices section
+
+### ✅ Document Preview, View, and Delete Functionality
+- **What:** Added comprehensive document management after upload
+- **Features:**
+  - **Preview thumbnail** after upload (128px height with green border)
+  - **Green checkmark badge** on uploaded documents (top-right corner)
+  - **"View" button** (Eye icon) - opens full size in new tab
+  - **"Delete" button** (Trash icon) - removes document and allows re-upload
+  - **State management** for uploaded documents (base64 storage)
+  - Upload button only shows when no document uploaded
+  - Responsive 2-column grid layout
+- **Technical:**
+  - Added `uploadedDocuments` state object
+  - Added `handleDocumentView()` function
+  - Added `handleDocumentDelete()` function
+  - Imported Eye and Check icons from lucide-react
+- **Files:** `ProfilePage.tsx` (+265 lines, -66 lines)
+- **Impact:** Users can now see, view, and manage uploaded documents
+- **Commit:** `d6c5a8b` - feat: Add document preview, view, and delete functionality
+
+### ✅ Implanted Devices & Critical Medical IDs Section
+- **What:** NEW section for life-critical medical device tracking (separate from fitness trackers)
+- **Location:** Profile Settings → "Implanted Devices & Critical Medical IDs" (red shield icon)
+- **Implanted Devices Subsection:**
+  - Track multiple implanted medical devices (pacemakers, heart valves, stents, loop recorders, ICDs, CRT devices)
+  - Fields: Device Type, Manufacturer, Model, Serial Number, Size, Implant Date, Notes
+  - Add/delete devices with trash icon
+  - List view with all device details
+- **Medical Alert Bracelet Subsection:**
+  - Checkbox to enable
+  - Manufacturer, Serial Number, QR Code, Emergency Access URL fields
+- **Critical Access Information Subsection:**
+  - Medical Record Number (MRN)
+  - Health System Portal URL
+  - Portal Username and Password (encrypted field)
+  - Additional Notes for device IDs and critical access info
+- **Files:** `ProfilePage.tsx` (added implantedDevices section, PatientData interface updates)
+- **Impact:** CRITICAL for emergency medical personnel - stores life-saving device information
+- **Distinction:** This is NOT the "My Devices" tab (fitness trackers) - this is for IMPLANTED devices
+- **Commit:** `4f1b36b` - feat: Add document uploads (front/back) and Implanted Devices section
+
 ---
 
 ## 🔴 CRITICAL (Must Fix/Do First)
