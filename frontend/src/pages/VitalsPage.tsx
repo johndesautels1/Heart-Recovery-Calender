@@ -19,7 +19,8 @@ import {
   Activity as Pulse,
   AlertTriangle,
   Edit,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -73,6 +74,7 @@ export function VitalsPage() {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
   const [hawkAlerts, setHawkAlerts] = useState<any[]>([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
@@ -502,6 +504,9 @@ export function VitalsPage() {
       {hawkAlerts.length > 0 && (
         <div className="space-y-3">
           {hawkAlerts.map((alert, index) => {
+            // Skip if dismissed
+            if (dismissedAlerts.includes(index)) return null;
+
             const severityColor = alert.severity === 'danger' ? '#ef4444' : '#f59e0b';
             const severityBg = alert.severity === 'danger'
               ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))'
@@ -519,6 +524,15 @@ export function VitalsPage() {
                   boxShadow: `0 0 30px ${severityColor}20`,
                 }}
               >
+                {/* Dismiss Button */}
+                <button
+                  onClick={() => setDismissedAlerts([...dismissedAlerts, index])}
+                  className="absolute top-4 right-4 p-2 rounded-lg transition-all hover:bg-white/10"
+                  title="Dismiss alert"
+                >
+                  <X className="h-5 w-5 text-gray-400 hover:text-white" />
+                </button>
+
                 <div className="flex items-start gap-4">
                   {/* Hawk Icon */}
                   <div className="flex-shrink-0 text-5xl">
@@ -526,7 +540,7 @@ export function VitalsPage() {
                   </div>
 
                   {/* Alert Content */}
-                  <div className="flex-1">
+                  <div className="flex-1 pr-8">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-2xl">{icon}</span>
                       <h3 className="text-xl font-bold text-white">
@@ -2619,19 +2633,21 @@ export function VitalsPage() {
                           </feMerge>
                         </filter>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
-                      <YAxis domain={[0, 300]} stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#4b5563" opacity={0.5} />
+                      <XAxis dataKey="date" stroke="#d1d5db" tick={{ fill: '#f3f4f6', fontSize: 13, fontWeight: 700 }} />
+                      <YAxis domain={[0, 300]} stroke="#d1d5db" tick={{ fill: '#f3f4f6', fontSize: 13, fontWeight: 700 }} />
                       <Tooltip
                         contentStyle={{
                           background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
                           border: '2px solid #f97316',
                           borderRadius: '12px',
                           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                          backdropFilter: 'blur(10px)'
+                          backdropFilter: 'blur(10px)',
+                          color: '#fff'
                         }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ color: '#f3f4f6' }} />
                       <Line
                         type="monotone"
                         dataKey="bloodSugar"
@@ -2644,10 +2660,105 @@ export function VitalsPage() {
                         filter="url(#glucoseGlow)"
                       />
 
-                      {/* Normal Range Reference Lines for Glucose */}
-                      <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={126} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Pre-diabetic (126)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11, fontWeight: 'bold' }} />
+                      {/* Danger Zone: Severe Hypoglycemia (<60 mg/dL) - RED with ⚠️ */}
+                      <ReferenceLine
+                        y={60}
+                        stroke="#dc2626"
+                        strokeWidth={3}
+                        strokeDasharray="3 3"
+                        label={{
+                          value: '⚠️ DANGER: Severe Hypoglycemia (60)',
+                          position: 'insideTopLeft',
+                          fill: '#fef2f2',
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          style: {
+                            background: '#dc2626',
+                            padding: '4px 8px',
+                            borderRadius: '4px'
+                          }
+                        }}
+                      />
+
+                      {/* Hypoglycemia Risk (<70 mg/dL) - RED */}
+                      <ReferenceLine
+                        y={70}
+                        stroke="#ef4444"
+                        strokeDasharray="5 5"
+                        strokeWidth={2.5}
+                        label={{
+                          value: 'Hypoglycemia Risk (70)',
+                          position: 'insideTopRight',
+                          fill: '#fef2f2',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}
+                      />
+
+                      {/* Normal Range (70-100 mg/dL) - GREEN */}
+                      <ReferenceLine
+                        y={100}
+                        stroke="#10b981"
+                        strokeDasharray="5 5"
+                        strokeWidth={2.5}
+                        label={{
+                          value: 'Normal Max (100)',
+                          position: 'insideBottomRight',
+                          fill: '#f0fdf4',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}
+                      />
+
+                      {/* Pre-Diabetic Zone (126 mg/dL) - YELLOW */}
+                      <ReferenceLine
+                        y={126}
+                        stroke="#eab308"
+                        strokeDasharray="5 5"
+                        strokeWidth={2.5}
+                        label={{
+                          value: 'Pre-Diabetic (126)',
+                          position: 'insideBottomRight',
+                          fill: '#fefce8',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}
+                      />
+
+                      {/* Diabetic Threshold (180 mg/dL) - RED */}
+                      <ReferenceLine
+                        y={180}
+                        stroke="#ef4444"
+                        strokeDasharray="5 5"
+                        strokeWidth={2.5}
+                        label={{
+                          value: 'Diabetic Danger (180)',
+                          position: 'insideBottomRight',
+                          fill: '#fef2f2',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}
+                      />
+
+                      {/* Critical Hyperglycemia (>240 mg/dL) - RED with ⚠️ */}
+                      <ReferenceLine
+                        y={240}
+                        stroke="#dc2626"
+                        strokeWidth={3}
+                        strokeDasharray="3 3"
+                        label={{
+                          value: '⚠️ DANGER: Critical Hyperglycemia (240)',
+                          position: 'insideBottomLeft',
+                          fill: '#fef2f2',
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          style: {
+                            background: '#dc2626',
+                            padding: '4px 8px',
+                            borderRadius: '4px'
+                          }
+                        }}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (

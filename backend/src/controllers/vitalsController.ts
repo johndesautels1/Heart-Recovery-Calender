@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import VitalsSample from '../models/VitalsSample';
 import User from '../models/User';
 import Patient from '../models/Patient';
+import MealEntry from '../models/MealEntry';
 import { Op } from 'sequelize';
 import { sendWeightChangeAlert, sendHawkAlert } from '../services/notificationService';
-import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, getCareTeamForNotification } from '../services/medicationCorrelationService';
+import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, checkHyperglycemiaMedicationCorrelation, checkHypoglycemiaMedicationCorrelation, checkFoodMedicationInteraction, getCareTeamForNotification } from '../services/medicationCorrelationService';
 
 
 // GET /api/vitals - Get all vitals with filters
@@ -159,6 +160,138 @@ export const addVital = async (req: Request, res: Response) => {
         }
       } catch (alertError) {
         console.error('[VITALS] Error sending edema Hawk Alert:', alertError);
+      }
+    }
+
+    // 🦅 HAWK ALERT: Check for glucose medication correlation (hyperglycemia)
+    if (vital.bloodSugar && vital.bloodSugar > 140 && userId) {
+      try {
+        console.log(`[VITALS] Checking for hyperglycemia medication correlation (Hawk Alert): ${vital.bloodSugar} mg/dL`);
+        const hawkAlert = await checkHyperglycemiaMedicationCorrelation(userId, vital.bloodSugar);
+
+        if (hawkAlert) {
+          console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+          const user = await User.findByPk(userId);
+          if (user && user.email) {
+            // Get care team to notify
+            const careTeam = await getCareTeamForNotification(userId);
+            const careTeamEmails = careTeam.map(member => member.email);
+
+            await sendHawkAlert(
+              user.email,
+              user.phoneNumber,
+              hawkAlert.type,
+              hawkAlert.severity,
+              hawkAlert.medicationNames,
+              hawkAlert.message,
+              hawkAlert.recommendation,
+              careTeamEmails
+            );
+          }
+        } else {
+          console.log('[VITALS] No medication correlation detected for high blood sugar');
+        }
+      } catch (alertError) {
+        console.error('[VITALS] Error sending hyperglycemia Hawk Alert:', alertError);
+      }
+    }
+
+    // 🦅 HAWK ALERT: Check for glucose medication correlation (hypoglycemia)
+    if (vital.bloodSugar && vital.bloodSugar < 80 && userId) {
+      try {
+        console.log(`[VITALS] Checking for hypoglycemia medication correlation (Hawk Alert): ${vital.bloodSugar} mg/dL`);
+        const hawkAlert = await checkHypoglycemiaMedicationCorrelation(userId, vital.bloodSugar);
+
+        if (hawkAlert) {
+          console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+          const user = await User.findByPk(userId);
+          if (user && user.email) {
+            // Get care team to notify
+            const careTeam = await getCareTeamForNotification(userId);
+            const careTeamEmails = careTeam.map(member => member.email);
+
+            await sendHawkAlert(
+              user.email,
+              user.phoneNumber,
+              hawkAlert.type,
+              hawkAlert.severity,
+              hawkAlert.medicationNames,
+              hawkAlert.message,
+              hawkAlert.recommendation,
+              careTeamEmails
+            );
+          }
+        } else {
+          console.log('[VITALS] No medication correlation detected for low blood sugar');
+        }
+      } catch (alertError) {
+        console.error('[VITALS] Error sending hypoglycemia Hawk Alert:', alertError);
+      }
+    }
+
+    // 🦅 HAWK ALERT: Check for food-medication interaction
+    if (vital.bloodSugar && userId) {
+      try {
+        console.log('[VITALS] Checking for food-medication interaction (Hawk Alert)...');
+
+        // Get recent meals from last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentMeals = await MealEntry.findAll({
+          where: {
+            userId,
+            timestamp: { [Op.gte]: twentyFourHoursAgo },
+            status: 'completed'
+          },
+          order: [['timestamp', 'DESC']]
+        });
+
+        if (recentMeals.length > 0) {
+          // Calculate totals from recent meals
+          const totalSodium = recentMeals.reduce((sum, meal) => sum + (meal.sodium || 0), 0);
+          const totalSugar = recentMeals.reduce((sum, meal) => sum + (meal.sugar || 0), 0);
+          const foodItems = recentMeals.map(meal => meal.foodItems);
+
+          console.log(`[VITALS] Recent meals: ${recentMeals.length}, Total sodium: ${totalSodium}mg, Total sugar: ${totalSugar}g`);
+
+          const hawkAlert = await checkFoodMedicationInteraction(
+            userId,
+            {
+              sodium: totalSodium,
+              sugar: totalSugar,
+              items: foodItems
+            },
+            vital.bloodSugar
+          );
+
+          if (hawkAlert) {
+            console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+            const user = await User.findByPk(userId);
+            if (user && user.email) {
+              // Get care team to notify
+              const careTeam = await getCareTeamForNotification(userId);
+              const careTeamEmails = careTeam.map(member => member.email);
+
+              await sendHawkAlert(
+                user.email,
+                user.phoneNumber,
+                hawkAlert.type,
+                hawkAlert.severity,
+                hawkAlert.medicationNames,
+                hawkAlert.message,
+                hawkAlert.recommendation,
+                careTeamEmails,
+                hawkAlert.foodItems
+              );
+            }
+          } else {
+            console.log('[VITALS] No food-medication interaction detected');
+          }
+        }
+      } catch (alertError) {
+        console.error('[VITALS] Error checking food-medication interaction:', alertError);
       }
     }
 
@@ -432,6 +565,48 @@ export const getHawkAlerts = async (req: Request, res: Response) => {
           detectedAt: recentEdema.timestamp,
           edemaSeverity: recentEdema.edemaSeverity,
           edemaLocation: recentEdema.edema
+        });
+      }
+    }
+
+    // Check for recent high blood sugar (last 3 days)
+    const recentHighGlucose = await VitalsSample.findOne({
+      where: {
+        userId,
+        bloodSugar: { [Op.gt]: 140 },
+        timestamp: { [Op.gte]: threeDaysAgo }
+      },
+      order: [['timestamp', 'DESC']]
+    });
+
+    if (recentHighGlucose && recentHighGlucose.bloodSugar) {
+      const hawkAlert = await checkHyperglycemiaMedicationCorrelation(userId, recentHighGlucose.bloodSugar);
+      if (hawkAlert) {
+        alerts.push({
+          ...hawkAlert,
+          detectedAt: recentHighGlucose.timestamp,
+          bloodSugar: recentHighGlucose.bloodSugar
+        });
+      }
+    }
+
+    // Check for recent low blood sugar (last 3 days)
+    const recentLowGlucose = await VitalsSample.findOne({
+      where: {
+        userId,
+        bloodSugar: { [Op.lt]: 80 },
+        timestamp: { [Op.gte]: threeDaysAgo }
+      },
+      order: [['timestamp', 'DESC']]
+    });
+
+    if (recentLowGlucose && recentLowGlucose.bloodSugar) {
+      const hawkAlert = await checkHypoglycemiaMedicationCorrelation(userId, recentLowGlucose.bloodSugar);
+      if (hawkAlert) {
+        alerts.push({
+          ...hawkAlert,
+          detectedAt: recentLowGlucose.timestamp,
+          bloodSugar: recentLowGlucose.bloodSugar
         });
       }
     }

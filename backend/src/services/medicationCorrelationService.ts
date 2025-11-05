@@ -4,11 +4,12 @@ import Patient from '../models/Patient';
 import { Op } from 'sequelize';
 
 export interface HawkAlert {
-  type: 'weight_gain' | 'weight_loss' | 'edema';
+  type: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction';
   severity: 'warning' | 'danger';
   medicationNames: string[];
   message: string;
   recommendation: string;
+  foodItems?: string[]; // For food-medication interactions
 }
 
 /**
@@ -214,4 +215,190 @@ export function autoPopulateSideEffects(medicationName: string): KnownSideEffect
   }
 
   return null;
+}
+
+/**
+ * Check for medication correlations with high blood sugar (hyperglycemia)
+ * @param userId - User ID to check
+ * @param bloodSugar - Blood sugar level in mg/dL
+ * @returns HawkAlert if correlation found, null otherwise
+ */
+export async function checkHyperglycemiaMedicationCorrelation(
+  userId: number,
+  bloodSugar: number
+): Promise<HawkAlert | null> {
+  try {
+    // High blood sugar threshold: >140 mg/dL (fasting) or >180 mg/dL (post-meal)
+    // For simplicity, we'll use >180 mg/dL as "danger" and >140 as "warning"
+    if (bloodSugar <= 140) {
+      return null;
+    }
+
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    // Find medications that raise blood sugar
+    const correlatedMeds = medications.filter(med => {
+      const sideEffects = med.knownSideEffects as KnownSideEffects;
+      return sideEffects && sideEffects.raisesBloodSugar === true;
+    });
+
+    if (correlatedMeds.length === 0) {
+      return null;
+    }
+
+    const severity: 'warning' | 'danger' = bloodSugar > 180 ? 'danger' : 'warning';
+    const medicationNames = correlatedMeds.map(med => med.name);
+    const medList = medicationNames.join(', ');
+
+    const message = `🦅 HAWK ALERT: Possible Medication-Induced High Blood Sugar - Investigate!`;
+    const recommendation = `Your blood sugar is elevated (${bloodSugar} mg/dL). The following medication(s) are known to raise blood sugar: ${medList}. High blood sugar is especially dangerous for heart patients. Contact your healthcare provider immediately to discuss if medication adjustments or additional diabetes management is needed.`;
+
+    return {
+      type: 'hyperglycemia',
+      severity,
+      medicationNames,
+      message,
+      recommendation
+    };
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking hyperglycemia correlation:', error);
+    return null;
+  }
+}
+
+/**
+ * Check for medication correlations with low blood sugar (hypoglycemia)
+ * @param userId - User ID to check
+ * @param bloodSugar - Blood sugar level in mg/dL
+ * @returns HawkAlert if correlation found, null otherwise
+ */
+export async function checkHypoglycemiaMedicationCorrelation(
+  userId: number,
+  bloodSugar: number
+): Promise<HawkAlert | null> {
+  try {
+    // Low blood sugar threshold: <70 mg/dL is danger, <80 is warning
+    if (bloodSugar >= 80) {
+      return null;
+    }
+
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    // Find medications that lower blood sugar
+    const correlatedMeds = medications.filter(med => {
+      const sideEffects = med.knownSideEffects as KnownSideEffects;
+      return sideEffects && sideEffects.lowersBloodSugar === true;
+    });
+
+    if (correlatedMeds.length === 0) {
+      return null;
+    }
+
+    const severity: 'warning' | 'danger' = bloodSugar < 70 ? 'danger' : 'warning';
+    const medicationNames = correlatedMeds.map(med => med.name);
+    const medList = medicationNames.join(', ');
+
+    const message = `🦅 HAWK ALERT: Possible Medication-Induced Low Blood Sugar - URGENT!`;
+    const recommendation = `Your blood sugar is dangerously low (${bloodSugar} mg/dL). The following medication(s) are known to lower blood sugar: ${medList}. Hypoglycemia can cause confusion, fainting, and is life-threatening. EAT OR DRINK SOMETHING WITH SUGAR IMMEDIATELY (juice, candy, glucose tablets). Contact your healthcare provider or call 911 if symptoms worsen.`;
+
+    return {
+      type: 'hypoglycemia',
+      severity,
+      medicationNames,
+      message,
+      recommendation
+    };
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking hypoglycemia correlation:', error);
+    return null;
+  }
+}
+
+/**
+ * Check for dangerous food-medication interactions
+ * @param userId - User ID to check
+ * @param recentMeals - Recent meal data (sodium, sugar content)
+ * @param bloodSugar - Optional blood sugar reading
+ * @returns HawkAlert if dangerous interaction found, null otherwise
+ */
+export async function checkFoodMedicationInteraction(
+  userId: number,
+  recentMeals: { sodium?: number; sugar?: number; items?: string[] },
+  bloodSugar?: number
+): Promise<HawkAlert | null> {
+  try {
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    const alerts: HawkAlert[] = [];
+
+    // Check for high sodium + medications that interact with sodium
+    if (recentMeals.sodium && recentMeals.sodium > 2000) {
+      const sodiumInteractMeds = medications.filter(med => {
+        const sideEffects = med.knownSideEffects as KnownSideEffects;
+        return sideEffects && sideEffects.interactsWithSodium === true;
+      });
+
+      if (sodiumInteractMeds.length > 0 && bloodSugar && bloodSugar > 140) {
+        const medicationNames = sodiumInteractMeds.map(med => med.name);
+        const medList = medicationNames.join(', ');
+
+        alerts.push({
+          type: 'food_medication_interaction',
+          severity: 'danger',
+          medicationNames,
+          foodItems: recentMeals.items || ['High-sodium foods'],
+          message: `🦅 HAWK ALERT: Dangerous Food-Medication Combination Detected!`,
+          recommendation: `You consumed high sodium (${recentMeals.sodium}mg) with elevated blood sugar (${bloodSugar} mg/dL) while taking: ${medList}. This combination is especially dangerous for heart patients and can cause fluid retention, increased blood pressure, and worsened diabetes. Reduce sodium intake immediately and monitor your vitals closely.`
+        });
+      }
+    }
+
+    // Check for high sugar + medications that raise blood sugar
+    if (recentMeals.sugar && recentMeals.sugar > 50 && bloodSugar && bloodSugar > 140) {
+      const sugarInteractMeds = medications.filter(med => {
+        const sideEffects = med.knownSideEffects as KnownSideEffects;
+        return sideEffects && (sideEffects.interactsWithSugar === true || sideEffects.raisesBloodSugar === true);
+      });
+
+      if (sugarInteractMeds.length > 0) {
+        const medicationNames = sugarInteractMeds.map(med => med.name);
+        const medList = medicationNames.join(', ');
+
+        alerts.push({
+          type: 'food_medication_interaction',
+          severity: 'warning',
+          medicationNames,
+          foodItems: recentMeals.items || ['High-sugar foods'],
+          message: `🦅 HAWK ALERT: High Sugar Intake with Blood Sugar-Raising Medication!`,
+          recommendation: `You consumed high sugar (${recentMeals.sugar}g) and your blood sugar is elevated (${bloodSugar} mg/dL) while taking: ${medList}. This medication can further raise your blood sugar. Avoid sugary foods and monitor your glucose levels frequently.`
+        });
+      }
+    }
+
+    return alerts.length > 0 ? alerts[0] : null;
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking food-medication interaction:', error);
+    return null;
+  }
 }

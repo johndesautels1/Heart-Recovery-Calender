@@ -262,19 +262,26 @@ ${isGain
 export async function sendHawkAlert(
   userEmail: string,
   userPhone: string | null | undefined,
-  alertType: 'weight_gain' | 'weight_loss' | 'edema',
+  alertType: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction',
   severity: 'warning' | 'danger',
   medicationNames: string[],
   message: string,
   recommendation: string,
-  careTeamEmails: string[]
+  careTeamEmails: string[],
+  foodItems?: string[]
 ): Promise<void> {
   const icon = severity === 'danger' ? '🚨' : '⚠️';
   const colorHex = severity === 'danger' ? '#ef4444' : '#f59e0b';
   const severityLabel = severity === 'danger' ? 'CRITICAL' : 'WARNING';
 
   const medList = medicationNames.join(', ');
-  const alertTypeLabel = alertType === 'weight_gain' ? 'Weight Gain' : alertType === 'weight_loss' ? 'Weight Loss' : 'Edema/Fluid Retention';
+  const alertTypeLabel =
+    alertType === 'weight_gain' ? 'Weight Gain' :
+    alertType === 'weight_loss' ? 'Weight Loss' :
+    alertType === 'edema' ? 'Edema/Fluid Retention' :
+    alertType === 'hyperglycemia' ? 'High Blood Sugar (Hyperglycemia)' :
+    alertType === 'hypoglycemia' ? 'Low Blood Sugar (Hypoglycemia)' :
+    'Food-Medication Interaction';
 
   // SMS (concise)
   const smsMessage = `${icon} ${severityLabel} HAWK ALERT: ${message}. Medications involved: ${medList}. ${recommendation} - Heart Recovery Calendar`;
@@ -308,6 +315,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;li
 <h3 style="margin:0 0 10px 0;color:${colorHex};">📋 Medications Involved:</h3>
 ${medicationNames.map(med => `<div class="med-item"><strong>${med}</strong></div>`).join('')}
 </div>
+
+${foodItems && foodItems.length > 0 ? `<div class="meds-list">
+<h3 style="margin:0 0 10px 0;color:${colorHex};">🍽️ Recent Foods Consumed:</h3>
+${foodItems.map(food => `<div class="med-item">${food}</div>`).join('')}
+</div>` : ''}
 
 ${severity === 'danger' ? `<div class="critical-warning">
 <p style="margin:0;font-weight:bold;color:#dc2626;">${icon} CRITICAL: Immediate Action Required</p>

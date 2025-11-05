@@ -9,6 +9,11 @@ interface KnownSideEffects {
   dizziness?: boolean;
   fatigue?: boolean;
   nausea?: boolean;
+  raisesBloodSugar?: boolean;  // Hyperglycemia risk
+  lowersBloodSugar?: boolean;  // Hypoglycemia risk
+  requiresFood?: boolean;      // Must be taken with food
+  interactsWithSodium?: boolean; // Dangerous with high-sodium foods
+  interactsWithSugar?: boolean;  // Dangerous with high-sugar foods
   [key: string]: boolean | undefined;
 }
 
