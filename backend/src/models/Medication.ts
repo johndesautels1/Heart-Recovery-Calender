@@ -14,6 +14,10 @@ interface KnownSideEffects {
   requiresFood?: boolean;      // Must be taken with food
   interactsWithSodium?: boolean; // Dangerous with high-sodium foods
   interactsWithSugar?: boolean;  // Dangerous with high-sugar foods
+  causesBradycardia?: boolean;   // Slows heart rate (beta blockers, calcium channel blockers)
+  causesTachycardia?: boolean;   // Increases heart rate (stimulants, decongestants)
+  affectsHeartRate?: boolean;    // General heart rate effect
+  reducesHRV?: boolean;          // Reduces heart rate variability
   [key: string]: boolean | undefined;
 }
 

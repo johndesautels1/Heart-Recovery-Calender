@@ -262,7 +262,7 @@ ${isGain
 export async function sendHawkAlert(
   userEmail: string,
   userPhone: string | null | undefined,
-  alertType: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction',
+  alertType: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia',
   severity: 'warning' | 'danger',
   medicationNames: string[],
   message: string,
@@ -281,7 +281,9 @@ export async function sendHawkAlert(
     alertType === 'edema' ? 'Edema/Fluid Retention' :
     alertType === 'hyperglycemia' ? 'High Blood Sugar (Hyperglycemia)' :
     alertType === 'hypoglycemia' ? 'Low Blood Sugar (Hypoglycemia)' :
-    'Food-Medication Interaction';
+    alertType === 'food_medication_interaction' ? 'Food-Medication Interaction' :
+    alertType === 'bradycardia' ? 'Slow Heart Rate (Bradycardia)' :
+    'Rapid Heart Rate (Tachycardia)';
 
   // SMS (concise)
   const smsMessage = `${icon} ${severityLabel} HAWK ALERT: ${message}. Medications involved: ${medList}. ${recommendation} - Heart Recovery Calendar`;

@@ -22,7 +22,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ComposedChart } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -78,11 +78,12 @@ export function VitalsPage() {
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'medical'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'pulse' | 'medical'>('overview');
 
   // Time period selections for Weight and Glucose journals
   const [weightTimePeriod, setWeightTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
   const [glucoseTimePeriod, setGlucoseTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
+  const [pulseTimePeriod, setPulseTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
 
   const {
     register,
@@ -339,6 +340,46 @@ export function VitalsPage() {
     }
   };
 
+  const handleDeleteGlucoseEntry = async (vitalId: number) => {
+    // Confirm deletion
+    const confirmDelete = window.confirm('Are you sure you want to delete this glucose entry? This action cannot be undone.');
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await api.deleteVital(vitalId);
+      toast.success('Glucose entry deleted successfully');
+
+      // Reload vitals data to reflect the deletion
+      await loadVitals();
+    } catch (error) {
+      console.error('Failed to delete glucose entry:', error);
+      toast.error('Failed to delete glucose entry');
+    }
+  };
+
+  const handleDeletePulseEntry = async (vitalId: number) => {
+    // Confirm deletion
+    const confirmDelete = window.confirm('Are you sure you want to delete this heart rate entry? This action cannot be undone.');
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await api.deleteVital(vitalId);
+      toast.success('Heart rate entry deleted successfully');
+
+      // Reload vitals data to reflect the deletion
+      await loadVitals();
+    } catch (error) {
+      console.error('Failed to delete heart rate entry:', error);
+      toast.error('Failed to delete heart rate entry');
+    }
+  };
+
   const getBloodPressureStatus = (systolic?: number, diastolic?: number) => {
     if (!systolic || !diastolic) return { status: 'Unknown', className: 'text-yellow-500' };
     if (systolic < 120 && diastolic < 80) return { status: 'Normal', className: 'text-green-500' };
@@ -398,6 +439,10 @@ export function VitalsPage() {
   // Filter glucose data by selected time period
   const glucoseTimePeriodFilter = getTimePeriodFilter(glucoseTimePeriod);
   const filteredGlucoseVitals = vitals.filter(v => v.bloodSugar && glucoseTimePeriodFilter(v));
+
+  // Filter pulse/heart rate data by selected time period
+  const pulseTimePeriodFilter = getTimePeriodFilter(pulseTimePeriod);
+  const filteredPulseVitals = vitals.filter(v => v.heartRate && pulseTimePeriodFilter(v));
 
   // Prepare chart data for Weight Journal with BMI and ideal weight calculations
   const weightChartData = filteredWeightVitals.map(v => {
@@ -751,6 +796,7 @@ export function VitalsPage() {
               { id: 'overview' as const, label: 'Overview', icon: Activity },
               { id: 'weight' as const, label: 'Weight Journal', icon: Weight },
               { id: 'glucose' as const, label: 'Glucose Journal', icon: Droplet },
+              { id: 'pulse' as const, label: 'Pulse Monitor', icon: Heart },
               { id: 'medical' as const, label: 'Medical Tests', icon: Heart }
             ].map(tab => (
               <button
@@ -2783,6 +2829,7 @@ export function VitalsPage() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Glucose</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Notes</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2801,12 +2848,719 @@ export function VitalsPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-400">{vital.notes || '--'}</td>
+                          <td className="py-3 px-4 text-sm">
+                            <button
+                              onClick={() => handleDeleteGlucoseEntry(vital.id)}
+                              className="text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
+                              title="Delete entry"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* 🫀 PULSE / HEART RATE MONITORING - WORLD-CLASS ANALYTICS      */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'pulse' && (
+        <div className="space-y-8 animate-fadeIn">
+
+          {/* PULSE HAWK ALERTS - Top Priority */}
+          {hawkAlerts.filter(alert => alert.type === 'bradycardia' || alert.type === 'tachycardia').map((alert, index) => {
+            if (dismissedAlerts.includes(index)) return null;
+
+            return (
+              <div
+                key={index}
+                className={`relative overflow-hidden rounded-2xl p-6 ${
+                  alert.severity === 'danger'
+                    ? 'bg-gradient-to-br from-red-900/40 via-red-800/30 to-red-900/40 border-2 border-red-500/50'
+                    : 'bg-gradient-to-br from-yellow-900/40 via-yellow-800/30 to-yellow-900/40 border-2 border-yellow-500/50'
+                } shadow-2xl`}
+                style={{
+                  animation: alert.severity === 'danger' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+                }}
+              >
+                {/* Dismiss Button */}
+                <button
+                  onClick={() => setDismissedAlerts([...dismissedAlerts, index])}
+                  className="absolute top-4 right-4 p-2 rounded-lg transition-all hover:bg-white/10 z-10"
+                  title="Dismiss alert"
+                >
+                  <X className="h-5 w-5 text-gray-400 hover:text-white" />
+                </button>
+
+                <div className="flex items-start gap-4">
+                  {/* Icon */}
+                  <div className={`p-4 rounded-full ${
+                    alert.severity === 'danger' ? 'bg-red-500/20' : 'bg-yellow-500/20'
+                  }`}>
+                    <Heart className={`h-8 w-8 ${
+                      alert.severity === 'danger' ? 'text-red-400 animate-pulse' : 'text-yellow-400'
+                    }`} />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 pr-8">
+                    <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                      {alert.severity === 'danger' ? '🚨' : '⚠️'}
+                      {alert.type === 'bradycardia' ? '🐢 Slow Heart Rate Detected' : '⚡ Rapid Heart Rate Detected'}
+                    </h3>
+                    <p className="text-lg text-gray-200 mb-4">{alert.message}</p>
+
+                    {/* Medications Involved */}
+                    <div className="bg-black/30 rounded-lg p-4 mb-4">
+                      <h4 className="text-sm font-bold text-yellow-400 mb-2">💊 Medications Involved:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {alert.medicationNames.map((med, i) => (
+                          <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-sm text-white border border-white/20">
+                            {med}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recommendation */}
+                    <div className={`p-4 rounded-lg ${
+                      alert.severity === 'danger' ? 'bg-red-500/20 border border-red-500/30' : 'bg-yellow-500/20 border border-yellow-500/30'
+                    }`}>
+                      <p className="text-sm text-gray-200">{alert.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* ═══════════════════════════════════════════ */}
+          {/* 5 ADVANCED PULSE METRICS PANEL              */}
+          {/* ═══════════════════════════════════════════ */}
+
+          {/* Time Period Toggle for Pulse/Heart Rate */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex gap-2 p-1 rounded-xl" style={{
+              background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.8))',
+              border: '1px solid rgba(239, 68, 68, 0.3)'
+            }}>
+              <button
+                onClick={() => setPulseTimePeriod('7d')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  pulseTimePeriod === '7d'
+                    ? 'bg-red-500 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                7 Days
+              </button>
+              <button
+                onClick={() => setPulseTimePeriod('30d')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  pulseTimePeriod === '30d'
+                    ? 'bg-red-500 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                30 Days
+              </button>
+              <button
+                onClick={() => setPulseTimePeriod('surgery')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  pulseTimePeriod === 'surgery'
+                    ? 'bg-red-500 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Since Surgery
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+            {/* Metric 1: Current Heart Rate */}
+            <GlassCard className="relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Activity className="h-8 w-8 text-red-400 animate-pulse" />
+                  <span className="text-xs font-bold text-gray-400">CURRENT</span>
+                </div>
+                <p className="text-4xl font-black text-white mb-2">
+                  {filteredLatest?.heartRate || '--'}
+                  <span className="text-lg text-gray-400 ml-2">bpm</span>
+                </p>
+                <p className="text-sm font-bold text-gray-300">Heart Rate</p>
+                {filteredLatest?.heartRate && (
+                  <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold inline-block ${
+                    filteredLatest.heartRate < 50 ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
+                    filteredLatest.heartRate < 60 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' :
+                    filteredLatest.heartRate <= 100 ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
+                    filteredLatest.heartRate <= 120 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' :
+                    'bg-red-500/20 text-red-400 border border-red-500/50'
+                  }`}>
+                    {filteredLatest.heartRate < 50 ? '🔴 CRITICAL LOW' :
+                     filteredLatest.heartRate < 60 ? '🟡 BRADYCARDIA' :
+                     filteredLatest.heartRate <= 100 ? '🟢 NORMAL' :
+                     filteredLatest.heartRate <= 120 ? '🟠 ELEVATED' :
+                     '🔴 TACHYCARDIA'}
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+
+            {/* Metric 2: Resting HR */}
+            <GlassCard className="relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Heart className="h-8 w-8 text-blue-400" />
+                  <span className="text-xs font-bold text-gray-400">
+                    {pulseTimePeriod === '7d' ? '7-DAY MIN' : pulseTimePeriod === '30d' ? '30-DAY MIN' : 'PERIOD MIN'}
+                  </span>
+                </div>
+                <p className="text-4xl font-black text-white mb-2">
+                  {filteredPulseVitals.length > 0 ? Math.min(...filteredPulseVitals.map(v => v.heartRate!)) : '--'}
+                  <span className="text-lg text-gray-400 ml-2">bpm</span>
+                </p>
+                <p className="text-sm font-bold text-gray-300">Resting HR</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Lowest HR in {pulseTimePeriod === '7d' ? 'last 7 days' : pulseTimePeriod === '30d' ? 'last 30 days' : 'period'}
+                </p>
+              </div>
+            </GlassCard>
+
+            {/* Metric 3: Average HR */}
+            <GlassCard className="relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <TrendingUp className="h-8 w-8 text-purple-400" />
+                  <span className="text-xs font-bold text-gray-400">AVG</span>
+                </div>
+                <p className="text-4xl font-black text-white mb-2">
+                  {(() => {
+                    if (filteredPulseVitals.length === 0) return '--';
+                    const avg = filteredPulseVitals.reduce((sum, v) => sum + (v.heartRate || 0), 0) / filteredPulseVitals.length;
+                    return Math.round(avg);
+                  })()}
+                  <span className="text-lg text-gray-400 ml-2">bpm</span>
+                </p>
+                <p className="text-sm font-bold text-gray-300">
+                  {pulseTimePeriod === '7d' ? '7-Day' : pulseTimePeriod === '30d' ? '30-Day' : 'Period'} Avg
+                </p>
+                <p className="text-xs text-gray-500 mt-2">Average heart rate</p>
+              </div>
+            </GlassCard>
+
+            {/* Metric 4: HRV Score */}
+            <GlassCard className="relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Zap className="h-8 w-8 text-green-400" />
+                  <span className="text-xs font-bold text-gray-400">HRV</span>
+                </div>
+                <p className="text-4xl font-black text-white mb-2">
+                  {filteredLatest?.heartRateVariability || '--'}
+                  <span className="text-lg text-gray-400 ml-2">ms</span>
+                </p>
+                <p className="text-sm font-bold text-gray-300">Heart Rate Variability</p>
+                {filteredLatest?.heartRateVariability && (
+                  <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold inline-block ${
+                    filteredLatest.heartRateVariability < 20 ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
+                    filteredLatest.heartRateVariability < 50 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' :
+                    filteredLatest.heartRateVariability < 100 ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
+                    'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                  }`}>
+                    {filteredLatest.heartRateVariability < 20 ? 'POOR' :
+                     filteredLatest.heartRateVariability < 50 ? 'FAIR' :
+                     filteredLatest.heartRateVariability < 100 ? 'GOOD' :
+                     'EXCELLENT'}
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+
+            {/* Metric 5: Target Zone Compliance */}
+            <GlassCard className="relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <AlertTriangle className="h-8 w-8 text-yellow-400" />
+                  <span className="text-xs font-bold text-gray-400">SAFETY</span>
+                </div>
+                <p className="text-4xl font-black text-white mb-2">
+                  {(() => {
+                    if (filteredPulseVitals.length === 0 || !patientData) return '--';
+                    const targetMin = patientData.targetHeartRateMin || 60;
+                    const targetMax = patientData.targetHeartRateMax || 100;
+                    const inZone = filteredPulseVitals.filter(v =>
+                      v.heartRate! >= targetMin && v.heartRate! <= targetMax
+                    );
+                    return Math.round((inZone.length / filteredPulseVitals.length) * 100);
+                  })()}
+                  <span className="text-lg text-gray-400 ml-2">%</span>
+                </p>
+                <p className="text-sm font-bold text-gray-300">In Safe Zone</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {pulseTimePeriod === '7d' ? 'Last 7 days' : pulseTimePeriod === '30d' ? 'Last 30 days' : 'Period'} compliance
+                </p>
+              </div>
+            </GlassCard>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* MULTI-ZONE HEART RATE CHART - PREMIUM 3D VISUALIZATION        */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <GlassCard className="p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-black bg-gradient-to-r from-red-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                🫀 Heart Rate Zones - Advanced {pulseTimePeriod === '7d' ? '7-Day' : pulseTimePeriod === '30d' ? '30-Day' : 'Post-Surgery'} Analysis
+              </h2>
+            </div>
+
+            <ResponsiveContainer width="100%" height={500}>
+              <ComposedChart data={(() => {
+                const chartData = filteredPulseVitals.map(v => ({
+                  date: format(new Date(v.timestamp), 'MMM dd HH:mm'),
+                  heartRate: v.heartRate,
+                  hrv: v.heartRateVariability
+                }));
+                return chartData;
+              })()}>
+
+                {/* Premium Grid */}
+                <defs>
+                  {/* Gradient for Heart Rate Area */}
+                  <linearGradient id="hrGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                    <stop offset="50%" stopColor="#f97316" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.2} />
+                  </linearGradient>
+                  {/* Gradient for HRV Line */}
+                  <linearGradient id="hrvGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.8} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" stroke="#4b5563" opacity={0.3} />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9ca3af"
+                  tick={{ fill: '#f3f4f6', fontSize: 11, fontWeight: 700 }}
+                  angle={-25}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis
+                  domain={[40, 180]}
+                  stroke="#9ca3af"
+                  tick={{ fill: '#f3f4f6', fontSize: 13, fontWeight: 700 }}
+                  label={{
+                    value: 'Heart Rate (bpm)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    fill: '#f3f4f6',
+                    fontWeight: 700,
+                    fontSize: 14
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                    border: '2px solid rgba(59, 130, 246, 0.5)',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(59, 130, 246, 0.3)',
+                    padding: '16px'
+                  }}
+                  labelStyle={{
+                    color: '#f3f4f6',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    marginBottom: '8px'
+                  }}
+                  itemStyle={{
+                    color: '#d1d5db',
+                    fontSize: '13px'
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{
+                    paddingTop: '20px'
+                  }}
+                  iconType="circle"
+                />
+
+                {/* ══════════════════════════════════════════════════════════════ */}
+                {/* PROGRESSIVE HEART RATE ZONE SHADING - GRADIENT RISK SYSTEM   */}
+                {/* ══════════════════════════════════════════════════════════════ */}
+
+                {/* CRITICAL BRADYCARDIA ZONE (40-50 bpm) - Dark Red */}
+                <ReferenceArea
+                  y1={40}
+                  y2={50}
+                  fill="#dc2626"
+                  fillOpacity={0.25}
+                  stroke="none"
+                />
+
+                {/* SEVERE BRADYCARDIA ZONE (50-55 bpm) - Medium Red */}
+                <ReferenceArea
+                  y1={50}
+                  y2={55}
+                  fill="#ef4444"
+                  fillOpacity={0.18}
+                  stroke="none"
+                />
+
+                {/* BRADYCARDIA WARNING ZONE (55-60 bpm) - Faint Red to Yellow */}
+                <ReferenceArea
+                  y1={55}
+                  y2={60}
+                  fill="#fbbf24"
+                  fillOpacity={0.12}
+                  stroke="none"
+                />
+
+                {/* HEALTHY ZONE (60-100 bpm) - Green */}
+                <ReferenceArea
+                  y1={60}
+                  y2={100}
+                  fill="#10b981"
+                  fillOpacity={0.15}
+                  stroke="#10b981"
+                  strokeOpacity={0.4}
+                  strokeWidth={2}
+                  label={{
+                    value: '✅ HEALTHY ZONE (60-100 bpm)',
+                    position: 'insideTop',
+                    fill: '#d1fae5',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    style: {
+                      textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(16, 185, 129, 0.6)'
+                    }
+                  }}
+                />
+
+                {/* TACHYCARDIA WARNING ZONE (100-110 bpm) - Faint Yellow */}
+                <ReferenceArea
+                  y1={100}
+                  y2={110}
+                  fill="#fbbf24"
+                  fillOpacity={0.12}
+                  stroke="none"
+                />
+
+                {/* ELEVATED TACHYCARDIA ZONE (110-120 bpm) - Medium Yellow */}
+                <ReferenceArea
+                  y1={110}
+                  y2={120}
+                  fill="#f59e0b"
+                  fillOpacity={0.18}
+                  stroke="none"
+                />
+
+                {/* SEVERE TACHYCARDIA ZONE (120-140 bpm) - Faint to Medium Red */}
+                <ReferenceArea
+                  y1={120}
+                  y2={140}
+                  fill="#ef4444"
+                  fillOpacity={0.18}
+                  stroke="none"
+                />
+
+                {/* CRITICAL TACHYCARDIA ZONE (140-180 bpm) - Dark Red */}
+                <ReferenceArea
+                  y1={140}
+                  y2={180}
+                  fill="#dc2626"
+                  fillOpacity={0.25}
+                  stroke="none"
+                />
+
+                {/* ══════════════════════════════════════════ */}
+                {/* DANGER ZONE REFERENCE LINES               */}
+                {/* ══════════════════════════════════════════ */}
+
+                {/* Critical Bradycardia Zone (<50 bpm) */}
+                <ReferenceLine
+                  y={50}
+                  stroke="#dc2626"
+                  strokeWidth={4}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: '⚠️ CRITICAL BRADYCARDIA (50 bpm)',
+                    position: 'insideTopLeft',
+                    fill: '#fef2f2',
+                    fontSize: 13,
+                    fontWeight: 'bold',
+                    style: {
+                      textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(220, 38, 38, 0.6)'
+                    }
+                  }}
+                />
+
+                {/* Bradycardia Warning (60 bpm) */}
+                <ReferenceLine
+                  y={60}
+                  stroke="#f59e0b"
+                  strokeWidth={3}
+                  strokeDasharray="6 4"
+                  label={{
+                    value: '🟡 Bradycardia Risk (60 bpm)',
+                    position: 'insideTopRight',
+                    fill: '#fef3c7',
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    style: { textShadow: '0 2px 6px rgba(0,0,0,0.8)' }
+                  }}
+                />
+
+                {/* Safe Zone Lower Bound */}
+                {patientData?.targetHeartRateMin && (
+                  <ReferenceLine
+                    y={patientData.targetHeartRateMin}
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: `🟢 Target Min (${patientData.targetHeartRateMin} bpm)`,
+                      position: 'insideBottomLeft',
+                      fill: '#d1fae5',
+                      fontSize: 11,
+                      fontWeight: 'bold'
+                    }}
+                  />
+                )}
+
+                {/* Safe Zone Upper Bound */}
+                {patientData?.targetHeartRateMax && (
+                  <ReferenceLine
+                    y={patientData.targetHeartRateMax}
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: `🟢 Target Max (${patientData.targetHeartRateMax} bpm)`,
+                      position: 'insideBottomRight',
+                      fill: '#d1fae5',
+                      fontSize: 11,
+                      fontWeight: 'bold'
+                    }}
+                  />
+                )}
+
+                {/* Patient's Maximum Safe HR */}
+                {patientData?.maxHeartRate && (
+                  <ReferenceLine
+                    y={patientData.maxHeartRate}
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    strokeDasharray="6 4"
+                    label={{
+                      value: `🔴 Max Safe HR (${patientData.maxHeartRate} bpm)`,
+                      position: 'insideTopRight',
+                      fill: '#fef2f2',
+                      fontSize: 12,
+                      fontWeight: 'bold',
+                      style: { textShadow: '0 2px 6px rgba(0,0,0,0.8)' }
+                    }}
+                  />
+                )}
+
+                {/* Critical Tachycardia (120 bpm) */}
+                <ReferenceLine
+                  y={120}
+                  stroke="#dc2626"
+                  strokeWidth={4}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: '⚠️ CRITICAL TACHYCARDIA (120 bpm)',
+                    position: 'insideBottomLeft',
+                    fill: '#fef2f2',
+                    fontSize: 13,
+                    fontWeight: 'bold',
+                    style: {
+                      textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(220, 38, 38, 0.6)'
+                    }
+                  }}
+                />
+
+                {/* ══════════════════════════════════════════ */}
+                {/* DATA VISUALIZATION LAYERS                */}
+                {/* ══════════════════════════════════════════ */}
+
+                {/* Heart Rate Area Chart with Premium Gradient */}
+                <Area
+                  type="monotone"
+                  dataKey="heartRate"
+                  stroke="#ef4444"
+                  strokeWidth={4}
+                  fill="url(#hrGradient)"
+                  dot={{
+                    r: 7,
+                    fill: '#ef4444',
+                    strokeWidth: 3,
+                    stroke: '#fff',
+                    style: {
+                      filter: 'drop-shadow(0 2px 8px rgba(239, 68, 68, 0.6))'
+                    }
+                  }}
+                  activeDot={{
+                    r: 10,
+                    fill: '#dc2626',
+                    strokeWidth: 4,
+                    stroke: '#fff',
+                    style: {
+                      filter: 'drop-shadow(0 0 12px rgba(239, 68, 68, 1))',
+                      cursor: 'pointer'
+                    }
+                  }}
+                  name="Heart Rate (bpm)"
+                  animationDuration={2000}
+                  animationEasing="ease-in-out"
+                />
+
+                {/* HRV Overlay Line - Only show if HRV data exists (not provided by Strava) */}
+                {vitals.some(v => v.heartRateVariability && v.heartRateVariability > 0) && (
+                  <Line
+                    type="monotone"
+                    dataKey="hrv"
+                    stroke="url(#hrvGradient)"
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    dot={{
+                      r: 5,
+                      fill: '#10b981',
+                      strokeWidth: 2,
+                      stroke: '#fff',
+                      style: { filter: 'drop-shadow(0 2px 6px rgba(16, 185, 129, 0.6))' }
+                    }}
+                    activeDot={{
+                      r: 8,
+                      fill: '#059669',
+                      strokeWidth: 3,
+                      stroke: '#fff'
+                    }}
+                    name="HRV (ms)"
+                    opacity={0.75}
+                    animationDuration={2000}
+                    animationEasing="ease-in-out"
+                    yAxisId="right"
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+
+            {/* Premium Zone Legend with 3D Effects */}
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30">
+                <div className="w-5 h-5 rounded-full bg-red-500 shadow-lg shadow-red-500/50" />
+                <div>
+                  <span className="text-sm font-bold text-red-400">Critical Zones</span>
+                  <p className="text-xs text-gray-400">&lt;50 bpm, &gt;120 bpm</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-orange-500/10 to-orange-500/5 border border-orange-500/30">
+                <div className="w-5 h-5 rounded-full bg-orange-500 shadow-lg shadow-orange-500/50" />
+                <div>
+                  <span className="text-sm font-bold text-orange-400">Warning Zones</span>
+                  <p className="text-xs text-gray-400">50-60 bpm</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/30">
+                <div className="w-5 h-5 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
+                <div>
+                  <span className="text-sm font-bold text-green-400">Safe Target Zone</span>
+                  <p className="text-xs text-gray-400">{patientData?.targetHeartRateMin || 60}-{patientData?.targetHeartRateMax || 100} bpm</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/5 border border-blue-500/30">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg shadow-blue-500/50" />
+                <div>
+                  <span className="text-sm font-bold text-blue-400">HRV Trend</span>
+                  <p className="text-xs text-gray-400">Higher = Better Recovery</p>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* HEART RATE HISTORY TABLE                                       */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <GlassCard className="p-8">
+            <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Activity className="h-6 w-6 text-red-400" />
+              Heart Rate History
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Heart Rate</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Source</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Notes</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vitals.filter(v => v.heartRate).slice(-20).reverse().map((vital) => {
+                    const hr = vital.heartRate!;
+                    let statusBadge = {
+                      text: 'Normal',
+                      className: 'bg-green-500/20 text-green-400'
+                    };
+
+                    if (hr < 50) {
+                      statusBadge = { text: 'Critical Low', className: 'bg-red-500/20 text-red-400' };
+                    } else if (hr < 60) {
+                      statusBadge = { text: 'Bradycardia', className: 'bg-yellow-500/20 text-yellow-400' };
+                    } else if (hr > 120) {
+                      statusBadge = { text: 'Critical High', className: 'bg-red-500/20 text-red-400' };
+                    } else if (hr > 100) {
+                      statusBadge = { text: 'Tachycardia', className: 'bg-orange-500/20 text-orange-400' };
+                    }
+
+                    return (
+                      <tr key={vital.id} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-sm">{format(new Date(vital.timestamp), 'MMM d, yyyy h:mm a')}</td>
+                        <td className="py-3 px-4 text-sm font-semibold">{hr} bpm</td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${statusBadge.className}`}>
+                            {statusBadge.text}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className="text-gray-400">{vital.source || 'Manual'}</span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-400">{vital.notes || '--'}</td>
+                        <td className="py-3 px-4 text-sm">
+                          <button
+                            onClick={() => handleDeletePulseEntry(vital.id)}
+                            className="text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
+                            title="Delete entry"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </GlassCard>
         </div>

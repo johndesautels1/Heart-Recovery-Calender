@@ -4,7 +4,7 @@ import Patient from '../models/Patient';
 import { Op } from 'sequelize';
 
 export interface HawkAlert {
-  type: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction';
+  type: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia';
   severity: 'warning' | 'danger';
   medicationNames: string[];
   message: string;
@@ -399,6 +399,123 @@ export async function checkFoodMedicationInteraction(
     return alerts.length > 0 ? alerts[0] : null;
   } catch (error) {
     console.error('[MED_CORRELATION] Error checking food-medication interaction:', error);
+    return null;
+  }
+}
+
+/**
+ * Check for medication-induced bradycardia (slow heart rate)
+ * @param userId - User ID to check
+ * @param heartRate - Current heart rate in bpm
+ * @returns HawkAlert if correlation found, null otherwise
+ */
+export async function checkBradycardiaMedicationCorrelation(
+  userId: number,
+  heartRate: number
+): Promise<HawkAlert | null> {
+  try {
+    // Only check if heart rate is concerning
+    if (heartRate > 60) {
+      return null;
+    }
+
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    // Find medications that cause bradycardia
+    const correlatedMeds = medications.filter(med => {
+      const sideEffects = med.knownSideEffects as KnownSideEffects;
+      return sideEffects && (sideEffects.causesBradycardia === true || sideEffects.affectsHeartRate === true);
+    });
+
+    if (correlatedMeds.length === 0) {
+      return null;
+    }
+
+    const severity: 'warning' | 'danger' = heartRate < 50 ? 'danger' : 'warning';
+    const medicationNames = correlatedMeds.map(med => med.name);
+    const medList = medicationNames.join(', ');
+
+    const message = `🦅 HAWK ALERT: Possible Medication-Induced Slow Heart Rate (Bradycardia) - Monitor Closely!`;
+    const recommendation = `Your heart rate is ${heartRate < 50 ? 'dangerously' : 'concerningly'} low (${heartRate} bpm). The following medication(s) are known to slow heart rate: ${medList}. ${heartRate < 50 ? 'SEEK IMMEDIATE MEDICAL ATTENTION if you feel dizzy, faint, or have chest pain. Call 911 if symptoms are severe.' : 'Monitor your symptoms closely and contact your healthcare provider to discuss potential medication adjustments. Report any dizziness, fatigue, or shortness of breath.'} Beta blockers and calcium channel blockers commonly cause bradycardia in cardiac patients.`;
+
+    return {
+      type: 'bradycardia',
+      severity,
+      medicationNames,
+      message,
+      recommendation
+    };
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking bradycardia correlation:', error);
+    return null;
+  }
+}
+
+/**
+ * Check for medication-induced tachycardia (fast heart rate)
+ * @param userId - User ID to check
+ * @param heartRate - Current heart rate in bpm
+ * @param maxHeartRate - Patient's maximum safe heart rate (from profile)
+ * @returns HawkAlert if correlation found, null otherwise
+ */
+export async function checkTachycardiaMedicationCorrelation(
+  userId: number,
+  heartRate: number,
+  maxHeartRate?: number
+): Promise<HawkAlert | null> {
+  try {
+    // Determine threshold (use patient's max HR or general threshold of 100)
+    const threshold = maxHeartRate || 100;
+
+    // Only check if heart rate is elevated
+    if (heartRate <= threshold) {
+      return null;
+    }
+
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    // Find medications that cause tachycardia
+    const correlatedMeds = medications.filter(med => {
+      const sideEffects = med.knownSideEffects as KnownSideEffects;
+      return sideEffects && (sideEffects.causesTachycardia === true || sideEffects.affectsHeartRate === true);
+    });
+
+    if (correlatedMeds.length === 0) {
+      return null;
+    }
+
+    // Check if significantly elevated (>120 or >20 above max)
+    const significantlyElevated = heartRate > 120 || (maxHeartRate && heartRate > maxHeartRate + 20);
+    const severity: 'warning' | 'danger' = significantlyElevated ? 'danger' : 'warning';
+    const medicationNames = correlatedMeds.map(med => med.name);
+    const medList = medicationNames.join(', ');
+
+    const message = `🦅 HAWK ALERT: Possible Medication-Induced Rapid Heart Rate (Tachycardia) - Action Required!`;
+    const recommendation = `Your heart rate is ${significantlyElevated ? 'dangerously' : 'concerningly'} high (${heartRate} bpm${maxHeartRate ? `, max safe: ${maxHeartRate} bpm` : ''}). The following medication(s) may be increasing your heart rate: ${medList}. ${significantlyElevated ? 'SEEK IMMEDIATE MEDICAL ATTENTION if you have chest pain, severe shortness of breath, or feel like you might faint. Call 911 if needed.' : 'Contact your healthcare provider to discuss this elevated heart rate. They may need to adjust your medications or dosages.'} Stimulants, decongestants, and some cardiac medications can cause tachycardia.`;
+
+    return {
+      type: 'tachycardia',
+      severity,
+      medicationNames,
+      message,
+      recommendation
+    };
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking tachycardia correlation:', error);
     return null;
   }
 }
