@@ -13,6 +13,8 @@ interface ExercisePrescriptionAttributes {
   duration?: number; // in minutes
   frequency: string; // e.g., "daily", "3x/week", "Mon/Wed/Fri"
   notes?: string;
+  targetMETMin?: number; // Target minimum MET level
+  targetMETMax?: number; // Target maximum MET level
   status: 'active' | 'completed' | 'discontinued';
   createdAt?: Date;
   updatedAt?: Date;
@@ -32,6 +34,8 @@ class ExercisePrescription extends Model<ExercisePrescriptionAttributes, Exercis
   public duration?: number;
   public frequency!: string;
   public notes?: string;
+  public targetMETMin?: number;
+  public targetMETMax?: number;
   public status!: 'active' | 'completed' | 'discontinued';
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
@@ -98,6 +102,16 @@ class ExercisePrescription extends Model<ExercisePrescriptionAttributes, Exercis
         notes: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        targetMETMin: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Target minimum MET level for this exercise prescription',
+        },
+        targetMETMax: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Target maximum MET level for this exercise prescription',
         },
         status: {
           type: DataTypes.ENUM('active', 'completed', 'discontinued'),

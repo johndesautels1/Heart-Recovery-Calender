@@ -2049,7 +2049,11 @@ export function ExercisesPage() {
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                           <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                          <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} />
+                          <YAxis
+                            stroke="#ffffff60"
+                            style={{ fontSize: '12px' }}
+                            domain={[0, (dataMax: number) => Math.max(60, Math.ceil(dataMax * 1.1))]}
+                          />
                           <Tooltip
                             contentStyle={{
                               backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -2084,23 +2088,24 @@ export function ExercisesPage() {
 
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={(() => {
-                          // Use REAL MET data from logs with heart rate data
+                          // Use REAL MET data from logs - show ALL logs from selected month
                           const logs = monthlyStats.logs || [];
 
-                          // Sort logs chronologically (earliest to latest)
+                          // Sort logs chronologically (earliest to latest) for left-to-right display
                           const sortedLogs = [...logs].sort((a: any, b: any) =>
                             new Date(a.startTime || a.completedAt).getTime() - new Date(b.startTime || b.completedAt).getTime()
                           );
 
-                          // Filter logs that have MET data and limit to last 90 days
-                          const logsWithMET = sortedLogs.filter((log: any) => log.actualMET !== null && log.actualMET !== undefined);
-
-                          return logsWithMET.slice(-90).map((log: any) => ({
-                            date: new Date(log.startTime || log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                            metLevel: log.actualMET || 0, // Real calculated MET from heart rate data
-                            targetMin: log.targetMETMin || 0, // Minimum target MET zone
-                            targetMax: log.targetMETMax || 0, // Maximum target MET zone
-                          }));
+                          // Show ALL logs (even without MET data) for the selected month
+                          return sortedLogs.map((log: any) => {
+                            const timestamp = new Date(log.startTime || log.completedAt);
+                            return {
+                              date: timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                              metLevel: log.actualMET || null, // Real calculated MET from heart rate data (null if not available)
+                              targetMin: log.targetMETMin || null, // Minimum target MET zone
+                              targetMax: log.targetMETMax || null, // Maximum target MET zone
+                            };
+                          });
                         })()}>
                           <defs>
                             <linearGradient id="metGradient" x1="0" y1="0" x2="1" y2="0">

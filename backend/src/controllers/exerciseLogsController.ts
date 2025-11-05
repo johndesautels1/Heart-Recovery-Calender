@@ -7,6 +7,7 @@ import Patient from '../models/Patient';
 import ExercisePrescription from '../models/ExercisePrescription';
 import { Op } from 'sequelize';
 import { calculateCaloriesBurned } from '../utils/calorieCalculator';
+import { calculateMETsFromHeartRate } from '../utils/metCalculator';
 
 // GET /api/exercise-logs - Get all exercise logs with filters
 export const getExerciseLogs = async (req: Request, res: Response) => {
@@ -118,19 +119,27 @@ export const createExerciseLog = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Patients can only log their own exercises' });
     }
 
-    // If no userId provided in body, use authenticated user's ID
+    // Get the user ID from the request (this is the patient's user ID)
+    const targetUserId = req.body.userId || userId;
+
+    // Find the patient record for this user
+    const patient = await Patient.findOne({ where: { userId: targetUserId } });
+
+    if (!patient) {
+      return res.status(404).json({ error: `No patient record found for user ID ${targetUserId}` });
+    }
+
+    // Remove userId and patientId from body to avoid conflicts
+    const { userId: bodyUserId, patientId: bodyPatientId, ...restOfBody } = req.body;
+
+    // Build logData with the patient record ID
     const logData = {
-      ...req.body,
-      userId: req.body.userId || userId,
+      ...restOfBody,
+      patientId: patient.id,
       completedAt: req.body.completedAt || new Date(),
     };
 
-    // Validate required fields
-    if (!logData.userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-    console.log('[EXERCISE-LOGS] Creating log with data:', JSON.stringify(logData, null, 2));
+    console.log('[EXERCISE-LOGS] Using patient ID:', patient.id, 'for user ID:', targetUserId);
 
     // Calculate calories burned if not provided (device data takes priority)
     if (!logData.caloriesBurned && logData.prescriptionId && logData.actualDuration) {
@@ -140,11 +149,11 @@ export const createExerciseLog = async (req: Request, res: Response) => {
           include: [{ model: Exercise, as: 'exercise' }],
         });
 
-        const patient = await Patient.findOne({ where: { userId: logData.userId } });
+        const patientForCalories = await Patient.findByPk(logData.patientId);
 
         if (prescription && (prescription as any).exercise) {
           const exercise = (prescription as any).exercise;
-          const patientWeight = patient?.currentWeight;
+          const patientWeight = patientForCalories?.currentWeight;
 
           // Calculate calories based on category, duration, difficulty, and weight
           logData.caloriesBurned = calculateCaloriesBurned(
@@ -167,6 +176,45 @@ export const createExerciseLog = async (req: Request, res: Response) => {
       }
     }
 
+    // Calculate METs from heart rate data if not manually provided
+    if (!logData.actualMET && (logData.duringHeartRateAvg || logData.preHeartRate)) {
+      try {
+        // Get patient data for age and resting HR
+        const patientForMETs = await Patient.findByPk(logData.patientId);
+
+        // Get prescription for target MET ranges if available
+        if (logData.prescriptionId) {
+          const prescription = await ExercisePrescription.findByPk(logData.prescriptionId);
+          if (prescription && prescription.targetMETMin && prescription.targetMETMax) {
+            logData.targetMETMin = prescription.targetMETMin;
+            logData.targetMETMax = prescription.targetMETMax;
+          }
+        }
+
+        // Calculate actual METs from heart rate
+        const calculatedMET = calculateMETsFromHeartRate({
+          averageHeartRate: logData.duringHeartRateAvg,
+          restingHeartRate: patientForMETs?.restingHeartRate || logData.preHeartRate,
+          maxHeartRate: patientForMETs?.maxHeartRate,
+          age: patientForMETs?.age || (patientForMETs?.dateOfBirth ? new Date().getFullYear() - new Date(patientForMETs.dateOfBirth).getFullYear() : undefined),
+          duration: logData.actualDuration,
+        });
+
+        if (calculatedMET) {
+          logData.actualMET = calculatedMET;
+          console.log('[EXERCISE-LOGS] Calculated METs:', calculatedMET, {
+            averageHR: logData.duringHeartRateAvg,
+            restingHR: patientForMETs?.restingHeartRate || logData.preHeartRate,
+            targetMin: logData.targetMETMin,
+            targetMax: logData.targetMETMax,
+          });
+        }
+      } catch (metError: any) {
+        console.error('[EXERCISE-LOGS] Error calculating METs:', metError);
+        // Don't fail if calculation fails, just log without METs
+      }
+    }
+
     const log = await ExerciseLog.create(logData);
 
     console.log('[EXERCISE-LOGS] Exercise log created successfully:', log.id);
@@ -179,7 +227,7 @@ export const createExerciseLog = async (req: Request, res: Response) => {
       for (const snap of req.body.vitalSnapshots) {
         try {
           await VitalsSample.create({
-            userId: logData.userId,
+            userId: logData.patientId,
             timestamp: new Date(snap.timestamp),
             bloodPressureSystolic: snap.bpSystolic,
             bloodPressureDiastolic: snap.bpDiastolic,

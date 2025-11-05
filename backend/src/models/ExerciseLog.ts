@@ -48,6 +48,11 @@ interface ExerciseLogAttributes {
   performanceScore?: number;
   notes?: string;
 
+  // MET (Metabolic Equivalent) tracking
+  actualMET?: number;
+  targetMETMin?: number;
+  targetMETMax?: number;
+
   // Device sync tracking
   dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect' | 'strava';
   externalId?: string;
@@ -106,6 +111,11 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public perceivedExertion?: number;
   public performanceScore?: number;
   public notes?: string;
+
+  // MET (Metabolic Equivalent) tracking
+  public actualMET?: number;
+  public targetMETMin?: number;
+  public targetMETMax?: number;
 
   // Device sync tracking
   public dataSource?: 'manual' | 'polar' | 'samsung_health' | 'health_connect' | 'strava';
@@ -299,6 +309,22 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
         notes: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        // MET (Metabolic Equivalent) tracking
+        actualMET: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Actual MET level achieved during exercise (calculated from heart rate or manually entered)',
+        },
+        targetMETMin: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Minimum target MET level for this exercise session',
+        },
+        targetMETMax: {
+          type: DataTypes.DECIMAL(5, 2),
+          allowNull: true,
+          comment: 'Maximum target MET level for this exercise session',
         },
         // Device sync tracking
         dataSource: {

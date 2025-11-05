@@ -547,23 +547,24 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
 
     // Transform exercise logs to match the format expected by frontend charts
     const logsForCharts = exerciseLogs.map((log: any) => {
-      // Calculate actual MET if we have heart rate data
-      let actualMET = null;
-      let targetMETMin = null;
-      let targetMETMax = null;
+      // Prioritize database MET values if they exist, otherwise calculate
+      let actualMET = log.actualMET !== null && log.actualMET !== undefined ? log.actualMET : null;
+      let targetMETMin = log.targetMETMin !== null && log.targetMETMin !== undefined ? log.targetMETMin : null;
+      let targetMETMax = log.targetMETMax !== null && log.targetMETMax !== undefined ? log.targetMETMax : null;
 
       // Use preHeartRate from the log if available, otherwise use patient's baseline
       const effectiveRestingHR = log.preHeartRate || restingHeartRate;
 
-      if (log.duringHeartRateAvg && effectiveRestingHR && maxHeartRate) {
+      // Only calculate if not already in database
+      if (!actualMET && log.duringHeartRateAvg && effectiveRestingHR && maxHeartRate) {
         actualMET = calculateMET(log.duringHeartRateAvg, effectiveRestingHR, maxHeartRate);
       }
 
-      // Calculate target MET range based on patient's target heart rate zones
-      if (targetHeartRateMin && effectiveRestingHR && maxHeartRate) {
+      // Calculate target MET range based on patient's target heart rate zones if not in database
+      if (!targetMETMin && targetHeartRateMin && effectiveRestingHR && maxHeartRate) {
         targetMETMin = calculateMET(targetHeartRateMin, effectiveRestingHR, maxHeartRate);
       }
-      if (targetHeartRateMax && effectiveRestingHR && maxHeartRate) {
+      if (!targetMETMax && targetHeartRateMax && effectiveRestingHR && maxHeartRate) {
         targetMETMax = calculateMET(targetHeartRateMax, effectiveRestingHR, maxHeartRate);
       }
 
@@ -585,10 +586,10 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
         duringHeartRateMax: log.duringHeartRateMax,
         postHeartRate: log.postHeartRate,
         heartRateAvg: log.duringHeartRateAvg || 0, // Alias for chart compatibility
-        // MET calculations
-        actualMET: actualMET ? Number(actualMET.toFixed(2)) : null,
-        targetMETMin: targetMETMin ? Number(targetMETMin.toFixed(2)) : null,
-        targetMETMax: targetMETMax ? Number(targetMETMax.toFixed(2)) : null,
+        // MET calculations (use database values if available)
+        actualMET: actualMET !== null ? Number(Number(actualMET).toFixed(2)) : null,
+        targetMETMin: targetMETMin !== null ? Number(Number(targetMETMin).toFixed(2)) : null,
+        targetMETMax: targetMETMax !== null ? Number(Number(targetMETMax).toFixed(2)) : null,
       };
     });
 

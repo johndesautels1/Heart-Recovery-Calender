@@ -577,6 +577,11 @@ export interface ExerciseLog {
   durationMinutes?: number;
   notes?: string;
 
+  // MET (Metabolic Equivalent) tracking
+  actualMET?: number;
+  targetMETMin?: number;
+  targetMETMax?: number;
+
   createdAt: string;
   updatedAt: string;
   exercise?: any; // TODO: Define Exercise type
@@ -620,6 +625,11 @@ export interface CreateExerciseLogInput {
   exerciseIntensity?: 'low' | 'moderate' | 'high' | 'very-high';
   durationMinutes?: number;
   notes?: string;
+
+  // MET (Metabolic Equivalent) tracking
+  actualMET?: number;
+  targetMETMin?: number;
+  targetMETMax?: number;
 }
 
 export interface ExerciseLogStats {

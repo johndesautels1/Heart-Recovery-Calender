@@ -122,6 +122,7 @@ export function CalendarPage() {
   const [devicesConnected, setDevicesConnected] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [liveVitalsPolling, setLiveVitalsPolling] = useState<number | null>(null);
+  const [manualOverride, setManualOverride] = useState(false); // Manual override for device auto-fill
 
   const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -229,6 +230,11 @@ export function CalendarPage() {
     // Poll every 5 seconds for live data
     const interval = setInterval(async () => {
       try {
+        // Skip auto-fill if manual override is enabled
+        if (manualOverride) {
+          return;
+        }
+
         // Get latest vitals from connected devices
         const vitals = await api.getLatestDeviceVitals();
 
@@ -642,12 +648,20 @@ export function CalendarPage() {
 
   const handleUpdateEventStatus = async (event: CalendarEvent, status: CalendarEvent['status']) => {
     try {
+      console.log('📋 handleUpdateEventStatus called:', { status, exerciseId: event.exerciseId, eventId: event.id });
+
+      // If marking exercise as complete, save metrics and create exercise log first
+      if (status === 'completed' && event.exerciseId) {
+        console.log('✅ Status is completed and exerciseId exists, calling handleUpdateExerciseMetrics...');
+        await handleUpdateExerciseMetrics();
+      }
+
       const updated = await api.updateEventStatus(event.id, status);
       setEvents(events.map(e => e.id === updated.id ? updated : e));
       toast.success(`Event marked as ${status}`);
       setSelectedEvent(null);
     } catch (error) {
-      console.error('Failed to update event status:', error);
+      console.error('❌ Failed to update event status:', error);
       toast.error('Failed to update event status');
     }
   };
@@ -1092,20 +1106,24 @@ See browser console for full configuration details.
       if (caloriesBurned) updateData.caloriesBurned = parseInt(caloriesBurned);
       if (exerciseNotes) updateData.exerciseNotes = exerciseNotes;
 
-      if (Object.keys(updateData).length === 0) {
-        toast.error('No metrics to update');
-        return;
+      // Step 2: Update calendar event only if there are metrics to update
+      if (Object.keys(updateData).length > 0) {
+        const updated = await api.updateEvent(selectedEvent.id, updateData);
+        setEvents(events.map(e => e.id === updated.id ? updated : e));
+        setSelectedEvent(updated);
       }
 
-      // Step 2: Update calendar event (existing behavior)
-      const updated = await api.updateEvent(selectedEvent.id, updateData);
-      setEvents(events.map(e => e.id === updated.id ? updated : e));
-      setSelectedEvent(updated);
-
       // Step 3: Create exercise log with Phase 1 vitals (NEW - dual storage)
-      if (selectedEvent.exerciseId && selectedEvent.prescriptionId) {
+      if (selectedEvent.exerciseId) {
+        console.log('🔍 Creating exercise log for event:', {
+          exerciseId: selectedEvent.exerciseId,
+          patientId: selectedEvent.patientId,
+          prescriptionId: selectedEvent.prescriptionId
+        });
+
         const exerciseLogData: any = {
-          prescriptionId: selectedEvent.prescriptionId,
+          userId: selectedEvent.patientId || user?.id, // Use patient's ID if available, otherwise logged-in user
+          prescriptionId: selectedEvent.prescriptionId || null,
           completedAt: startedAt || new Date().toISOString(),
 
           // Pre-exercise vitals
@@ -1117,7 +1135,7 @@ See browser console for full configuration details.
           // During-exercise vitals (FIXED: using correct state variables)
           duringBpSystolic: duringBpSystolic ? parseInt(duringBpSystolic) : undefined,
           duringBpDiastolic: duringBpDiastolic ? parseInt(duringBpDiastolic) : undefined,
-          duringHeartRateAvg: duringHeartRateAvg || duringPulse ? parseInt(duringHeartRateAvg || duringPulse) : undefined,
+          duringHeartRateAvg: duringPulse ? parseInt(duringPulse) : (duringHeartRateAvg ? parseInt(duringHeartRateAvg) : undefined),
           duringHeartRateMax: duringHeartRateMax ? parseInt(duringHeartRateMax) : undefined,
           duringRespiratoryRate: duringRespiration ? parseInt(duringRespiration) : undefined,
 
@@ -1133,7 +1151,7 @@ See browser console for full configuration details.
           steps: steps ? parseInt(steps) : undefined,
           elevationFeet: elevationFeet ? parseInt(elevationFeet) : undefined,
           caloriesBurned: caloriesBurned ? parseInt(caloriesBurned) : undefined,
-          durationMinutes: durationMinutes ? parseInt(durationMinutes) : undefined,
+          actualDuration: durationMinutes ? parseInt(durationMinutes) : undefined,
 
           // Phase 4 - Progressive overload tracking
           actualSets: setsCompleted ? parseInt(setsCompleted) : undefined,
@@ -1166,14 +1184,19 @@ See browser console for full configuration details.
           }
         });
 
+        console.log('📤 Sending exercise log data to backend:', exerciseLogData);
+
         try {
-          await api.createExerciseLog(exerciseLogData);
-          console.log('✅ Exercise log created successfully');
+          const createdLog = await api.createExerciseLog(exerciseLogData);
+          console.log('✅ Exercise log created successfully:', createdLog);
+          toast.success('Exercise log created successfully');
         } catch (logError) {
           console.error('⚠️ Failed to create exercise log:', logError);
           // Don't fail the entire operation if log creation fails
           toast.error('Metrics saved to calendar, but failed to create detailed log');
         }
+      } else {
+        console.warn('⚠️ Cannot create exercise log: selectedEvent.exerciseId is missing', selectedEvent);
       }
 
       toast.success('Exercise metrics updated successfully');
@@ -2701,11 +2724,23 @@ See browser console for full configuration details.
                           During-Exercise Vitals Snapshot
                         </h3>
                         {devicesConnected ? (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full animate-pulse">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs font-bold text-green-700">LIVE</span>
-                            <span className="text-xs text-green-600">({connectedDevices.join(', ')})</span>
-                          </div>
+                          <>
+                            <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full animate-pulse">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-xs font-bold text-green-700">LIVE</span>
+                              <span className="text-xs text-green-600">({connectedDevices.join(', ')})</span>
+                            </div>
+                            <button
+                              onClick={() => setManualOverride(!manualOverride)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                manualOverride
+                                  ? 'bg-orange-500 text-white shadow-lg'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {manualOverride ? '✓ Manual Override' : 'Manual Override'}
+                            </button>
+                          </>
                         ) : (
                           <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
                             <span className="text-xs font-bold text-gray-600">MANUAL ENTRY</span>
@@ -2755,9 +2790,9 @@ See browser console for full configuration details.
                             placeholder="120"
                             value={duringBpSystolic}
                             onChange={(e) => setDuringBpSystolic(e.target.value)}
-                            readOnly={devicesConnected}
+                            readOnly={devicesConnected && !manualOverride}
                             className={`w-full px-2 py-1 text-sm font-bold text-blue-700 rounded border-2 ${
-                              devicesConnected
+                              devicesConnected && !manualOverride
                                 ? 'bg-green-50 border-green-400 cursor-not-allowed'
                                 : 'border-red-300 focus:border-red-500'
                             } focus:outline-none`}
@@ -2768,9 +2803,9 @@ See browser console for full configuration details.
                             placeholder="80"
                             value={duringBpDiastolic}
                             onChange={(e) => setDuringBpDiastolic(e.target.value)}
-                            readOnly={devicesConnected}
+                            readOnly={devicesConnected && !manualOverride}
                             className={`w-full px-2 py-1 text-sm font-bold text-blue-700 rounded border-2 ${
-                              devicesConnected
+                              devicesConnected && !manualOverride
                                 ? 'bg-green-50 border-green-400 cursor-not-allowed'
                                 : 'border-red-300 focus:border-red-500'
                             } focus:outline-none`}
@@ -2787,9 +2822,9 @@ See browser console for full configuration details.
                           placeholder="72"
                           value={duringPulse}
                           onChange={(e) => setDuringPulse(e.target.value)}
-                          readOnly={devicesConnected}
+                          readOnly={devicesConnected && !manualOverride}
                           className={`w-full px-2 py-1.5 text-sm font-bold text-blue-700 rounded border-2 ${
-                            devicesConnected
+                            devicesConnected && !manualOverride
                               ? 'bg-green-50 border-green-400 cursor-not-allowed'
                               : 'border-orange-300 focus:border-orange-500'
                           } focus:outline-none`}
@@ -2805,9 +2840,9 @@ See browser console for full configuration details.
                           placeholder="16"
                           value={duringRespiration}
                           onChange={(e) => setDuringRespiration(e.target.value)}
-                          readOnly={devicesConnected}
+                          readOnly={devicesConnected && !manualOverride}
                           className={`w-full px-2 py-1.5 text-sm font-bold text-blue-700 rounded border-2 ${
-                            devicesConnected
+                            devicesConnected && !manualOverride
                               ? 'bg-green-50 border-green-400 cursor-not-allowed'
                               : 'border-blue-300 focus:border-blue-500'
                           } focus:outline-none`}
@@ -3079,18 +3114,19 @@ See browser console for full configuration details.
 
                     {/* Duration */}
                     <div>
-                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Duration (minutes)</label>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Duration (minutes) ⚠️ MANDATORY FOR METs</label>
                       <input
                         type="number"
                         min="0"
                         value={durationMinutes}
                         onChange={(e) => setDurationMinutes(e.target.value)}
                         placeholder="e.g., 30"
-                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-teal-400/50 focus:border-teal-500 focus:ring-4 focus:ring-teal-400/30 outline-none shadow-lg"
+                        className="w-full px-4 py-3 bg-yellow-100 text-gray-900 font-semibold rounded-xl border-4 border-yellow-500 focus:border-yellow-600 focus:ring-4 focus:ring-yellow-400/50 outline-none shadow-lg"
                       />
                       {selectedEvent.durationMinutes && (
                         <p className="text-xs text-white font-bold mt-1 drop-shadow">Current: {selectedEvent.durationMinutes} min</p>
                       )}
+                      <p className="text-xs text-yellow-200 font-black mt-1 drop-shadow-lg">⚠️ REQUIRED FOR METs CALCULATION</p>
                     </div>
 
                     {/* Distance */}
@@ -3314,7 +3350,7 @@ See browser console for full configuration details.
 
                     {/* Pre-Heart Rate */}
                     <div>
-                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Heart Rate (bpm)</label>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Heart Rate (bpm) 📊 Optional for METs</label>
                       <input
                         type="number"
                         min="0"
@@ -3324,6 +3360,7 @@ See browser console for full configuration details.
                         placeholder="e.g., 70"
                         className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-blue-400/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-400/30 outline-none shadow-lg"
                       />
+                      <p className="text-xs text-blue-200 font-bold mt-1 drop-shadow">📊 Optional but improves MET calculation accuracy</p>
                     </div>
 
                     {/* Pre-Oxygen Sat */}
@@ -3389,7 +3426,7 @@ See browser console for full configuration details.
 
                     {/* During-Heart Rate Average */}
                     <div>
-                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Avg Heart Rate (bpm)</label>
+                      <label className="block text-sm font-bold text-white mb-2 drop-shadow">Avg Heart Rate (bpm) ⚠️ MANDATORY FOR METs</label>
                       <input
                         type="number"
                         min="0"
@@ -3397,9 +3434,9 @@ See browser console for full configuration details.
                         value={duringHeartRateAvg}
                         onChange={(e) => setDuringHeartRateAvg(e.target.value)}
                         placeholder="e.g., 130"
-                        className="w-full px-4 py-3 bg-white/90 text-gray-900 font-semibold rounded-xl border-2 border-indigo-400/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-400/30 outline-none shadow-lg"
+                        className="w-full px-4 py-3 bg-yellow-100 text-gray-900 font-semibold rounded-xl border-4 border-yellow-500 focus:border-yellow-600 focus:ring-4 focus:ring-yellow-400/50 outline-none shadow-lg"
                       />
-                      <p className="text-xs text-white/90 font-bold mt-1 drop-shadow">Average pulse during exercise</p>
+                      <p className="text-xs text-yellow-200 font-black mt-1 drop-shadow-lg">⚠️ REQUIRED FOR METs CALCULATION - Average pulse during exercise</p>
                     </div>
 
                     {/* During-Heart Rate Max */}
