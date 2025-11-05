@@ -18,6 +18,7 @@ import {
   Zap,
   Activity as Pulse,
   AlertTriangle,
+  AlertCircle,
   Edit,
   Trash2,
   X
@@ -42,6 +43,7 @@ const vitalsSchema = z.object({
   oxygenSaturation: z.number().optional(),
   bloodSugar: z.number().optional(),
   hydrationStatus: z.number().optional(),
+  peakFlow: z.number().optional(),
   notes: z.string().optional(),
   symptoms: z.string().optional(),
   medicationsTaken: z.boolean().optional(),
@@ -69,7 +71,7 @@ export function VitalsPage() {
   const [latestVitals, setLatestVitals] = useState<VitalsSample | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2'>('bp');
+  const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow'>('bp');
   const [patientData, setPatientData] = useState<Patient | null>(null);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
@@ -525,6 +527,7 @@ export function VitalsPage() {
       temperature: v.temperature,
       hydration: v.hydrationStatus,
       o2: v.oxygenSaturation,
+      peakFlow: v.peakFlow,
     };
   });
 
@@ -1159,6 +1162,59 @@ export function VitalsPage() {
           </div>
         </GlassCard>
 
+        {/* NEW: Low Oxygen Alert (SpO2 <90%) */}
+        {filteredLatest?.oxygenSaturation && filteredLatest.oxygenSaturation < 90 && (
+          <div
+            className="relative overflow-hidden rounded-2xl p-6 mb-6"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+              border: '3px solid rgba(239, 68, 68, 0.6)',
+              boxShadow: '0 0 40px rgba(239, 68, 68, 0.3)',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 p-3 rounded-full bg-red-500/30 animate-pulse">
+                <Wind className="h-7 w-7 text-red-300" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-red-300 mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-6 w-6 animate-pulse" />
+                  🚨 CRITICAL: Low Oxygen Saturation
+                </h3>
+                <p className="text-white text-lg mb-4">
+                  Current SpO2: <strong className="text-red-300 text-2xl">{filteredLatest.oxygenSaturation}%</strong>
+                  <span className="text-red-400 ml-3">(Normal: 95-100%)</span>
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="p-4 rounded-lg bg-red-500/20 border-2 border-red-500/40">
+                    <p className="text-base font-bold text-red-200 mb-2">⚠️ IMMEDIATE ACTIONS:</p>
+                    <ul className="text-sm text-gray-200 space-y-2">
+                      <li>• Sit upright or elevate head of bed</li>
+                      <li>• Take slow, deep breaths</li>
+                      <li>• Use prescribed oxygen if available</li>
+                      <li>• Avoid physical exertion</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 rounded-lg bg-red-600/30 border-2 border-red-500/50">
+                    <p className="text-base font-bold text-red-100 mb-2">🚨 CALL 911 IF:</p>
+                    <ul className="text-sm text-gray-100 space-y-2 font-semibold">
+                      <li>• SpO2 remains below 90% for more than 5 minutes</li>
+                      <li>• Experiencing chest pain or pressure</li>
+                      <li>• Severe shortness of breath</li>
+                      <li>• Confusion or drowsiness</li>
+                      <li>• Bluish lips or fingernails</li>
+                    </ul>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-4 italic">
+                  SpO2 below 90% is a medical emergency for cardiac patients. Do not ignore this warning.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NEW: Oxygen Saturation */}
         <GlassCard className="relative">
           {filteredLatest && (
@@ -1206,6 +1262,60 @@ export function VitalsPage() {
             <Wind className="h-8 w-8 text-cyan-500" />
           </div>
         </GlassCard>
+
+        {/* NEW: Peak Flow Meter */}
+        {filteredLatest?.peakFlow && (
+          <GlassCard className="relative">
+            {filteredLatest && (
+              <div className="absolute top-3 right-3">
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
+                  filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                  filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                  'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                }`}>
+                  {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
+                    <><Smartphone className="h-3 w-3" /> Samsung</>
+                  ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
+                    <><Watch className="h-3 w-3" /> Polar</>
+                  ) : (
+                    <>✋ Manual</>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold mb-1">Peak Flow</p>
+                <p className="text-2xl font-bold font-bold">
+                  {filteredLatest.peakFlow || '--'} <span className="text-sm">L/min</span>
+                </p>
+                <p className={`text-sm font-bold mt-1 ${
+                  !filteredLatest?.peakFlow
+                    ? 'text-yellow-500'
+                    : filteredLatest.peakFlow < 200
+                    ? 'text-red-500'
+                    : filteredLatest.peakFlow < 400
+                    ? 'text-yellow-500'
+                    : filteredLatest.peakFlow < 600
+                    ? 'text-green-400'
+                    : 'text-cyan-400'
+                }`}>
+                  {!filteredLatest?.peakFlow
+                    ? 'Unknown'
+                    : filteredLatest.peakFlow < 200
+                    ? 'Critical'
+                    : filteredLatest.peakFlow < 400
+                    ? 'Low'
+                    : filteredLatest.peakFlow < 600
+                    ? 'Normal'
+                    : 'Excellent'}
+                </p>
+                <p className="text-xs mt-1">Normal: 400-600 L/min</p>
+              </div>
+              <Wind className="h-8 w-8 text-green-500" />
+            </div>
+          </GlassCard>
+        )}
       </div>
 
       {/* NEW: Resting Heart Rate & 7-Day Average - ALWAYS use unfiltered vitals data */}
@@ -1387,6 +1497,77 @@ export function VitalsPage() {
         </GlassCard>
       )}
 
+      {/* NEW: Fever Pattern Detection Alert */}
+      {(() => {
+        const tempReadings = filteredVitals.filter(v => v.temperature).sort((a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+        if (tempReadings.length < 2) return null;
+
+        // Check for consecutive fever readings (>100.4°F)
+        let consecutiveFeverCount = 0;
+        let maxConsecutive = 0;
+        let latestFeverTemp = 0;
+
+        for (let i = 0; i < tempReadings.length; i++) {
+          if (tempReadings[i].temperature! >= 100.4) {
+            consecutiveFeverCount++;
+            latestFeverTemp = tempReadings[i].temperature!;
+            maxConsecutive = Math.max(maxConsecutive, consecutiveFeverCount);
+          } else {
+            consecutiveFeverCount = 0;
+          }
+        }
+
+        if (maxConsecutive < 2) return null;
+
+        return (
+          <div
+            className="relative overflow-hidden rounded-2xl p-6 mb-6"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))',
+              border: '2px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+            }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 p-3 rounded-full bg-red-500/20">
+                <Thermometer className="h-6 w-6 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-red-400 mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Fever Pattern Detected
+                </h3>
+                <p className="text-white mb-3">
+                  <strong>{maxConsecutive} consecutive readings</strong> above 100.4°F detected.
+                  Latest temperature: <strong>{latestFeverTemp.toFixed(1)}°F</strong>
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm font-semibold text-red-300 mb-1">⚠️ Action Needed:</p>
+                    <ul className="text-xs text-gray-300 space-y-1">
+                      <li>• Monitor temperature every 2-4 hours</li>
+                      <li>• Stay hydrated</li>
+                      <li>• Rest and avoid strenuous activity</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm font-semibold text-red-300 mb-1">🚨 Seek Medical Attention If:</p>
+                    <ul className="text-xs text-gray-300 space-y-1">
+                      <li>• Temperature exceeds 103°F</li>
+                      <li>• Fever lasts more than 3 days</li>
+                      <li>• Accompanied by chest pain or breathing difficulty</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* NEW: Average Body Temperature */}
       {filteredVitals.length > 0 && filteredVitals.filter(v => v.temperature).length > 0 && (
         <GlassCard>
@@ -1507,6 +1688,73 @@ export function VitalsPage() {
         </GlassCard>
       )}
 
+      {/* NEW: Mean Arterial Pressure (MAP) */}
+      {filteredLatest?.bloodPressureSystolic && filteredLatest?.bloodPressureDiastolic && (
+        <GlassCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
+              <p className={`text-3xl font-bold ${(() => {
+                const systolic = filteredLatest.bloodPressureSystolic;
+                const diastolic = filteredLatest.bloodPressureDiastolic;
+                const map = Math.round((systolic + 2 * diastolic) / 3);
+                if (map < 70) return 'text-red-400';
+                if (map >= 70 && map <= 100) return 'text-green-400';
+                if (map > 100 && map <= 110) return 'text-yellow-400';
+                return 'text-red-400';
+              })()}`}>
+                {(() => {
+                  const systolic = filteredLatest.bloodPressureSystolic;
+                  const diastolic = filteredLatest.bloodPressureDiastolic;
+                  return Math.round((systolic + 2 * diastolic) / 3);
+                })()}
+                <span className="text-sm ml-1">mmHg</span>
+              </p>
+              <p className={`text-sm font-bold mt-1 ${(() => {
+                const systolic = filteredLatest.bloodPressureSystolic;
+                const diastolic = filteredLatest.bloodPressureDiastolic;
+                const map = Math.round((systolic + 2 * diastolic) / 3);
+                if (map < 70) return 'text-red-400';
+                if (map >= 70 && map <= 100) return 'text-green-400';
+                if (map > 100 && map <= 110) return 'text-yellow-400';
+                return 'text-red-400';
+              })()}`}>
+                {(() => {
+                  const systolic = filteredLatest.bloodPressureSystolic;
+                  const diastolic = filteredLatest.bloodPressureDiastolic;
+                  const map = Math.round((systolic + 2 * diastolic) / 3);
+                  if (map < 70) return 'Low';
+                  if (map >= 70 && map <= 100) return 'Normal';
+                  if (map > 100 && map <= 110) return 'Elevated';
+                  return 'High';
+                })()}
+              </p>
+              <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Heart className={`h-8 w-8 ${(() => {
+                const systolic = filteredLatest.bloodPressureSystolic;
+                const diastolic = filteredLatest.bloodPressureDiastolic;
+                const map = Math.round((systolic + 2 * diastolic) / 3);
+                if (map < 70 || map > 110) return 'text-red-400';
+                if (map >= 70 && map <= 100) return 'text-green-400';
+                return 'text-yellow-400';
+              })()}`} />
+              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                const systolic = filteredLatest.bloodPressureSystolic;
+                const diastolic = filteredLatest.bloodPressureDiastolic;
+                const map = Math.round((systolic + 2 * diastolic) / 3);
+                if (map < 70 || map > 110) return 'bg-red-500 text-white';
+                if (map >= 70 && map <= 100) return 'bg-green-500 text-white';
+                return 'bg-yellow-500 text-black';
+              })()}`}>
+                MAP
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* Chart Controls */}
       <GlassCard>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -1580,6 +1828,16 @@ export function VitalsPage() {
               }`}
             >
               O₂ Sat
+            </button>
+            <button
+              onClick={() => setSelectedMetric('peakflow')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                selectedMetric === 'peakflow'
+                  ? 'bg-green-600'
+                  : 'glass-button font-bold'
+              }`}
+            >
+              Peak Flow
             </button>
           </div>
 
@@ -1728,6 +1986,7 @@ export function VitalsPage() {
                       selectedMetric === 'sugar' ? [0, 300] :
                       selectedMetric === 'temp' ? [90, 108] :
                       selectedMetric === 'o2' ? [50, 100] :
+                      selectedMetric === 'peakflow' ? [0, 800] :
                       undefined
                     }
                     stroke="#9ca3af"
@@ -1754,6 +2013,7 @@ export function VitalsPage() {
                       selectedMetric === 'sugar' ? 'bloodSugar' :
                       selectedMetric === 'temp' ? 'temperature' :
                       selectedMetric === 'hydration' ? 'hydration' :
+                      selectedMetric === 'peakflow' ? 'peakFlow' :
                       'o2'
                     }
                     stroke={
@@ -1762,6 +2022,7 @@ export function VitalsPage() {
                       selectedMetric === 'sugar' ? '#f97316' :
                       selectedMetric === 'temp' ? '#ea580c' :
                       selectedMetric === 'hydration' ? '#3b82f6' :
+                      selectedMetric === 'peakflow' ? '#22c55e' :
                       '#06b6d4'
                     }
                     strokeWidth={4}
@@ -1774,6 +2035,7 @@ export function VitalsPage() {
                             selectedMetric === 'sugar' ? '#f97316' :
                             selectedMetric === 'temp' ? '#ea580c' :
                             selectedMetric === 'hydration' ? '#3b82f6' :
+                            selectedMetric === 'peakflow' ? '#22c55e' :
                             '#06b6d4'
                     }}
                     activeDot={{ r: 9, strokeWidth: 3 }}
@@ -1783,6 +2045,7 @@ export function VitalsPage() {
                       selectedMetric === 'sugar' ? 'Blood Sugar (mg/dL)' :
                       selectedMetric === 'temp' ? 'Temperature (°F)' :
                       selectedMetric === 'hydration' ? 'Hydration (%)' :
+                      selectedMetric === 'peakflow' ? 'Peak Flow (L/min)' :
                       'O₂ Saturation (%)'
                     }
                     filter="url(#vitalsLineGlow)"
@@ -1806,6 +2069,12 @@ export function VitalsPage() {
                   )}
                   {selectedMetric === 'o2' && (
                     <ReferenceLine y={95} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (95%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                  )}
+                  {selectedMetric === 'peakflow' && (
+                    <>
+                      <ReferenceLine y={400} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (400)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      <ReferenceLine y={600} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (600)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    </>
                   )}
                 </LineChart>
               )}
@@ -1834,6 +2103,7 @@ export function VitalsPage() {
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Temp</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Weight</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">O₂</th>
+                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Peak Flow</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
@@ -1854,6 +2124,7 @@ export function VitalsPage() {
                   <td className="py-2 px-2 text-sm">{vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.weight || '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}</td>
+                  <td className="py-2 px-2 text-sm">{vital.peakFlow ? `${vital.peakFlow} L/min` : '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
                   <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
@@ -2619,6 +2890,61 @@ export function VitalsPage() {
                       const high = filteredGlucoseVitals.filter(v => v.bloodSugar && v.bloodSugar >= 126).length;
                       return Math.round((high / total) * 100);
                     })()} <span className="text-lg text-gray-400">%</span>
+                  </p>
+                </div>
+
+                {/* NEW: Estimated A1C Metric */}
+                <div className="p-4 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.1))',
+                  border: '1px solid rgba(236, 72, 153, 0.2)'
+                }}>
+                  <p className="text-xs text-pink-300 font-semibold mb-1">EST. A1C (90-DAY)</p>
+                  <p className="text-3xl font-bold text-white">
+                    {(() => {
+                      // Get 90-day average glucose for A1C estimation
+                      const ninetyDaysAgo = subDays(new Date(), 90);
+                      const last90DaysVitals = vitals.filter(v =>
+                        v.bloodSugar && new Date(v.timestamp) >= ninetyDaysAgo
+                      );
+
+                      if (last90DaysVitals.length === 0) return '--';
+
+                      const avg = last90DaysVitals.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / last90DaysVitals.length;
+                      // Formula: Estimated A1C = (Average Glucose + 46.7) / 28.7
+                      const estimatedA1C = (avg + 46.7) / 28.7;
+                      return estimatedA1C.toFixed(1);
+                    })()} <span className="text-lg text-gray-400">%</span>
+                  </p>
+                  <p className={`text-xs mt-1 font-semibold ${(() => {
+                    const ninetyDaysAgo = subDays(new Date(), 90);
+                    const last90DaysVitals = vitals.filter(v =>
+                      v.bloodSugar && new Date(v.timestamp) >= ninetyDaysAgo
+                    );
+
+                    if (last90DaysVitals.length === 0) return 'text-gray-400';
+
+                    const avg = last90DaysVitals.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / last90DaysVitals.length;
+                    const estimatedA1C = (avg + 46.7) / 28.7;
+
+                    if (estimatedA1C < 5.7) return 'text-green-400';
+                    if (estimatedA1C < 6.5) return 'text-yellow-400';
+                    return 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      const ninetyDaysAgo = subDays(new Date(), 90);
+                      const last90DaysVitals = vitals.filter(v =>
+                        v.bloodSugar && new Date(v.timestamp) >= ninetyDaysAgo
+                      );
+
+                      if (last90DaysVitals.length === 0) return 'Need 90 days';
+
+                      const avg = last90DaysVitals.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / last90DaysVitals.length;
+                      const estimatedA1C = (avg + 46.7) / 28.7;
+
+                      if (estimatedA1C < 5.7) return '✓ Normal';
+                      if (estimatedA1C < 6.5) return '⚠ Pre-diabetic';
+                      return '🚨 Diabetic';
+                    })()}
                   </p>
                 </div>
               </div>
@@ -3755,6 +4081,14 @@ export function VitalsPage() {
                 placeholder="0-100"
                 icon={<Droplet className="h-5 w-5" />}
                 {...register('hydrationStatus', { valueAsNumber: true })}
+              />
+
+              <Input
+                label="Peak Flow (L/min)"
+                type="number"
+                placeholder="300-700"
+                icon={<Wind className="h-5 w-5" />}
+                {...register('peakFlow', { valueAsNumber: true })}
               />
             </div>
           </div>

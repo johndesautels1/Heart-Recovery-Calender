@@ -14,6 +14,7 @@ interface VitalsSampleAttributes {
   oxygenSaturation?: number;
   bloodSugar?: number;
   hydrationStatus?: number;
+  peakFlow?: number;
   cholesterolTotal?: number;
   cholesterolLDL?: number;
   cholesterolHDL?: number;
@@ -57,6 +58,7 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public oxygenSaturation?: number;
   public bloodSugar?: number;
   public hydrationStatus?: number;
+  public peakFlow?: number;
   public cholesterolTotal?: number;
   public cholesterolLDL?: number;
   public cholesterolHDL?: number;
@@ -169,6 +171,15 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
           validate: {
             min: 0,
             max: 100,
+          },
+        },
+        peakFlow: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          comment: 'Peak expiratory flow rate in L/min',
+          validate: {
+            min: 50,
+            max: 800,
           },
         },
         cholesterolTotal: {
