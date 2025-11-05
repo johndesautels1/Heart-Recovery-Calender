@@ -250,13 +250,13 @@ export async function syncStravaData(
 
         // Create exercise log entry
         await ExerciseLog.create({
-          prescriptionId: 0, // Will need to be linked manually or via smart matching
+          prescriptionId: null, // Will need to be linked manually or via smart matching
           patientId: patient.id,
           completedAt: new Date(activity.start_date),
           startedAt: new Date(activity.start_date_local),
           actualDuration: durationMinutes,
-          duringHeartRateAvg: activity.average_heartrate,
-          duringHeartRateMax: activity.max_heartrate,
+          duringHeartRateAvg: activity.average_heartrate ? Math.round(activity.average_heartrate) : undefined,
+          duringHeartRateMax: activity.max_heartrate ? Math.round(activity.max_heartrate) : undefined,
           steps: undefined, // Strava doesn't provide steps
           distanceMiles: distanceMiles > 0 ? distanceMiles : undefined,
           elevationFeet: activity.total_elevation_gain ? activity.total_elevation_gain * 3.28084 : undefined,
@@ -277,7 +277,7 @@ export async function syncStravaData(
             await VitalsSample.create({
               userId: device.userId,
               timestamp: new Date(activity.start_date),
-              heartRate: activity.average_heartrate,
+              heartRate: Math.round(activity.average_heartrate),
               source: 'device',
               deviceId: `strava_${device.id}`,
               notes: `Auto-synced from Strava activity: ${activity.name}`,

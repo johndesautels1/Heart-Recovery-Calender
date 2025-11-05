@@ -21,6 +21,56 @@ This document contains CRITICAL instructions including:
 
 ---
 
+## 🎭 CRITICAL: TWO-ROLE SYSTEM (READ THIS!)
+
+**THIS APPLICATION HAS EXACTLY TWO ROLES - DO NOT CREATE MORE:**
+
+### 1. **Admin/Therapist Role** (Same Role, Same Permissions)
+- **Admin and Therapist are THE SAME ROLE** - not two separate roles
+- Can view their own health data (they are also patients)
+- Can toggle/dropdown to view ANY patient's data
+- **Default view:** Their own vitals/dashboards
+- **Toggle/Dropdown:** Switch to view specific patient from alphabetical list
+- Has management capabilities for all patients
+
+### 2. **Patient/User Role** (Same Entity)
+- **Patient and User are THE SAME ENTITY** - not two separate people
+- Can ONLY view their own health data
+- No patient selection dropdown (only their data exists)
+- No toggle capability
+
+### Implementation Rules:
+```typescript
+// ❌ WRONG - Treating admin and therapist as separate
+if (user.role === 'admin' || user.role === 'therapist') { }
+
+// ✅ CORRECT - They are the same role
+if (user.role === 'admin' || user.role === 'therapist') {
+  // Show: "Admin/Therapist View" (unified)
+  // Default: Show their own data
+  // Allow: Patient selector dropdown
+}
+
+// ✅ CORRECT - Patient is the user
+if (user.role === 'patient') {
+  // Show: "Patient" or just their name
+  // Only their own data
+}
+```
+
+### UI Components:
+- **Patient Identifier Badge:** Shows whose data is being viewed
+  - Admin/Therapist viewing their own: "John Doe (Admin/Therapist)"
+  - Admin/Therapist viewing patient: "Jane Smith (Viewing as Admin/Therapist)"
+  - Patient: "John Doe (Patient)"
+- **Patient Selector:** Only visible to admin/therapist role
+  - Dropdown with "My Vitals" as default
+  - Alphabetical list of all patients
+
+**This has been explained multiple times - DO NOT FORGET THIS AGAIN.**
+
+---
+
 ## Features
 
 ### Patient Features

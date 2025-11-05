@@ -277,8 +277,11 @@ class ApiService {
     await this.api.delete(`vitals/${id}`);
   }
 
-  async getLatestVital(): Promise<VitalsSample | null> {
-    const response = await this.api.get<VitalsSample>('/vitals/latest');
+  async getLatestVital(userId?: number): Promise<VitalsSample | null> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId.toString());
+    const url = userId ? `/vitals/latest?${params.toString()}` : '/vitals/latest';
+    const response = await this.api.get<VitalsSample>(url);
     return response.data;
   }
 

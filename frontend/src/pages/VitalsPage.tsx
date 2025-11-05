@@ -20,7 +20,7 @@ import {
   AlertTriangle,
   Edit
 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -69,10 +69,16 @@ export function VitalsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2'>('bp');
   const [patientData, setPatientData] = useState<Patient | null>(null);
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'medical'>('overview');
+
+  // Time period selections for Weight and Glucose journals
+  const [weightTimePeriod, setWeightTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
+  const [glucoseTimePeriod, setGlucoseTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
 
   const {
     register,
@@ -90,9 +96,20 @@ export function VitalsPage() {
   useEffect(() => {
     const loadPatientData = async () => {
       try {
-        const result = await api.checkPatientProfile();
-        if (result.hasProfile && result.patient) {
-          setPatientData(result.patient);
+        if (selectedUserId) {
+          // Admin/Therapist viewing a specific patient
+          const selectedPatient = allPatients.find(p => p.userId === selectedUserId);
+          if (selectedPatient) {
+            setPatientData(selectedPatient);
+            console.log('[VitalsPage] Selected patient:', selectedPatient.name, 'userId:', selectedUserId);
+          }
+        } else {
+          // Loading own patient profile
+          const result = await api.checkPatientProfile();
+          if (result.hasProfile && result.patient) {
+            setPatientData(result.patient);
+            console.log('[VitalsPage] Loaded own patient profile');
+          }
         }
       } catch (error) {
         console.error('Failed to load patient data:', error);
@@ -102,14 +119,37 @@ export function VitalsPage() {
     if (user) {
       loadPatientData();
     }
-  }, [user]);
+  }, [user, selectedUserId, allPatients]);
+
+  // Load all patients if user is admin/therapist
+  useEffect(() => {
+    const loadAllPatients = async () => {
+      if (user?.role === 'admin' || user?.role === 'therapist') {
+        try {
+          const response = await api.getPatients();
+          const patientsList = response.data || response;
+          setAllPatients(patientsList);
+          console.log('[VitalsPage] Loaded patients for selection:', patientsList.length);
+          console.log('[VitalsPage] Patient data:', patientsList.map(p => ({
+            id: p.id,
+            userId: p.userId,
+            name: p.name
+          })));
+        } catch (error) {
+          console.error('Failed to load patients list:', error);
+        }
+      }
+    };
+
+    loadAllPatients();
+  }, [user?.role]);
 
   // Determine surgery date from patient profile first, fall back to user
   const surgeryDate = patientData?.surgeryDate || user?.surgeryDate;
 
   useEffect(() => {
     loadVitals();
-  }, [surgeryDate]); // Reload when surgery date changes
+  }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
 
   const loadVitals = async () => {
     try {
@@ -131,7 +171,14 @@ export function VitalsPage() {
       }
 
       // Fetch vitals data - Sort by timestamp ascending (oldest to newest) for left-to-right charts
-      const vitalsData = await api.getVitals({ startDate, endDate });
+      console.log('[VitalsPage] Fetching vitals for userId:', selectedUserId || user?.id);
+      const vitalsData = await api.getVitals({
+        startDate,
+        endDate,
+        userId: selectedUserId || undefined
+      });
+      console.log('[VitalsPage] Fetched', vitalsData.length, 'vitals records');
+
       // Sort chronologically: oldest (left) to newest (right)
       const sortedData = vitalsData.sort((a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -140,8 +187,9 @@ export function VitalsPage() {
 
       // Handle latest vital separately - 404 is OK (means no vitals yet)
       try {
-        const latest = await api.getLatestVital();
+        const latest = await api.getLatestVital(selectedUserId || undefined);
         setLatestVitals(latest);
+        console.log('[VitalsPage] Latest vital:', latest ? 'found' : 'none');
       } catch (error: any) {
         if (error?.response?.status === 404) {
           // No vitals recorded yet - this is fine, just set to null
@@ -273,6 +321,101 @@ export function VitalsPage() {
   // This ensures "Last Vital Check" and vitals cards always show the most recent data
   const filteredLatest = latestVitals;
 
+  // Helper function to filter vitals by time period
+  const getTimePeriodFilter = (period: '7d' | '30d' | 'surgery') => {
+    const now = new Date();
+    let cutoffDate: Date;
+
+    if (period === '7d') {
+      cutoffDate = subDays(now, 7);
+    } else if (period === '30d') {
+      cutoffDate = subDays(now, 30);
+    } else {
+      // 'surgery' - up to 90 days from surgery date
+      if (surgeryDate) {
+        const surgeryDateObj = new Date(surgeryDate);
+        const ninetyDaysAfterSurgery = addDays(surgeryDateObj, 90);
+        // Use surgery date as cutoff, but cap at 90 days
+        cutoffDate = surgeryDateObj;
+        // Only show data up to 90 days after surgery
+        if (now > ninetyDaysAfterSurgery) {
+          return (v: VitalsSample) => {
+            const vDate = new Date(v.timestamp);
+            return vDate >= cutoffDate && vDate <= ninetyDaysAfterSurgery;
+          };
+        }
+      } else {
+        // Fallback to 90 days if no surgery date
+        cutoffDate = subDays(now, 90);
+      }
+    }
+
+    return (v: VitalsSample) => new Date(v.timestamp) >= cutoffDate;
+  };
+
+  // Filter weight data by selected time period
+  const weightTimePeriodFilter = getTimePeriodFilter(weightTimePeriod);
+  const filteredWeightVitals = vitals.filter(v => v.weight && weightTimePeriodFilter(v));
+
+  // Filter glucose data by selected time period
+  const glucoseTimePeriodFilter = getTimePeriodFilter(glucoseTimePeriod);
+  const filteredGlucoseVitals = vitals.filter(v => v.bloodSugar && glucoseTimePeriodFilter(v));
+
+  // Prepare chart data for Weight Journal with BMI and ideal weight calculations
+  const weightChartData = filteredWeightVitals.map(v => {
+    const date = format(new Date(v.timestamp), 'MMM dd');
+    const actualWeight = v.weight!;
+
+    let bmi: number | undefined;
+    let idealWeight: number | undefined;
+
+    if (patientData?.height) {
+      // Convert height to meters
+      let heightInMeters: number;
+      if (patientData.heightUnit === 'cm') {
+        heightInMeters = patientData.height / 100;
+      } else {
+        // Assume inches
+        heightInMeters = patientData.height * 0.0254;
+      }
+
+      // Convert weight to kg
+      let weightInKg: number;
+      if (patientData.weightUnit === 'kg') {
+        weightInKg = actualWeight;
+      } else {
+        // Assume lbs
+        weightInKg = actualWeight * 0.453592;
+      }
+
+      // Calculate BMI = weight(kg) / height(m)^2
+      bmi = weightInKg / (heightInMeters * heightInMeters);
+
+      // Calculate ideal weight at BMI 22.5 (middle of healthy range)
+      const idealWeightKg = 22.5 * (heightInMeters * heightInMeters);
+
+      // Convert ideal weight back to user's preferred unit
+      if (patientData.weightUnit === 'kg') {
+        idealWeight = idealWeightKg;
+      } else {
+        idealWeight = idealWeightKg / 0.453592; // Convert to lbs
+      }
+    }
+
+    return {
+      date,
+      weight: actualWeight,
+      bmi: bmi ? parseFloat(bmi.toFixed(1)) : undefined,
+      idealWeight: idealWeight ? parseFloat(idealWeight.toFixed(1)) : undefined
+    };
+  });
+
+  // Prepare chart data for Glucose Journal
+  const glucoseChartData = filteredGlucoseVitals.map(v => ({
+    date: format(new Date(v.timestamp), 'MMM dd'),
+    bloodSugar: v.bloodSugar
+  }));
+
   // Use ALL vitals for surgery-date-based timeline (with proper date range from backend)
   // Use FILTERED vitals for charts so device filter works
   const chartData = filteredVitals.map(v => {
@@ -332,8 +475,65 @@ export function VitalsPage() {
         }}></div>
 
         <div className="relative p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="relative flex items-start justify-between mb-6">
+            {/* Left: Patient Badge + Dropdown (stacked) */}
+            <div className="flex flex-col items-center gap-2 z-10">
+              {/* Patient Identifier Badge */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full font-semibold text-sm"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))',
+                  border: '2px solid rgba(34, 197, 94, 0.5)',
+                  boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)'
+                }}>
+                <Heart className="h-4 w-4 text-green-400" />
+                <span className="text-green-300">
+                  {patientData?.name || patientData?.firstName || user?.name || 'Current User'}
+                </span>
+                <span className="text-green-400/60 ml-1">
+                  ({(selectedUserId && selectedUserId !== user?.id) ? 'Patient' : (user?.role === 'therapist' || user?.role === 'admin') ? 'Admin/Therapist' : 'Patient'})
+                </span>
+              </div>
+
+              {/* Patient Selector - Only for Admin/Therapist */}
+              {(user?.role === 'admin' || user?.role === 'therapist') && allPatients.length > 0 && (
+                <select
+                  value={selectedUserId || 'my-vitals'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    console.log('[VitalsPage] Dropdown changed to:', value);
+                    if (value === 'my-vitals') {
+                      setSelectedUserId(null);
+                    } else {
+                      const userId = Number(value);
+                      const patient = allPatients.find(p => p.userId === userId);
+                      console.log('[VitalsPage] Selected patient:', patient?.name, 'userId:', userId);
+                      setSelectedUserId(userId);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg font-semibold text-sm border-2 transition-all cursor-pointer"
+                  style={{
+                    background: 'rgba(31, 41, 55, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 0.5)',
+                    color: 'rgb(147, 197, 253)'
+                  }}
+                >
+                  <option value="my-vitals">My Vitals</option>
+                  <optgroup label="Patients">
+                    {allPatients
+                      .filter(p => p.userId) // Only show patients with linked user accounts
+                      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                      .map(patient => (
+                        <option key={patient.id} value={patient.userId}>
+                          {patient.name || `Patient ${patient.id}`}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+              )}
+            </div>
+
+            {/* Center: Title (absolutely positioned to true center) */}
+            <div className="absolute left-1/2 top-0 transform -translate-x-1/2 flex items-center gap-4">
               <div className="p-3 rounded-xl"
                 style={{
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
@@ -341,26 +541,30 @@ export function VitalsPage() {
                 }}>
                 <Activity className="h-8 w-8 text-blue-400" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white" style={{ textShadow: '0 0 20px rgba(59, 130, 246, 0.5)' }}>
+              <div className="flex flex-col items-center">
+                <h1 className="text-3xl font-bold text-white whitespace-nowrap" style={{ textShadow: '0 0 20px rgba(59, 130, 246, 0.5)' }}>
                   Vitals Command Center
                 </h1>
                 <p className="text-sm text-blue-300/80">Medical-Grade Monitoring System</p>
               </div>
             </div>
-            <Button onClick={() => setIsModalOpen(true)} className="group">
-              <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-              Record Vitals
-            </Button>
+
+            {/* Right: Record Button */}
+            <div className="z-10">
+              <Button onClick={() => setIsModalOpen(true)} className="group">
+                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                Record Vitals
+              </Button>
+            </div>
           </div>
 
           {/* Device Filter Tabs - Garmin Style */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-2 text-blue-300/60 text-sm font-semibold">
               <Filter className="h-4 w-4" />
               <span>DEVICE SOURCE</span>
             </div>
-            <div className="flex gap-2 flex-1">
+            <div className="flex gap-2">
               {[
                 { id: 'all' as const, icon: BarChart3, label: 'All Devices', color: 'blue' },
                 { id: 'samsung' as const, icon: Smartphone, label: 'Samsung Health', color: 'cyan' },
@@ -396,7 +600,7 @@ export function VitalsPage() {
           </div>
 
           {/* Main Navigation Tabs */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex justify-center gap-2 mt-4">
             {[
               { id: 'overview' as const, label: 'Overview', icon: Activity },
               { id: 'weight' as const, label: 'Weight Journal', icon: Weight },
@@ -1497,15 +1701,60 @@ export function VitalsPage() {
                 </Button>
               </div>
 
+              {/* Time Period Toggle */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex gap-2 p-1 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.8))',
+                  border: '1px solid rgba(59, 130, 246, 0.3)'
+                }}>
+                  <button
+                    onClick={() => setWeightTimePeriod('7d')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      weightTimePeriod === '7d'
+                        ? 'bg-blue-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    7 Days
+                  </button>
+                  <button
+                    onClick={() => setWeightTimePeriod('30d')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      weightTimePeriod === '30d'
+                        ? 'bg-blue-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    30 Days
+                  </button>
+                  <button
+                    onClick={() => setWeightTimePeriod('surgery')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      weightTimePeriod === 'surgery'
+                        ? 'bg-blue-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Since Surgery
+                  </button>
+                </div>
+              </div>
+
               {/* Weight Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="p-4 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
                   border: '1px solid rgba(59, 130, 246, 0.2)'
                 }}>
                   <p className="text-xs text-blue-300 font-semibold mb-1">CURRENT WEIGHT</p>
                   <p className="text-3xl font-bold text-white">
-                    {latestVitals?.weight || '--'} <span className="text-lg text-gray-400">lbs</span>
+                    {(() => {
+                      // Use latest weight from filtered period, or overall latest if no filtered data
+                      const currentWeight = filteredWeightVitals.length > 0
+                        ? filteredWeightVitals[filteredWeightVitals.length - 1].weight
+                        : latestVitals?.weight;
+                      return currentWeight || '--';
+                    })()} <span className="text-lg text-gray-400">lbs</span>
                   </p>
                 </div>
 
@@ -1513,15 +1762,13 @@ export function VitalsPage() {
                   background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))',
                   border: '1px solid rgba(16, 185, 129, 0.2)'
                 }}>
-                  <p className="text-xs text-green-300 font-semibold mb-1">7-DAY CHANGE</p>
+                  <p className="text-xs text-green-300 font-semibold mb-1">PERIOD CHANGE</p>
                   <p className="text-3xl font-bold text-white">
                     {(() => {
-                      if (!latestVitals?.weight || vitals.length < 2) return '--';
-                      const sevenDaysAgo = subDays(new Date(), 7);
-                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                      if (oldWeights.length === 0) return '--';
-                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                      const change = latestVitals.weight - oldWeight;
+                      if (filteredWeightVitals.length < 2) return '--';
+                      const firstWeight = filteredWeightVitals[0].weight!; // Oldest in period
+                      const lastWeight = filteredWeightVitals[filteredWeightVitals.length - 1].weight!; // Newest in period
+                      const change = lastWeight - firstWeight;
                       return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
                     })()} <span className="text-lg text-gray-400">lbs</span>
                   </p>
@@ -1531,16 +1778,12 @@ export function VitalsPage() {
                   background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(249, 115, 22, 0.1))',
                   border: '1px solid rgba(251, 146, 60, 0.2)'
                 }}>
-                  <p className="text-xs text-orange-300 font-semibold mb-1">30-DAY CHANGE</p>
+                  <p className="text-xs text-orange-300 font-semibold mb-1">AVERAGE</p>
                   <p className="text-3xl font-bold text-white">
                     {(() => {
-                      if (!latestVitals?.weight || vitals.length < 2) return '--';
-                      const thirtyDaysAgo = subDays(new Date(), 30);
-                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= thirtyDaysAgo);
-                      if (oldWeights.length === 0) return '--';
-                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                      const change = latestVitals.weight - oldWeight;
-                      return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
+                      if (filteredWeightVitals.length === 0) return '--';
+                      const avg = filteredWeightVitals.reduce((sum, v) => sum + (v.weight || 0), 0) / filteredWeightVitals.length;
+                      return avg.toFixed(1);
                     })()} <span className="text-lg text-gray-400">lbs</span>
                   </p>
                 </div>
@@ -1549,56 +1792,217 @@ export function VitalsPage() {
                   background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1))',
                   border: '1px solid rgba(168, 85, 247, 0.2)'
                 }}>
-                  <p className="text-xs text-purple-300 font-semibold mb-1">TOTAL READINGS</p>
+                  <p className="text-xs text-purple-300 font-semibold mb-1">PERIOD READINGS</p>
                   <p className="text-3xl font-bold text-white">
-                    {vitals.filter(v => v.weight).length}
+                    {filteredWeightVitals.length}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(21, 128, 61, 0.1))',
+                  border: '1px solid rgba(34, 197, 94, 0.2)'
+                }}>
+                  <p className="text-xs text-emerald-300 font-semibold mb-1">TREND</p>
+                  <p className="text-lg font-bold text-white">
+                    {(() => {
+                      if (filteredWeightVitals.length < 2) return 'N/A';
+                      const firstWeight = filteredWeightVitals[0].weight!; // Oldest in period
+                      const lastWeight = filteredWeightVitals[filteredWeightVitals.length - 1].weight!; // Newest in period
+                      const change = lastWeight - firstWeight;
+                      console.log('[Weight Trend] First:', firstWeight, 'Last:', lastWeight, 'Change:', change);
+                      if (Math.abs(change) < 0.5) return 'Stable';
+                      return change > 0 ? '↑ Gaining' : '↓ Losing';
+                    })()}
                   </p>
                 </div>
               </div>
 
-              {/* Weight Chart */}
+              {/* Summary Text */}
+              <div className="mb-6 p-4 rounded-xl" style={{
+                background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
+                border: '1px solid rgba(59, 130, 246, 0.3)'
+              }}>
+                <p className="text-sm text-gray-300">
+                  {(() => {
+                    if (filteredWeightVitals.length === 0) {
+                      return `No weight data recorded for ${
+                        weightTimePeriod === '7d' ? 'the last 7 days' :
+                        weightTimePeriod === '30d' ? 'the last 30 days' :
+                        'the period since surgery'
+                      }.`;
+                    }
+                    const firstWeight = filteredWeightVitals[0].weight!; // Oldest in period
+                    const lastWeight = filteredWeightVitals[filteredWeightVitals.length - 1].weight!; // Newest in period
+                    const change = lastWeight - firstWeight;
+                    const avg = filteredWeightVitals.reduce((sum, v) => sum + (v.weight || 0), 0) / filteredWeightVitals.length;
+                    const periodName =
+                      weightTimePeriod === '7d' ? '7 days' :
+                      weightTimePeriod === '30d' ? '30 days' :
+                      'since surgery';
+
+                    if (Math.abs(change) < 0.5) {
+                      return `Your weight has remained stable over ${periodName} at an average of ${avg.toFixed(1)} lbs with ${filteredWeightVitals.length} readings.`;
+                    }
+                    const changeVerb = change > 0 ? 'gained' : 'lost';
+                    return `You have ${changeVerb} ${Math.abs(change).toFixed(1)} lbs over ${periodName}, averaging ${avg.toFixed(1)} lbs across ${filteredWeightVitals.length} readings.`;
+                  })()}
+                </p>
+              </div>
+
+              {/* Weight Chart with BMI and Ideal Weight */}
               <div className="h-96">
-                {vitals.filter(v => v.weight).length > 0 ? (
+                {filteredWeightVitals.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <ComposedChart data={weightChartData}>
                       <defs>
-                        <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="actualWeightGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="idealWeightGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
                           <stop offset="100%" stopColor="#059669" stopOpacity={0.1}/>
                         </linearGradient>
-                        <filter id="weightGlow">
-                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                          <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                          </feMerge>
-                        </filter>
+                        <linearGradient id="bmiGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#d97706" stopOpacity={0.1}/>
+                        </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
-                      <YAxis domain={[0, 320]} stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} />
+                      <XAxis
+                        dataKey="date"
+                        stroke="#9ca3af"
+                        tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
+                      />
+                      {/* Left Y-Axis for Weight (Blue) */}
+                      <YAxis
+                        yAxisId="weight"
+                        domain={[0, 320]}
+                        ticks={[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320]}
+                        stroke="#3b82f6"
+                        tick={{ fill: '#3b82f6', fontSize: 11, fontWeight: 600 }}
+                        label={{
+                          value: 'Weight (lbs)',
+                          angle: -90,
+                          position: 'insideLeft',
+                          fill: '#3b82f6',
+                          fontSize: 13,
+                          fontWeight: 'bold',
+                          offset: 10
+                        }}
+                      />
+                      {/* Right Y-Axis for BMI (Orange) */}
+                      <YAxis
+                        yAxisId="bmi"
+                        orientation="right"
+                        domain={[0, 50]}
+                        ticks={[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]}
+                        stroke="#f59e0b"
+                        tick={{ fill: '#f59e0b', fontSize: 12, fontWeight: 600 }}
+                        label={{
+                          value: 'BMI',
+                          angle: -90,
+                          position: 'insideRight',
+                          fill: '#f59e0b',
+                          fontSize: 13,
+                          fontWeight: 'bold',
+                          offset: 25
+                        }}
+                      />
                       <Tooltip
                         contentStyle={{
                           background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
-                          border: '2px solid #10b981',
+                          border: '2px solid #3b82f6',
                           borderRadius: '12px',
                           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                          backdropFilter: 'blur(10px)'
+                          backdropFilter: 'blur(10px)',
+                          color: '#fff'
+                        }}
+                        formatter={(value: any, name: string) => {
+                          if (name === 'Actual Weight') return [`${value} lbs`, name];
+                          if (name === 'Ideal Weight') return [`${value} lbs`, name];
+                          if (name === 'BMI') return [value, name];
+                          return [value, name];
                         }}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="line"
+                      />
+                      {/* Actual Weight Line (Blue) */}
                       <Line
+                        yAxisId="weight"
                         type="monotone"
                         dataKey="weight"
-                        stroke="#10b981"
+                        stroke="#3b82f6"
                         strokeWidth={4}
-                        fill="url(#weightGradient)"
-                        dot={{ r: 6, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                        dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
                         activeDot={{ r: 9, strokeWidth: 3 }}
-                        name="Weight (lbs)"
-                        filter="url(#weightGlow)"
+                        name="Actual Weight"
                       />
-                    </LineChart>
+                      {/* Ideal Weight Line (Green) */}
+                      {patientData?.height && (
+                        <Line
+                          yAxisId="weight"
+                          type="monotone"
+                          dataKey="idealWeight"
+                          stroke="#10b981"
+                          strokeWidth={3}
+                          strokeDasharray="5 5"
+                          dot={false}
+                          name="Ideal Weight"
+                        />
+                      )}
+                      {/* BMI Line (Orange) */}
+                      {patientData?.height && (
+                        <Line
+                          yAxisId="bmi"
+                          type="monotone"
+                          dataKey="bmi"
+                          stroke="#f59e0b"
+                          strokeWidth={3}
+                          dot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 8, strokeWidth: 3 }}
+                          name="BMI"
+                        />
+                      )}
+                      {/* BMI Threshold Labels */}
+                      {patientData?.height && (
+                        <>
+                          {/* BMI 18.5 - Underweight threshold */}
+                          <ReferenceLine
+                            yAxisId="bmi"
+                            y={18.5}
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            label={{
+                              value: 'Underweight',
+                              position: 'right',
+                              fill: '#ef4444',
+                              fontSize: 9,
+                              fontWeight: 'bold',
+                              offset: 5
+                            }}
+                          />
+
+                          {/* BMI 30 - Overweight threshold */}
+                          <ReferenceLine
+                            yAxisId="bmi"
+                            y={30}
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            label={{
+                              value: 'Overweight',
+                              position: 'insideBottomRight',
+                              fill: '#ef4444',
+                              fontSize: 9,
+                              fontWeight: 'bold',
+                              offset: 5
+                            }}
+                          />
+                        </>
+                      )}
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-400">
@@ -1626,15 +2030,65 @@ export function VitalsPage() {
                     </thead>
                     <tbody>
                       {vitals.filter(v => v.weight).slice(-20).reverse().map((vital, index, arr) => {
-                        const prevWeight = arr[index + 1]?.weight;
+                        const prevVital = arr[index + 1];
+                        const prevWeight = prevVital?.weight;
                         const change = prevWeight ? vital.weight! - prevWeight : 0;
+
+                        // Calculate rate of change per week
+                        let changeColor = 'text-gray-400';
+                        if (prevWeight && prevVital) {
+                          const timeDiffMs = new Date(vital.timestamp).getTime() - new Date(prevVital.timestamp).getTime();
+                          const timeDiffWeeks = timeDiffMs / (1000 * 60 * 60 * 24 * 7);
+                          const changePerWeek = timeDiffWeeks > 0 ? Math.abs(change) / timeDiffWeeks : 0;
+
+                          // Calculate BMI to determine if overweight or underweight
+                          let isOverweight = false;
+                          let isUnderweight = false;
+                          if (patientData?.height) {
+                            let heightInMeters: number;
+                            if (patientData.heightUnit === 'cm') {
+                              heightInMeters = patientData.height / 100;
+                            } else {
+                              heightInMeters = patientData.height * 0.0254;
+                            }
+                            let weightInKg = vital.weight! * 0.453592;
+                            const bmi = weightInKg / (heightInMeters * heightInMeters);
+                            isOverweight = bmi >= 25;
+                            isUnderweight = bmi < 18.5;
+                          }
+
+                          // Color logic based on rate and direction
+                          if (changePerWeek > 3.5) {
+                            // Rapid change - dangerous (red)
+                            changeColor = 'text-red-400';
+                          } else if (changePerWeek > 2) {
+                            // Moderate change - concerning (yellow)
+                            changeColor = 'text-yellow-400';
+                          } else {
+                            // Small change - check if it's in the right direction
+                            const losingWeight = change < 0;
+                            const gainingWeight = change > 0;
+
+                            if ((losingWeight && isOverweight) || (gainingWeight && isUnderweight)) {
+                              // Good direction (green)
+                              changeColor = 'text-green-400';
+                            } else if (Math.abs(change) < 0.5) {
+                              // Stable (gray)
+                              changeColor = 'text-gray-400';
+                            } else {
+                              // Wrong direction (default white)
+                              changeColor = 'text-white';
+                            }
+                          }
+                        }
+
                         return (
                           <tr key={vital.id} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
                             <td className="py-3 px-4 text-sm">{format(new Date(vital.timestamp), 'MMM d, yyyy h:mm a')}</td>
                             <td className="py-3 px-4 text-sm font-semibold">{vital.weight} lbs</td>
                             <td className="py-3 px-4 text-sm">
                               {prevWeight ? (
-                                <span className={change > 0 ? 'text-yellow-400' : change < 0 ? 'text-green-400' : 'text-gray-400'}>
+                                <span className={changeColor}>
                                   {change > 0 ? '+' : ''}{change.toFixed(1)} lbs
                                 </span>
                               ) : (
@@ -1677,8 +2131,47 @@ export function VitalsPage() {
                 </Button>
               </div>
 
+              {/* Time Period Toggle */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex gap-2 p-1 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.8))',
+                  border: '1px solid rgba(239, 68, 68, 0.3)'
+                }}>
+                  <button
+                    onClick={() => setGlucoseTimePeriod('7d')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      glucoseTimePeriod === '7d'
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    7 Days
+                  </button>
+                  <button
+                    onClick={() => setGlucoseTimePeriod('30d')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      glucoseTimePeriod === '30d'
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    30 Days
+                  </button>
+                  <button
+                    onClick={() => setGlucoseTimePeriod('surgery')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      glucoseTimePeriod === 'surgery'
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Since Surgery
+                  </button>
+                </div>
+              </div>
+
               {/* Glucose Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="p-4 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
                   border: '1px solid rgba(239, 68, 68, 0.2)'
@@ -1702,12 +2195,11 @@ export function VitalsPage() {
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1))',
                   border: '1px solid rgba(59, 130, 246, 0.2)'
                 }}>
-                  <p className="text-xs text-blue-300 font-semibold mb-1">7-DAY AVERAGE</p>
+                  <p className="text-xs text-blue-300 font-semibold mb-1">PERIOD AVERAGE</p>
                   <p className="text-3xl font-bold text-white">
                     {(() => {
-                      const recent = vitals.filter(v => v.bloodSugar).slice(-7);
-                      if (recent.length === 0) return '--';
-                      const avg = recent.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / recent.length;
+                      if (filteredGlucoseVitals.length === 0) return '--';
+                      const avg = filteredGlucoseVitals.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / filteredGlucoseVitals.length;
                       return Math.round(avg);
                     })()} <span className="text-lg text-gray-400">mg/dL</span>
                   </p>
@@ -1720,9 +2212,9 @@ export function VitalsPage() {
                   <p className="text-xs text-green-300 font-semibold mb-1">IN RANGE (70-100)</p>
                   <p className="text-3xl font-bold text-white">
                     {(() => {
-                      const total = vitals.filter(v => v.bloodSugar).length;
+                      const total = filteredGlucoseVitals.length;
                       if (total === 0) return '--';
-                      const inRange = vitals.filter(v => v.bloodSugar && v.bloodSugar >= 70 && v.bloodSugar < 100).length;
+                      const inRange = filteredGlucoseVitals.filter(v => v.bloodSugar && v.bloodSugar >= 70 && v.bloodSugar < 100).length;
                       return Math.round((inRange / total) * 100);
                     })()} <span className="text-lg text-gray-400">%</span>
                   </p>
@@ -1732,18 +2224,71 @@ export function VitalsPage() {
                   background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1))',
                   border: '1px solid rgba(168, 85, 247, 0.2)'
                 }}>
-                  <p className="text-xs text-purple-300 font-semibold mb-1">TOTAL READINGS</p>
+                  <p className="text-xs text-purple-300 font-semibold mb-1">PERIOD READINGS</p>
                   <p className="text-3xl font-bold text-white">
-                    {vitals.filter(v => v.bloodSugar).length}
+                    {filteredGlucoseVitals.length}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(249, 115, 22, 0.1))',
+                  border: '1px solid rgba(251, 146, 60, 0.2)'
+                }}>
+                  <p className="text-xs text-orange-300 font-semibold mb-1">HIGH READINGS</p>
+                  <p className="text-3xl font-bold text-white">
+                    {(() => {
+                      const total = filteredGlucoseVitals.length;
+                      if (total === 0) return '--';
+                      const high = filteredGlucoseVitals.filter(v => v.bloodSugar && v.bloodSugar >= 126).length;
+                      return Math.round((high / total) * 100);
+                    })()} <span className="text-lg text-gray-400">%</span>
                   </p>
                 </div>
               </div>
 
+              {/* Summary Text */}
+              <div className="mb-6 p-4 rounded-xl" style={{
+                background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
+                border: '1px solid rgba(239, 68, 68, 0.3)'
+              }}>
+                <p className="text-sm text-gray-300">
+                  {(() => {
+                    if (filteredGlucoseVitals.length === 0) {
+                      return `No glucose data recorded for ${
+                        glucoseTimePeriod === '7d' ? 'the last 7 days' :
+                        glucoseTimePeriod === '30d' ? 'the last 30 days' :
+                        'the period since surgery'
+                      }.`;
+                    }
+                    const avg = filteredGlucoseVitals.reduce((sum, v) => sum + (v.bloodSugar || 0), 0) / filteredGlucoseVitals.length;
+                    const inRange = filteredGlucoseVitals.filter(v => v.bloodSugar && v.bloodSugar >= 70 && v.bloodSugar < 100).length;
+                    const high = filteredGlucoseVitals.filter(v => v.bloodSugar && v.bloodSugar >= 126).length;
+                    const inRangePercent = Math.round((inRange / filteredGlucoseVitals.length) * 100);
+                    const highPercent = Math.round((high / filteredGlucoseVitals.length) * 100);
+                    const periodName =
+                      glucoseTimePeriod === '7d' ? '7 days' :
+                      glucoseTimePeriod === '30d' ? '30 days' :
+                      'since surgery';
+
+                    let statusText = '';
+                    if (avg < 100) {
+                      statusText = 'excellent control';
+                    } else if (avg < 126) {
+                      statusText = 'pre-diabetic range';
+                    } else {
+                      statusText = 'elevated levels';
+                    }
+
+                    return `Your average blood glucose over ${periodName} is ${Math.round(avg)} mg/dL (${statusText}). ${inRangePercent}% of readings are in the normal range (70-100 mg/dL), and ${highPercent}% are elevated (≥126 mg/dL) across ${filteredGlucoseVitals.length} readings.`;
+                  })()}
+                </p>
+              </div>
+
               {/* Glucose Chart */}
               <div className="h-96">
-                {vitals.filter(v => v.bloodSugar).length > 0 ? (
+                {filteredGlucoseVitals.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <LineChart data={glucoseChartData}>
                       <defs>
                         <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#f97316" stopOpacity={0.8}/>

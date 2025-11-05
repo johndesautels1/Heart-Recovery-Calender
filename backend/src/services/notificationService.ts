@@ -152,3 +152,106 @@ ${percentage >= 100 ? `<p style="background:#fee2e2;padding:10px;border-radius:4
 
   console.log(`[NOTIFICATIONS] Heart health alert sent for ${nutrient}: ${percentRounded}% of limit`);
 }
+
+/**
+ * Send rapid weight change alert (both SMS and email)
+ */
+export async function sendWeightChangeAlert(
+  userEmail: string,
+  userPhone: string | null | undefined,
+  changeAmount: number,
+  changePerWeek: number,
+  currentWeight: number,
+  isGain: boolean,
+  timePeriodDays: number
+): Promise<void> {
+  const direction = isGain ? 'gained' : 'lost';
+  const directionCaps = isGain ? 'Gain' : 'Loss';
+  const changeAbsolute = Math.abs(changeAmount);
+  const changePerWeekRounded = Math.round(changePerWeek * 10) / 10;
+
+  // Determine severity
+  let icon = '⚠️';
+  let colorHex = '#f59e0b';
+  let severity = 'concerning';
+  if (changePerWeek > 3.5) {
+    icon = '🚨';
+    colorHex = '#ef4444';
+    severity = 'dangerous';
+  }
+
+  // SMS (concise)
+  const smsMessage = `${icon} WEIGHT ALERT: You've ${direction} ${changeAbsolute.toFixed(1)} lbs in ${timePeriodDays} days (~${changePerWeekRounded} lbs/week). This rapid weight ${direction === 'gained' ? 'gain' : 'loss'} is ${severity} and may indicate fluid retention, medication issues, or other health concerns. Please contact your care team. - Heart Recovery Calendar`;
+
+  // Email (detailed HTML)
+  const emailSubject = `${icon} Weight Alert: Rapid Weight ${directionCaps} Detected`;
+  const emailHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;line-height:1.6;color:#333;}
+.container{max-width:600px;margin:0 auto;padding:20px;}
+.alert-box{border-left:5px solid ${colorHex};background:${colorHex}15;padding:20px;border-radius:8px;margin:20px 0;}
+.alert-header{font-size:24px;font-weight:bold;color:${colorHex};margin-bottom:10px;}
+.stats{background:white;padding:15px;border-radius:6px;margin:15px 0;}
+.stat-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;}
+.stat-label{font-weight:600;color:#666;}
+.stat-value{font-weight:bold;color:${colorHex};}
+.recommendations{background:#f8f9fa;padding:15px;border-radius:6px;margin:15px 0;}
+.recommendations h3{margin-top:0;color:#333;}
+.recommendations ul{margin:10px 0;padding-left:20px;}
+.recommendations li{margin:8px 0;}
+.footer{margin-top:30px;padding-top:20px;border-top:2px solid #eee;font-size:12px;color:#666;text-align:center;}
+.cta-button{display:inline-block;padding:12px 24px;background:${colorHex};color:white;text-decoration:none;border-radius:6px;font-weight:bold;margin:15px 0;}
+.warning-box{background:#fee2e2;padding:15px;border-radius:6px;margin:15px 0;border-left:4px solid #dc2626;}
+</style></head><body><div class="container">
+<div class="alert-box"><div class="alert-header">${icon} Rapid Weight ${directionCaps} Alert</div>
+<p style="margin:5px 0 0 0;font-size:16px;">We've detected a rapid weight change that requires immediate attention from your healthcare team.</p></div>
+<div class="stats">
+<div class="stat-row"><span class="stat-label">Weight ${directionCaps}:</span><span class="stat-value">${changeAbsolute.toFixed(1)} lbs</span></div>
+<div class="stat-row"><span class="stat-label">Time Period:</span><span class="stat-value">${timePeriodDays} days</span></div>
+<div class="stat-row"><span class="stat-label">Rate of Change:</span><span class="stat-value">~${changePerWeekRounded} lbs/week</span></div>
+<div class="stat-row" style="border-bottom:none;"><span class="stat-label">Current Weight:</span><span class="stat-value">${currentWeight} lbs</span></div>
+</div>
+<div class="warning-box">
+<p style="margin:0;font-weight:bold;color:#dc2626;">⚠️ This rate of weight change is ${severity.toUpperCase()}!</p>
+<p style="margin:10px 0 0 0;color:#991b1b;">Rapid weight changes can indicate serious health issues and require immediate medical evaluation.</p>
+</div>
+<div class="recommendations"><h3>🫀 Why This Matters for Your Heart</h3><p>
+${isGain
+  ? '<strong>Rapid weight gain</strong> in heart patients often indicates <strong>fluid retention</strong> (edema), which can be a sign of worsening heart failure. Excess fluid makes your heart work harder and can lead to serious complications including shortness of breath, leg swelling, and increased blood pressure.'
+  : '<strong>Rapid weight loss</strong> in heart patients can indicate <strong>dehydration, loss of muscle mass, or medication side effects</strong>. Unintentional rapid weight loss can weaken your heart, reduce energy levels, and compromise your recovery.'}
+</p><h3>🚨 Immediate Action Required</h3><ul>
+<li><strong>Contact your healthcare provider TODAY</strong> - do not wait</li>
+<li>Report this weight change and any symptoms you're experiencing</li>
+${isGain
+  ? `<li>Check for signs of fluid retention: swollen ankles/legs, difficulty breathing, bloating</li>
+<li>Monitor your blood pressure if you have a home monitor</li>
+<li>Reduce sodium intake immediately (aim for less than 1500mg/day)</li>
+<li>Do NOT stop taking your medications without medical advice</li>`
+  : `<li>Check for signs of dehydration: dark urine, dizziness, dry mouth, fatigue</li>
+<li>Ensure you're eating enough calories and protein</li>
+<li>Review your medications with your doctor (some can cause weight loss)</li>
+<li>Monitor for fever, nausea, or loss of appetite</li>`}
+</ul>
+<p style="background:#fef3c7;padding:10px;border-radius:4px;margin:15px 0;border-left:3px solid #f59e0b;">
+<strong>📞 Call 911 immediately if you experience:</strong><br>
+• Severe shortness of breath or chest pain<br>
+• Rapid or irregular heartbeat<br>
+• Extreme weakness or fainting<br>
+• Confusion or difficulty speaking
+</p>
+</div>
+<center><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/vitals" class="cta-button">View My Weight Journal →</a></center>
+<div class="footer"><p><strong>Heart Recovery Calendar</strong></p>
+<p>This is an automated health alert from your Heart Recovery Calendar system.</p>
+<p>Rapid weight changes (more than ${changePerWeek > 3.5 ? '3.5' : '2'} lbs/week) can indicate serious health issues requiring immediate medical attention.</p>
+<p style="margin-top:15px;font-size:11px;color:#999;">You received this alert because you ${direction} ${changeAbsolute.toFixed(1)} lbs over ${timePeriodDays} days. Your care team has been notified.</p>
+</div></div></body></html>`;
+
+  // Send both SMS and email
+  const promises: Promise<boolean>[] = [];
+  if (userPhone) promises.push(sendSMS(userPhone, smsMessage));
+  promises.push(sendEmail(userEmail, emailSubject, emailHtml));
+  await Promise.all(promises);
+
+  console.log(`[NOTIFICATIONS] Rapid weight ${direction} alert sent: ${changePerWeekRounded} lbs/week`);
+}

@@ -3,7 +3,7 @@ import sequelize from './database';
 
 interface ExerciseLogAttributes {
   id: number;
-  prescriptionId: number;
+  prescriptionId: number | null;
   patientId: number;
   completedAt: Date;
   postSurgeryDay?: number;
@@ -62,7 +62,7 @@ interface ExerciseLogCreationAttributes extends Optional<ExerciseLogAttributes, 
 
 class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttributes> implements ExerciseLogAttributes {
   public id!: number;
-  public prescriptionId!: number;
+  public prescriptionId!: number | null;
   public patientId!: number;
   public completedAt!: Date;
   public postSurgeryDay?: number;
@@ -126,7 +126,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
         },
         prescriptionId: {
           type: DataTypes.INTEGER,
-          allowNull: false,
+          allowNull: true,
           references: {
             model: 'exercise_prescriptions',
             key: 'id',

@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
 import VitalsSample from '../models/VitalsSample';
+import User from '../models/User';
+import Patient from '../models/Patient';
 import { Op } from 'sequelize';
+import { sendWeightChangeAlert } from '../services/notificationService';
 
 // GET /api/vitals - Get all vitals with filters
 export const getVitals = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || req.query.userId;
+    // Check query param first (for admin/therapist viewing other patients), fall back to logged-in user
+    const userId = req.query.userId || req.user?.id;
+    console.log('[vitalsController] getVitals - userId from query:', req.query.userId, 'user.id:', req.user?.id, 'using:', userId);
     const { start, end, limit = 50 } = req.query;
 
     const where: any = { userId };
@@ -41,6 +46,53 @@ export const addVital = async (req: Request, res: Response) => {
 
     const vital = await VitalsSample.create(vitalData);
 
+    // Check for rapid weight change and send alert if needed
+    if (vital.weight && userId) {
+      try {
+        // Get the previous weight reading
+        const previousVital = await VitalsSample.findOne({
+          where: {
+            userId,
+            weight: { [Op.not]: null },
+            id: { [Op.not]: vital.id }
+          },
+          order: [['timestamp', 'DESC']]
+        });
+
+        if (previousVital && previousVital.weight) {
+          // Calculate weight change and rate
+          const weightChange = vital.weight - previousVital.weight;
+          const timeDiffMs = new Date(vital.timestamp).getTime() - new Date(previousVital.timestamp).getTime();
+          const timeDiffDays = timeDiffMs / (1000 * 60 * 60 * 24);
+          const timeDiffWeeks = timeDiffDays / 7;
+          const changePerWeek = timeDiffWeeks > 0 ? Math.abs(weightChange) / timeDiffWeeks : 0;
+
+          console.log(`[VITALS] Weight change detected: ${weightChange.toFixed(1)} lbs over ${timeDiffDays.toFixed(1)} days (${changePerWeek.toFixed(2)} lbs/week)`);
+
+          // Send alert if rate exceeds 3.5 lbs/week (dangerous) or 2 lbs/week (concerning)
+          if (changePerWeek > 2) {
+            // Get user data for notifications
+            const user = await User.findByPk(userId);
+            if (user && user.email) {
+              console.log(`[VITALS] Sending rapid weight change alert to ${user.email}`);
+              await sendWeightChangeAlert(
+                user.email,
+                user.phoneNumber,
+                weightChange,
+                changePerWeek,
+                vital.weight,
+                weightChange > 0, // isGain
+                Math.round(timeDiffDays)
+              );
+            }
+          }
+        }
+      } catch (alertError) {
+        // Don't fail the vital creation if alert fails
+        console.error('[VITALS] Error sending weight change alert:', alertError);
+      }
+    }
+
     res.status(201).json(vital);
   } catch (error) {
     console.error('Error adding vital:', error);
@@ -51,7 +103,9 @@ export const addVital = async (req: Request, res: Response) => {
 // GET /api/vitals/latest - Get most recent vital signs
 export const getLatestVital = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || (req.query.userId as string);
+    // Check query param first (for admin/therapist viewing other patients), fall back to logged-in user
+    const userId = (req.query.userId as string) || req.user?.id;
+    console.log('[vitalsController] getLatestVital - userId from query:', req.query.userId, 'user.id:', req.user?.id, 'using:', userId);
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });

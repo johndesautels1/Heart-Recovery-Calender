@@ -1835,7 +1835,7 @@ See browser console for full configuration details.
     return isViewingAsTherapist && selectedPatient
       ? `${selectedPatient.name}'s Calendar`
       : user?.role === 'admin' || user?.role === 'therapist'
-      ? `${user?.role === 'admin' ? 'Admin' : 'Therapist'} ${user?.name}'s Calendar`
+      ? `Admin/Therapist ${user?.name}'s Calendar`
       : `${user?.name}'s Calendar`;
   };
 
@@ -3703,9 +3703,9 @@ See browser console for full configuration details.
                       -- Select Owner --
                     </option>
 
-                    {/* Admin/Current User at Top */}
+                    {/* Admin/Therapist User at Top */}
                     <option value="admin" style={{ color: '#1e40af', fontWeight: 700, backgroundColor: '#e0f2fe' }}>
-                      {user?.role === 'admin' ? 'Admin: ' : user?.role === 'therapist' ? 'Therapist: ' : ''}{user?.name}
+                      {(user?.role === 'admin' || user?.role === 'therapist') ? 'Admin/Therapist: ' : ''}{user?.name}
                     </option>
 
                     {/* Patient Names Only - Alphabetically */}

@@ -343,7 +343,7 @@ export async function syncSamsungData(
 
           // Create exercise log entry
           await ExerciseLog.create({
-            prescriptionId: 0, // Will need to be linked manually or via smart matching
+            prescriptionId: null, // Will need to be linked manually or via smart matching
             patientId: patient.id,
             completedAt: new Date(session.endTime),
             startedAt: new Date(session.startTime),
