@@ -3,7 +3,9 @@ import VitalsSample from '../models/VitalsSample';
 import User from '../models/User';
 import Patient from '../models/Patient';
 import { Op } from 'sequelize';
-import { sendWeightChangeAlert } from '../services/notificationService';
+import { sendWeightChangeAlert, sendHawkAlert } from '../services/notificationService';
+import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, getCareTeamForNotification } from '../services/medicationCorrelationService';
+
 
 // GET /api/vitals - Get all vitals with filters
 export const getVitals = async (req: Request, res: Response) => {
@@ -84,12 +86,79 @@ export const addVital = async (req: Request, res: Response) => {
                 weightChange > 0, // isGain
                 Math.round(timeDiffDays)
               );
+
+              // 🦅 HAWK ALERT: Check for medication correlation
+              console.log('[VITALS] Checking for medication correlation (Hawk Alert)...');
+              const hawkAlert = await checkWeightChangeMedicationCorrelation(
+                userId,
+                weightChange,
+                changePerWeek
+              );
+
+              if (hawkAlert) {
+                console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+                // Get care team to notify
+                const careTeam = await getCareTeamForNotification(userId);
+                const careTeamEmails = careTeam.map(member => member.email);
+
+                await sendHawkAlert(
+                  user.email,
+                  user.phoneNumber,
+                  hawkAlert.type,
+                  hawkAlert.severity,
+                  hawkAlert.medicationNames,
+                  hawkAlert.message,
+                  hawkAlert.recommendation,
+                  careTeamEmails
+                );
+              } else {
+                console.log('[VITALS] No medication correlation detected for weight change');
+              }
             }
           }
         }
       } catch (alertError) {
         // Don't fail the vital creation if alert fails
         console.error('[VITALS] Error sending weight change alert:', alertError);
+      }
+    }
+
+    // 🦅 HAWK ALERT: Check for edema medication correlation
+    if (vital.edema && vital.edemaSeverity && vital.edemaSeverity !== 'none' && userId) {
+      try {
+        console.log(`[VITALS] Checking for edema medication correlation (Hawk Alert): ${vital.edemaSeverity} edema`);
+        const hawkAlert = await checkEdemaMedicationCorrelation(
+          userId,
+          vital.edemaSeverity,
+          vital.edema
+        );
+
+        if (hawkAlert) {
+          console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+          const user = await User.findByPk(userId);
+          if (user && user.email) {
+            // Get care team to notify
+            const careTeam = await getCareTeamForNotification(userId);
+            const careTeamEmails = careTeam.map(member => member.email);
+
+            await sendHawkAlert(
+              user.email,
+              user.phoneNumber,
+              hawkAlert.type,
+              hawkAlert.severity,
+              hawkAlert.medicationNames,
+              hawkAlert.message,
+              hawkAlert.recommendation,
+              careTeamEmails
+            );
+          }
+        } else {
+          console.log('[VITALS] No medication correlation detected for edema');
+        }
+      } catch (alertError) {
+        console.error('[VITALS] Error sending edema Hawk Alert:', alertError);
       }
     }
 
@@ -292,6 +361,84 @@ export const deleteVital = async (req: Request, res: Response) => {
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting vital:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET /api/vitals/hawk-alerts - Get active Hawk Alerts for user
+export const getHawkAlerts = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const alerts: any[] = [];
+
+    // Check for recent rapid weight change (last 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentVitals = await VitalsSample.findAll({
+      where: {
+        userId,
+        weight: { [Op.not]: null },
+        timestamp: { [Op.gte]: sevenDaysAgo }
+      },
+      order: [['timestamp', 'DESC']],
+      limit: 10
+    });
+
+    if (recentVitals.length >= 2) {
+      const latest = recentVitals[0];
+      const previous = recentVitals[recentVitals.length - 1];
+
+      if (latest.weight && previous.weight) {
+        const weightChange = latest.weight - previous.weight;
+        const timeDiffMs = new Date(latest.timestamp).getTime() - new Date(previous.timestamp).getTime();
+        const timeDiffWeeks = timeDiffMs / (1000 * 60 * 60 * 24 * 7);
+        const changePerWeek = timeDiffWeeks > 0 ? Math.abs(weightChange) / timeDiffWeeks : 0;
+
+        if (changePerWeek > 2) {
+          const hawkAlert = await checkWeightChangeMedicationCorrelation(userId, weightChange, changePerWeek);
+          if (hawkAlert) {
+            alerts.push({
+              ...hawkAlert,
+              detectedAt: latest.timestamp,
+              weightChange: weightChange.toFixed(1),
+              changePerWeek: changePerWeek.toFixed(1)
+            });
+          }
+        }
+      }
+    }
+
+    // Check for recent edema (last 3 days)
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const recentEdema = await VitalsSample.findOne({
+      where: {
+        userId,
+        edema: { [Op.not]: null },
+        edemaSeverity: { [Op.in]: ['mild', 'moderate', 'severe'] },
+        timestamp: { [Op.gte]: threeDaysAgo }
+      },
+      order: [['timestamp', 'DESC']]
+    });
+
+    if (recentEdema && recentEdema.edemaSeverity && recentEdema.edemaSeverity !== 'none') {
+      const hawkAlert = await checkEdemaMedicationCorrelation(userId, recentEdema.edemaSeverity, recentEdema.edema);
+      if (hawkAlert) {
+        alerts.push({
+          ...hawkAlert,
+          detectedAt: recentEdema.timestamp,
+          edemaSeverity: recentEdema.edemaSeverity,
+          edemaLocation: recentEdema.edema
+        });
+      }
+    }
+
+    res.json({ alerts });
+  } catch (error) {
+    console.error('Error fetching Hawk Alerts:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

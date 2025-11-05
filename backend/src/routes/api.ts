@@ -201,6 +201,9 @@ router.get('/vitals/latest', vitalsController.getLatestVital);
 /** @route GET /api/vitals/trends - @desc Get vital signs trends over time - @access Private */
 router.get('/vitals/trends', vitalsController.getTrends);
 
+/** @route GET /api/vitals/hawk-alerts - @desc Get active Hawk Alerts (medication-induced side effects) - @access Private */
+router.get('/vitals/hawk-alerts', vitalsController.getHawkAlerts);
+
 /** @route GET /api/vitals/:id - @desc Get a specific vital sign record by ID - @access Private */
 router.get('/vitals/:id', vitalsController.getVital);
 

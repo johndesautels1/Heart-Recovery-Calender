@@ -1,6 +1,17 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from './database';
 
+interface KnownSideEffects {
+  weightGain?: boolean;
+  weightLoss?: boolean;
+  edema?: boolean;
+  fluidRetention?: boolean;
+  dizziness?: boolean;
+  fatigue?: boolean;
+  nausea?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 interface MedicationAttributes {
   id: number;
   userId: number;
@@ -13,6 +24,7 @@ interface MedicationAttributes {
   timeOfDay?: string;
   purpose?: string;
   sideEffects?: string;
+  knownSideEffects?: KnownSideEffects;
   instructions?: string;
   isActive: boolean;
   reminderEnabled?: boolean;
@@ -41,6 +53,7 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
   public timeOfDay?: string;
   public purpose?: string;
   public sideEffects?: string;
+  public knownSideEffects?: KnownSideEffects;
   public instructions?: string;
   public isActive!: boolean;
   public reminderEnabled?: boolean;
@@ -109,6 +122,12 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
         sideEffects: {
           type: DataTypes.TEXT,
           allowNull: true,
+        },
+        knownSideEffects: {
+          type: DataTypes.JSON,
+          allowNull: true,
+          field: 'known_side_effects',
+          comment: 'Structured side effect flags for Hawk Alert system (weightGain, weightLoss, edema, etc.)',
         },
         instructions: {
           type: DataTypes.TEXT,
@@ -179,3 +198,4 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
 Medication.initialize();
 
 export default Medication;
+export { KnownSideEffects };

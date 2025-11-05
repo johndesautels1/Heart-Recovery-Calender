@@ -18,7 +18,8 @@ import {
   Zap,
   Activity as Pulse,
   AlertTriangle,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -71,6 +72,7 @@ export function VitalsPage() {
   const [patientData, setPatientData] = useState<Patient | null>(null);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
+  const [hawkAlerts, setHawkAlerts] = useState<any[]>([]);
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
@@ -150,6 +152,20 @@ export function VitalsPage() {
   useEffect(() => {
     loadVitals();
   }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
+
+  // Load Hawk Alerts
+  useEffect(() => {
+    const loadHawkAlerts = async () => {
+      try {
+        const response = await api.getHawkAlerts();
+        setHawkAlerts(response.alerts || []);
+      } catch (error) {
+        console.error('Failed to load Hawk Alerts:', error);
+      }
+    };
+
+    loadHawkAlerts();
+  }, [vitals]); // Reload when vitals change
 
   const loadVitals = async () => {
     try {
@@ -298,6 +314,26 @@ export function VitalsPage() {
       toast.error('Failed to record vitals');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteWeightEntry = async (vitalId: number) => {
+    // Confirm deletion
+    const confirmDelete = window.confirm('Are you sure you want to delete this weight entry? This action cannot be undone.');
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await api.deleteVital(vitalId);
+      toast.success('Weight entry deleted successfully');
+
+      // Reload vitals data to reflect the deletion
+      await loadVitals();
+    } catch (error) {
+      console.error('Failed to delete weight entry:', error);
+      toast.error('Failed to delete weight entry');
     }
   };
 
@@ -459,6 +495,102 @@ export function VitalsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-400 border-t-transparent"></div>
             <p className="text-white font-semibold">Loading vitals data...</p>
           </div>
+        </div>
+      )}
+
+      {/* HAWK ALERT BANNER */}
+      {hawkAlerts.length > 0 && (
+        <div className="space-y-3">
+          {hawkAlerts.map((alert, index) => {
+            const severityColor = alert.severity === 'danger' ? '#ef4444' : '#f59e0b';
+            const severityBg = alert.severity === 'danger'
+              ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))'
+              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))';
+            const severityBorder = alert.severity === 'danger' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)';
+            const icon = alert.severity === 'danger' ? '🚨' : '⚠️';
+
+            return (
+              <div
+                key={index}
+                className="relative overflow-hidden rounded-2xl p-6"
+                style={{
+                  background: severityBg,
+                  border: `2px solid ${severityBorder}`,
+                  boxShadow: `0 0 30px ${severityColor}20`,
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Hawk Icon */}
+                  <div className="flex-shrink-0 text-5xl">
+                    🦅
+                  </div>
+
+                  {/* Alert Content */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">{icon}</span>
+                      <h3 className="text-xl font-bold text-white">
+                        {alert.message}
+                      </h3>
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                        style={{
+                          backgroundColor: severityColor + '40',
+                          color: severityColor,
+                          border: `1px solid ${severityColor}`,
+                        }}
+                      >
+                        {alert.severity}
+                      </span>
+                    </div>
+
+                    {/* Medication Names */}
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-gray-300 mb-1">Medications Involved:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {alert.medicationNames.map((med: string, i: number) => (
+                          <span
+                            key={i}
+                            className="px-3 py-1 rounded-lg text-sm font-semibold"
+                            style={{
+                              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                              color: '#93c5fd',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                            }}
+                          >
+                            {med}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recommendation */}
+                    <p className="text-gray-200 mb-4 leading-relaxed">
+                      {alert.recommendation}
+                    </p>
+
+                    {/* Action Button */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => navigate('/medications')}
+                        className="px-4 py-2 rounded-lg font-semibold text-sm transition-all"
+                        style={{
+                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                          color: '#93c5fd',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        Review Medications
+                      </button>
+                      <span className="text-xs text-gray-400 self-center">
+                        Detected: {new Date(alert.detectedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -1817,6 +1949,158 @@ export function VitalsPage() {
                 </div>
               </div>
 
+              {/* BMI Metrics */}
+              {patientData?.height && filteredWeightVitals.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                  {/* Current BMI */}
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>CURRENT BMI</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(() => {
+                        const currentWeight = filteredWeightVitals.length > 0
+                          ? filteredWeightVitals[filteredWeightVitals.length - 1].weight
+                          : latestVitals?.weight;
+
+                        if (!currentWeight || !patientData?.height) return '--';
+
+                        let heightInMeters: number;
+                        if (patientData.heightUnit === 'cm') {
+                          heightInMeters = patientData.height / 100;
+                        } else {
+                          heightInMeters = patientData.height * 0.0254;
+                        }
+
+                        let weightInKg: number;
+                        if (patientData.weightUnit === 'kg') {
+                          weightInKg = currentWeight;
+                        } else {
+                          weightInKg = currentWeight * 0.453592;
+                        }
+
+                        const bmi = weightInKg / (heightInMeters * heightInMeters);
+                        return bmi.toFixed(1);
+                      })()}
+                    </p>
+                  </div>
+
+                  {/* Period Change BMI */}
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>PERIOD CHANGE</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(() => {
+                        if (filteredWeightVitals.length < 2 || !patientData?.height) return '--';
+
+                        let heightInMeters: number;
+                        if (patientData.heightUnit === 'cm') {
+                          heightInMeters = patientData.height / 100;
+                        } else {
+                          heightInMeters = patientData.height * 0.0254;
+                        }
+
+                        const firstWeight = filteredWeightVitals[0].weight!;
+                        const lastWeight = filteredWeightVitals[filteredWeightVitals.length - 1].weight!;
+
+                        let firstWeightKg = patientData.weightUnit === 'kg' ? firstWeight : firstWeight * 0.453592;
+                        let lastWeightKg = patientData.weightUnit === 'kg' ? lastWeight : lastWeight * 0.453592;
+
+                        const firstBMI = firstWeightKg / (heightInMeters * heightInMeters);
+                        const lastBMI = lastWeightKg / (heightInMeters * heightInMeters);
+                        const change = lastBMI - firstBMI;
+
+                        return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
+                      })()}
+                    </p>
+                  </div>
+
+                  {/* Average BMI */}
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>AVERAGE</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(() => {
+                        if (filteredWeightVitals.length === 0 || !patientData?.height) return '--';
+
+                        let heightInMeters: number;
+                        if (patientData.heightUnit === 'cm') {
+                          heightInMeters = patientData.height / 100;
+                        } else {
+                          heightInMeters = patientData.height * 0.0254;
+                        }
+
+                        const avgWeight = filteredWeightVitals.reduce((sum, v) => sum + (v.weight || 0), 0) / filteredWeightVitals.length;
+
+                        let weightInKg: number;
+                        if (patientData.weightUnit === 'kg') {
+                          weightInKg = avgWeight;
+                        } else {
+                          weightInKg = avgWeight * 0.453592;
+                        }
+
+                        const bmi = weightInKg / (heightInMeters * heightInMeters);
+                        return bmi.toFixed(1);
+                      })()}
+                    </p>
+                  </div>
+
+                  {/* Period Readings */}
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>PERIOD READINGS</p>
+                    <p className="text-2xl font-bold text-white">
+                      {filteredWeightVitals.length}
+                    </p>
+                  </div>
+
+                  {/* BMI Status */}
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>STATUS</p>
+                    <p className="text-lg font-bold text-white">
+                      {(() => {
+                        const currentWeight = filteredWeightVitals.length > 0
+                          ? filteredWeightVitals[filteredWeightVitals.length - 1].weight
+                          : latestVitals?.weight;
+
+                        if (!currentWeight || !patientData?.height) return '--';
+
+                        let heightInMeters: number;
+                        if (patientData.heightUnit === 'cm') {
+                          heightInMeters = patientData.height / 100;
+                        } else {
+                          heightInMeters = patientData.height * 0.0254;
+                        }
+
+                        let weightInKg: number;
+                        if (patientData.weightUnit === 'kg') {
+                          weightInKg = currentWeight;
+                        } else {
+                          weightInKg = currentWeight * 0.453592;
+                        }
+
+                        const bmi = weightInKg / (heightInMeters * heightInMeters);
+
+                        if (bmi < 18.5) return 'Underweight';
+                        if (bmi < 25) return 'Healthy';
+                        if (bmi < 30) return 'Overweight';
+                        return 'Obese';
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Summary Text */}
               <div className="mb-6 p-4 rounded-xl" style={{
                 background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
@@ -2024,8 +2308,10 @@ export function VitalsPage() {
                       <tr className="border-b border-gray-700">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Date</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Weight</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: '#f59e0b' }}>BMI</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Change</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Notes</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2086,6 +2372,28 @@ export function VitalsPage() {
                           <tr key={vital.id} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
                             <td className="py-3 px-4 text-sm">{format(new Date(vital.timestamp), 'MMM d, yyyy h:mm a')}</td>
                             <td className="py-3 px-4 text-sm font-semibold">{vital.weight} lbs</td>
+                            <td className="py-3 px-4 text-sm font-semibold" style={{ color: '#f59e0b' }}>
+                              {(() => {
+                                if (!patientData?.height || !vital.weight) return '--';
+
+                                let heightInMeters: number;
+                                if (patientData.heightUnit === 'cm') {
+                                  heightInMeters = patientData.height / 100;
+                                } else {
+                                  heightInMeters = patientData.height * 0.0254;
+                                }
+
+                                let weightInKg: number;
+                                if (patientData.weightUnit === 'kg') {
+                                  weightInKg = vital.weight;
+                                } else {
+                                  weightInKg = vital.weight * 0.453592;
+                                }
+
+                                const bmi = weightInKg / (heightInMeters * heightInMeters);
+                                return bmi.toFixed(1);
+                              })()}
+                            </td>
                             <td className="py-3 px-4 text-sm">
                               {prevWeight ? (
                                 <span className={changeColor}>
@@ -2096,6 +2404,15 @@ export function VitalsPage() {
                               )}
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-400">{vital.notes || '--'}</td>
+                            <td className="py-3 px-4 text-sm">
+                              <button
+                                onClick={() => handleDeleteWeightEntry(vital.id)}
+                                className="text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
+                                title="Delete entry"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}

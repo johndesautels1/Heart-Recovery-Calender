@@ -285,6 +285,11 @@ class ApiService {
     return response.data;
   }
 
+  async getHawkAlerts(): Promise<any> {
+    const response = await this.api.get<{ alerts: any[] }>('/vitals/hawk-alerts');
+    return response.data;
+  }
+
   // ==================== MEDICATION ENDPOINTS ====================
   async getMedications(activeOnly: boolean = false, userId?: number): Promise<Medication[]> {
     const params = new URLSearchParams();
