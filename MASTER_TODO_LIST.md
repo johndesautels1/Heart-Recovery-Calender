@@ -2,7 +2,7 @@
 **⚠️ THIS IS THE AUTHORITATIVE TODO LIST - USE THIS ONE ONLY**
 
 **Status:** In Progress
-**Last Updated:** November 4, 2025 - 10:30 PM Session
+**Last Updated:** November 5, 2025 - 11:20 AM Session
 **Location:** `C:\Users\broke\Heart-Recovery-Calender\MASTER_TODO_LIST.md`
 
 **Source Files (archived for reference only):**
@@ -23,7 +23,143 @@
 
 ---
 
-## 🎉 COMPLETED TODAY (November 4, 2025)
+## 🎉 COMPLETED TODAY (November 5, 2025)
+
+### ✅ MORNING SESSION: Weight & Glucose Journal Enhancements + Rapid Weight Change Alerts (11:20 AM)
+- **Commit:** `a66c9bf` - Enhance Weight & Glucose Journal with BMI tracking and rapid weight change alerts
+- **Files Changed:** 13 files, +1003 insertions, -88 deletions
+- **Impact:** MAJOR vitals tracking + automated health alert system
+
+#### 1. Fixed Weight Statistics Real-Time Filtering ✅
+- **What:** Weight stats now properly update when time period toggles are clicked
+- **Problem:** Current weight, period change, and trend were always showing the same values
+- **Root Cause:** Statistics used `latestVitals?.weight` (absolute latest) instead of filtered data
+- **Solution:**
+  - Changed to use `filteredWeightVitals[filteredWeightVitals.length - 1].weight` for current
+  - Fixed period change calculation to compare first and last in filtered array
+  - Fixed trend calculation similarly (oldest vs newest in period)
+  - Added console logging for debugging at line 1769
+- **Files:** `VitalsPage.tsx` (lines 1706-1775)
+- **Impact:** Users now see accurate weight statistics for their selected time period (7d, 30d, surgery)
+
+#### 2. BMI Calculation and Dual-Axis Weight Chart ✅
+- **What:** Added BMI calculation with ideal weight displayed on enhanced weight chart
+- **Features:**
+  - Uses patient height from profile to calculate BMI for each weight reading
+  - Calculates ideal weight at BMI 22.5 (middle of healthy range)
+  - Dual Y-axes: Weight (lbs) on left (blue), BMI on right (orange)
+  - Three lines displayed: Actual Weight (blue solid), Ideal Weight (green dashed), BMI (orange)
+  - ComposedChart replaced LineChart for multi-metric display
+  - Handles unit conversions (cm/inches to meters, lbs to kg)
+- **Files:** `VitalsPage.tsx` (lines 364-411, 1852-2018)
+- **Impact:** Users can track their BMI alongside weight with clear visual reference to ideal weight
+
+#### 3. BMI Scale with 5-Point Increments ✅
+- **What:** Added BMI axis scale showing values at 5-point increments
+- **Features:**
+  - Right Y-axis displays: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50
+  - Medical threshold indicators:
+    * Underweight at BMI 18.5 (red solid line with label)
+    * Overweight at BMI 30 (red solid line with label)
+  - Labels positioned on right side to avoid overlap
+  - Orange axis color matching BMI data line
+  - Rotated "BMI" label with 25px offset to prevent overlap
+- **Files:** `VitalsPage.tsx` (lines 1894-1909, 1968-2017)
+- **Impact:** Clear visual reference for healthy BMI ranges
+
+#### 4. Weight Axis with 20-Pound Increments ✅
+- **What:** Added weight scale with 20 lb increments for better granularity
+- **Changes:**
+  - Left Y-axis ticks at: 0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320
+  - Reduced font size from 12 to 11 for cleaner look
+  - Blue axis color matching weight data line
+  - "Weight (lbs)" label rotated -90 degrees
+- **Files:** `VitalsPage.tsx` (lines 1878-1893)
+- **Impact:** More precise weight tracking and easier to read scale
+
+#### 5. Smart Color-Coded Weight Change History ✅
+- **What:** Weight history table with intelligent color coding based on rate of change and BMI
+- **Color Logic:**
+  - **Red**: Dangerous rapid change (>3.5 lbs/week) - regardless of direction
+  - **Yellow**: Concerning change (>2 lbs/week) - needs attention
+  - **Green**: Healthy direction (losing weight when overweight OR gaining when underweight)
+  - **Gray**: Stable weight (<0.5 lbs change)
+  - **White**: Small change in wrong direction
+- **Technical:**
+  - Calculates rate of change per week based on time between measurements
+  - Uses patient height to calculate BMI and determine overweight/underweight status
+  - Compares time-adjusted rate against medical thresholds
+- **Files:** `VitalsPage.tsx` (lines 2031-2103)
+- **Impact:** Users instantly see if weight changes are concerning and need medical attention
+
+#### 6. Rapid Weight Change Alert System (Twilio + Email) ✅
+- **What:** Automated SMS and email alerts for dangerous weight changes
+- **Trigger Thresholds:**
+  - **Yellow Alert (Concerning)**: Weight change >2 lbs/week
+  - **Red Alert (Dangerous)**: Weight change >3.5 lbs/week
+- **Alert Content:**
+  - **SMS**: Concise alert with key stats (weight change, rate, time period)
+  - **Email**: Comprehensive HTML with:
+    * Weight statistics table (change, time period, rate, current weight)
+    * Warning banner highlighting severity
+    * Heart health implications (fluid retention for gain, dehydration for loss)
+    * Immediate action checklist (specific to gain vs loss)
+    * Emergency symptoms list (when to call 911)
+    * Link to Weight Journal
+    * Footer with auto-notification info
+- **Implementation:**
+  - Added `sendWeightChangeAlert()` to notificationService.ts (lines 156-257)
+  - Integrated into `addVital()` controller to check each new vital recording
+  - Fetches previous weight reading and calculates rate of change
+  - Gets user email and phone for notifications
+  - Silent failure - doesn't block vital recording if alert fails
+- **Files:**
+  - `backend/src/services/notificationService.ts` (+104 lines)
+  - `backend/src/controllers/vitalsController.ts` (+58 lines)
+- **Impact:** Critical safety feature - alerts users and care team to dangerous weight fluctuations that could indicate fluid retention, heart failure, dehydration, or medication issues
+
+#### 7. Device Integration Improvements ✅
+- **What:** Enhanced Strava and Samsung Health sync with comprehensive data tracking
+- **Strava Enhancements:**
+  - Detailed heart rate tracking during exercises (average, max, zones)
+  - Distance and elevation data sync
+  - Exercise duration and calorie burn
+  - Heart rate samples stored in vitals table
+- **Samsung Health Enhancements:**
+  - Comprehensive vitals sync: HR, BP, SpO2, respiratory rate, HRV
+  - Merges multiple vitals at same timestamp into single record
+  - Processes standalone vitals that don't have matching HR timestamp
+  - Device-specific notes for tracking data source
+- **ExerciseLog Model Update:**
+  - Changed `prescriptionId` to nullable for device-synced activities
+  - Added migration script: `allow_null_prescription_id.sql`
+  - Run migration helper: `run_prescription_id_migration.js`
+- **Files:**
+  - `backend/src/services/stravaService.ts` (enhanced HR tracking)
+  - `backend/src/services/samsungService.ts` (comprehensive vitals merge)
+  - `backend/src/models/ExerciseLog.ts` (nullable prescriptionId)
+  - `backend/migrations/allow_null_prescription_id.sql` (NEW)
+  - `backend/run_prescription_id_migration.js` (NEW)
+- **Impact:** Users can track all health data from wearables without manual entry
+
+#### Statistics for Morning Session:
+- **Files Modified:** 13 (3 frontend, 7 backend, 3 new files)
+- **Lines Added:** 1,003 lines
+- **Lines Removed:** 88 lines
+- **Net Change:** +915 lines
+- **New Features:** 7 major enhancements
+- **Alert System:** Fully functional Twilio SMS + email notifications
+- **Charts Enhanced:** Weight Journal with dual-axis BMI tracking
+- **Color Coding:** Smart weight change indicators in history table
+- **Device Sync:** Enhanced Strava + Samsung Health integration
+- **TypeScript Compilation:** ✅ 0 errors frontend/backend
+- **Backend Running:** ✅ Port 4000 active
+- **Git Status:** ✅ Committed and pushed to GitHub
+- **Backup Status:** ✅ Backed up to D drive
+
+---
+
+## 🎉 PREVIOUSLY COMPLETED (November 4, 2025)
 
 ### ✅ EVENING SESSION: Comprehensive Vitals & Profile Enhancements (10:30 PM)
 - **Commit:** `b581d7e` - feat: Comprehensive vitals and profile enhancements
