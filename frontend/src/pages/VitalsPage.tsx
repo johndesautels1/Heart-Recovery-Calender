@@ -736,14 +736,37 @@ export function VitalsPage() {
   console.log('[CHART] hydrationLogs:', hydrationLogs.map(log => ({ date: log.date, totalOunces: log.totalOunces })));
 
   // HYDRATION-SPECIFIC CHART DATA
-  // Build chart data directly from hydration logs with complete date range
+  // Build chart data directly from hydration logs - ONLY show requested time period
   const hydrationChartData = (() => {
-    // Get the date range based on current view and surgery date
-    const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const today = new Date();
+    let start: Date;
+    let end: Date = today;
 
-    // Generate array of all dates in range
+    // Calculate DISPLAY range (not data fetch range)
+    switch (globalTimeView) {
+      case '7d':
+        start = subDays(today, 7);
+        break;
+      case '30d':
+        start = subDays(today, 30);
+        break;
+      case '90d':
+        start = subDays(today, 90);
+        break;
+      case 'surgery':
+      default:
+        if (surgeryDate) {
+          // Surgery view: 1 month before surgery to 1 month after today
+          start = subMonths(new Date(surgeryDate), 1);
+          end = addMonths(today, 1);
+        } else {
+          // Fallback: 90 days
+          start = subDays(today, 90);
+        }
+        break;
+    }
+
+    // Generate array of dates in DISPLAY range only
     const dateArray: { date: string; hydrationOunces: number; hydrationTarget?: number }[] = [];
     let currentDate = new Date(start);
 
@@ -760,6 +783,7 @@ export function VitalsPage() {
       currentDate = addDays(currentDate, 1);
     }
 
+    console.log(`[CHART] Generated ${dateArray.length} data points for ${globalTimeView} view`);
     return dateArray;
   })();
 
