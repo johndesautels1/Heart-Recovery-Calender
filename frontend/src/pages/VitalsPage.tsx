@@ -118,6 +118,8 @@ export function VitalsPage() {
     let startDate: Date;
     let endDate: Date;
 
+    console.log(`[DATE RANGE] Calculating for view: ${timeView}, surgeryDateStr: ${surgeryDateStr}`);
+
     switch (timeView) {
       case '7d':
         // 7 days: 1 month before (7 days ago) to 1 month after today
@@ -142,20 +144,26 @@ export function VitalsPage() {
         if (surgeryDateStr) {
           // Surgery mode: 1 month before surgery to 1 month after today
           const surgery = new Date(surgeryDateStr);
+          console.log(`[DATE RANGE] Surgery date parsed:`, surgery);
+          console.log(`[DATE RANGE] Is valid date:`, !isNaN(surgery.getTime()));
           startDate = subMonths(surgery, 1);
           endDate = addMonths(today, 1);
+          console.log(`[DATE RANGE] Surgery range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
         } else {
           // Fallback if no surgery date: last 3 months with 1-month buffer
+          console.log(`[DATE RANGE] NO SURGERY DATE - using fallback`);
           startDate = subMonths(today, 4); // 3 months + 1 month buffer
           endDate = addMonths(today, 1);
         }
         break;
     }
 
-    return {
+    const result = {
       startDate: format(startDate, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
     };
+    console.log(`[DATE RANGE] Final range:`, result);
+    return result;
   };
 
   // Load patient data (contains surgery date from patient profile)
@@ -212,6 +220,17 @@ export function VitalsPage() {
 
   // Determine surgery date from patient profile first, fall back to user
   const surgeryDate = patientData?.surgeryDate || user?.surgeryDate;
+
+  // DEBUG: Log surgery date source and value
+  useEffect(() => {
+    console.log('[SURGERY DATE DEBUG] ===================================');
+    console.log('[SURGERY DATE DEBUG] patientData?.surgeryDate:', patientData?.surgeryDate);
+    console.log('[SURGERY DATE DEBUG] user?.surgeryDate:', user?.surgeryDate);
+    console.log('[SURGERY DATE DEBUG] Final surgeryDate:', surgeryDate);
+    console.log('[SURGERY DATE DEBUG] User:', { id: user?.id, email: user?.email, name: user?.name });
+    console.log('[SURGERY DATE DEBUG] Patient:', { id: patientData?.id, name: patientData?.name, userId: patientData?.userId });
+    console.log('[SURGERY DATE DEBUG] ===================================');
+  }, [surgeryDate, patientData, user]);
 
   useEffect(() => {
     loadVitals();
@@ -1386,7 +1405,7 @@ export function VitalsPage() {
                 value={waterCardDate}
                 onChange={(e) => {
                   setWaterCardDate(e.target.value);
-                  toast.info(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
+                  toast.success(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
                     duration: 2000,
                   });
                 }}
