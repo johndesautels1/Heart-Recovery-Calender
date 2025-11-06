@@ -695,6 +695,11 @@ export function VitalsPage() {
     // CRITICAL FIX: Find hydration log using yyyy-MM-dd format, not display format!
     const hydrationLog = hydrationLogs.find(log => log.date === dateKey);
 
+    // DEBUG: Log hydration matching
+    if (dateKey && hydrationLog) {
+      console.log(`[CHART] Matched hydration for ${dateKey}: ${hydrationLog.totalOunces} oz`);
+    }
+
     return {
       date: dateStr,
       systolic: v.bloodPressureSystolic,
@@ -712,6 +717,27 @@ export function VitalsPage() {
       bpVariability: bpVariability,
     };
   });
+
+  // DEBUG: Log chartData hydration values
+  console.log('[CHART] chartData hydration values:', chartData.map(d => ({
+    date: d.date,
+    hydrationOunces: d.hydrationOunces,
+    hydrationTarget: d.hydrationTarget
+  })));
+  console.log('[CHART] hydrationLogs:', hydrationLogs.map(log => ({ date: log.date, totalOunces: log.totalOunces })));
+
+  // HYDRATION-SPECIFIC CHART DATA
+  // Build chart data directly from hydration logs (not dependent on vitals entries)
+  const hydrationChartData = hydrationLogs.map(log => ({
+    date: format(new Date(log.date), 'MMM dd, yyyy'),
+    hydrationOunces: Math.round(log.totalOunces || 0),
+    hydrationTarget: log.targetOunces,
+  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  console.log('[CHART] hydrationChartData:', hydrationChartData);
+
+  // Use hydration-specific chart data when hydration metric is selected
+  const activeChartData = selectedMetric === 'hydration' ? hydrationChartData : chartData;
 
   const bpStatus = getBloodPressureStatus(
     filteredLatest?.bloodPressureSystolic,
@@ -2321,10 +2347,10 @@ export function VitalsPage() {
 
         {/* Chart */}
         <div className="h-96">
-          {chartData.length > 0 ? (
+          {activeChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               {selectedMetric === 'bp' ? (
-                <AreaChart data={chartData}>
+                <AreaChart data={activeChartData}>
                   <defs>
                     {/* Enhanced 3D gradients for blood pressure */}
                     <linearGradient id="systolic" x1="0" y1="0" x2="0" y2="1">
@@ -2407,7 +2433,7 @@ export function VitalsPage() {
                   <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Diastolic (80)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                 </AreaChart>
               ) : (
-                <LineChart data={chartData}>
+                <LineChart data={activeChartData}>
                   <defs>
                     {/* Glow filter for lines */}
                     <filter id="vitalsLineGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -2569,7 +2595,11 @@ export function VitalsPage() {
             <div className="flex items-center justify-center h-full font-bold">
               <div className="text-center">
                 <Activity className="h-12 w-12 mx-auto mb-3 font-bold" />
-                <p>No vitals data available for this period</p>
+                <p>
+                  {selectedMetric === 'hydration'
+                    ? 'No water intake logged for this period. Use the floating water button to add entries!'
+                    : 'No vitals data available for this period'}
+                </p>
               </div>
             </div>
           )}
