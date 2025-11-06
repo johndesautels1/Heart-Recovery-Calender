@@ -521,7 +521,7 @@ export function ProfilePage() {
 
       const vitalUpdate: any = {
         timestamp: new Date().toISOString(),
-        source: 'profile',
+        source: 'manual', // Valid values: 'manual' | 'device' | 'import'
       };
 
       // Sync weight

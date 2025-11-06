@@ -454,19 +454,53 @@ export const getPatientMetrics = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // If patient doesn't have a linked user account, return unknown status
-    if (!patient.userId) {
-      return res.json({
-        complianceStatus: 'unknown',
-        completionRate: 0,
-        recentEvents: 0,
-        message: 'Patient does not have a linked user account'
-      });
+    // CRITICAL FIX: Auto-link patient to user if missing
+    // In this system, users and patients are the SAME entity
+    let patientUserId = patient.userId;
+    console.log(`[METRICS] Patient ${patient.id} (${patient.name}) - userId: ${patientUserId}, email: ${patient.email}`);
+
+    if (!patientUserId) {
+      console.log(`[METRICS] Patient ${patient.id} (${patient.name}) has no userId - attempting auto-link`);
+
+      // Try to find matching user by email or name
+      const User = (await import('../models/User')).default;
+      let matchingUser = null;
+
+      if (patient.email) {
+        matchingUser = await User.findOne({ where: { email: patient.email } });
+      }
+
+      // If patient email matches current user, link to current user
+      if (!matchingUser && patient.email === req.user?.email) {
+        patientUserId = userId;
+        console.log(`[METRICS] Linking patient ${patient.id} to current user ${userId}`);
+      }
+      // If found matching user by email, link to that user
+      else if (matchingUser) {
+        patientUserId = matchingUser.id;
+        console.log(`[METRICS] Linking patient ${patient.id} to user ${matchingUser.id} via email match`);
+      }
+
+      // If we found a user to link, update the patient record
+      if (patientUserId) {
+        await patient.update({ userId: patientUserId });
+        console.log(`[METRICS] Successfully linked patient ${patient.id} to userId ${patientUserId}`);
+      } else {
+        // No matching user found - return unknown status
+        console.log(`[METRICS] No matching user found for patient ${patient.id}`);
+        return res.json({
+          complianceStatus: 'unknown',
+          completionRate: 0,
+          recentEvents: 0,
+          message: 'Patient does not have a linked user account'
+        });
+      }
     }
 
     // Calculate metrics based on last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    console.log(`[METRICS] Querying events for userId ${patientUserId} since ${thirtyDaysAgo.toISOString()}`);
 
     // Use raw SQL queries to bypass TypeScript/Sequelize type limitations
     // Count total events in last 30 days
@@ -477,7 +511,7 @@ export const getPatientMetrics = async (req: Request, res: Response) => {
        WHERE c."userId" = :userId
          AND ce."startTime" >= :thirtyDaysAgo`,
       {
-        replacements: { userId: patient.userId, thirtyDaysAgo },
+        replacements: { userId: patientUserId, thirtyDaysAgo },
         type: QueryTypes.SELECT
       }
     );
@@ -491,7 +525,7 @@ export const getPatientMetrics = async (req: Request, res: Response) => {
          AND ce."startTime" >= :thirtyDaysAgo
          AND ce."status" = 'completed'`,
       {
-        replacements: { userId: patient.userId, thirtyDaysAgo },
+        replacements: { userId: patientUserId, thirtyDaysAgo },
         type: QueryTypes.SELECT
       }
     );
@@ -507,7 +541,7 @@ export const getPatientMetrics = async (req: Request, res: Response) => {
        WHERE c."userId" = :userId
          AND ce."startTime" >= :sevenDaysAgo`,
       {
-        replacements: { userId: patient.userId, sevenDaysAgo },
+        replacements: { userId: patientUserId, sevenDaysAgo },
         type: QueryTypes.SELECT
       }
     );
@@ -516,6 +550,8 @@ export const getPatientMetrics = async (req: Request, res: Response) => {
     const totalEventsCount = parseInt(totalEventsResult[0]?.count || '0', 10);
     const completedEventsCount = parseInt(completedEventsResult[0]?.count || '0', 10);
     const recentEventsCount = parseInt(recentEventsResult[0]?.count || '0', 10);
+
+    console.log(`[METRICS] Patient ${patient.id} results - Total: ${totalEventsCount}, Completed: ${completedEventsCount}, Recent: ${recentEventsCount}`);
 
     let completionRate = 0;
     if (totalEventsCount > 0) {

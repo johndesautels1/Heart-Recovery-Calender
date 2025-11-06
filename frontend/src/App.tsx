@@ -7,6 +7,7 @@ import { PatientSelectionProvider } from './contexts/PatientSelectionContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import { CompleteProfileModal } from './components/CompleteProfileModal';
+import { ScrollToTop } from './components/ScrollToTop';
 import {
   LoginPage,
   RegisterPage,
@@ -68,6 +69,7 @@ function App() {
           <ViewProvider>
             <PatientSelectionProvider>
               <Router>
+                <ScrollToTop />
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />

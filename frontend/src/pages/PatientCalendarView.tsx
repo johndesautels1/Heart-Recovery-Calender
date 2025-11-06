@@ -339,7 +339,7 @@ export function PatientCalendarView() {
       const eventData: any = {
         ...newEvent,
         patientId: parseInt(patientId!),
-        status: 'upcoming',
+        status: 'scheduled', // Valid values: 'scheduled' | 'completed' | 'cancelled' | 'missed'
       };
 
       if (selectedTemplate) {

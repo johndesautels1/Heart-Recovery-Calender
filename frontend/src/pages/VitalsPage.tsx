@@ -3,6 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard, Button, Modal, Input } from '../components/ui';
 import { WaterButton } from '../components/WaterButton';
+import { HeartFrame } from '../components/vitals/HeartFrame';
+import { CircularGauge } from '../components/vitals/CircularGauge';
+import { TimeThrottleLever } from '../components/vitals/TimeThrottleLever';
+import { LuxuryVitalGauge } from '../components/vitals/LuxuryVitalGauge';
 import {
   Activity,
   Heart,
@@ -76,7 +80,8 @@ export function VitalsPage() {
   const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow' | 'map' | 'bpvariability'>('bp');
   const [patientData, setPatientData] = useState<Patient | null>(null);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // Co-Pilot: whose data to display (User ID, not patient ID)
+  const [pilotUserId, setPilotUserId] = useState<number | null>(null); // Pilot: who is piloting (display only)
   const [hawkAlerts, setHawkAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
   const [hydrationLogs, setHydrationLogs] = useState<HydrationLog[]>([]);
@@ -84,6 +89,9 @@ export function VitalsPage() {
   // Water card date selector
   const [waterCardDate, setWaterCardDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [showWaterDatePicker, setShowWaterDatePicker] = useState(false);
+
+  // Nuclear clock - update every second
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
@@ -341,6 +349,15 @@ export function VitalsPage() {
 
     loadHawkAlerts();
   }, [vitals]); // Reload when vitals change
+
+  // Update nuclear clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Load Hydration Logs
   useEffect(() => {
@@ -930,6 +947,125 @@ export function VitalsPage() {
     filteredLatest?.bloodPressureDiastolic
   );
 
+  // A380 COCKPIT CALCULATIONS
+  const postOpWeek = surgeryDate ? Math.floor((new Date().getTime() - new Date(surgeryDate).getTime()) / (1000 * 60 * 60 * 24 * 7)) : null;
+  const currentMAP = (filteredLatest?.bloodPressureSystolic && filteredLatest?.bloodPressureDiastolic)
+    ? Math.round((filteredLatest.bloodPressureSystolic + 2 * filteredLatest.bloodPressureDiastolic) / 3)
+    : null;
+  const pulsePressure = (filteredLatest?.bloodPressureSystolic && filteredLatest?.bloodPressureDiastolic)
+    ? filteredLatest.bloodPressureSystolic - filteredLatest.bloodPressureDiastolic
+    : null;
+  const latestBPVariability = chartData.length > 0 ? chartData[chartData.length - 1].bpVariability : null;
+  const sdnn = null;
+  const rmssd = null;
+  const pnn50 = null;
+  const todayDate = format(new Date(), 'yyyy-MM-dd');
+  const todayHydration = hydrationLogs.find(log => log.date === todayDate);
+  const hydrationTarget = todayHydration?.targetOunces || calculatePersonalizedHydrationTarget();
+  const hydrationActual = todayHydration?.totalOunces || 0;
+  const restingHR = vitals.length > 0 ? Math.min(...vitals.filter(v => v.heartRate).map(v => v.heartRate!)) : null;
+  const avgHR = vitals.length > 0 ? Math.round(vitals.filter(v => v.heartRate).map(v => v.heartRate!).reduce((a, b) => a + b, 0) / vitals.filter(v => v.heartRate).length) : null;
+  const vo2Max = null;
+  const sixMinWalk = null;
+  const mets = null;
+  const maxHR = null;
+  const hrRecovery = null;
+  const ejectionFraction = patientData?.ejectionFraction || null;
+  const respiratoryRate = null;
+
+  // LUXURY GAUGE CALCULATIONS - Filter vitals by globalTimeView
+  // IMPORTANT: All time periods are capped at 90 days maximum
+  const getLuxuryTimePeriodFilter = (view: '7d' | '30d' | '90d' | 'surgery') => {
+    const now = new Date();
+    const maxCutoffDate = subDays(now, 90); // App max is 90 days
+    let cutoffDate: Date;
+
+    if (view === '7d') {
+      cutoffDate = subDays(now, 7);
+    } else if (view === '30d') {
+      cutoffDate = subDays(now, 30);
+    } else if (view === '90d') {
+      cutoffDate = subDays(now, 90);
+    } else {
+      // 'surgery' - from surgery date OR 90 days ago, whichever is more recent
+      if (surgeryDate) {
+        const surgeryDateObj = new Date(surgeryDate);
+        // If surgery is within 90 days, use surgery date
+        // If surgery is older than 90 days, still cap at 90 days
+        cutoffDate = surgeryDateObj > maxCutoffDate ? surgeryDateObj : maxCutoffDate;
+      } else {
+        // No surgery date - fallback to 90 days
+        cutoffDate = maxCutoffDate;
+      }
+    }
+
+    return (v: VitalsSample) => new Date(v.timestamp) >= cutoffDate;
+  };
+
+  const luxuryFilter = getLuxuryTimePeriodFilter(globalTimeView);
+  const filteredForLuxury = vitals.filter(luxuryFilter);
+
+  // Calculate MOST RECENT within the time period (not absolute latest)
+  const bpVitalsForRecent = filteredForLuxury.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentBP = bpVitalsForRecent.length > 0
+    ? `${bpVitalsForRecent[0].bloodPressureSystolic}/${bpVitalsForRecent[0].bloodPressureDiastolic}`
+    : null;
+
+  const hrVitalsForRecent = filteredForLuxury.filter(v => v.heartRate)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentHR = hrVitalsForRecent.length > 0 ? hrVitalsForRecent[0].heartRate! : null;
+
+  const o2VitalsForRecent = filteredForLuxury.filter(v => v.oxygenSaturation)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentO2 = o2VitalsForRecent.length > 0 ? o2VitalsForRecent[0].oxygenSaturation! : null;
+
+  const respVitalsForRecent = filteredForLuxury.filter(v => v.respiratoryRate)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentResp = respVitalsForRecent.length > 0 ? respVitalsForRecent[0].respiratoryRate! : null;
+
+  // Calculate averages for the 4 luxury gauges
+  const bpVitals = filteredForLuxury.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+  const avgBPSystolic = bpVitals.length > 0
+    ? Math.round(bpVitals.map(v => v.bloodPressureSystolic!).reduce((a, b) => a + b, 0) / bpVitals.length)
+    : null;
+  const avgBPDiastolic = bpVitals.length > 0
+    ? Math.round(bpVitals.map(v => v.bloodPressureDiastolic!).reduce((a, b) => a + b, 0) / bpVitals.length)
+    : null;
+  const avgBP = avgBPSystolic && avgBPDiastolic ? `${avgBPSystolic}/${avgBPDiastolic}` : null;
+
+  const hrVitals = filteredForLuxury.filter(v => v.heartRate);
+  const avgHeartRate = hrVitals.length > 0
+    ? Math.round(hrVitals.map(v => v.heartRate!).reduce((a, b) => a + b, 0) / hrVitals.length)
+    : null;
+
+  const o2Vitals = filteredForLuxury.filter(v => v.oxygenSaturation);
+  const avgO2Saturation = o2Vitals.length > 0
+    ? Math.round(o2Vitals.map(v => v.oxygenSaturation!).reduce((a, b) => a + b, 0) / o2Vitals.length)
+    : null;
+
+  const respVitals = filteredForLuxury.filter(v => v.respiratoryRate);
+  const avgRespiratoryRate = respVitals.length > 0
+    ? Math.round(respVitals.map(v => v.respiratoryRate!).reduce((a, b) => a + b, 0) / respVitals.length)
+    : null;
+
+  // Map globalTimeView to timePeriod display string
+  const getTimePeriodLabel = (): 'Wk' | '30d' | '60d' | 'ssd' => {
+    switch (globalTimeView) {
+      case '7d': return 'Wk';
+      case '30d': return '30d';
+      case '90d': return '60d';
+      case 'surgery': return 'ssd';
+      default: return 'Wk';
+    }
+  };
+
+  // Determine if latest readings are auto or manual
+  const isBPAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isHRAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isO2Auto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isRespAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+
   return (
     <div className="space-y-6">
       {/* Loading Overlay - Prevents rendering issues during data transitions */}
@@ -1049,6 +1185,502 @@ export function VitalsPage() {
           })}
         </div>
       )}
+
+      {/* A380 COCKPIT LAYOUT */}
+      <HeartFrame>
+        {/* Cockpit Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Vitals Command Center - A380 Cockpit</h1>
+            <p className="text-gray-400">Comprehensive cardiac monitoring and analytics</p>
+          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="group">
+            <Plus className="h-5 w-5 mr-2" />
+            Record Vitals
+          </Button>
+        </div>
+
+        {/* Upper Level - Primary Flight Deck - Critical Vitals */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-blue-400 mb-6 flex items-center gap-3">
+            <Activity className="h-6 w-6" />
+            Primary Flight Deck - Critical Vitals
+          </h2>
+
+          {/* Pilot/Co-Pilot Row with Nuclear Clock */}
+          <div className="relative grid grid-cols-3 gap-4 mb-4 items-center" style={{ paddingTop: '20px' }}>
+            {/* Pilot - Left Side above BP Gauge */}
+            <div className="flex flex-col items-center" style={{ marginRight: '78px' }}>
+              <div style={{
+                fontSize: '9px',
+                fontWeight: '600',
+                color: '#D4AF37',
+                fontFamily: '"Montserrat", sans-serif',
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                textShadow: '0 0 8px rgba(212, 175, 55, 0.6)',
+                marginBottom: '4px'
+              }}>
+                PILOT
+              </div>
+              {user?.role === 'admin' || user?.role === 'therapist' ? (
+                <select
+                  value={pilotUserId || user?.id || 'admin'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'admin' || parseInt(value) === user?.id) {
+                      setPilotUserId(null);
+                    } else {
+                      setPilotUserId(parseInt(value));
+                    }
+                  }}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    color: '#D4AF37',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontFamily: '"SF Pro Display", sans-serif',
+                    cursor: 'pointer',
+                    textShadow: '0 0 6px rgba(212, 175, 55, 0.4)',
+                    boxShadow: '0 0 10px rgba(212, 175, 55, 0.2), inset 0 1px 2px rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <option value="admin" style={{ background: '#1a1a1a', color: '#ffffff', fontWeight: 'bold' }}>{user?.name || 'Admin/Therapist'}</option>
+                  {allPatients
+                    .filter(p => p.userId)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(patient => (
+                      <option key={patient.id} value={patient.userId!} style={{ background: '#1a1a1a', color: '#ffffff', fontWeight: 'bold' }}>
+                        {patient.name}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  color: '#D4AF37',
+                  fontFamily: '"SF Pro Display", sans-serif',
+                  textShadow: '0 0 6px rgba(212, 175, 55, 0.4)',
+                }}>
+                  {user?.name}
+                </div>
+              )}
+            </div>
+
+            {/* Nuclear Clock - Center */}
+            <div className="flex flex-col items-center justify-center">
+              <div style={{
+                width: '180px',
+                height: '80px',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
+                border: '2px solid rgba(212, 175, 55, 0.6)',
+                borderRadius: '12px',
+                boxShadow: `
+                  0 0 30px rgba(212, 175, 55, 0.4),
+                  inset 0 0 20px rgba(212, 175, 55, 0.1),
+                  0 4px 8px rgba(0,0,0,0.6)
+                `,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}>
+                {/* Warning stripes */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'repeating-linear-gradient(45deg, #f59e0b, #f59e0b 10px, rgba(0,0,0,0.8) 10px, rgba(0,0,0,0.8) 20px)',
+                  borderTopLeftRadius: '10px',
+                  borderTopRightRadius: '10px',
+                }} />
+
+                {/* Date Display */}
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: '#D4AF37',
+                  fontFamily: '"Courier New", monospace',
+                  letterSpacing: '2px',
+                  textShadow: '0 0 10px rgba(212, 175, 55, 0.8)',
+                  marginBottom: '2px',
+                }}>
+                  {format(currentTime, 'yyyy-MM-dd')}
+                </div>
+
+                {/* Time Display (24-hour) */}
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#22c55e',
+                  fontFamily: '"Courier New", monospace',
+                  letterSpacing: '3px',
+                  textShadow: '0 0 15px rgba(34, 197, 94, 0.8), 0 0 25px rgba(34, 197, 94, 0.4)',
+                  animation: 'pulse 2s ease-in-out infinite',
+                }}>
+                  {format(currentTime, 'HH:mm:ss')}
+                </div>
+
+                {/* Status Indicator */}
+                <div style={{
+                  fontSize: '7px',
+                  fontWeight: '600',
+                  color: '#22c55e',
+                  fontFamily: '"Courier New", monospace',
+                  letterSpacing: '1px',
+                  textShadow: '0 0 6px rgba(34, 197, 94, 0.6)',
+                  marginTop: '2px',
+                }}>
+                  SYSTEM ACTIVE
+                </div>
+              </div>
+            </div>
+
+            {/* Co-Pilot (Being Monitored) - Right Side above HR Gauge */}
+            <div className="flex flex-col items-center" style={{ marginLeft: '78px' }}>
+              <div style={{
+                fontSize: '9px',
+                fontWeight: '600',
+                color: '#D4AF37',
+                fontFamily: '"Montserrat", sans-serif',
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                textShadow: '0 0 8px rgba(212, 175, 55, 0.6)',
+                marginBottom: '4px'
+              }}>
+                CO-PILOT
+              </div>
+              {user?.role === 'admin' || user?.role === 'therapist' ? (
+                <select
+                  value={selectedUserId || user?.id || 'admin'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'admin' || parseInt(value) === user?.id) {
+                      setSelectedUserId(null);
+                    } else {
+                      setSelectedUserId(parseInt(value));
+                    }
+                  }}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    color: '#D4AF37',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontFamily: '"SF Pro Display", sans-serif',
+                    cursor: 'pointer',
+                    textShadow: '0 0 6px rgba(212, 175, 55, 0.4)',
+                    boxShadow: '0 0 10px rgba(212, 175, 55, 0.2), inset 0 1px 2px rgba(255,255,255,0.1)',
+                  }}
+                >
+                  {/* Admin/Therapist at top */}
+                  <option value="admin" style={{ background: '#1a1a1a', color: '#ffffff', fontWeight: 'bold' }}>{user?.name || 'Admin/Therapist'}</option>
+                  {/* All patients alphabetically */}
+                  {allPatients
+                    .filter(p => p.userId)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(patient => (
+                      <option key={patient.id} value={patient.userId!} style={{ background: '#1a1a1a', color: '#ffffff', fontWeight: 'bold' }}>
+                        {patient.name}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  color: '#D4AF37',
+                  fontFamily: '"SF Pro Display", sans-serif',
+                  textShadow: '0 0 6px rgba(212, 175, 55, 0.4)',
+                }}>
+                  {user?.name}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Top Row - BP and Heart Rate - Luxury $10,000 Watch Style */}
+          <div className="grid grid-cols-2 gap-8 mb-8 justify-items-center" style={{ paddingTop: '40px' }}>
+            <div style={{ marginRight: '156px', marginTop: '4px' }}>
+              <LuxuryVitalGauge
+                label="Blood Pressure"
+                recentValue={recentBP}
+                averageValue={avgBP}
+                unit="mmHg"
+                min={80}
+                max={180}
+                targetMin={90}
+                targetMax={140}
+                size="large"
+                color="#3b82f6"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isBPAuto}
+                icon={<Heart className="h-6 w-6 text-blue-400" />}
+                onManualClick={() => setIsModalOpen(true)}
+              />
+            </div>
+            <div style={{ marginLeft: '156px', marginTop: '4px' }}>
+              <LuxuryVitalGauge
+                label="Heart Rate"
+                recentValue={recentHR}
+                averageValue={avgHeartRate}
+                unit="bpm"
+                min={40}
+                max={180}
+                targetMin={60}
+                targetMax={100}
+                size="large"
+                color="#ef4444"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isHRAuto}
+                icon={<Activity className="h-6 w-6 text-red-400" />}
+                onManualClick={() => setIsModalOpen(true)}
+              />
+            </div>
+          </div>
+
+          {/* Second Row - O2 and Respiratory Rate - Luxury Watch Style */}
+          <div className="grid grid-cols-2 gap-4 mb-8 justify-items-center" style={{ paddingTop: '40px' }}>
+            <div style={{ marginRight: '96px' }}>
+              <LuxuryVitalGauge
+                label="O₂ Saturation"
+                recentValue={recentO2}
+                averageValue={avgO2Saturation}
+                unit="%"
+                min={80}
+                max={100}
+                targetMin={95}
+                targetMax={100}
+                size="medium"
+                color="#06b6d4"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isO2Auto}
+                icon={<Wind className="h-5 w-5 text-cyan-400" />}
+                onManualClick={() => setIsModalOpen(true)}
+              />
+            </div>
+            <div style={{ marginLeft: '96px' }}>
+              <LuxuryVitalGauge
+                label="Respiratory Rate"
+                recentValue={recentResp}
+                averageValue={avgRespiratoryRate}
+                unit="/min"
+                min={8}
+                max={30}
+                targetMin={12}
+                targetMax={20}
+                size="medium"
+                color="#22c55e"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isRespAuto}
+                icon={<Pulse className="h-5 w-5 text-green-400" />}
+                onManualClick={() => setIsModalOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Center Section - Time Throttle + Dual Glass Displays */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-purple-400 mb-6 flex items-center gap-3">
+            <BarChart3 className="h-6 w-6" />
+            Flight Control - Trend Analysis
+          </h2>
+
+          {/* Time Throttle Lever */}
+          <div className="mb-8">
+            <TimeThrottleLever
+              surgeryDate={surgeryDate}
+              onTimeChange={(view) => setGlobalTimeView(view)}
+              currentView={globalTimeView}
+            />
+          </div>
+
+          {/* Three-Column Layout: Side Gauges + Dual Glass Displays */}
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center">
+            {/* Left Side Gauges */}
+            <div className="flex flex-col gap-6 justify-center items-center">
+              <CircularGauge
+                value={filteredLatest?.temperature}
+                label="Temperature"
+                unit="°F"
+                min={95}
+                max={103}
+                targetMin={97.8}
+                targetMax={99.1}
+                size="medium"
+                style="modern"
+                color="#f97316"
+              />
+              <CircularGauge
+                value={filteredLatest?.weight}
+                label="Weight"
+                unit="lbs"
+                min={100}
+                max={300}
+                size="medium"
+                style="modern"
+                color="#10b981"
+              />
+            </div>
+
+            {/* Center: Dual Glass Displays */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Display - BP & HR */}
+              <div className="glass-card p-6 rounded-2xl" style={{
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
+                border: '2px solid rgba(59, 130, 246, 0.4)',
+                boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
+              }}>
+                <h3 className="text-lg font-bold text-blue-400 mb-4">Blood Pressure & Heart Rate</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <YAxis yAxisId="left" stroke="#3b82f6" />
+                    <YAxis yAxisId="right" orientation="right" stroke="#ef4444" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Legend />
+                    {surgeryDate && (
+                      <ReferenceLine x={format(new Date(surgeryDate), 'MMM dd, yyyy')} stroke="#fbbf24" strokeWidth={2} label="Day 0" />
+                    )}
+                    <Area yAxisId="left" type="monotone" dataKey="systolic" stroke="#3b82f6" fill="url(#colorSystolic)" name="Systolic" />
+                    <Area yAxisId="left" type="monotone" dataKey="diastolic" stroke="#60a5fa" fill="url(#colorDiastolic)" name="Diastolic" />
+                    <Line yAxisId="right" type="monotone" dataKey="heartRate" stroke="#ef4444" strokeWidth={2} name="Heart Rate" />
+                    <defs>
+                      <linearGradient id="colorSystolic" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorDiastolic" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Right Display - Weight & O2 */}
+              <div className="glass-card p-6 rounded-2xl" style={{
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
+                border: '2px solid rgba(16, 185, 129, 0.4)',
+                boxShadow: '0 0 30px rgba(16, 185, 129, 0.3)'
+              }}>
+                <h3 className="text-lg font-bold text-emerald-400 mb-4">Weight & Oxygen Saturation</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <YAxis yAxisId="left" stroke="#10b981" />
+                    <YAxis yAxisId="right" orientation="right" stroke="#06b6d4" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Legend />
+                    <Area yAxisId="left" type="monotone" dataKey="weight" stroke="#10b981" fill="url(#colorWeight)" name="Weight (lbs)" />
+                    <Line yAxisId="right" type="monotone" dataKey="o2" stroke="#06b6d4" strokeWidth={2} name="O₂ Sat (%)" />
+                    <defs>
+                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Right Side Gauges */}
+            <div className="flex flex-col gap-6 justify-center items-center">
+              <CircularGauge
+                value={filteredLatest?.bloodSugar}
+                label="Blood Sugar"
+                unit="mg/dL"
+                min={50}
+                max={200}
+                targetMin={70}
+                targetMax={130}
+                size="medium"
+                style="modern"
+                color="#eab308"
+              />
+              <CircularGauge
+                value={postOpWeek}
+                label="Post-Op Week"
+                unit="weeks"
+                min={0}
+                max={52}
+                size="medium"
+                style="modern"
+                color="#6366f1"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Lower Level - Advanced Analytics */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-emerald-400 mb-6 flex items-center gap-3">
+            <Zap className="h-6 w-6" />
+            Lower Deck - Advanced Analytics
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left - Performance Metrics */}
+            <div className="glass-card p-6 rounded-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.15))',
+              border: '2px solid rgba(139, 92, 246, 0.4)'
+            }}>
+              <h3 className="text-lg font-bold text-purple-400 mb-4">Performance Metrics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
+                <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
+                <CircularGauge value={mets} label="METs" unit="METs" min={1} max={15} targetMin={5} targetMax={8} size="small" style="modern" color="#7c3aed" />
+                <CircularGauge value={restingHR} label="Resting HR" unit="bpm" min={40} max={100} targetMin={50} targetMax={70} size="small" style="luxury" color="#D4AF37" />
+                <CircularGauge value={maxHR} label="Max HR" unit="bpm" min={100} max={200} size="small" style="modern" color="#c084fc" />
+                <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
+              </div>
+            </div>
+
+            {/* Right - HRV Analytics */}
+            <div className="glass-card p-6 rounded-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15))',
+              border: '2px solid rgba(16, 185, 129, 0.4)'
+            }}>
+              <h3 className="text-lg font-bold text-emerald-400 mb-4">HRV Analytics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <CircularGauge value={sdnn} label="SDNN" unit="ms" min={0} max={200} targetMin={50} targetMax={100} size="small" style="modern" color="#10b981" />
+                <CircularGauge value={rmssd} label="RMSSD" unit="ms" min={0} max={100} targetMin={20} targetMax={50} size="small" style="modern" color="#059669" />
+                <CircularGauge value={pnn50} label="pNN50" unit="%" min={0} max={60} targetMin={10} targetMax={40} size="small" style="modern" color="#047857" />
+                <CircularGauge value={currentMAP} label="MAP" unit="mmHg" min={50} max={130} targetMin={70} targetMax={100} size="small" style="modern" color="#34d399" />
+                <CircularGauge value={pulsePressure} label="Pulse Pressure" unit="mmHg" min={20} max={100} targetMin={40} targetMax={60} size="small" style="modern" color="#6ee7b7" />
+                <CircularGauge value={latestBPVariability} label="BP Variability" unit="mmHg SD" min={0} max={30} size="small" style="modern" color="#a7f3d0" />
+              </div>
+            </div>
+
+            {/* Specialty Gauges */}
+            <div className="glass-card p-6 rounded-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15))',
+              border: '2px solid rgba(251, 191, 36, 0.4)'
+            }}>
+              <h3 className="text-lg font-bold text-amber-400 mb-4">Specialty Metrics</h3>
+              <div className="flex flex-col gap-4">
+                <CircularGauge value={ejectionFraction} label="Ejection Fraction" unit="%" min={20} max={80} targetMin={50} targetMax={70} size="medium" style="luxury" color="#D4AF37" />
+                <CircularGauge value={filteredLatest?.peakFlow || null} label="Peak Flow" unit="L/min" min={200} max={700} targetMin={400} targetMax={600} size="medium" style="modern" color="#22c55e" />
+                <CircularGauge value={hydrationActual} label="Hydration" unit={`${hydrationActual}/${hydrationTarget} oz`} min={0} max={hydrationTarget} size="medium" style="modern" color="#3b82f6" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </HeartFrame>
 
       {/* GARMIN 3000 COCKPIT HEADER */}
       <div className="relative overflow-hidden rounded-2xl"
