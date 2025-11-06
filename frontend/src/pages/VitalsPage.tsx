@@ -1342,8 +1342,24 @@ export function VitalsPage() {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Water Intake</p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold">Water Intake</p>
+                {/* Date Display - Always Visible */}
+                <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500" style={{
+                  boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
+                }}>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-purple-300" />
+                    <span className="text-purple-200 font-bold text-sm">
+                      {format(new Date(), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                  <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
+                    ✨ Today
+                  </p>
+                </div>
+              </div>
               <p className="text-2xl font-bold font-bold">
                 {(() => {
                   const today = format(new Date(), 'yyyy-MM-dd');
@@ -2456,12 +2472,17 @@ export function VitalsPage() {
                       selectedMetric === 'peakflow' ? [0, 850] :
                       selectedMetric === 'map' ? [40, 140] :
                       selectedMetric === 'bpvariability' ? [0, 30] :
-                      selectedMetric === 'hydration' ? [0, 150] :
+                      selectedMetric === 'hydration' ? [0, 128] :
                       undefined
                     }
-                    stroke="#9ca3af"
-                    tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }}
-                    tickLine={{ stroke: '#6b7280' }}
+                    ticks={selectedMetric === 'hydration' ? [0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128] : undefined}
+                    stroke={selectedMetric === 'hydration' ? '#10b981' : '#9ca3af'}
+                    tick={{
+                      fill: selectedMetric === 'hydration' ? '#10b981' : '#d1d5db',
+                      fontSize: 12,
+                      fontWeight: selectedMetric === 'hydration' ? 'bold' : 600
+                    }}
+                    tickLine={{ stroke: selectedMetric === 'hydration' ? '#10b981' : '#6b7280' }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -2540,6 +2561,16 @@ export function VitalsPage() {
                       dot={false}
                       name="Daily Target (oz)"
                     />
+                  )}
+
+                  {/* Hydration Reference Lines */}
+                  {selectedMetric === 'hydration' && (
+                    <>
+                      <ReferenceLine y={32} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={3} label={{ value: 'Critical Low (32 oz)', position: 'insideTopRight', fill: '#ef4444', fontSize: 12, fontWeight: 'bold' }} />
+                      <ReferenceLine y={48} stroke="#eab308" strokeDasharray="3 3" strokeWidth={3} label={{ value: 'Low (48 oz)', position: 'insideTopRight', fill: '#eab308', fontSize: 12, fontWeight: 'bold' }} />
+                      <ReferenceLine y={64} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: 'Optimal Min (64 oz)', position: 'insideTopRight', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
+                      <ReferenceLine y={96} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: 'Optimal Max (96 oz)', position: 'insideBottomRight', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
+                    </>
                   )}
 
                   {/* Normal Range Reference Lines */}
