@@ -295,37 +295,48 @@ export const addVital = async (req: Request, res: Response) => {
       }
     }
 
-    // 🦅 HAWK ALERT: Check for hypoxia (low oxygen saturation)
+    // 🦅 CRITICAL ALERT: Check for hypoxia (low oxygen saturation)
+    // ALWAYS alert on dangerous O2 levels regardless of medication correlation
     if (vital.oxygenSaturation && vital.oxygenSaturation < 92 && userId) {
       try {
-        console.log(`[VITALS] Checking for hypoxia medication correlation (Hawk Alert): ${vital.oxygenSaturation}% SpO2`);
-        const hawkAlert = await checkHypoxiaMedicationCorrelation(userId, vital.oxygenSaturation);
+        console.log(`[VITALS] 🚨 CRITICAL O2 DETECTED: ${vital.oxygenSaturation}% SpO2 - Checking for medication correlation`);
 
-        if (hawkAlert) {
-          console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+        const user = await User.findByPk(userId);
+        if (user && user.email) {
+          // Check for medication correlation (optional, enhances alert but not required)
+          const hawkAlert = await checkHypoxiaMedicationCorrelation(userId, vital.oxygenSaturation);
 
-          const user = await User.findByPk(userId);
-          if (user && user.email) {
-            // Get care team to notify
-            const careTeam = await getCareTeamForNotification(userId);
-            const careTeamEmails = careTeam.map(member => member.email);
+          const severity: 'warning' | 'danger' = vital.oxygenSaturation < 90 ? 'danger' : 'warning';
+          const medicationNames = hawkAlert ? hawkAlert.medicationNames : [];
+          const medInfo = medicationNames.length > 0
+            ? `The following medication(s) may be contributing to low oxygen: ${medicationNames.join(', ')}. `
+            : 'No medications identified as respiratory depressants. ';
 
-            await sendHawkAlert(
-              user.email,
-              user.phoneNumber,
-              hawkAlert.type,
-              hawkAlert.severity,
-              hawkAlert.medicationNames,
-              hawkAlert.message,
-              hawkAlert.recommendation,
-              careTeamEmails
-            );
-          }
-        } else {
-          console.log('[VITALS] No medication correlation detected for low oxygen');
+          const message = vital.oxygenSaturation < 90
+            ? `🚨 CRITICAL MEDICAL EMERGENCY: Dangerously Low Oxygen Level Detected!`
+            : `⚠️ WARNING: Low Oxygen Saturation Detected`;
+
+          const recommendation = `Your oxygen saturation is ${vital.oxygenSaturation < 90 ? 'CRITICALLY' : 'concerningly'} low (${vital.oxygenSaturation}%). ${medInfo}${vital.oxygenSaturation < 90 ? '🚨 THIS IS A MEDICAL EMERGENCY - CALL 911 IMMEDIATELY if you have trouble breathing, chest pain, confusion, or blue lips/fingernails. Do not wait. Severe hypoxia can cause organ damage within minutes.' : 'Contact your healthcare provider IMMEDIATELY. Monitor your symptoms closely and seek emergency care if oxygen drops below 90% or you have severe shortness of breath. Use supplemental oxygen if prescribed.'}`;
+
+          // Get care team to notify
+          const careTeam = await getCareTeamForNotification(userId);
+          const careTeamEmails = careTeam.map(member => member.email);
+
+          console.log(`[VITALS] 🦅 SENDING ${severity.toUpperCase()} HYPOXIA ALERT: ${vital.oxygenSaturation}% SpO2${medicationNames.length > 0 ? ` (${medicationNames.length} medications correlated)` : ' (no medication correlation)'}`);
+
+          await sendHawkAlert(
+            user.email,
+            user.phoneNumber,
+            'hypoxia',
+            severity,
+            medicationNames,
+            message,
+            recommendation,
+            careTeamEmails
+          );
         }
       } catch (alertError) {
-        console.error('[VITALS] Error sending hypoxia Hawk Alert:', alertError);
+        console.error('[VITALS] Error sending hypoxia alert:', alertError);
       }
     }
 
@@ -646,6 +657,7 @@ export const getHawkAlerts = async (req: Request, res: Response) => {
     }
 
     // Check for recent low oxygen saturation (last 3 days)
+    // ALWAYS alert on dangerous O2 levels regardless of medication correlation
     const recentLowO2 = await VitalsSample.findOne({
       where: {
         userId,
@@ -656,14 +668,30 @@ export const getHawkAlerts = async (req: Request, res: Response) => {
     });
 
     if (recentLowO2 && recentLowO2.oxygenSaturation) {
-      const hawkAlert = await checkHypoxiaMedicationCorrelation(userId, recentLowO2.oxygenSaturation);
-      if (hawkAlert) {
-        alerts.push({
-          ...hawkAlert,
-          detectedAt: recentLowO2.timestamp,
-          oxygenSaturation: recentLowO2.oxygenSaturation
-        });
-      }
+      // Check for medication correlation (optional, enhances alert but not required)
+      const medCorrelation = await checkHypoxiaMedicationCorrelation(userId, recentLowO2.oxygenSaturation);
+
+      const severity: 'warning' | 'danger' = recentLowO2.oxygenSaturation < 90 ? 'danger' : 'warning';
+      const medicationNames = medCorrelation ? medCorrelation.medicationNames : [];
+      const medInfo = medicationNames.length > 0
+        ? `The following medication(s) may be contributing to low oxygen: ${medicationNames.join(', ')}. `
+        : 'No medications identified as respiratory depressants. ';
+
+      const message = recentLowO2.oxygenSaturation < 90
+        ? `🚨 CRITICAL MEDICAL EMERGENCY: Dangerously Low Oxygen Level Detected!`
+        : `⚠️ WARNING: Low Oxygen Saturation Detected`;
+
+      const recommendation = `Your oxygen saturation is ${recentLowO2.oxygenSaturation < 90 ? 'CRITICALLY' : 'concerningly'} low (${recentLowO2.oxygenSaturation}%). ${medInfo}${recentLowO2.oxygenSaturation < 90 ? '🚨 THIS IS A MEDICAL EMERGENCY - CALL 911 IMMEDIATELY if you have trouble breathing, chest pain, confusion, or blue lips/fingernails. Do not wait.' : 'Contact your healthcare provider IMMEDIATELY. Monitor symptoms and seek emergency care if oxygen drops below 90%.'}`;
+
+      alerts.push({
+        type: 'hypoxia',
+        severity,
+        medicationNames,
+        message,
+        recommendation,
+        detectedAt: recentLowO2.timestamp,
+        oxygenSaturation: recentLowO2.oxygenSaturation
+      });
     }
 
     res.json({ alerts });
