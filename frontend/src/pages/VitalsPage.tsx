@@ -80,6 +80,10 @@ export function VitalsPage() {
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
   const [hydrationLogs, setHydrationLogs] = useState<HydrationLog[]>([]);
 
+  // Water card date selector
+  const [waterCardDate, setWaterCardDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [showWaterDatePicker, setShowWaterDatePicker] = useState(false);
+
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'pulse' | 'medical'>('overview');
@@ -428,10 +432,9 @@ export function VitalsPage() {
     try {
       // CRITICAL: Ensure integer math
       const ouncesInt = Math.round(ounces);
-      console.log(`[WATER] Adding ${ouncesInt} oz...`);
+      console.log(`[WATER] Adding ${ouncesInt} oz for ${waterCardDate}...`);
 
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const existingLog = hydrationLogs.find(log => log.date === today);
+      const existingLog = hydrationLogs.find(log => log.date === waterCardDate);
 
       if (existingLog) {
         // CRITICAL: Use integer math to avoid decimals
@@ -445,7 +448,7 @@ export function VitalsPage() {
         });
 
         console.log(`[WATER] Updated! New total: ${Math.round(updatedLog.totalOunces)} oz`);
-        toast.success(`💧 +${ouncesInt} oz! Total: ${Math.round(updatedLog.totalOunces)} oz`, {
+        toast.success(`💧 +${ouncesInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}! Total: ${Math.round(updatedLog.totalOunces)} oz`, {
           icon: '💧',
           style: {
             background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
@@ -455,14 +458,14 @@ export function VitalsPage() {
         });
       } else {
         // Create new log
-        console.log(`[WATER] Creating new log for ${today} with ${ouncesInt} oz`);
+        console.log(`[WATER] Creating new log for ${waterCardDate} with ${ouncesInt} oz`);
         const newLog = await api.createHydrationLog({
-          date: today,
+          date: waterCardDate,
           totalOunces: ouncesInt,
           userId: selectedUserId || user?.id,
         });
         console.log(`[WATER] Created! Total: ${Math.round(newLog.totalOunces)} oz`);
-        toast.success(`💧 +${ouncesInt} oz! Total: ${Math.round(newLog.totalOunces)} oz`, {
+        toast.success(`💧 +${ouncesInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}! Total: ${Math.round(newLog.totalOunces)} oz`, {
           icon: '💧',
           style: {
             background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
@@ -714,14 +717,34 @@ export function VitalsPage() {
   console.log('[CHART] hydrationLogs:', hydrationLogs.map(log => ({ date: log.date, totalOunces: log.totalOunces })));
 
   // HYDRATION-SPECIFIC CHART DATA
-  // Build chart data directly from hydration logs (not dependent on vitals entries)
-  const hydrationChartData = hydrationLogs.map(log => ({
-    date: format(new Date(log.date), 'MMM dd, yyyy'),
-    hydrationOunces: Math.round(log.totalOunces || 0),
-    hydrationTarget: log.targetOunces,
-  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Build chart data directly from hydration logs with complete date range
+  const hydrationChartData = (() => {
+    // Get the date range based on current view and surgery date
+    const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-  console.log('[CHART] hydrationChartData:', hydrationChartData);
+    // Generate array of all dates in range
+    const dateArray: { date: string; hydrationOunces: number; hydrationTarget?: number }[] = [];
+    let currentDate = new Date(start);
+
+    while (currentDate <= end) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const log = hydrationLogs.find(l => l.date === dateStr);
+
+      dateArray.push({
+        date: format(currentDate, 'MMM dd, yyyy'),
+        hydrationOunces: log ? Math.round(log.totalOunces || 0) : 0,
+        hydrationTarget: log?.targetOunces,
+      });
+
+      currentDate = addDays(currentDate, 1);
+    }
+
+    return dateArray;
+  })();
+
+  console.log('[CHART] hydrationChartData with full range:', hydrationChartData);
 
   // Use hydration-specific chart data when hydration metric is selected
   const activeChartData = selectedMetric === 'hydration' ? hydrationChartData : chartData;
@@ -1328,62 +1351,88 @@ export function VitalsPage() {
               </div>
             </div>
           )}
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-bold">Water Intake</p>
-                {/* Date Display - Always Visible */}
-                <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500" style={{
-                  boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
-                }}>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-purple-300" />
-                    <span className="text-purple-200 font-bold text-sm">
-                      {format(new Date(), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                  <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
-                    ✨ Today
-                  </p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold font-bold">
-                {(() => {
-                  const today = format(new Date(), 'yyyy-MM-dd');
-                  const todayLog = hydrationLogs.find(log => log.date === today);
-                  return todayLog ? `${todayLog.totalOunces} oz` : '-- oz';
-                })()}
-              </p>
-              <p className={`text-sm font-bold mt-1 ${
-                (() => {
-                  const today = format(new Date(), 'yyyy-MM-dd');
-                  const todayLog = hydrationLogs.find(log => log.date === today);
-                  if (!todayLog || !todayLog.targetOunces) return 'text-yellow-500';
-                  const percentage = (todayLog.totalOunces / todayLog.targetOunces) * 100;
-                  return percentage < 50 ? 'text-red-500' : percentage < 75 ? 'text-yellow-500' : 'text-white';
-                })()
-              }`}>
-                {(() => {
-                  const today = format(new Date(), 'yyyy-MM-dd');
-                  const todayLog = hydrationLogs.find(log => log.date === today);
-                  if (!todayLog || !todayLog.targetOunces) return 'No Target Set';
-                  const percentage = Math.round((todayLog.totalOunces / todayLog.targetOunces) * 100);
-                  return percentage < 50 ? 'Severely Low' : percentage < 75 ? 'Below Target' : percentage >= 100 ? 'Goal Met!' : 'On Track';
-                })()}
-              </p>
-              <p className="text-xs mt-1">
-                {(() => {
-                  const today = format(new Date(), 'yyyy-MM-dd');
-                  const todayLog = hydrationLogs.find(log => log.date === today);
-                  return todayLog?.targetOunces ? `Target: ${todayLog.targetOunces} oz` : 'Target: Not set';
-                })()}
-              </p>
-            </div>
+
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-bold">Water Intake</p>
             <Droplet className="h-8 w-8 text-blue-500" />
           </div>
 
+          {/* Date Display - Centered Below Header */}
+          <div className="flex justify-center mb-3">
+            <div
+              className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500 cursor-pointer hover:border-purple-400 transition-all"
+              style={{
+                boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
+              }}
+              onClick={() => setShowWaterDatePicker(!showWaterDatePicker)}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-purple-300" />
+                <span className="text-purple-200 font-bold text-sm">
+                  {format(new Date(waterCardDate), 'MMM dd, yyyy')}
+                </span>
+              </div>
+              <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
+                {waterCardDate === format(new Date(), 'yyyy-MM-dd') ? '✨ Today' : '📜 Historic Entry'}
+              </p>
+            </div>
+          </div>
+
+          {/* Date Picker */}
+          {showWaterDatePicker && (
+            <div className="flex justify-center mb-3">
+              <input
+                type="date"
+                value={waterCardDate}
+                onChange={(e) => {
+                  setWaterCardDate(e.target.value);
+                  toast.info(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
+                    duration: 2000,
+                  });
+                }}
+                max={format(new Date(), 'yyyy-MM-dd')}
+                className="w-full bg-purple-950 text-white px-4 py-3 rounded-xl text-base font-bold border-2 border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-purple-300"
+                style={{
+                  colorScheme: 'dark',
+                  fontSize: '16px',
+                }}
+              />
+            </div>
+          )}
+
+          {/* Target and Current Intake Display */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-center">
+              <p className="text-xs text-gray-400 mb-1">TARGET SET</p>
+              <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
+                {(() => {
+                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                  return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : '--';
+                })()}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-400 mb-1">CONSUMED</p>
+              <p className="text-2xl font-bold" style={{
+                color: (() => {
+                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                  const consumed = selectedLog?.totalOunces || 0;
+                  // Chart zones: <32 red, <48 yellow, 64-96 green
+                  if (consumed < 32) return '#ef4444';
+                  if (consumed < 48) return '#eab308';
+                  return '#10b981';
+                })()
+              }}>
+                {(() => {
+                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                  return selectedLog ? `${selectedLog.totalOunces} oz` : '0 oz';
+                })()}
+              </p>
+            </div>
+          </div>
+
           {/* Quick Add Buttons */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
+          <div className="grid grid-cols-5 gap-2 mt-4">
             {[4, 8, 16, 32].map((oz) => (
               <button
                 key={oz}
@@ -1397,6 +1446,82 @@ export function VitalsPage() {
                 +{oz}
               </button>
             ))}
+            <button
+              onClick={() => {
+                const custom = prompt('Enter custom amount (oz):');
+                if (custom && !isNaN(parseInt(custom))) {
+                  handleAddWater(parseInt(custom));
+                }
+              }}
+              className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
+              }}
+            >
+              +?
+            </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <button
+              onClick={async () => {
+                const target = prompt('Set daily target (oz):', '64');
+                if (target && !isNaN(parseInt(target))) {
+                  const targetInt = parseInt(target);
+                  try {
+                    const existingLog = hydrationLogs.find(log => log.date === waterCardDate);
+                    if (existingLog) {
+                      await api.updateHydrationLog(existingLog.id, { targetOunces: targetInt });
+                    } else {
+                      await api.createHydrationLog({
+                        date: waterCardDate,
+                        totalOunces: 0,
+                        targetOunces: targetInt,
+                        userId: selectedUserId || user?.id,
+                      });
+                    }
+                    toast.success(`Target set to ${targetInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}`);
+                    await loadHydrationLogs();
+                  } catch (error) {
+                    toast.error('Failed to set target');
+                  }
+                }
+              }}
+              className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              Set Target
+            </button>
+            <button
+              onClick={async () => {
+                const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                if (!selectedLog) {
+                  toast.error('No data to delete');
+                  return;
+                }
+                if (window.confirm(`Delete water data for ${format(new Date(waterCardDate), 'MMM dd, yyyy')}?`)) {
+                  try {
+                    await api.deleteHydrationLog(selectedLog.id);
+                    toast.success('Water data deleted');
+                    await loadHydrationLogs();
+                  } catch (error) {
+                    toast.error('Failed to delete data');
+                  }
+                }
+              }}
+              className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+              }}
+            >
+              Delete Date
+            </button>
           </div>
         </GlassCard>
       </div>
@@ -2174,6 +2299,26 @@ export function VitalsPage() {
             {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
           </button>
         </div>
+
+        {/* Surgery Date Display (Day 0) - UNIFIED */}
+        {surgeryDate && globalTimeView === 'surgery' && (
+          <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-lg mb-4" style={{
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
+            border: '2px solid rgba(59, 130, 246, 0.5)',
+            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+          }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/30 border border-blue-400">
+              <Activity className="h-5 w-5 text-blue-300" />
+              <span className="text-blue-200 font-bold text-sm">DAY 0</span>
+            </div>
+            <span className="text-sm font-semibold text-gray-200">
+              Surgery Date:{' '}
+              <span className="text-blue-300 font-bold text-base">
+                {format(new Date(surgeryDate), 'MMM dd, yyyy')}
+              </span>
+            </span>
+          </div>
+        )}
 
         {/* Date Range Display - UNIFIED */}
         <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
