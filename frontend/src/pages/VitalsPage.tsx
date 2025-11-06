@@ -1,3 +1,4 @@
+// Vitals Page - Tracks heart rate, blood pressure, hydration, and personalized targets
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard, Button, Modal, Input } from '../components/ui';

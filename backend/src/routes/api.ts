@@ -27,6 +27,8 @@ import * as caloriesController from '../controllers/caloriesController';
 import uploadRoutes from './upload';
 import devicesRoutes from './devices';
 import stravaRoutes from './strava';
+import weatherRoutes from './weather';
+import hawkRoutes from './hawk';
 // import polarRoutes from './polar';
 // import samsungRoutes from './samsung';
 
@@ -649,5 +651,25 @@ router.use('/strava', stravaRoutes);
 
 // router.use('/polar', polarRoutes);  // Keep disabled for now
 // router.use('/samsung', samsungRoutes);  // Keep disabled for now
+
+// ========== WEATHER & HAWK ALERT ROUTES ==========
+
+/**
+ * @route   /api/weather/*
+ * @desc    Real-time weather data for patient locations (OpenWeather API)
+ * @access  Private
+ * @see     ./weather.ts for detailed routes
+ * @note    Used for hydration adjustments and HAWK alert generation
+ */
+router.use('/weather', weatherRoutes);
+
+/**
+ * @route   /api/hawk/*
+ * @desc    HAWK (Heart Activity Warning & Knowledge) Alert System
+ * @access  Private
+ * @see     ./hawk.ts for detailed routes
+ * @note    Detects life-threatening combinations (diuretics + heat + exercise, low EF + high intensity, etc.)
+ */
+router.use('/hawk', hawkRoutes);
 
 export default router;

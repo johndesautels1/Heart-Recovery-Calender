@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from '../Footer';
 import { GlobalWaterButton } from '../GlobalWaterButton';
+import { GlobalWeatherWidget } from '../GlobalWeatherWidget';
+import { GlobalHAWKAlert } from '../GlobalHAWKAlert';
 import { Toaster } from 'react-hot-toast';
 
 export function Layout() {
@@ -17,8 +19,14 @@ export function Layout() {
       </main>
       <Footer />
 
-      {/* Global Floating Water Intake Button - appears on all pages */}
+      {/* Global Floating Water Intake Button - appears on all pages (right side, bottom) */}
       <GlobalWaterButton />
+
+      {/* Global Weather Widget - appears on all pages (right side, above water button) */}
+      <GlobalWeatherWidget />
+
+      {/* Global HAWK Alert System - appears on all pages (left side) */}
+      <GlobalHAWKAlert />
 
       <Toaster
         position="top-right"

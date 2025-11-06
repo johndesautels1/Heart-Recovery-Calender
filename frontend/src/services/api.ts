@@ -285,11 +285,6 @@ class ApiService {
     return response.data;
   }
 
-  async getHawkAlerts(): Promise<any> {
-    const response = await this.api.get<{ alerts: any[] }>('/vitals/hawk-alerts');
-    return response.data;
-  }
-
   // ==================== MEDICATION ENDPOINTS ====================
   async getMedications(activeOnly: boolean = false, userId?: number): Promise<Medication[]> {
     const params = new URLSearchParams();
@@ -837,6 +832,62 @@ class ApiService {
   async getUpcomingAppointments(): Promise<Provider[]> {
     const response = await this.api.get<ApiResponse<Provider[]>>('providers/upcoming');
     return response.data.data;
+  }
+
+  // ==================== WEATHER ENDPOINTS ====================
+  /**
+   * Get current weather for logged-in user's location
+   * Uses city/state from patient profile
+   */
+  async getCurrentWeather(): Promise<any> {
+    const response = await this.api.get('/weather/current');
+    return response.data;
+  }
+
+  /**
+   * Get weather forecast for a specific date
+   * @param date - ISO date string (YYYY-MM-DD)
+   */
+  async getWeatherForecast(date: string): Promise<any> {
+    const response = await this.api.get(`/weather/forecast/${date}`);
+    return response.data;
+  }
+
+  /**
+   * Get current weather for a specific patient (therapist view)
+   * @param userId - Patient's user ID
+   */
+  async getPatientWeather(userId: number): Promise<any> {
+    const response = await this.api.get(`/weather/patient/${userId}`);
+    return response.data;
+  }
+
+  // ==================== HAWK ALERT ENDPOINTS ====================
+  /**
+   * Get HAWK alerts for logged-in user
+   * Analyzes patient data, weather, hydration, and activities for life-threatening combinations
+   */
+  async getHAWKAlerts(): Promise<any> {
+    const response = await this.api.get('/hawk/alerts');
+    return response.data;
+  }
+
+  /**
+   * Get HAWK alerts for a specific patient (therapist view)
+   * @param userId - Patient's user ID
+   */
+  async getPatientHAWKAlerts(userId: number): Promise<any> {
+    const response = await this.api.get(`/hawk/alerts/patient/${userId}`);
+    return response.data;
+  }
+
+  /**
+   * Dismiss a HAWK alert (only if dismissable)
+   * @param alertId - Alert ID to dismiss
+   */
+  async dismissHAWKAlert(alertId: string): Promise<any> {
+    const response = await this.api.post(`/hawk/dismiss/${alertId}`);
+    return response.data;
   }
 }
 

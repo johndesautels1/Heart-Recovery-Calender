@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
-  Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server
+  Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server, Cloud
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -1506,6 +1506,70 @@ export function ProfilePage() {
                         <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--muted)' }}>
                           ENV Variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REDIRECT_URI
                         </p>
+                      </div>
+
+                      {/* OpenWeather API */}
+                      <div className="p-5 rounded-lg border border-blue-600 mt-6" style={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Cloud className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                OpenWeather API
+                              </h4>
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                CONFIGURED
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href="https://openweathermap.org/api"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                          >
+                            Get API Key →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Real-time weather data for HAWK alerts and hydration recommendations. CRITICAL for detecting dangerous weather conditions.
+                        </p>
+                        <div className="space-y-3">
+                          <Input
+                            label="Account Email"
+                            value="cluesnomads@gmail.com"
+                            placeholder="OpenWeather account email"
+                            className="bg-white/5"
+                            readOnly
+                          />
+                          <Input
+                            label="Account Password"
+                            value="6922FargoTrail1!"
+                            type="password"
+                            placeholder="OpenWeather account password"
+                            className="bg-white/5"
+                            readOnly
+                          />
+                          <Input
+                            label="API Key"
+                            value="ee1f0de4b821991aea24df913acca451"
+                            placeholder="Enter OpenWeather API key"
+                            className="bg-white/5 font-mono text-sm"
+                            readOnly
+                          />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variable: OPENWEATHER_API_KEY
+                        </p>
+                        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                          <div className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                              <p className="font-semibold text-green-400 mb-1">Account Owner: John Desautels</p>
+                              <p>This API enables weather-based HAWK alerts for detecting life-threatening combinations like outdoor exercise in extreme heat while on diuretics.</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(14, 165, 233, 0.1)' }}>
