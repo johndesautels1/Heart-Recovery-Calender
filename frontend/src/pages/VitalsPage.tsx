@@ -91,6 +91,9 @@ export function VitalsPage() {
   const [glucoseTimePeriod, setGlucoseTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
   const [pulseTimePeriod, setPulseTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
 
+  // UNIFIED: Global time view for ALL charts
+  const [globalTimeView, setGlobalTimeView] = useState<'7d' | '30d' | '90d' | 'surgery'>('surgery');
+
   const {
     register,
     handleSubmit,
@@ -102,6 +105,56 @@ export function VitalsPage() {
       medicationsTaken: true,
     },
   });
+
+  /**
+   * UNIFIED DATE RANGE CALCULATOR
+   * Calculates start and end dates for charts with 1-month buffers
+   * Applied uniformly to all charts for consistent rendering
+   */
+  const calculateDateRange = (timeView: '7d' | '30d' | '90d' | 'surgery', surgeryDateStr?: string): { startDate: string; endDate: string } => {
+    const today = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (timeView) {
+      case '7d':
+        // 7 days: 1 month before (7 days ago) to 1 month after today
+        startDate = subMonths(subDays(today, 7), 1);
+        endDate = addMonths(today, 1);
+        break;
+
+      case '30d':
+        // 30 days: 1 month before (30 days ago) to 1 month after today
+        startDate = subMonths(subDays(today, 30), 1);
+        endDate = addMonths(today, 1);
+        break;
+
+      case '90d':
+        // 90 days: 1 month before (90 days ago) to 1 month after today
+        startDate = subMonths(subDays(today, 90), 1);
+        endDate = addMonths(today, 1);
+        break;
+
+      case 'surgery':
+      default:
+        if (surgeryDateStr) {
+          // Surgery mode: 1 month before surgery to 1 month after today
+          const surgery = new Date(surgeryDateStr);
+          startDate = subMonths(surgery, 1);
+          endDate = addMonths(today, 1);
+        } else {
+          // Fallback if no surgery date: last 3 months with 1-month buffer
+          startDate = subMonths(today, 4); // 3 months + 1 month buffer
+          endDate = addMonths(today, 1);
+        }
+        break;
+    }
+
+    return {
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
+    };
+  };
 
   // Load patient data (contains surgery date from patient profile)
   useEffect(() => {
@@ -160,7 +213,7 @@ export function VitalsPage() {
 
   useEffect(() => {
     loadVitals();
-  }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
+  }, [surgeryDate, selectedUserId, globalTimeView]); // Reload when surgery date, user, or time view changes
 
   // Load Hawk Alerts
   useEffect(() => {
@@ -179,7 +232,7 @@ export function VitalsPage() {
   // Load Hydration Logs
   useEffect(() => {
     loadHydrationLogs();
-  }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
+  }, [surgeryDate, selectedUserId, globalTimeView]); // Reload when surgery date, user, or time view changes
 
   // Listen for global water button updates
   useEffect(() => {
@@ -190,26 +243,16 @@ export function VitalsPage() {
 
     window.addEventListener('hydration-updated', handleHydrationUpdate);
     return () => window.removeEventListener('hydration-updated', handleHydrationUpdate);
-  }, [surgeryDate, selectedUserId]);
+  }, [surgeryDate, selectedUserId, globalTimeView]);
 
   const loadVitals = async () => {
     try {
       setIsLoading(true);
 
-      // Calculate date range based on surgery date with buffers
-      let startDate: string;
-      let endDate: string;
+      // UNIFIED: Calculate date range with 1-month buffers
+      const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
 
-      if (surgeryDate) {
-        // If surgery date exists: 1 month before surgery to 1 month after today
-        const surgery = new Date(surgeryDate);
-        startDate = format(subMonths(surgery, 1), 'yyyy-MM-dd');
-        endDate = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
-      } else {
-        // Fallback: show last 3 months if no surgery date
-        startDate = format(subMonths(new Date(), 3), 'yyyy-MM-dd');
-        endDate = format(new Date(), 'yyyy-MM-dd');
-      }
+      console.log(`[VitalsPage] Loading vitals for ${globalTimeView} view: ${startDate} to ${endDate}`);
 
       // Fetch vitals data - Sort by timestamp ascending (oldest to newest) for left-to-right charts
       console.log('[VitalsPage] Fetching vitals for userId:', selectedUserId || user?.id);
@@ -364,21 +407,10 @@ export function VitalsPage() {
 
   const loadHydrationLogs = async () => {
     try {
-      let startDate: string;
-      let endDate: string;
+      // UNIFIED: Calculate date range with 1-month buffers
+      const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
 
-      if (surgeryDate) {
-        // If surgery date exists: 1 month before surgery to 1 month after today
-        const surgery = new Date(surgeryDate);
-        startDate = format(subMonths(surgery, 1), 'yyyy-MM-dd');
-        endDate = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
-      } else {
-        // Fallback: show last 6 months if no surgery date
-        startDate = format(subMonths(new Date(), 6), 'yyyy-MM-dd');
-        endDate = format(new Date(), 'yyyy-MM-dd');
-      }
-
-      console.log(`[HYDRATION] Loading logs from ${startDate} to ${endDate}`);
+      console.log(`[HYDRATION] Loading logs for ${globalTimeView} view: ${startDate} to ${endDate}`);
 
       const logs = await api.getHydrationLogs({
         startDate,
@@ -2204,7 +2236,54 @@ export function VitalsPage() {
           </div>
         </div>
 
-        {/* Date Range Display */}
+        {/* UNIFIED TIME VIEW SELECTOR */}
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span className="text-sm font-semibold text-gray-400 mr-2">Time Range:</span>
+          <button
+            onClick={() => setGlobalTimeView('7d')}
+            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+              globalTimeView === '7d'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                : 'glass-button hover:bg-purple-600/20'
+            }`}
+          >
+            7 Days
+          </button>
+          <button
+            onClick={() => setGlobalTimeView('30d')}
+            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+              globalTimeView === '30d'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                : 'glass-button hover:bg-purple-600/20'
+            }`}
+          >
+            30 Days
+          </button>
+          <button
+            onClick={() => setGlobalTimeView('90d')}
+            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+              globalTimeView === '90d'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                : 'glass-button hover:bg-purple-600/20'
+            }`}
+          >
+            90 Days
+          </button>
+          <button
+            onClick={() => setGlobalTimeView('surgery')}
+            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+              globalTimeView === 'surgery'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
+                : 'glass-button hover:bg-blue-600/20'
+            }`}
+            disabled={!surgeryDate}
+            title={surgeryDate ? 'Show surgery-based timeline' : 'No surgery date set'}
+          >
+            {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
+          </button>
+        </div>
+
+        {/* Date Range Display - UNIFIED */}
         <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
           background: selectedMetric === 'hydration'
             ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))'
@@ -2215,31 +2294,28 @@ export function VitalsPage() {
         }}>
           <Calendar className="h-4 w-4 text-blue-400" />
           <span className="text-sm font-semibold text-gray-300">
-            {surgeryDate ? (
-              <>
-                Showing data from{' '}
-                <span className="text-blue-400 font-bold">
-                  {format(subMonths(new Date(surgeryDate), 1), 'MMM dd, yyyy')}
-                </span>
-                {' '}to{' '}
-                <span className="text-blue-400 font-bold">
-                  {format(addMonths(new Date(), 1), 'MMM dd, yyyy')}
-                </span>
-                {' '}(1 month pre-surgery to 1 month ahead)
-              </>
-            ) : (
-              <>
-                Showing data from{' '}
-                <span className="text-blue-400 font-bold">
-                  {format(subMonths(new Date(), 3), 'MMM dd, yyyy')}
-                </span>
-                {' '}to{' '}
-                <span className="text-blue-400 font-bold">
-                  {format(new Date(), 'MMM dd, yyyy')}
-                </span>
-                {' '}(Last 3 months)
-              </>
-            )}
+            {(() => {
+              const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
+              const viewLabel =
+                globalTimeView === '7d' ? '7 days with 1-month buffer' :
+                globalTimeView === '30d' ? '30 days with 1-month buffer' :
+                globalTimeView === '90d' ? '90 days with 1-month buffer' :
+                surgeryDate ? '1 month pre-surgery to 1 month ahead' : 'Last 3 months with buffer';
+
+              return (
+                <>
+                  Showing data from{' '}
+                  <span className="text-blue-400 font-bold">
+                    {format(new Date(startDate), 'MMM dd, yyyy')}
+                  </span>
+                  {' '}to{' '}
+                  <span className="text-blue-400 font-bold">
+                    {format(new Date(endDate), 'MMM dd, yyyy')}
+                  </span>
+                  {' '}({viewLabel})
+                </>
+              );
+            })()}
           </span>
         </div>
 
