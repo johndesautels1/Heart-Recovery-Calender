@@ -221,6 +221,97 @@ export function VitalsPage() {
   // Determine surgery date from patient profile first, fall back to user
   const surgeryDate = patientData?.surgeryDate || user?.surgeryDate;
 
+  // SMART HYDRATION CALCULATOR - Personalized based on patient factors
+  const calculatePersonalizedHydrationTarget = (date: string = format(new Date(), 'yyyy-MM-dd')): number => {
+    if (!patientData && !user) return 64; // Default fallback
+
+    const patient = patientData || user;
+    let target = 64; // Base target in ounces
+
+    // 1. WEIGHT-BASED CALCULATION (most important factor)
+    const weightLbs = patient.currentWeight || patient.startingWeight;
+    if (weightLbs) {
+      // Convert kg to lbs if needed
+      const weight = patient.weightUnit === 'kg' ? weightLbs * 2.20462 : weightLbs;
+      // Base formula: 0.5 oz per pound of body weight
+      target = weight * 0.5;
+      console.log(`[HYDRATION CALC] Weight: ${weight} lbs → Base target: ${target} oz`);
+    }
+
+    // 2. GENDER ADJUSTMENT
+    if (patient.gender === 'male') {
+      target *= 1.1; // Men need ~10% more
+      console.log(`[HYDRATION CALC] Gender (male) → +10%: ${target} oz`);
+    }
+
+    // 3. AGE ADJUSTMENT
+    if (patient.age && patient.age >= 65) {
+      // Same amount but will flag for reminders (no calculation change)
+      console.log(`[HYDRATION CALC] Age 65+ → monitoring needed`);
+    }
+
+    // 4. EJECTION FRACTION (CRITICAL for cardiac patients!)
+    // EF < 40% = Reduced (HFrEF) - STRICT fluid restriction
+    // EF 40-49% = Mid-range (HFmrEF) - Moderate restriction
+    // EF ≥ 50% = Preserved (HFpEF) - Normal hydration
+    if (patient.ejectionFraction !== undefined && patient.ejectionFraction !== null) {
+      const ef = patient.ejectionFraction;
+
+      if (ef < 40) {
+        // Severely reduced EF - MAJOR restriction
+        target = Math.min(target, 48); // Cap at 48 oz (1.5 liters)
+        console.log(`[HYDRATION CALC] 🚨 CRITICAL: EF ${ef}% (HFrEF) → RESTRICTED to 48 oz MAX`);
+      } else if (ef < 50) {
+        // Mid-range EF - Moderate restriction
+        target = Math.min(target, 64); // Cap at 64 oz (2 liters)
+        console.log(`[HYDRATION CALC] ⚠️  EF ${ef}% (HFmrEF) → Limited to 64 oz`);
+      } else {
+        console.log(`[HYDRATION CALC] ✓ EF ${ef}% (HFpEF) → Normal hydration`);
+      }
+    }
+
+    // 5. HEART FAILURE CHECK (also critical!)
+    const hasHeartFailure = patient.heartConditions?.some(condition =>
+      condition.toLowerCase().includes('heart failure') ||
+      condition.toLowerCase().includes('chf') ||
+      condition.toLowerCase().includes('congestive')
+    );
+
+    if (hasHeartFailure && !patient.ejectionFraction) {
+      // CHF but no EF data - use conservative restriction
+      target = Math.min(target, 64);
+      console.log(`[HYDRATION CALC] ⚠️  HEART FAILURE (no EF data) → Capped at 64 oz`);
+    }
+
+    // 6. MEDICATIONS CHECK - Diuretics increase fluid needs!
+    // Check medicationsAffectingHR field (may contain diuretic info)
+    const hasDiuretics = patient.medicationsAffectingHR?.some(med =>
+      med.toLowerCase().includes('lasix') ||
+      med.toLowerCase().includes('furosemide') ||
+      med.toLowerCase().includes('diuretic') ||
+      med.toLowerCase().includes('bumetanide') ||
+      med.toLowerCase().includes('torsemide') ||
+      med.toLowerCase().includes('hydrochlorothiazide') ||
+      med.toLowerCase().includes('hctz')
+    );
+
+    if (hasDiuretics && !hasHeartFailure) {
+      // Diuretics WITHOUT heart failure = need MORE fluid to compensate
+      target += 20; // Add 20 oz to compensate for diuretic fluid loss
+      console.log(`[HYDRATION CALC] 💊 Diuretics detected → +20 oz compensation: ${target} oz`);
+    } else if (hasDiuretics && hasHeartFailure) {
+      console.log(`[HYDRATION CALC] 💊 Diuretics + CHF → Restriction maintained (doctor-managed)`);
+    }
+
+    // 7. SAFETY LIMITS
+    target = Math.max(48, Math.min(target, 120)); // Keep between 48-120 oz
+
+    const finalTarget = Math.round(target);
+    console.log(`[HYDRATION CALC] ✅ Final personalized target: ${finalTarget} oz`);
+
+    return finalTarget;
+  };
+
   // DEBUG: Log surgery date source and value
   useEffect(() => {
     console.log('[SURGERY DATE DEBUG] ===================================');
@@ -542,6 +633,26 @@ export function VitalsPage() {
     }
   };
 
+  const handleDeleteVitalReading = async (vitalId: number, timestamp: string) => {
+    // Confirm deletion
+    const confirmDelete = window.confirm(`Are you sure you want to delete the vital reading from ${format(new Date(timestamp), 'MMM d, h:mm a')}? This action cannot be undone.`);
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await api.deleteVital(vitalId);
+      toast.success('Vital reading deleted successfully');
+
+      // Reload vitals data to reflect the deletion
+      await loadVitals();
+    } catch (error) {
+      console.error('Failed to delete vital reading:', error);
+      toast.error('Failed to delete vital reading');
+    }
+  };
+
   const getBloodPressureStatus = (systolic?: number, diastolic?: number) => {
     if (!systolic || !diastolic) return { status: 'Unknown', className: 'text-yellow-500' };
     if (systolic < 120 && diastolic < 80) return { status: 'Normal', className: 'text-green-500' };
@@ -756,9 +867,9 @@ export function VitalsPage() {
       case 'surgery':
       default:
         if (surgeryDate) {
-          // Surgery view: 1 month before surgery to 1 month after today
-          start = subMonths(new Date(surgeryDate), 1);
-          end = addMonths(today, 1);
+          // Surgery view: FROM surgery date (Day 0) to today
+          start = new Date(surgeryDate);
+          end = today;
         } else {
           // Fallback: 90 days
           start = subDays(today, 90);
@@ -766,20 +877,45 @@ export function VitalsPage() {
         break;
     }
 
-    // Only include dates that have actual data (no empty dots)
-    const dateArray = hydrationLogs
-      .filter(log => {
-        const logDate = new Date(log.date);
-        return logDate >= start && logDate <= end;
-      })
-      .map(log => ({
-        date: format(new Date(log.date), 'MMM dd, yyyy'),
-        hydrationOunces: Math.round(log.totalOunces || 0),
-        hydrationTarget: log.targetOunces,
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // For surgery timeline: show complete date range from Day 0
+    // For other views: only show dates with actual data
+    let dateArray;
 
-    console.log(`[CHART] Generated ${dateArray.length} data points for ${globalTimeView} view (only dates with data)`);
+    if (globalTimeView === 'surgery' && surgeryDate) {
+      // Surgery view: complete timeline from surgery date (Day 0) to today
+      dateArray = [];
+      let currentDate = new Date(start);
+
+      while (currentDate <= end) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        const log = hydrationLogs.find(l => l.date === dateStr);
+
+        dateArray.push({
+          date: format(currentDate, 'MMM dd, yyyy'),
+          hydrationOunces: log ? Math.round(log.totalOunces || 0) : null,
+          hydrationTarget: log?.targetOunces || null,
+        });
+
+        currentDate = addDays(currentDate, 1);
+      }
+      console.log(`[CHART] Surgery timeline: ${dateArray.length} days from Day 0 (${format(start, 'MMM dd, yyyy')}) to today`);
+    } else {
+      // Week/Month/90 days: only show dates with actual logged data
+      dateArray = hydrationLogs
+        .filter(log => {
+          const logDate = new Date(log.date);
+          return logDate >= start && logDate <= end;
+        })
+        .map(log => ({
+          date: format(new Date(log.date), 'MMM dd, yyyy'),
+          hydrationOunces: Math.round(log.totalOunces || 0),
+          hydrationTarget: log.targetOunces,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      console.log(`[CHART] ${globalTimeView}: ${dateArray.length} dates with logged data`);
+    }
+
     return dateArray;
   })();
 
@@ -1439,14 +1575,26 @@ export function VitalsPage() {
             </div>
           )}
 
+          {/* Recommended Target Display */}
+          <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 rounded-xl p-3 mb-3 border border-cyan-500/30">
+            <div className="text-center">
+              <p className="text-xs text-cyan-300 mb-1 font-semibold">🎯 RECOMMENDED FOR YOU</p>
+              <p className="text-2xl font-bold text-cyan-400">
+                {calculatePersonalizedHydrationTarget(waterCardDate)} oz
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Based on weight, gender, ejection fraction & medications</p>
+            </div>
+          </div>
+
           {/* Target and Current Intake Display */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center">
-              <p className="text-xs text-gray-400 mb-1">TARGET SET</p>
+              <p className="text-xs text-gray-400 mb-1">YOUR TARGET</p>
               <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
                 {(() => {
                   const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                  return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : '--';
+                  const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
+                  return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : `${recommended} oz`;
                 })()}
               </p>
             </div>
@@ -1456,10 +1604,13 @@ export function VitalsPage() {
                 color: (() => {
                   const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
                   const consumed = selectedLog?.totalOunces || 0;
-                  // Chart zones: <32 red, <48 yellow, 64-96 green
-                  if (consumed < 32) return '#ef4444';
-                  if (consumed < 48) return '#eab308';
-                  return '#10b981';
+                  const personalTarget = calculatePersonalizedHydrationTarget(waterCardDate);
+
+                  // Dynamic zones based on personal target
+                  if (consumed < personalTarget * 0.5) return '#ef4444'; // < 50% = critical red
+                  if (consumed < personalTarget * 0.75) return '#eab308'; // < 75% = yellow
+                  if (consumed > personalTarget * 1.3) return '#3b82f6'; // > 130% = blue (too much)
+                  return '#10b981'; // 75-130% = green
                 })()
               }}>
                 {(() => {
@@ -1506,7 +1657,8 @@ export function VitalsPage() {
           <div className="grid grid-cols-2 gap-2 mt-3">
             <button
               onClick={async () => {
-                const target = prompt('Set daily target (oz):', '64');
+                const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
+                const target = prompt(`Set daily target (oz):\n\n💡 Recommended for you: ${recommended} oz\n(Based on your profile)`, String(recommended));
                 if (target && !isNaN(parseInt(target))) {
                   const targetInt = parseInt(target);
                   try {
@@ -2597,15 +2749,76 @@ export function VitalsPage() {
                     />
                   )}
 
-                  {/* Hydration Reference Lines */}
-                  {selectedMetric === 'hydration' && (
-                    <>
-                      <ReferenceLine y={32} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={3} label={{ value: 'Critical Low (32 oz)', position: 'insideTopRight', fill: '#ef4444', fontSize: 12, fontWeight: 'bold' }} />
-                      <ReferenceLine y={48} stroke="#eab308" strokeDasharray="3 3" strokeWidth={3} label={{ value: 'Low (48 oz)', position: 'insideTopRight', fill: '#eab308', fontSize: 12, fontWeight: 'bold' }} />
-                      <ReferenceLine y={64} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: 'Optimal Min (64 oz)', position: 'insideTopRight', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
-                      <ReferenceLine y={96} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: 'Optimal Max (96 oz)', position: 'insideBottomRight', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
-                    </>
-                  )}
+                  {/* Hydration Reference Lines - PERSONALIZED */}
+                  {selectedMetric === 'hydration' && (() => {
+                    const personalTarget = calculatePersonalizedHydrationTarget();
+                    const criticalLow = Math.round(personalTarget * 0.5); // 50% of target
+                    const low = Math.round(personalTarget * 0.75); // 75% of target
+                    const optimalMax = Math.round(personalTarget * 1.3); // 130% of target
+
+                    return (
+                      <>
+                        {/* Colored zones as background areas */}
+                        <ReferenceArea y1={0} y2={criticalLow} fill="#ef4444" fillOpacity={0.1} />
+                        <ReferenceArea y1={criticalLow} y2={low} fill="#eab308" fillOpacity={0.1} />
+                        <ReferenceArea y1={low} y2={optimalMax} fill="#10b981" fillOpacity={0.1} />
+
+                        {/* Reference lines */}
+                        <ReferenceLine
+                          y={criticalLow}
+                          stroke="#ef4444"
+                          strokeDasharray="3 3"
+                          strokeWidth={2}
+                          label={{
+                            value: `Critical Low (${criticalLow} oz)`,
+                            position: 'insideTopRight',
+                            fill: '#ef4444',
+                            fontSize: 11,
+                            fontWeight: 'bold'
+                          }}
+                        />
+                        <ReferenceLine
+                          y={low}
+                          stroke="#eab308"
+                          strokeDasharray="3 3"
+                          strokeWidth={2}
+                          label={{
+                            value: `Low (${low} oz)`,
+                            position: 'insideTopRight',
+                            fill: '#eab308',
+                            fontSize: 11,
+                            fontWeight: 'bold'
+                          }}
+                        />
+                        <ReferenceLine
+                          y={personalTarget}
+                          stroke="#10b981"
+                          strokeDasharray="5 5"
+                          strokeWidth={3}
+                          label={{
+                            value: `🎯 YOUR TARGET (${personalTarget} oz)`,
+                            position: 'insideTopRight',
+                            fill: '#10b981',
+                            fontSize: 12,
+                            fontWeight: 'bold'
+                          }}
+                        />
+                        <ReferenceLine
+                          y={optimalMax}
+                          stroke="#3b82f6"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          label={{
+                            value: `Max (${optimalMax} oz)`,
+                            position: 'insideBottomRight',
+                            fill: '#3b82f6',
+                            fontSize: 11,
+                            fontWeight: 'bold'
+                          }}
+                        />
+                      </>
+                    );
+                  })()}
 
                   {/* Normal Range Reference Lines */}
                   {selectedMetric === 'hr' && (
@@ -2688,6 +2901,7 @@ export function VitalsPage() {
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
                 <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
+                <th className="text-center py-2 px-2 text-sm font-medium font-bold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -2709,6 +2923,15 @@ export function VitalsPage() {
                   <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
                   <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
                   <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
+                  <td className="py-2 px-2 text-center">
+                    <button
+                      onClick={() => handleDeleteVitalReading(vital.id, vital.timestamp)}
+                      className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-500 hover:text-red-400 transition-all"
+                      title="Delete reading"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
