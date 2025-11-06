@@ -2018,8 +2018,8 @@ export function VitalsPage() {
                       selectedMetric === 'weight' ? [0, 320] :
                       selectedMetric === 'sugar' ? [0, 300] :
                       selectedMetric === 'temp' ? [90, 108] :
-                      selectedMetric === 'o2' ? [50, 100] :
-                      selectedMetric === 'peakflow' ? [0, 800] :
+                      selectedMetric === 'o2' ? [85, 105] :
+                      selectedMetric === 'peakflow' ? [0, 850] :
                       selectedMetric === 'map' ? [40, 140] :
                       selectedMetric === 'bpvariability' ? [0, 30] :
                       undefined
