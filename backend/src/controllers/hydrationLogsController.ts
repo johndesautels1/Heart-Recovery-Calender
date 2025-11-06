@@ -3,6 +3,7 @@ import HydrationLog from '../models/HydrationLog';
 import User from '../models/User';
 import Patient from '../models/Patient';
 import { Op } from 'sequelize';
+import { calculateDailyWaterIntake } from '../services/hydrationCalculationService';
 
 // GET /api/hydration-logs - Get all hydration logs with filters
 export const getHydrationLogs = async (req: Request, res: Response) => {
@@ -158,13 +159,29 @@ export const createHydrationLog = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'totalOunces is required' });
     }
 
-    // Auto-calculate targetOunces if not provided (weight × 0.5)
+    // Auto-calculate targetOunces if not provided using clinical formula
     if (!logData.targetOunces) {
-      // Try to get patient weight
+      // Try to get patient data for calculation
       const patient = await Patient.findOne({ where: { userId: logData.userId } });
-      if (patient && patient.currentWeight) {
-        logData.targetOunces = patient.currentWeight * 0.5;
-        console.log(`[HYDRATION-LOGS] Auto-calculated targetOunces: ${logData.targetOunces} oz (weight: ${patient.currentWeight} lbs)`);
+      if (patient && patient.currentWeight && patient.age) {
+        const hydrationCalc = calculateDailyWaterIntake({
+          weight: patient.currentWeight,
+          age: patient.age,
+          height: patient.height,
+          gender: patient.gender,
+          // Could add activity level from daily data if available
+          // hasHeartFailure: check if patient has heart failure diagnosis
+          // onDiuretics: check if patient is on diuretic medications
+        });
+
+        logData.targetOunces = hydrationCalc.targetOunces;
+        console.log(`[HYDRATION-LOGS] Auto-calculated targetOunces: ${logData.targetOunces} oz using clinical formula`);
+        console.log(`[HYDRATION-LOGS] Range: ${hydrationCalc.minOunces}-${hydrationCalc.maxOunces} oz`);
+        console.log(`[HYDRATION-LOGS] Patient: weight=${patient.currentWeight}lbs, age=${patient.age}, gender=${patient.gender || 'unknown'}`);
+
+        if (hydrationCalc.warning) {
+          console.log(`[HYDRATION-LOGS] WARNING: ${hydrationCalc.warning}`);
+        }
       }
     }
 
