@@ -1689,71 +1689,60 @@ export function VitalsPage() {
       )}
 
       {/* NEW: Mean Arterial Pressure (MAP) */}
-      {filteredLatest?.bloodPressureSystolic && filteredLatest?.bloodPressureDiastolic && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
-              <p className={`text-3xl font-bold ${(() => {
-                const systolic = filteredLatest.bloodPressureSystolic;
-                const diastolic = filteredLatest.bloodPressureDiastolic;
-                const map = Math.round((systolic + 2 * diastolic) / 3);
-                if (map < 70) return 'text-red-400';
-                if (map >= 70 && map <= 100) return 'text-green-400';
-                if (map > 100 && map <= 110) return 'text-yellow-400';
-                return 'text-red-400';
-              })()}`}>
-                {(() => {
-                  const systolic = filteredLatest.bloodPressureSystolic;
-                  const diastolic = filteredLatest.bloodPressureDiastolic;
-                  return Math.round((systolic + 2 * diastolic) / 3);
-                })()}
-                <span className="text-sm ml-1">mmHg</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${(() => {
-                const systolic = filteredLatest.bloodPressureSystolic;
-                const diastolic = filteredLatest.bloodPressureDiastolic;
-                const map = Math.round((systolic + 2 * diastolic) / 3);
-                if (map < 70) return 'text-red-400';
-                if (map >= 70 && map <= 100) return 'text-green-400';
-                if (map > 100 && map <= 110) return 'text-yellow-400';
-                return 'text-red-400';
-              })()}`}>
-                {(() => {
-                  const systolic = filteredLatest.bloodPressureSystolic;
-                  const diastolic = filteredLatest.bloodPressureDiastolic;
-                  const map = Math.round((systolic + 2 * diastolic) / 3);
-                  if (map < 70) return 'Low';
-                  if (map >= 70 && map <= 100) return 'Normal';
-                  if (map > 100 && map <= 110) return 'Elevated';
-                  return 'High';
-                })()}
-              </p>
-              <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Heart className={`h-8 w-8 ${(() => {
-                const systolic = filteredLatest.bloodPressureSystolic;
-                const diastolic = filteredLatest.bloodPressureDiastolic;
-                const map = Math.round((systolic + 2 * diastolic) / 3);
-                if (map < 70 || map > 110) return 'text-red-400';
-                if (map >= 70 && map <= 100) return 'text-green-400';
-                return 'text-yellow-400';
-              })()}`} />
-              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
-                const systolic = filteredLatest.bloodPressureSystolic;
-                const diastolic = filteredLatest.bloodPressureDiastolic;
-                const map = Math.round((systolic + 2 * diastolic) / 3);
-                if (map < 70 || map > 110) return 'bg-red-500 text-white';
-                if (map >= 70 && map <= 100) return 'bg-green-500 text-white';
-                return 'bg-yellow-500 text-black';
-              })()}`}>
-                MAP
+      {(() => {
+        // Get latest reading that has BP data (same approach as BP Variability)
+        const latestBP = filteredVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic).slice(-1)[0];
+        if (!latestBP) return null;
+
+        const systolic = latestBP.bloodPressureSystolic!;
+        const diastolic = latestBP.bloodPressureDiastolic!;
+        const map = Math.round((systolic + 2 * diastolic) / 3);
+
+        return (
+          <GlassCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
+                <p className={`text-3xl font-bold ${
+                  map < 70 ? 'text-red-400' :
+                  map >= 70 && map <= 100 ? 'text-green-400' :
+                  map > 100 && map <= 110 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {map}
+                  <span className="text-sm ml-1">mmHg</span>
+                </p>
+                <p className={`text-sm font-bold mt-1 ${
+                  map < 70 ? 'text-red-400' :
+                  map >= 70 && map <= 100 ? 'text-green-400' :
+                  map > 100 && map <= 110 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {map < 70 ? 'Low' :
+                   map >= 70 && map <= 100 ? 'Normal' :
+                   map > 100 && map <= 110 ? 'Elevated' :
+                   'High'}
+                </p>
+                <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Heart className={`h-8 w-8 ${
+                  map < 70 || map > 110 ? 'text-red-400' :
+                  map >= 70 && map <= 100 ? 'text-green-400' :
+                  'text-yellow-400'
+                }`} />
+                <div className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  map < 70 || map > 110 ? 'bg-red-500 text-white' :
+                  map >= 70 && map <= 100 ? 'bg-green-500 text-white' :
+                  'bg-yellow-500 text-black'
+                }`}>
+                  MAP
+                </div>
               </div>
             </div>
-          </div>
-        </GlassCard>
-      )}
+          </GlassCard>
+        );
+      })()}
 
       {/* Chart Controls */}
       <GlassCard>
