@@ -54,21 +54,101 @@ export function LuxuryVitalGauge({
   const percentage = numValue !== null ? ((numValue - min) / (max - min)) * 100 : 0;
   const offset = circumference - (percentage / 100) * circumference;
 
-  // Determine status color
+  // Determine status color and severity with multi-tier system
   let statusColor = color;
+  let severityLevel: 'optimal' | 'caution' | 'warning' | 'danger' | 'critical' = 'optimal';
+  let pulseSpeed = 0; // 0 = no pulse, 1 = slow, 2 = medium, 3 = fast
+
   if (numValue !== null && targetMin !== undefined && targetMax !== undefined) {
-    if (numValue < targetMin || numValue > targetMax) {
-      statusColor = '#ef4444'; // Red
-    } else {
+    const rangeSize = targetMax - targetMin;
+    const cautionThreshold = rangeSize * 0.15; // 15% outside range = caution
+    const warningThreshold = rangeSize * 0.30; // 30% outside range = warning
+    const dangerThreshold = rangeSize * 0.50; // 50% outside range = danger
+
+    if (numValue >= targetMin && numValue <= targetMax) {
+      // Optimal - within target range
       statusColor = '#22c55e'; // Green
+      severityLevel = 'optimal';
+      pulseSpeed = 0;
+    } else if (numValue < targetMin) {
+      // Below target range
+      const deficit = targetMin - numValue;
+      if (deficit <= cautionThreshold) {
+        statusColor = '#eab308'; // Yellow - Caution
+        severityLevel = 'caution';
+        pulseSpeed = 1;
+      } else if (deficit <= warningThreshold) {
+        statusColor = '#f97316'; // Orange - Warning
+        severityLevel = 'warning';
+        pulseSpeed = 2;
+      } else if (deficit <= dangerThreshold) {
+        statusColor = '#ef4444'; // Red - Danger
+        severityLevel = 'danger';
+        pulseSpeed = 3;
+      } else {
+        statusColor = '#991b1b'; // Dark Red - Critical
+        severityLevel = 'critical';
+        pulseSpeed = 3;
+      }
+    } else {
+      // Above target range
+      const excess = numValue - targetMax;
+      if (excess <= cautionThreshold) {
+        statusColor = '#eab308'; // Yellow - Caution
+        severityLevel = 'caution';
+        pulseSpeed = 1;
+      } else if (excess <= warningThreshold) {
+        statusColor = '#f97316'; // Orange - Warning
+        severityLevel = 'warning';
+        pulseSpeed = 2;
+      } else if (excess <= dangerThreshold) {
+        statusColor = '#ef4444'; // Red - Danger
+        severityLevel = 'danger';
+        pulseSpeed = 3;
+      } else {
+        statusColor = '#991b1b'; // Dark Red - Critical
+        severityLevel = 'critical';
+        pulseSpeed = 3;
+      }
     }
   }
+
+  // Pulse animation keyframes based on severity
+  const pulseAnimation = pulseSpeed > 0 ? `pulse-vital-${pulseSpeed}` : 'none';
 
   // Display formatted value
   const formattedValue = displayValue !== null && displayValue !== undefined ? displayValue : '--';
 
   return (
     <div className="relative flex flex-col items-center justify-center" style={{ width: diameter + 40, height: diameter + 100 }}>
+      {/* CSS Animations for pulsing halos */}
+      <style>{`
+        @keyframes pulse-vital-1 {
+          0%, 100% { opacity: 0.3; filter: blur(8px); }
+          50% { opacity: 0.5; filter: blur(10px); }
+        }
+        @keyframes pulse-vital-2 {
+          0%, 100% { opacity: 0.3; filter: blur(8px); }
+          50% { opacity: 0.7; filter: blur(12px); }
+        }
+        @keyframes pulse-vital-3 {
+          0%, 100% { opacity: 0.3; filter: blur(8px); }
+          50% { opacity: 0.9; filter: blur(16px); }
+        }
+        @keyframes pulse-arc-1 {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes pulse-arc-2 {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        @keyframes pulse-arc-3 {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
+
       {/* Outer luxury bezel - Multiple layers for depth */}
       <div
         className="relative"
@@ -168,21 +248,21 @@ export function LuxuryVitalGauge({
           </div>
         </div>
 
-        {/* Manual/Auto indicator badge - Top of bezel - CLICKABLE */}
+        {/* Manual/Auto indicator badge - Inside bezel at 12 o'clock - CLICKABLE */}
         <button
           className="absolute flex items-center justify-center"
           onClick={onManualClick}
           disabled={!onManualClick}
           style={{
-            top: '8px',
+            top: size === 'large' ? '32px' : '24px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '50px',
-            height: '18px',
+            width: size === 'large' ? '50px' : '25px',
+            height: size === 'large' ? '18px' : '12px',
             background: isAuto
               ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
               : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            borderRadius: '9px',
+            borderRadius: size === 'large' ? '9px' : '6px',
             boxShadow: `
               0 2px 4px rgba(0,0,0,0.4),
               inset 0 1px 2px rgba(255,255,255,0.3)
@@ -190,6 +270,7 @@ export function LuxuryVitalGauge({
             border: '1px solid rgba(255,255,255,0.2)',
             cursor: onManualClick ? 'pointer' : 'default',
             transition: 'all 0.2s ease',
+            zIndex: 10,
           }}
           onMouseEnter={(e) => {
             if (onManualClick) {
@@ -211,12 +292,12 @@ export function LuxuryVitalGauge({
           }}
         >
           <span style={{
-            fontSize: '9px',
+            fontSize: size === 'large' ? '9px' : '6px',
             fontWeight: 'bold',
             color: '#ffffff',
             textShadow: '0 1px 2px rgba(0,0,0,0.5)',
             fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-            letterSpacing: '0.5px',
+            letterSpacing: size === 'large' ? '0.5px' : '0.3px',
             pointerEvents: 'none',
           }}>
             {isAuto ? 'AUTO' : 'MANUAL'}
@@ -245,11 +326,11 @@ export function LuxuryVitalGauge({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Mask to exclude top area where MANUAL badge is */}
+            {/* Mask to exclude top area - minimal to prevent edge wrap */}
             <mask id={`mask-${label.replace(/\s+/g, '-')}`}>
               <rect x="0" y="0" width={diameter} height={diameter} fill="white" />
-              {/* Black out the top 110px where the MANUAL badge is - prevents glow wrap */}
-              <rect x="0" y="0" width={diameter} height="110" fill="black" />
+              {/* Black out the top 30px to prevent glow from wrapping around top edge */}
+              <rect x="0" y="0" width={diameter} height="30" fill="black" />
             </mask>
           </defs>
 
@@ -280,6 +361,9 @@ export function LuxuryVitalGauge({
                 style={{
                   transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease',
                   filter: 'blur(8px)',
+                  animation: pulseSpeed > 0
+                    ? `pulse-vital-${pulseSpeed} ${pulseSpeed === 1 ? '3s' : pulseSpeed === 2 ? '2s' : '1s'} ease-in-out infinite`
+                    : 'none',
                 }}
               />
             </g>
@@ -299,6 +383,9 @@ export function LuxuryVitalGauge({
               strokeLinecap="round"
               style={{
                 transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease',
+                animation: pulseSpeed > 0
+                  ? `pulse-arc-${pulseSpeed} ${pulseSpeed === 1 ? '3s' : pulseSpeed === 2 ? '2s' : '1s'} ease-in-out infinite`
+                  : 'none',
               }}
             />
           )}

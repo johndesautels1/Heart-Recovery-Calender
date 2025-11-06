@@ -50,6 +50,7 @@ const vitalsSchema = z.object({
   bloodSugar: z.number().optional(),
   hydrationStatus: z.number().optional(),
   peakFlow: z.number().optional(),
+  respiratoryRate: z.number().optional(),
   notes: z.string().optional(),
   symptoms: z.string().optional(),
   medicationsTaken: z.boolean().optional(),
@@ -66,7 +67,33 @@ const vitalsSchema = z.object({
   energyLevel: z.number().min(1).max(10).optional(),
   stressLevel: z.number().min(1).max(10).optional(),
   anxietyLevel: z.number().min(1).max(10).optional(),
-});
+}).refine(
+  (data) => {
+    // Ensure at least one vital field is provided
+    const vitalFields = [
+      data.bloodPressureSystolic,
+      data.bloodPressureDiastolic,
+      data.heartRate,
+      data.weight,
+      data.temperature,
+      data.oxygenSaturation,
+      data.bloodSugar,
+      data.hydrationStatus,
+      data.peakFlow,
+      data.respiratoryRate,
+      data.chestPain,
+      data.dyspnea,
+      data.dizziness,
+      data.energyLevel,
+      data.stressLevel,
+      data.anxietyLevel,
+    ];
+    return vitalFields.some((field) => field !== undefined && field !== null);
+  },
+  {
+    message: 'Please fill out at least one vital field',
+  }
+);
 
 type VitalsFormData = z.infer<typeof vitalsSchema>;
 
@@ -971,7 +998,6 @@ export function VitalsPage() {
   const maxHR = null;
   const hrRecovery = null;
   const ejectionFraction = patientData?.ejectionFraction || null;
-  const respiratoryRate = null;
 
   // LUXURY GAUGE CALCULATIONS - Filter vitals by globalTimeView
   // IMPORTANT: All time periods are capped at 90 days maximum
@@ -1271,75 +1297,290 @@ export function VitalsPage() {
               )}
             </div>
 
-            {/* Nuclear Clock - Center */}
+            {/* Luxury Atomic Clock - Center */}
             <div className="flex flex-col items-center justify-center">
+              {/* Small Digital Display at Top */}
               <div style={{
-                width: '180px',
-                height: '80px',
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
-                border: '2px solid rgba(212, 175, 55, 0.6)',
-                borderRadius: '12px',
-                boxShadow: `
-                  0 0 30px rgba(212, 175, 55, 0.4),
-                  inset 0 0 20px rgba(212, 175, 55, 0.1),
-                  0 4px 8px rgba(0,0,0,0.6)
-                `,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
+                fontSize: '9px',
+                fontWeight: '600',
+                color: '#C0C0C0',
+                fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                letterSpacing: '1.5px',
+                marginBottom: '8px',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                opacity: 0.8,
+              }}>
+                {format(currentTime, 'HH:mm:ss')} • {format(currentTime, 'MMM dd, yyyy')}
+              </div>
+
+              {/* Watch Container */}
+              <div style={{
+                width: '200px',
+                height: '200px',
                 position: 'relative',
               }}>
-                {/* Warning stripes */}
+                {/* Platinum Bezel - Outer Ring */}
                 <div style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: 'repeating-linear-gradient(45deg, #f59e0b, #f59e0b 10px, rgba(0,0,0,0.8) 10px, rgba(0,0,0,0.8) 20px)',
-                  borderTopLeftRadius: '10px',
-                  borderTopRightRadius: '10px',
-                }} />
-
-                {/* Date Display */}
-                <div style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: '#D4AF37',
-                  fontFamily: '"Courier New", monospace',
-                  letterSpacing: '2px',
-                  textShadow: '0 0 10px rgba(212, 175, 55, 0.8)',
-                  marginBottom: '2px',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E5E4E2 0%, #BCC6CC 30%, #98A2A8 50%, #BCC6CC 70%, #E5E4E2 100%)',
+                  boxShadow: `
+                    0 8px 32px rgba(0,0,0,0.6),
+                    inset 0 2px 4px rgba(255,255,255,0.4),
+                    inset 0 -2px 4px rgba(0,0,0,0.4)
+                  `,
+                  padding: '6px',
                 }}>
-                  {format(currentTime, 'yyyy-MM-dd')}
-                </div>
+                  {/* Bezel Engravings */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: '3px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                  }} />
 
-                {/* Time Display (24-hour) */}
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: '#22c55e',
-                  fontFamily: '"Courier New", monospace',
-                  letterSpacing: '3px',
-                  textShadow: '0 0 15px rgba(34, 197, 94, 0.8), 0 0 25px rgba(34, 197, 94, 0.4)',
-                  animation: 'pulse 2s ease-in-out infinite',
-                }}>
-                  {format(currentTime, 'HH:mm:ss')}
-                </div>
+                  {/* Watch Face Background */}
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle at 35% 35%, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%)',
+                    boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.8)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Subtle Light Reflection */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '10%',
+                      left: '10%',
+                      width: '40%',
+                      height: '40%',
+                      background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
+                      borderRadius: '50%',
+                    }} />
 
-                {/* Status Indicator */}
-                <div style={{
-                  fontSize: '7px',
-                  fontWeight: '600',
-                  color: '#22c55e',
-                  fontFamily: '"Courier New", monospace',
-                  letterSpacing: '1px',
-                  textShadow: '0 0 6px rgba(34, 197, 94, 0.6)',
-                  marginTop: '2px',
-                }}>
-                  SYSTEM ACTIVE
+                    {/* Hour Markers (Roman Numerals at 12, 3, 6, 9) */}
+                    {[
+                      { hour: 12, angle: 0, text: 'XII', distance: 72 },
+                      { hour: 3, angle: 90, text: 'III', distance: 75 },
+                      { hour: 6, angle: 180, text: 'VI', distance: 72 },
+                      { hour: 9, angle: 270, text: 'IX', distance: 75 },
+                    ].map(({ hour, angle, text, distance }) => (
+                      <div
+                        key={hour}
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: `rotate(${angle}deg) translateY(-${distance}px)`,
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          fontFamily: 'Georgia, serif',
+                          color: '#D4AF37',
+                          textShadow: '0 0 8px rgba(212, 175, 55, 0.6)',
+                        }}
+                      >
+                        <div style={{
+                          transform: `rotate(-${angle}deg) translateX(${angle === 0 ? '2.5px' : '0'})`,
+                        }}>{text}</div>
+                      </div>
+                    ))}
+
+                    {/* Hour Markers (Indices for other hours) */}
+                    {[1, 2, 4, 5, 7, 8, 10, 11].map((hour) => {
+                      const angle = (hour * 30) - 90;
+                      const x = 94 + 68 * Math.cos((angle * Math.PI) / 180);
+                      const y = 94 + 68 * Math.sin((angle * Math.PI) / 180);
+                      return (
+                        <div
+                          key={hour}
+                          style={{
+                            position: 'absolute',
+                            left: `${x}px`,
+                            top: `${y}px`,
+                            width: '4px',
+                            height: '12px',
+                            background: 'linear-gradient(180deg, #C0C0C0 0%, #808080 100%)',
+                            transform: `rotate(${angle + 90}deg) translate(-50%, -50%)`,
+                            transformOrigin: 'center',
+                            borderRadius: '2px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                          }}
+                        />
+                      );
+                    })}
+
+                    {/* Minute Markers */}
+                    {Array.from({ length: 60 }).map((_, i) => {
+                      if (i % 5 === 0) return null; // Skip hour positions
+                      const angle = (i * 6) - 90;
+                      const x = 94 + 78 * Math.cos((angle * Math.PI) / 180);
+                      const y = 94 + 78 * Math.sin((angle * Math.PI) / 180);
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            position: 'absolute',
+                            left: `${x}px`,
+                            top: `${y}px`,
+                            width: '1px',
+                            height: '4px',
+                            background: 'rgba(192, 192, 192, 0.4)',
+                            transform: `rotate(${angle + 90}deg) translate(-50%, -50%)`,
+                            transformOrigin: 'center',
+                          }}
+                        />
+                      );
+                    })}
+
+                    {/* Clock Hands */}
+                    {(() => {
+                      const hours = currentTime.getHours() % 12;
+                      const minutes = currentTime.getMinutes();
+                      const seconds = currentTime.getSeconds();
+                      const milliseconds = currentTime.getMilliseconds();
+
+                      const secondAngle = ((seconds + milliseconds / 1000) * 6) - 90;
+                      const minuteAngle = ((minutes + seconds / 60) * 6) - 90;
+                      const hourAngle = ((hours + minutes / 60) * 30) - 90;
+
+                      return (
+                        <>
+                          {/* Hour Hand */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            width: '50px',
+                            height: '6px',
+                            background: 'linear-gradient(90deg, transparent 0%, #D4AF37 10%, #F4E6B8 50%, #D4AF37 90%, transparent 100%)',
+                            transformOrigin: '15% center',
+                            transform: `translate(-15%, -50%) rotate(${hourAngle}deg)`,
+                            borderRadius: '3px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
+                            zIndex: 2,
+                          }} />
+
+                          {/* Minute Hand */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            width: '70px',
+                            height: '4px',
+                            background: 'linear-gradient(90deg, transparent 0%, #C0C0C0 10%, #E8E8E8 50%, #C0C0C0 90%, transparent 100%)',
+                            transformOrigin: '15% center',
+                            transform: `translate(-15%, -50%) rotate(${minuteAngle}deg)`,
+                            borderRadius: '2px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.6)',
+                            zIndex: 3,
+                          }} />
+
+                          {/* Second Hand */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            width: '80px',
+                            height: '2px',
+                            background: 'linear-gradient(90deg, transparent 0%, #ef4444 20%, #dc2626 50%, #ef4444 80%, transparent 100%)',
+                            transformOrigin: '15% center',
+                            transform: `translate(-15%, -50%) rotate(${secondAngle}deg)`,
+                            borderRadius: '1px',
+                            boxShadow: '0 1px 3px rgba(239, 68, 68, 0.6), 0 0 8px rgba(239, 68, 68, 0.4)',
+                            zIndex: 4,
+                            transition: 'transform 0.05s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                          }} />
+                        </>
+                      );
+                    })()}
+
+                    {/* Center Hub */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle, #F4E6B8 0%, #D4AF37 50%, #A58F4D 100%)',
+                      boxShadow: `
+                        0 0 8px rgba(212, 175, 55, 0.6),
+                        inset 0 1px 2px rgba(255,255,255,0.5),
+                        inset 0 -1px 2px rgba(0,0,0,0.5)
+                      `,
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      zIndex: 5,
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        inset: '3px',
+                        borderRadius: '50%',
+                        background: '#1a1a1a',
+                        border: '1px solid rgba(212, 175, 55, 0.4)',
+                      }} />
+                    </div>
+
+                    {/* Brand Name */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '38%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      fontSize: '8px',
+                      fontWeight: '600',
+                      fontFamily: 'Georgia, serif',
+                      color: '#D4AF37',
+                      letterSpacing: '2px',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                    }}>
+                      CHRONOGRAPH
+                    </div>
+
+                    {/* Date Window */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '60%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '28px',
+                      height: '16px',
+                      background: '#ffffff',
+                      border: '1px solid #808080',
+                      borderRadius: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                    }}>
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Arial, sans-serif',
+                        color: '#000000',
+                      }}>
+                        {format(currentTime, 'dd')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Watch Label */}
+              <div style={{
+                fontSize: '8px',
+                fontWeight: '600',
+                color: '#C0C0C0',
+                fontFamily: 'Georgia, serif',
+                letterSpacing: '2px',
+                marginTop: '8px',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+              }}>
+                ATOMIC PRECISION
               </div>
             </div>
 
@@ -5526,6 +5767,14 @@ export function VitalsPage() {
                 placeholder="300-700"
                 icon={<Wind className="h-5 w-5" />}
                 {...register('peakFlow', { valueAsNumber: true })}
+              />
+
+              <Input
+                label="Respiratory Rate (/min)"
+                type="number"
+                placeholder="12-20"
+                icon={<Pulse className="h-5 w-5" />}
+                {...register('respiratoryRate', { valueAsNumber: true })}
               />
             </div>
           </div>
