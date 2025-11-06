@@ -79,8 +79,6 @@ export function VitalsPage() {
   const [hawkAlerts, setHawkAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
   const [hydrationLogs, setHydrationLogs] = useState<HydrationLog[]>([]);
-  const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
-  const [customWaterAmount, setCustomWaterAmount] = useState('');
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
@@ -480,17 +478,6 @@ export function VitalsPage() {
       console.error('[WATER] Failed to log water intake:', error);
       toast.error('Failed to log water intake');
     }
-  };
-
-  const handleCustomWaterSubmit = async () => {
-    const ounces = parseFloat(customWaterAmount);
-    if (isNaN(ounces) || ounces <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-    await handleAddWater(ounces);
-    setCustomWaterAmount('');
-    setIsWaterModalOpen(false);
   };
 
   const handleDeleteGlucoseEntry = async (vitalId: number) => {
@@ -1394,163 +1381,26 @@ export function VitalsPage() {
             </div>
             <Droplet className="h-8 w-8 text-blue-500" />
           </div>
+
+          {/* Quick Add Buttons */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            {[4, 8, 16, 32].map((oz) => (
+              <button
+                key={oz}
+                onClick={() => handleAddWater(oz)}
+                className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                  boxShadow: '0 2px 8px rgba(6, 182, 212, 0.4)',
+                }}
+              >
+                +{oz}
+              </button>
+            ))}
+          </div>
         </GlassCard>
       </div>
 
-      {/* QUICK WATER INTAKE TRACKER */}
-      <GlassCard className="relative overflow-hidden">
-        {/* Animated water background */}
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            background: 'linear-gradient(120deg, #06b6d4 0%, #0891b2 50%, #06b6d4 100%)',
-            backgroundSize: '200% 100%',
-            animation: 'water-flow 3s ease-in-out infinite',
-          }}
-        />
-
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30">
-                <Droplet className="h-7 w-7 text-cyan-400" fill="currentColor" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">Quick Water Intake</h3>
-                <p className="text-sm text-gray-400">Tap to log your water intake</p>
-              </div>
-            </div>
-
-            {/* Today's Progress */}
-            <div className="text-right">
-              <p className="text-sm text-gray-400 mb-1">Today's Progress</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-cyan-400">
-                  {(() => {
-                    const today = format(new Date(), 'yyyy-MM-dd');
-                    const todayLog = hydrationLogs.find(log => log.date === today);
-                    return todayLog?.totalOunces || 0;
-                  })()}
-                </span>
-                <span className="text-lg text-gray-400">/</span>
-                <span className="text-xl text-gray-300">
-                  {(() => {
-                    const today = format(new Date(), 'yyyy-MM-dd');
-                    const todayLog = hydrationLogs.find(log => log.date === today);
-                    return todayLog?.targetOunces || '--';
-                  })()} oz
-                </span>
-              </div>
-              {(() => {
-                const today = format(new Date(), 'yyyy-MM-dd');
-                const todayLog = hydrationLogs.find(log => log.date === today);
-                if (todayLog && todayLog.targetOunces) {
-                  const percentage = Math.round((todayLog.totalOunces / todayLog.targetOunces) * 100);
-                  return (
-                    <div className="mt-2">
-                      <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">{percentage}% Complete</p>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          </div>
-
-          {/* Quick Add Buttons */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <WaterButton
-              ounces={8}
-              onClick={() => handleAddWater(8)}
-              size="md"
-              variant="primary"
-            />
-            <WaterButton
-              ounces={12}
-              onClick={() => handleAddWater(12)}
-              size="md"
-              variant="primary"
-            />
-            <WaterButton
-              ounces={16}
-              onClick={() => handleAddWater(16)}
-              size="md"
-              variant="primary"
-            />
-            <WaterButton
-              ounces={32}
-              onClick={() => handleAddWater(32)}
-              size="md"
-              variant="primary"
-            />
-          </div>
-
-          {/* Custom Amount Button */}
-          <button
-            onClick={() => setIsWaterModalOpen(true)}
-            className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.2) 100%)',
-              border: '2px solid rgba(6, 182, 212, 0.4)',
-              boxShadow: '0 4px 12px rgba(6, 182, 212, 0.2)',
-            }}
-          >
-            + Custom Amount
-          </button>
-        </div>
-
-        <style>{`
-          @keyframes water-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-        `}</style>
-      </GlassCard>
-
-      {/* Custom Water Amount Modal */}
-      <Modal isOpen={isWaterModalOpen} onClose={() => setIsWaterModalOpen(false)} title="Add Custom Water Amount">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Amount (fluid ounces)
-            </label>
-            <input
-              type="number"
-              value={customWaterAmount}
-              onChange={(e) => setCustomWaterAmount(e.target.value)}
-              placeholder="Enter ounces..."
-              className="w-full px-4 py-3 rounded-xl bg-gray-800 border-2 border-cyan-500/30 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleCustomWaterSubmit();
-                }
-              }}
-            />
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => setIsWaterModalOpen(false)}
-              variant="secondary"
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCustomWaterSubmit}
-              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-            >
-              Add Water
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* NEW: Low Oxygen Alert (SpO2 <90%) */}
