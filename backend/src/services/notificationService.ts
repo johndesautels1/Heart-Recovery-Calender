@@ -1,6 +1,7 @@
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';
 
+// Notification service for alerts including hypoxia monitoring
 // Twilio configuration
 const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
   ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)

@@ -28,7 +28,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../services/api';
-import { VitalsSample, CreateVitalsInput, Patient } from '../types';
+import { VitalsSample, CreateVitalsInput, Patient, HydrationLog } from '../types';
 import toast from 'react-hot-toast';
 import { format, subDays, addDays, subMonths, addMonths } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,6 +77,7 @@ export function VitalsPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
   const [hawkAlerts, setHawkAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
+  const [hydrationLogs, setHydrationLogs] = useState<HydrationLog[]>([]);
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
@@ -171,6 +172,30 @@ export function VitalsPage() {
 
     loadHawkAlerts();
   }, [vitals]); // Reload when vitals change
+
+  // Load Hydration Logs
+  useEffect(() => {
+    const loadHydrationLogs = async () => {
+      if (!surgeryDate) return;
+
+      try {
+        const surgery = new Date(surgeryDate);
+        const startDate = format(subMonths(surgery, 1), 'yyyy-MM-dd');
+        const endDate = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
+
+        const logs = await api.getHydrationLogs({
+          startDate,
+          endDate,
+          userId: selectedUserId || undefined
+        });
+        setHydrationLogs(logs || []);
+      } catch (error) {
+        console.error('Failed to load hydration logs:', error);
+      }
+    };
+
+    loadHydrationLogs();
+  }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
 
   const loadVitals = async () => {
     try {
@@ -539,6 +564,9 @@ export function VitalsPage() {
       }
     }
 
+    // Find hydration log for this date
+    const hydrationLog = hydrationLogs.find(log => log.date === dateStr);
+
     return {
       date: dateStr,
       systolic: v.bloodPressureSystolic,
@@ -547,7 +575,9 @@ export function VitalsPage() {
       weight: v.weight,
       bloodSugar: v.bloodSugar,
       temperature: v.temperature,
-      hydration: v.hydrationStatus,
+      hydration: v.hydrationStatus, // Keep old percentage for backward compatibility
+      hydrationOunces: hydrationLog?.totalOunces,
+      hydrationTarget: hydrationLog?.targetOunces,
       o2: v.oxygenSaturation,
       peakFlow: v.peakFlow,
       map: map,
@@ -1159,28 +1189,38 @@ export function VitalsPage() {
           )}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold mb-1">Hydration</p>
+              <p className="text-sm font-bold mb-1">Water Intake</p>
               <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.hydrationStatus || '--'} <span className="text-sm">%</span>
+                {(() => {
+                  const today = format(new Date(), 'yyyy-MM-dd');
+                  const todayLog = hydrationLogs.find(log => log.date === today);
+                  return todayLog ? `${todayLog.totalOunces} oz` : '-- oz';
+                })()}
               </p>
               <p className={`text-sm font-bold mt-1 ${
-                !filteredLatest?.hydrationStatus
-                  ? 'text-yellow-500'
-                  : filteredLatest.hydrationStatus < 50
-                  ? 'text-red-500'
-                  : filteredLatest.hydrationStatus < 70
-                  ? 'text-yellow-500'
-                  : 'text-white'
+                (() => {
+                  const today = format(new Date(), 'yyyy-MM-dd');
+                  const todayLog = hydrationLogs.find(log => log.date === today);
+                  if (!todayLog || !todayLog.targetOunces) return 'text-yellow-500';
+                  const percentage = (todayLog.totalOunces / todayLog.targetOunces) * 100;
+                  return percentage < 50 ? 'text-red-500' : percentage < 75 ? 'text-yellow-500' : 'text-white';
+                })()
               }`}>
-                {!filteredLatest?.hydrationStatus
-                  ? 'Unknown'
-                  : filteredLatest.hydrationStatus < 50
-                  ? 'Dehydrated'
-                  : filteredLatest.hydrationStatus < 70
-                  ? 'Low'
-                  : 'Good'}
+                {(() => {
+                  const today = format(new Date(), 'yyyy-MM-dd');
+                  const todayLog = hydrationLogs.find(log => log.date === today);
+                  if (!todayLog || !todayLog.targetOunces) return 'No Target Set';
+                  const percentage = Math.round((todayLog.totalOunces / todayLog.targetOunces) * 100);
+                  return percentage < 50 ? 'Severely Low' : percentage < 75 ? 'Below Target' : percentage >= 100 ? 'Goal Met!' : 'On Track';
+                })()}
               </p>
-              <p className="text-xs mt-1">Target: 70-100%</p>
+              <p className="text-xs mt-1">
+                {(() => {
+                  const today = format(new Date(), 'yyyy-MM-dd');
+                  const todayLog = hydrationLogs.find(log => log.date === today);
+                  return todayLog?.targetOunces ? `Target: ${todayLog.targetOunces} oz` : 'Target: Not set';
+                })()}
+              </p>
             </div>
             <Droplet className="h-8 w-8 text-blue-500" />
           </div>
@@ -2022,7 +2062,7 @@ export function VitalsPage() {
                       selectedMetric === 'peakflow' ? [0, 850] :
                       selectedMetric === 'map' ? [40, 140] :
                       selectedMetric === 'bpvariability' ? [0, 30] :
-                      selectedMetric === 'hydration' ? [0, 100] :
+                      selectedMetric === 'hydration' ? [0, 150] :
                       undefined
                     }
                     stroke="#9ca3af"
@@ -2048,7 +2088,7 @@ export function VitalsPage() {
                       selectedMetric === 'weight' ? 'weight' :
                       selectedMetric === 'sugar' ? 'bloodSugar' :
                       selectedMetric === 'temp' ? 'temperature' :
-                      selectedMetric === 'hydration' ? 'hydration' :
+                      selectedMetric === 'hydration' ? 'hydrationOunces' :
                       selectedMetric === 'peakflow' ? 'peakFlow' :
                       selectedMetric === 'map' ? 'map' :
                       selectedMetric === 'bpvariability' ? 'bpVariability' :
@@ -2086,7 +2126,7 @@ export function VitalsPage() {
                       selectedMetric === 'weight' ? 'Weight (lbs)' :
                       selectedMetric === 'sugar' ? 'Blood Sugar (mg/dL)' :
                       selectedMetric === 'temp' ? 'Temperature (°F)' :
-                      selectedMetric === 'hydration' ? 'Hydration (%)' :
+                      selectedMetric === 'hydration' ? 'Water Intake (oz)' :
                       selectedMetric === 'peakflow' ? 'Peak Flow (L/min)' :
                       selectedMetric === 'map' ? 'Mean Arterial Pressure (mmHg)' :
                       selectedMetric === 'bpvariability' ? 'BP Variability (StdDev)' :
@@ -2094,6 +2134,19 @@ export function VitalsPage() {
                     }
                     filter="url(#vitalsLineGlow)"
                   />
+
+                  {/* Hydration Target Line */}
+                  {selectedMetric === 'hydration' && (
+                    <Line
+                      type="monotone"
+                      dataKey="hydrationTarget"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      name="Daily Target (oz)"
+                    />
+                  )}
 
                   {/* Normal Range Reference Lines */}
                   {selectedMetric === 'hr' && (
@@ -2139,14 +2192,6 @@ export function VitalsPage() {
                       <ReferenceLine y={10} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Good (<10)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                       <ReferenceLine y={15} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate (15)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
                       <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (20)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                  {selectedMetric === 'hydration' && (
-                    <>
-                      <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Severe Dehydration (20%)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={40} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Dehydration (40%)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={60} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Well Hydrated (60%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Optimal (80%)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                     </>
                   )}
                 </LineChart>
