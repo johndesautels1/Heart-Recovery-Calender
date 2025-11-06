@@ -4,7 +4,7 @@ import Patient from '../models/Patient';
 import { Op } from 'sequelize';
 
 export interface HawkAlert {
-  type: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia';
+  type: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia' | 'hypoxia';
   severity: 'warning' | 'danger';
   medicationNames: string[];
   message: string;
@@ -516,6 +516,78 @@ export async function checkTachycardiaMedicationCorrelation(
     };
   } catch (error) {
     console.error('[MED_CORRELATION] Error checking tachycardia correlation:', error);
+    return null;
+  }
+}
+
+/**
+ * Check for medication-induced hypoxia (low oxygen saturation)
+ * @param userId - User ID to check
+ * @param oxygenSaturation - Current oxygen saturation percentage
+ * @returns HawkAlert if correlation found, null otherwise
+ */
+export async function checkHypoxiaMedicationCorrelation(
+  userId: number,
+  oxygenSaturation: number
+): Promise<HawkAlert | null> {
+  try {
+    // Only check if O2 saturation is concerning (<92%)
+    if (oxygenSaturation >= 92) {
+      return null;
+    }
+
+    // Get user's active medications
+    const medications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true,
+        knownSideEffects: { [Op.not]: null }
+      }
+    });
+
+    // Find medications that can cause respiratory depression or affect oxygenation
+    // Common culprits: opioids, sedatives, beta blockers, certain cardiac meds
+    const correlatedMeds = medications.filter(med => {
+      const sideEffects = med.knownSideEffects as KnownSideEffects;
+      const medNameLower = med.name.toLowerCase();
+
+      // Check for known respiratory depressants
+      const isOpioid = medNameLower.includes('oxy') || medNameLower.includes('morphine') ||
+                       medNameLower.includes('fentanyl') || medNameLower.includes('codeine') ||
+                       medNameLower.includes('hydrocodone');
+      const isSedative = medNameLower.includes('diazepam') || medNameLower.includes('lorazepam') ||
+                        medNameLower.includes('alprazolam') || medNameLower.includes('zolpidem');
+      const isBetaBlocker = medNameLower.includes('metoprolol') || medNameLower.includes('carvedilol') ||
+                           medNameLower.includes('atenolol') || medNameLower.includes('propranolol');
+
+      return sideEffects && (
+        sideEffects.respiratoryDepression === true ||
+        sideEffects.affectsBreathing === true ||
+        isOpioid || isSedative || isBetaBlocker
+      );
+    });
+
+    if (correlatedMeds.length === 0) {
+      return null;
+    }
+
+    // Critical if <90% (hypoxia), warning if 90-92%
+    const severity: 'warning' | 'danger' = oxygenSaturation < 90 ? 'danger' : 'warning';
+    const medicationNames = correlatedMeds.map(med => med.name);
+    const medList = medicationNames.join(', ');
+
+    const message = `🦅 HAWK ALERT: Possible Medication-Induced Low Oxygen (Hypoxia) - URGENT ACTION REQUIRED!`;
+    const recommendation = `Your oxygen saturation is ${oxygenSaturation < 90 ? 'CRITICALLY' : 'concerningly'} low (${oxygenSaturation}%). The following medication(s) may be affecting your breathing or oxygen levels: ${medList}. ${oxygenSaturation < 90 ? '🚨 THIS IS A MEDICAL EMERGENCY - CALL 911 IMMEDIATELY if you have trouble breathing, chest pain, confusion, or blue lips/fingernails. Do not wait.' : 'Contact your healthcare provider IMMEDIATELY. Monitor your symptoms closely and seek emergency care if oxygen drops below 90% or you have severe shortness of breath.'} Opioids, sedatives, and some cardiac medications can depress breathing and reduce oxygen levels in post-cardiac surgery patients.`;
+
+    return {
+      type: 'hypoxia',
+      severity,
+      medicationNames,
+      message,
+      recommendation
+    };
+  } catch (error) {
+    console.error('[MED_CORRELATION] Error checking hypoxia correlation:', error);
     return null;
   }
 }

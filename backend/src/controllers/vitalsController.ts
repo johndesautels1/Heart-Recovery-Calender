@@ -5,7 +5,7 @@ import Patient from '../models/Patient';
 import MealEntry from '../models/MealEntry';
 import { Op } from 'sequelize';
 import { sendWeightChangeAlert, sendHawkAlert } from '../services/notificationService';
-import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, checkHyperglycemiaMedicationCorrelation, checkHypoglycemiaMedicationCorrelation, checkFoodMedicationInteraction, getCareTeamForNotification } from '../services/medicationCorrelationService';
+import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, checkHyperglycemiaMedicationCorrelation, checkHypoglycemiaMedicationCorrelation, checkFoodMedicationInteraction, checkHypoxiaMedicationCorrelation, getCareTeamForNotification } from '../services/medicationCorrelationService';
 
 
 // GET /api/vitals - Get all vitals with filters
@@ -292,6 +292,40 @@ export const addVital = async (req: Request, res: Response) => {
         }
       } catch (alertError) {
         console.error('[VITALS] Error checking food-medication interaction:', alertError);
+      }
+    }
+
+    // 🦅 HAWK ALERT: Check for hypoxia (low oxygen saturation)
+    if (vital.oxygenSaturation && vital.oxygenSaturation < 92 && userId) {
+      try {
+        console.log(`[VITALS] Checking for hypoxia medication correlation (Hawk Alert): ${vital.oxygenSaturation}% SpO2`);
+        const hawkAlert = await checkHypoxiaMedicationCorrelation(userId, vital.oxygenSaturation);
+
+        if (hawkAlert) {
+          console.log(`[VITALS] 🦅 HAWK ALERT TRIGGERED: ${hawkAlert.type}, ${hawkAlert.medicationNames.length} medications involved`);
+
+          const user = await User.findByPk(userId);
+          if (user && user.email) {
+            // Get care team to notify
+            const careTeam = await getCareTeamForNotification(userId);
+            const careTeamEmails = careTeam.map(member => member.email);
+
+            await sendHawkAlert(
+              user.email,
+              user.phoneNumber,
+              hawkAlert.type,
+              hawkAlert.severity,
+              hawkAlert.medicationNames,
+              hawkAlert.message,
+              hawkAlert.recommendation,
+              careTeamEmails
+            );
+          }
+        } else {
+          console.log('[VITALS] No medication correlation detected for low oxygen');
+        }
+      } catch (alertError) {
+        console.error('[VITALS] Error sending hypoxia Hawk Alert:', alertError);
       }
     }
 
@@ -607,6 +641,27 @@ export const getHawkAlerts = async (req: Request, res: Response) => {
           ...hawkAlert,
           detectedAt: recentLowGlucose.timestamp,
           bloodSugar: recentLowGlucose.bloodSugar
+        });
+      }
+    }
+
+    // Check for recent low oxygen saturation (last 3 days)
+    const recentLowO2 = await VitalsSample.findOne({
+      where: {
+        userId,
+        oxygenSaturation: { [Op.lt]: 92 },
+        timestamp: { [Op.gte]: threeDaysAgo }
+      },
+      order: [['timestamp', 'DESC']]
+    });
+
+    if (recentLowO2 && recentLowO2.oxygenSaturation) {
+      const hawkAlert = await checkHypoxiaMedicationCorrelation(userId, recentLowO2.oxygenSaturation);
+      if (hawkAlert) {
+        alerts.push({
+          ...hawkAlert,
+          detectedAt: recentLowO2.timestamp,
+          oxygenSaturation: recentLowO2.oxygenSaturation
         });
       }
     }

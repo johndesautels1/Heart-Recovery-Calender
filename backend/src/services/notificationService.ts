@@ -262,7 +262,7 @@ ${isGain
 export async function sendHawkAlert(
   userEmail: string,
   userPhone: string | null | undefined,
-  alertType: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia',
+  alertType: 'weight_gain' | 'weight_loss' | 'edema' | 'hyperglycemia' | 'hypoglycemia' | 'food_medication_interaction' | 'bradycardia' | 'tachycardia' | 'hypoxia',
   severity: 'warning' | 'danger',
   medicationNames: string[],
   message: string,

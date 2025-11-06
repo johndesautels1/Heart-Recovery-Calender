@@ -2111,7 +2111,11 @@ export function VitalsPage() {
                     <ReferenceLine y={98.6} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal (98.6°F)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                   )}
                   {selectedMetric === 'o2' && (
-                    <ReferenceLine y={95} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (95%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    <>
+                      <ReferenceLine y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger Low (90%)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                      <ReferenceLine y={92} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Low (92%)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                      <ReferenceLine y={95} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (95%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    </>
                   )}
                   {selectedMetric === 'peakflow' && (
                     <>
