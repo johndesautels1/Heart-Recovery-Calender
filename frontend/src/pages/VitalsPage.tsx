@@ -2022,6 +2022,7 @@ export function VitalsPage() {
                       selectedMetric === 'peakflow' ? [0, 850] :
                       selectedMetric === 'map' ? [40, 140] :
                       selectedMetric === 'bpvariability' ? [0, 30] :
+                      selectedMetric === 'hydration' ? [0, 100] :
                       undefined
                     }
                     stroke="#9ca3af"
@@ -2138,6 +2139,14 @@ export function VitalsPage() {
                       <ReferenceLine y={10} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Good (<10)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                       <ReferenceLine y={15} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate (15)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
                       <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (20)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                    </>
+                  )}
+                  {selectedMetric === 'hydration' && (
+                    <>
+                      <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Severe Dehydration (20%)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                      <ReferenceLine y={40} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Dehydration (40%)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                      <ReferenceLine y={60} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Well Hydrated (60%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Optimal (80%)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                     </>
                   )}
                 </LineChart>
