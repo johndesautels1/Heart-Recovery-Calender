@@ -178,27 +178,19 @@ export function VitalsPage() {
 
   // Load Hydration Logs
   useEffect(() => {
-    const loadHydrationLogs = async () => {
-      if (!surgeryDate) return;
-
-      try {
-        const surgery = new Date(surgeryDate);
-        const startDate = format(subMonths(surgery, 1), 'yyyy-MM-dd');
-        const endDate = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
-
-        const logs = await api.getHydrationLogs({
-          startDate,
-          endDate,
-          userId: selectedUserId || undefined
-        });
-        setHydrationLogs(logs || []);
-      } catch (error) {
-        console.error('Failed to load hydration logs:', error);
-      }
-    };
-
     loadHydrationLogs();
   }, [surgeryDate, selectedUserId]); // Reload when surgery date or selected user changes
+
+  // Listen for global water button updates
+  useEffect(() => {
+    const handleHydrationUpdate = () => {
+      console.log('[WATER] Global hydration-updated event received, reloading...');
+      loadHydrationLogs();
+    };
+
+    window.addEventListener('hydration-updated', handleHydrationUpdate);
+    return () => window.removeEventListener('hydration-updated', handleHydrationUpdate);
+  }, [surgeryDate, selectedUserId]);
 
   const loadVitals = async () => {
     try {
@@ -370,32 +362,90 @@ export function VitalsPage() {
     }
   };
 
+  const loadHydrationLogs = async () => {
+    try {
+      let startDate: string;
+      let endDate: string;
+
+      if (surgeryDate) {
+        // If surgery date exists: 1 month before surgery to 1 month after today
+        const surgery = new Date(surgeryDate);
+        startDate = format(subMonths(surgery, 1), 'yyyy-MM-dd');
+        endDate = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
+      } else {
+        // Fallback: show last 6 months if no surgery date
+        startDate = format(subMonths(new Date(), 6), 'yyyy-MM-dd');
+        endDate = format(new Date(), 'yyyy-MM-dd');
+      }
+
+      console.log(`[HYDRATION] Loading logs from ${startDate} to ${endDate}`);
+
+      const logs = await api.getHydrationLogs({
+        startDate,
+        endDate,
+        userId: selectedUserId || undefined
+      });
+
+      console.log(`[HYDRATION] Loaded ${logs?.length || 0} hydration logs`);
+      setHydrationLogs(logs || []);
+    } catch (error) {
+      console.error('[HYDRATION] Failed to load hydration logs:', error);
+      setHydrationLogs([]);
+    }
+  };
+
   const handleAddWater = async (ounces: number) => {
     try {
+      // CRITICAL: Ensure integer math
+      const ouncesInt = Math.round(ounces);
+      console.log(`[WATER] Adding ${ouncesInt} oz...`);
+
       const today = format(new Date(), 'yyyy-MM-dd');
       const existingLog = hydrationLogs.find(log => log.date === today);
 
       if (existingLog) {
-        // Update existing log
+        // CRITICAL: Use integer math to avoid decimals
+        const currentTotal = Math.round(existingLog.totalOunces || 0);
+        const newTotal = currentTotal + ouncesInt;
+
+        console.log(`[WATER] Updating existing log ${existingLog.id}: ${currentTotal} + ${ouncesInt} = ${newTotal}`);
+
         const updatedLog = await api.updateHydrationLog(existingLog.id, {
-          totalOunces: existingLog.totalOunces + ounces,
+          totalOunces: newTotal,
         });
-        setHydrationLogs(hydrationLogs.map(log =>
-          log.id === existingLog.id ? updatedLog : log
-        ));
-        toast.success(`Added ${ounces} oz! Total: ${updatedLog.totalOunces} oz`);
+
+        console.log(`[WATER] Updated! New total: ${Math.round(updatedLog.totalOunces)} oz`);
+        toast.success(`💧 +${ouncesInt} oz! Total: ${Math.round(updatedLog.totalOunces)} oz`, {
+          icon: '💧',
+          style: {
+            background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+            color: '#fff',
+            fontWeight: 'bold',
+          },
+        });
       } else {
         // Create new log
+        console.log(`[WATER] Creating new log for ${today} with ${ouncesInt} oz`);
         const newLog = await api.createHydrationLog({
           date: today,
-          totalOunces: ounces,
+          totalOunces: ouncesInt,
           userId: selectedUserId || user?.id,
         });
-        setHydrationLogs([...hydrationLogs, newLog]);
-        toast.success(`Added ${ounces} oz! Total: ${newLog.totalOunces} oz`);
+        console.log(`[WATER] Created! Total: ${Math.round(newLog.totalOunces)} oz`);
+        toast.success(`💧 +${ouncesInt} oz! Total: ${Math.round(newLog.totalOunces)} oz`, {
+          icon: '💧',
+          style: {
+            background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+            color: '#fff',
+            fontWeight: 'bold',
+          },
+        });
       }
+
+      // Reload hydration logs to get fresh data
+      await loadHydrationLogs();
     } catch (error) {
-      console.error('Failed to log water intake:', error);
+      console.error('[WATER] Failed to log water intake:', error);
       toast.error('Failed to log water intake');
     }
   };
@@ -575,11 +625,13 @@ export function VitalsPage() {
   const chartData = filteredVitals.map(v => {
     // Safely handle invalid timestamps - Use FULL calendar dates for timeline
     let dateStr = 'N/A';
+    let dateKey = ''; // yyyy-MM-dd format for lookups
     try {
       if (v.timestamp) {
         const date = new Date(v.timestamp);
         if (!isNaN(date.getTime())) {
           dateStr = format(date, 'MMM dd, yyyy'); // Full calendar date for timeline
+          dateKey = format(date, 'yyyy-MM-dd'); // Key for hydration log lookup
         }
       }
     } catch (error) {
@@ -608,8 +660,8 @@ export function VitalsPage() {
       }
     }
 
-    // Find hydration log for this date
-    const hydrationLog = hydrationLogs.find(log => log.date === dateStr);
+    // CRITICAL FIX: Find hydration log using yyyy-MM-dd format, not display format!
+    const hydrationLog = hydrationLogs.find(log => log.date === dateKey);
 
     return {
       date: dateStr,
@@ -2150,6 +2202,45 @@ export function VitalsPage() {
               Edit
             </button>
           </div>
+        </div>
+
+        {/* Date Range Display */}
+        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
+          background: selectedMetric === 'hydration'
+            ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))'
+            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
+          border: selectedMetric === 'hydration'
+            ? '1px solid rgba(6, 182, 212, 0.4)'
+            : '1px solid rgba(59, 130, 246, 0.3)',
+        }}>
+          <Calendar className="h-4 w-4 text-blue-400" />
+          <span className="text-sm font-semibold text-gray-300">
+            {surgeryDate ? (
+              <>
+                Showing data from{' '}
+                <span className="text-blue-400 font-bold">
+                  {format(subMonths(new Date(surgeryDate), 1), 'MMM dd, yyyy')}
+                </span>
+                {' '}to{' '}
+                <span className="text-blue-400 font-bold">
+                  {format(addMonths(new Date(), 1), 'MMM dd, yyyy')}
+                </span>
+                {' '}(1 month pre-surgery to 1 month ahead)
+              </>
+            ) : (
+              <>
+                Showing data from{' '}
+                <span className="text-blue-400 font-bold">
+                  {format(subMonths(new Date(), 3), 'MMM dd, yyyy')}
+                </span>
+                {' '}to{' '}
+                <span className="text-blue-400 font-bold">
+                  {format(new Date(), 'MMM dd, yyyy')}
+                </span>
+                {' '}(Last 3 months)
+              </>
+            )}
+          </span>
         </div>
 
         {/* Chart */}

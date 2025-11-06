@@ -284,7 +284,8 @@ export async function sendHawkAlert(
     alertType === 'hypoglycemia' ? 'Low Blood Sugar (Hypoglycemia)' :
     alertType === 'food_medication_interaction' ? 'Food-Medication Interaction' :
     alertType === 'bradycardia' ? 'Slow Heart Rate (Bradycardia)' :
-    'Rapid Heart Rate (Tachycardia)';
+    alertType === 'tachycardia' ? 'Rapid Heart Rate (Tachycardia)' :
+    'Low Oxygen (Hypoxia)';
 
   // SMS (concise)
   const smsMessage = `${icon} ${severityLabel} HAWK ALERT: ${message}. Medications involved: ${medList}. ${recommendation} - Heart Recovery Calendar`;
