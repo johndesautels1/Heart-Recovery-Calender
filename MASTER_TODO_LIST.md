@@ -25,6 +25,149 @@
 
 ## 🎉 COMPLETED TODAY (November 5, 2025)
 
+### ✅ EVENING SESSION 2: Complete METs Tracking System Implementation (10:51 PM)
+- **Commit:** `9874017` - Fix METs tracking: Add complete METs calculation system with UI labels
+- **Files Changed:** 13 files (+640 insertions, -70 deletions)
+- **Impact:** COMPLETE METs tracking with automatic calculation from heart rate data + mandatory field labels
+
+#### 1. Backend Patient Lookup Fixes ✅
+- **What:** Fixed broken patient lookups in calories and METs calculation sections
+- **Problem:** Code was using `Patient.findOne({ where: { userId: logData.patientId } })` but `logData.patientId` contains patient record ID, not user ID
+- **Solution:**
+  - Line 152: Changed to `Patient.findByPk(logData.patientId)` and renamed to `patientForCalories`
+  - Line 183: Changed to `Patient.findByPk(logData.patientId)` and renamed to `patientForMETs`
+  - Updated all references to use new variable names
+- **Files:** `exerciseLogsController.ts` (lines 152, 156, 183, 197-199, 207)
+- **Impact:** Calories and METs now calculate correctly with proper patient data
+
+#### 2. Decimal Type Conversion Fix ✅
+- **What:** Fixed "toFixed is not a function" error on MET values
+- **Problem:** PostgreSQL returns DECIMAL columns as Sequelize Decimal objects, not JavaScript numbers
+- **Solution:** Wrapped with Number() conversion before calling toFixed()
+- **Changes:**
+  ```typescript
+  // BEFORE: actualMET ? Number(actualMET.toFixed(2)) : null
+  // AFTER:  actualMET !== null ? Number(Number(actualMET).toFixed(2)) : null
+  ```
+- **Files:** `calendarController.ts` (lines 590-592)
+- **Impact:** Monthly stats API no longer crashes when returning MET data
+
+#### 3. Falsy Value Handling Fix ✅
+- **What:** Fixed MET values of 0 being treated as falsy
+- **Problem:** Using `log.actualMET || null` treats 0 as falsy in JavaScript
+- **Solution:** Explicit null/undefined checks
+- **Changes:**
+  ```typescript
+  // BEFORE: let actualMET = log.actualMET || null;
+  // AFTER:  let actualMET = log.actualMET !== null && log.actualMET !== undefined ? log.actualMET : null;
+  ```
+- **Files:** `calendarController.ts` (lines 551-553)
+- **Impact:** Preserves 0 MET values correctly
+
+#### 4. METs Chart Duplicate Dates Fix ✅
+- **What:** Fixed duplicate date labels on X-axis when multiple exercises on same day
+- **Problem:** All exercises on Nov 5 showed "Nov 5", causing duplicate labels
+- **Solution:** Added time information to date labels (e.g., "Nov 5 9:30 AM", "Nov 5 2:15 PM")
+- **Changes:**
+  ```typescript
+  const timestamp = new Date(log.startTime || log.completedAt);
+  return {
+    date: timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+          timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    // ...
+  };
+  ```
+- **Files:** `ExercisesPage.tsx` (lines 2100-2108)
+- **Impact:** Each exercise log has unique timestamp on X-axis, eliminates duplicate labels
+
+#### 5. Chart Filter Removal ✅
+- **What:** Removed restrictive filter that only showed logs with MET data
+- **Problem:** Chart was filtering out exercises without heart rate data, making it seem like logs weren't being created
+- **Solution:** Show ALL logs chronologically, display null for metLevel when no heart rate data
+- **Files:** `ExercisesPage.tsx` (lines 2099-2108)
+- **Impact:** All November exercise logs now visible on chart (not just those with METs)
+
+#### 6. Mandatory Field Labels for METs ✅
+- **What:** Added clear "MANDATORY FOR METs" labels to critical input fields
+- **Fields Labeled:**
+  - **Duration (minutes)** - Line 3117
+    * Label: "Duration (minutes) ⚠️ MANDATORY FOR METs"
+    * Yellow background with thick yellow border
+    * Warning text: "⚠️ REQUIRED FOR METs CALCULATION"
+  - **Avg Heart Rate (bpm)** in During-Exercise section - Line 3427
+    * Label: "Avg Heart Rate (bpm) ⚠️ MANDATORY FOR METs"
+    * Yellow background with thick yellow border
+    * Warning text: "⚠️ REQUIRED FOR METs CALCULATION - Average pulse during exercise"
+  - **Pre-Exercise Heart Rate** - Line 3353
+    * Label: "Heart Rate (bpm) 📊 Optional for METs"
+    * Helper text: "📊 Optional but improves MET calculation accuracy"
+- **Visual Design:**
+  - Mandatory fields: Yellow background (#FFFF00), 4px yellow border
+  - Optional fields: Standard styling with info badge
+  - All labels bold and high contrast
+- **Files:** `CalendarPage.tsx` (lines 3117, 3129, 3353, 3363, 3427, 3437)
+- **Impact:** Users now know exactly which fields to fill for METs calculation
+
+#### 7. METs Calculator Utility ✅
+- **What:** Created comprehensive METs calculation utility using ACSM formula
+- **Functions:**
+  - `calculateMETsFromHeartRate()` - Uses Heart Rate Reserve (HRR) method
+  - `getTargetMETRange()` - Returns MET ranges by intensity (light/moderate/vigorous/very_vigorous)
+  - `calculateCaloriesFromMETs()` - Estimates calorie burn from METs
+  - `getMETLevelDescription()` - Returns intensity description string
+- **Formula:** METs = 1 + (HRR × 10) where HRR = (Exercise HR - Resting HR) / (Max HR - Resting HR)
+- **Features:**
+  - Clamps METs between 1 and 20
+  - Falls back to age-based max HR estimate if not provided
+  - Simplified estimation based on HR ranges if no patient data
+- **Files:** `backend/src/utils/metCalculator.ts` (NEW - 125 lines)
+- **Impact:** Accurate METs calculation following ACSM guidelines
+
+#### 8. Database Migrations for METs Fields ✅
+- **What:** Created migrations to add MET tracking fields to database
+- **Migrations:**
+  - `20251105000001-add-met-fields-to-exercise-logs.js` - Adds actualMET, targetMETMin, targetMETMax to exercise_logs
+  - `20251105000002-add-met-fields-to-exercise-prescriptions.js` - Adds targetMETMin, targetMETMax to exercise_prescriptions
+  - `add_met_tracking_fields.sql` - Raw SQL version
+- **Files:** `backend/migrations/` (3 new files)
+- **Impact:** Database schema supports complete METs tracking
+
+#### 9. Model Updates for METs ✅
+- **What:** Added MET fields to TypeScript models and interfaces
+- **Changes:**
+  - ExerciseLog model: actualMET, targetMETMin, targetMETMax (DECIMAL(4,2))
+  - ExercisePrescription model: targetMETMin, targetMETMax (DECIMAL(4,2))
+  - Frontend types updated to match
+- **Files:** `ExerciseLog.ts`, `ExercisePrescription.ts`, `types/index.ts`
+- **Impact:** Type safety for METs data throughout application
+
+#### 10. Diagnostic Script Created ✅
+- **What:** Created script to query METs data directly from database
+- **Purpose:** Debug and verify METs calculation is working
+- **Features:**
+  - Queries exercise_logs for specific patient and date range
+  - Shows: id, completedAt, actualMET, duringHeartRateAvg, actualDuration, patientId, preHeartRate
+  - Sorted chronologically
+- **Files:** `backend/check_mets.js` (NEW - 34 lines)
+- **Impact:** Easy METs data verification tool
+
+#### Statistics for Evening Session 2:
+- **Files Modified:** 13 (7 backend, 2 frontend, 4 new files)
+- **Lines Added:** 640 lines
+- **Lines Removed:** 70 lines
+- **Net Change:** +570 lines
+- **Backend Fixes:** 3 critical bugs (patient lookup, Decimal conversion, falsy values)
+- **Frontend Fixes:** 2 chart issues (duplicate dates, restrictive filter)
+- **UI Enhancements:** 3 mandatory field labels with yellow highlighting
+- **New Utilities:** 1 comprehensive METs calculator
+- **New Migrations:** 3 database migration files
+- **TypeScript Compilation:** ✅ 0 errors frontend/backend
+- **Git Status:** ✅ Committed and pushed to GitHub (commit 9874017)
+- **Backup Status:** ✅ Backed up to D drive via git pull
+- **Conversation Reference:** METS-TRACKING-20251105
+
+---
+
 ### ✅ AFTERNOON/EVENING SESSION: Comprehensive Pulse/Heart Rate Monitoring with Strava Integration (7:45 PM)
 - **Commit:** `583fe95` - Implement comprehensive pulse/heart rate monitoring with Strava integration
 - **Files Changed:** 12 files including VitalsPage.tsx, continuousStravaSync.ts, diagnostic scripts

@@ -71,7 +71,7 @@ export function VitalsPage() {
   const [latestVitals, setLatestVitals] = useState<VitalsSample | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow'>('bp');
+  const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow' | 'map' | 'bpvariability'>('bp');
   const [patientData, setPatientData] = useState<Patient | null>(null);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // User ID, not patient ID
@@ -517,6 +517,28 @@ export function VitalsPage() {
       console.error('Invalid timestamp in vitals data:', v.timestamp);
     }
 
+    // Calculate MAP if BP data exists
+    const map = (v.bloodPressureSystolic && v.bloodPressureDiastolic)
+      ? Math.round((v.bloodPressureSystolic + 2 * v.bloodPressureDiastolic) / 3)
+      : undefined;
+
+    // Calculate BP Variability (rolling standard deviation over last 7 readings)
+    let bpVariability: number | undefined = undefined;
+    if (v.bloodPressureSystolic) {
+      const idx = filteredVitals.indexOf(v);
+      const startIdx = Math.max(0, idx - 6);
+      const recentReadings = filteredVitals
+        .slice(startIdx, idx + 1)
+        .filter(rv => rv.bloodPressureSystolic)
+        .map(rv => rv.bloodPressureSystolic!);
+
+      if (recentReadings.length >= 3) {
+        const avg = recentReadings.reduce((sum, r) => sum + r, 0) / recentReadings.length;
+        const variance = recentReadings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / recentReadings.length;
+        bpVariability = Math.round(Math.sqrt(variance) * 10) / 10; // Round to 1 decimal
+      }
+    }
+
     return {
       date: dateStr,
       systolic: v.bloodPressureSystolic,
@@ -528,6 +550,8 @@ export function VitalsPage() {
       hydration: v.hydrationStatus,
       o2: v.oxygenSaturation,
       peakFlow: v.peakFlow,
+      map: map,
+      bpVariability: bpVariability,
     };
   });
 
@@ -1828,6 +1852,26 @@ export function VitalsPage() {
             >
               Peak Flow
             </button>
+            <button
+              onClick={() => setSelectedMetric('map')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                selectedMetric === 'map'
+                  ? 'bg-purple-600'
+                  : 'glass-button font-bold'
+              }`}
+            >
+              MAP
+            </button>
+            <button
+              onClick={() => setSelectedMetric('bpvariability')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                selectedMetric === 'bpvariability'
+                  ? 'bg-pink-600'
+                  : 'glass-button font-bold'
+              }`}
+            >
+              BP Variability
+            </button>
           </div>
 
           {/* Surgery Date Timeline Info */}
@@ -1976,6 +2020,8 @@ export function VitalsPage() {
                       selectedMetric === 'temp' ? [90, 108] :
                       selectedMetric === 'o2' ? [50, 100] :
                       selectedMetric === 'peakflow' ? [0, 800] :
+                      selectedMetric === 'map' ? [40, 140] :
+                      selectedMetric === 'bpvariability' ? [0, 30] :
                       undefined
                     }
                     stroke="#9ca3af"
@@ -2003,6 +2049,8 @@ export function VitalsPage() {
                       selectedMetric === 'temp' ? 'temperature' :
                       selectedMetric === 'hydration' ? 'hydration' :
                       selectedMetric === 'peakflow' ? 'peakFlow' :
+                      selectedMetric === 'map' ? 'map' :
+                      selectedMetric === 'bpvariability' ? 'bpVariability' :
                       'o2'
                     }
                     stroke={
@@ -2012,6 +2060,8 @@ export function VitalsPage() {
                       selectedMetric === 'temp' ? '#ea580c' :
                       selectedMetric === 'hydration' ? '#3b82f6' :
                       selectedMetric === 'peakflow' ? '#22c55e' :
+                      selectedMetric === 'map' ? '#9333ea' :
+                      selectedMetric === 'bpvariability' ? '#ec4899' :
                       '#06b6d4'
                     }
                     strokeWidth={4}
@@ -2025,6 +2075,8 @@ export function VitalsPage() {
                             selectedMetric === 'temp' ? '#ea580c' :
                             selectedMetric === 'hydration' ? '#3b82f6' :
                             selectedMetric === 'peakflow' ? '#22c55e' :
+                            selectedMetric === 'map' ? '#9333ea' :
+                            selectedMetric === 'bpvariability' ? '#ec4899' :
                             '#06b6d4'
                     }}
                     activeDot={{ r: 9, strokeWidth: 3 }}
@@ -2035,6 +2087,8 @@ export function VitalsPage() {
                       selectedMetric === 'temp' ? 'Temperature (°F)' :
                       selectedMetric === 'hydration' ? 'Hydration (%)' :
                       selectedMetric === 'peakflow' ? 'Peak Flow (L/min)' :
+                      selectedMetric === 'map' ? 'Mean Arterial Pressure (mmHg)' :
+                      selectedMetric === 'bpvariability' ? 'BP Variability (StdDev)' :
                       'O₂ Saturation (%)'
                     }
                     filter="url(#vitalsLineGlow)"
@@ -2063,6 +2117,18 @@ export function VitalsPage() {
                     <>
                       <ReferenceLine y={400} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (400)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                       <ReferenceLine y={600} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (600)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    </>
+                  )}
+                  {selectedMetric === 'map' && (
+                    <>
+                      <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    </>
+                  )}
+                  {selectedMetric === 'bpvariability' && (
+                    <>
+                      <ReferenceLine y={10} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Good (<10)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      <ReferenceLine y={15} stroke="#f59e0b" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Moderate (15)', position: 'insideBottomRight', fill: '#f59e0b', fontSize: 11, fontWeight: 'bold' }} />
                     </>
                   )}
                 </LineChart>
