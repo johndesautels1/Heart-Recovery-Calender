@@ -766,24 +766,20 @@ export function VitalsPage() {
         break;
     }
 
-    // Generate array of dates in DISPLAY range only
-    const dateArray: { date: string; hydrationOunces: number; hydrationTarget?: number }[] = [];
-    let currentDate = new Date(start);
+    // Only include dates that have actual data (no empty dots)
+    const dateArray = hydrationLogs
+      .filter(log => {
+        const logDate = new Date(log.date);
+        return logDate >= start && logDate <= end;
+      })
+      .map(log => ({
+        date: format(new Date(log.date), 'MMM dd, yyyy'),
+        hydrationOunces: Math.round(log.totalOunces || 0),
+        hydrationTarget: log.targetOunces,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    while (currentDate <= end) {
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-      const log = hydrationLogs.find(l => l.date === dateStr);
-
-      dateArray.push({
-        date: format(currentDate, 'MMM dd, yyyy'),
-        hydrationOunces: log ? Math.round(log.totalOunces || 0) : 0,
-        hydrationTarget: log?.targetOunces,
-      });
-
-      currentDate = addDays(currentDate, 1);
-    }
-
-    console.log(`[CHART] Generated ${dateArray.length} data points for ${globalTimeView} view`);
+    console.log(`[CHART] Generated ${dateArray.length} data points for ${globalTimeView} view (only dates with data)`);
     return dateArray;
   })();
 
