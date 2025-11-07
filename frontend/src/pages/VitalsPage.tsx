@@ -377,11 +377,11 @@ export function VitalsPage() {
     loadHawkAlerts();
   }, [vitals]); // Reload when vitals change
 
-  // Update nuclear clock every second
+  // Update nuclear clock every second - TEMPORARILY DISABLED for performance
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 60000); // Changed from 1000ms (1 sec) to 60000ms (1 min) for better performance
 
     return () => clearInterval(timer);
   }, []);
@@ -1737,19 +1737,10 @@ export function VitalsPage() {
             Flight Control - Trend Analysis
           </h2>
 
-          {/* Time Throttle Lever */}
-          <div className="mb-8">
-            <TimeThrottleLever
-              surgeryDate={surgeryDate}
-              onTimeChange={(view) => setGlobalTimeView(view)}
-              currentView={globalTimeView}
-            />
-          </div>
-
-          {/* Three-Column Layout: Side Gauges + Dual Glass Displays */}
-          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center">
-            {/* Left Side Gauges */}
-            <div className="flex flex-col gap-6 justify-center items-center">
+          {/* Time Throttle Lever with Temperature Gauge */}
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center mb-8">
+            {/* Temperature Gauge - Left */}
+            <div className="flex justify-center items-center">
               <CircularGauge
                 value={filteredLatest?.temperature}
                 label="Temperature"
@@ -1762,41 +1753,88 @@ export function VitalsPage() {
                 style="modern"
                 color="#f97316"
               />
-              <CircularGauge
-                value={filteredLatest?.weight}
-                label="Weight"
-                unit="lbs"
-                min={100}
-                max={300}
-                size="medium"
-                style="modern"
-                color="#10b981"
+            </div>
+
+            {/* Time Throttle Lever - Center */}
+            <div className="flex flex-col gap-4 items-center">
+              {/* Post-Op Week Dial above throttle */}
+              <div>
+                <CircularGauge
+                  value={postOpWeek}
+                  label="Post-Op Week"
+                  unit="weeks"
+                  min={0}
+                  max={52}
+                  size="medium"
+                  style="modern"
+                  color="#6366f1"
+                />
+              </div>
+              <TimeThrottleLever
+                surgeryDate={surgeryDate}
+                onTimeChange={(view) => setGlobalTimeView(view)}
+                currentView={globalTimeView}
               />
             </div>
 
-            {/* Center: Dual Glass Displays */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Display - BP & HR */}
+            {/* Blood Sugar Gauge - Right */}
+            <div className="flex justify-center items-center">
+              <CircularGauge
+                value={filteredLatest?.bloodSugar}
+                label="Blood Sugar"
+                unit="mg/dL"
+                min={50}
+                max={200}
+                targetMin={70}
+                targetMax={130}
+                size="medium"
+                style="modern"
+                color="#eab308"
+              />
+            </div>
+          </div>
+
+          {/* Three-Column Layout: Side Gauges + Dual Glass Displays */}
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center">
+            {/* Left Side - Empty */}
+            <div className="flex flex-col gap-6 justify-center items-center">
+            </div>
+
+            {/* Center: Weight Gauge + Dual Glass Displays */}
+            <div className="grid grid-cols-1 gap-6">
+              {/* Weight Gauge Above Charts */}
+              <div className="flex justify-center">
+                <CircularGauge
+                  value={filteredLatest?.weight}
+                  label="Weight"
+                  unit="lbs"
+                  min={100}
+                  max={300}
+                  size="medium"
+                  style="modern"
+                  color="#10b981"
+                />
+              </div>
+
+              {/* Blood Pressure Chart */}
               <div className="glass-card p-6 rounded-2xl" style={{
                 background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
                 border: '2px solid rgba(59, 130, 246, 0.4)',
                 boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
               }}>
-                <h3 className="text-lg font-bold text-blue-400 mb-4">Blood Pressure & Heart Rate</h3>
+                <h3 className="text-lg font-bold text-blue-400 mb-4">Blood Pressure Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                     <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis yAxisId="left" stroke="#3b82f6" />
-                    <YAxis yAxisId="right" orientation="right" stroke="#ef4444" />
+                    <YAxis stroke="#3b82f6" domain={[0, 200]} />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
                     <Legend />
                     {surgeryDate && (
                       <ReferenceLine x={format(new Date(surgeryDate), 'MMM dd, yyyy')} stroke="#fbbf24" strokeWidth={2} label="Day 0" />
                     )}
-                    <Area yAxisId="left" type="monotone" dataKey="systolic" stroke="#3b82f6" fill="url(#colorSystolic)" name="Systolic" />
-                    <Area yAxisId="left" type="monotone" dataKey="diastolic" stroke="#60a5fa" fill="url(#colorDiastolic)" name="Diastolic" />
-                    <Line yAxisId="right" type="monotone" dataKey="heartRate" stroke="#ef4444" strokeWidth={2} name="Heart Rate" />
+                    <Area type="monotone" dataKey="systolic" stroke="#3b82f6" fill="url(#colorSystolic)" name="Systolic" />
+                    <Area type="monotone" dataKey="diastolic" stroke="#60a5fa" fill="url(#colorDiastolic)" name="Diastolic" />
                     <defs>
                       <linearGradient id="colorSystolic" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -1811,23 +1849,74 @@ export function VitalsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Right Display - Weight & O2 */}
+              {/* Heart Rate / Pulse Chart */}
+              <div className="glass-card p-6 rounded-2xl" style={{
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
+                border: '2px solid rgba(239, 68, 68, 0.4)',
+                boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)'
+              }}>
+                <h3 className="text-lg font-bold text-red-400 mb-4">Heart Rate / Pulse</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <YAxis stroke="#ef4444" domain={[40, 180]} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Legend />
+                    {surgeryDate && (
+                      <ReferenceLine x={format(new Date(surgeryDate), 'MMM dd, yyyy')} stroke="#fbbf24" strokeWidth={2} label="Day 0" />
+                    )}
+                    <Line type="monotone" dataKey="heartRate" stroke="#ef4444" strokeWidth={2} name="Heart Rate (bpm)" />
+                    <defs>
+                      <linearGradient id="colorHeartRate" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Oxygen Saturation Chart */}
+              <div className="glass-card p-6 rounded-2xl" style={{
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
+                border: '2px solid rgba(6, 182, 212, 0.4)',
+                boxShadow: '0 0 30px rgba(6, 182, 212, 0.3)'
+              }}>
+                <h3 className="text-lg font-bold text-cyan-400 mb-4">Oxygen Saturation (SpO₂)</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <YAxis stroke="#06b6d4" domain={[85, 100]} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Legend />
+                    <Line type="monotone" dataKey="o2" stroke="#06b6d4" strokeWidth={2} name="O₂ Sat (%)" />
+                    <defs>
+                      <linearGradient id="colorO2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Weight Chart */}
               <div className="glass-card p-6 rounded-2xl" style={{
                 background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
                 border: '2px solid rgba(16, 185, 129, 0.4)',
                 boxShadow: '0 0 30px rgba(16, 185, 129, 0.3)'
               }}>
-                <h3 className="text-lg font-bold text-emerald-400 mb-4">Weight & Oxygen Saturation</h3>
+                <h3 className="text-lg font-bold text-emerald-400 mb-4">Weight Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                     <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis yAxisId="left" stroke="#10b981" />
-                    <YAxis yAxisId="right" orientation="right" stroke="#06b6d4" />
+                    <YAxis stroke="#10b981" />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
                     <Legend />
-                    <Area yAxisId="left" type="monotone" dataKey="weight" stroke="#10b981" fill="url(#colorWeight)" name="Weight (lbs)" />
-                    <Line yAxisId="right" type="monotone" dataKey="o2" stroke="#06b6d4" strokeWidth={2} name="O₂ Sat (%)" />
+                    <Area type="monotone" dataKey="weight" stroke="#10b981" fill="url(#colorWeight)" name="Weight (lbs)" />
                     <defs>
                       <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -1839,30 +1928,8 @@ export function VitalsPage() {
               </div>
             </div>
 
-            {/* Right Side Gauges */}
+            {/* Right Side - Empty for now */}
             <div className="flex flex-col gap-6 justify-center items-center">
-              <CircularGauge
-                value={filteredLatest?.bloodSugar}
-                label="Blood Sugar"
-                unit="mg/dL"
-                min={50}
-                max={200}
-                targetMin={70}
-                targetMax={130}
-                size="medium"
-                style="modern"
-                color="#eab308"
-              />
-              <CircularGauge
-                value={postOpWeek}
-                label="Post-Op Week"
-                unit="weeks"
-                min={0}
-                max={52}
-                size="medium"
-                style="modern"
-                color="#6366f1"
-              />
             </div>
           </div>
         </div>
@@ -2136,1685 +2203,1434 @@ export function VitalsPage() {
             }
           })()}
 
-      {/* Latest Vitals Cards with Device Badges */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <GlassCard className="relative">
-          {/* Device Badge */}
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
+          {/* Latest Vitals Cards with Device Badges */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* NEW: Weekly Weight Change */}
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold mb-1">Weekly Weight Change</p>
+                  <p className="text-2xl font-bold font-bold">
+                    {(() => {
+                      if (!latestVitals?.weight || vitals.length < 2) return '--';
+                      const sevenDaysAgo = subDays(new Date(), 7);
+                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
+                      if (oldWeights.length === 0) return '--';
+                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
+                      const change = latestVitals.weight - oldWeight;
+                      return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
+                    })()} <span className="text-sm">lbs</span>
+                  </p>
+                  <p className={`text-sm font-bold mt-1 ${(() => {
+                    if (!latestVitals?.weight || vitals.length < 2) return 'text-yellow-500';
+                    const sevenDaysAgo = subDays(new Date(), 7);
+                    const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
+                    if (oldWeights.length === 0) return 'text-yellow-500';
+                    const oldWeight = oldWeights[oldWeights.length - 1].weight!;
+                    const change = latestVitals.weight - oldWeight;
+                    return Math.abs(change) < 0.5 ? 'text-white' : change > 0 ? 'text-yellow-500' : 'text-green-500';
+                  })()}`}>
+                    {(() => {
+                      if (!latestVitals?.weight || vitals.length < 2) return 'Not enough data';
+                      const sevenDaysAgo = subDays(new Date(), 7);
+                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
+                      if (oldWeights.length === 0) return 'Not enough data';
+                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
+                      const change = latestVitals.weight - oldWeight;
+                      return Math.abs(change) < 0.5 ? 'Stable' : change > 0 ? 'Gained' : 'Lost';
+                    })()}
+                  </p>
+                  <p className="text-xs mt-1">Last 7 days</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-500" />
               </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Blood Pressure</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.bloodPressureSystolic || '--'}/
-                {filteredLatest?.bloodPressureDiastolic || '--'}
-              </p>
-              <p className={`text-sm font-bold mt-1 ${bpStatus.className}`}>{bpStatus.status}</p>
-              <p className="text-xs mt-1">Normal: &lt;120/80</p>
-            </div>
-            <Heart className="h-8 w-8 text-red-500" />
-          </div>
-        </GlassCard>
+            </GlassCard>
 
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Heart Rate</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.heartRate || '--'} <span className="text-sm">bpm</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${
-                !filteredLatest?.heartRate
-                  ? 'text-yellow-500'
-                  : filteredLatest.heartRate < 60 || filteredLatest.heartRate > 100
-                  ? 'text-red-500'
-                  : 'text-white'
-              }`}>
-                {!filteredLatest?.heartRate
-                  ? 'Unknown'
-                  : filteredLatest.heartRate < 60
-                  ? 'Low'
-                  : filteredLatest.heartRate > 100
-                  ? 'High'
-                  : 'Normal'}
-              </p>
-              <p className="text-xs mt-1">Normal: 60-100</p>
-            </div>
-            <Activity className="h-8 w-8 text-red-500" />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Temperature</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.temperature ? `${filteredLatest.temperature.toFixed(1)}` : '--'} <span className="text-sm">°F</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${
-                !filteredLatest?.temperature
-                  ? 'text-yellow-500'
-                  : filteredLatest.temperature < 97.0 || filteredLatest.temperature > 99.0
-                  ? 'text-red-500'
-                  : 'text-white'
-              }`}>
-                {!filteredLatest?.temperature
-                  ? 'Unknown'
-                  : filteredLatest.temperature < 97.0
-                  ? 'Low'
-                  : filteredLatest.temperature > 99.0
-                  ? 'High'
-                  : 'Normal'}
-              </p>
-              <p className="text-xs mt-1">Normal: 97-99°F</p>
-            </div>
-            <Thermometer className="h-8 w-8 text-orange-500" />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Weight</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.weight || '--'} <span className="text-sm">lbs</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${!filteredLatest?.weight ? 'text-yellow-500' : 'text-white'}`}>
-                {!filteredLatest?.weight ? 'Unknown' : 'Recorded'}
-              </p>
-              <p className="text-xs mt-1">Track trends</p>
-            </div>
-            <Weight className="h-8 w-8 text-blue-500" />
-          </div>
-        </GlassCard>
-
-        {/* NEW: Weekly Weight Change */}
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Weekly Weight Change</p>
-              <p className="text-2xl font-bold font-bold">
-                {(() => {
-                  if (!latestVitals?.weight || vitals.length < 2) return '--';
-                  const sevenDaysAgo = subDays(new Date(), 7);
-                  const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                  if (oldWeights.length === 0) return '--';
-                  const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                  const change = latestVitals.weight - oldWeight;
-                  return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
-                })()} <span className="text-sm">lbs</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${(() => {
-                if (!latestVitals?.weight || vitals.length < 2) return 'text-yellow-500';
-                const sevenDaysAgo = subDays(new Date(), 7);
-                const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                if (oldWeights.length === 0) return 'text-yellow-500';
-                const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                const change = latestVitals.weight - oldWeight;
-                return Math.abs(change) < 0.5 ? 'text-white' : change > 0 ? 'text-yellow-500' : 'text-green-500';
-              })()}`}>
-                {(() => {
-                  if (!latestVitals?.weight || vitals.length < 2) return 'Not enough data';
-                  const sevenDaysAgo = subDays(new Date(), 7);
-                  const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                  if (oldWeights.length === 0) return 'Not enough data';
-                  const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                  const change = latestVitals.weight - oldWeight;
-                  return Math.abs(change) < 0.5 ? 'Stable' : change > 0 ? 'Gained' : 'Lost';
-                })()}
-              </p>
-              <p className="text-xs mt-1">Last 7 days</p>
-            </div>
-            <TrendingUp className="h-8 w-8 text-green-500" />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Blood Sugar</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.bloodSugar || '--'} <span className="text-sm">mg/dL</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${
-                !filteredLatest?.bloodSugar
-                  ? 'text-yellow-500'
-                  : filteredLatest.bloodSugar >= 126 || filteredLatest.bloodSugar < 60
-                  ? 'text-red-500'
-                  : filteredLatest.bloodSugar >= 100
-                  ? 'text-yellow-500'
-                  : 'text-white'
-              }`}>
-                {!filteredLatest?.bloodSugar
-                  ? 'Unknown'
-                  : filteredLatest.bloodSugar < 100
-                  ? 'Normal'
-                  : filteredLatest.bloodSugar < 126
-                  ? 'Pre-diabetic'
-                  : 'High'}
-              </p>
-              <p className="text-xs mt-1">Normal: 70-100</p>
-            </div>
-            <Droplet className="h-8 w-8 text-red-500" />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold">Water Intake</p>
-            <Droplet className="h-8 w-8 text-blue-500" />
-          </div>
-
-          {/* Date Display - Centered Below Header */}
-          <div className="flex justify-center mb-3">
-            <div
-              className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500 cursor-pointer hover:border-purple-400 transition-all"
-              style={{
-                boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
-              }}
-              onClick={() => setShowWaterDatePicker(!showWaterDatePicker)}
-            >
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-purple-300" />
-                <span className="text-purple-200 font-bold text-sm">
-                  {format(new Date(waterCardDate), 'MMM dd, yyyy')}
-                </span>
-              </div>
-              <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
-                {waterCardDate === format(new Date(), 'yyyy-MM-dd') ? '✨ Today' : '📜 Historic Entry'}
-              </p>
-            </div>
-          </div>
-
-          {/* Date Picker */}
-          {showWaterDatePicker && (
-            <div className="flex justify-center mb-3">
-              <input
-                type="date"
-                value={waterCardDate}
-                onChange={(e) => {
-                  setWaterCardDate(e.target.value);
-                  toast.success(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
-                    duration: 2000,
-                  });
-                }}
-                max={format(new Date(), 'yyyy-MM-dd')}
-                className="w-full bg-purple-950 text-white px-4 py-3 rounded-xl text-base font-bold border-2 border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-purple-300"
-                style={{
-                  colorScheme: 'dark',
-                  fontSize: '16px',
-                }}
-              />
-            </div>
-          )}
-
-          {/* Recommended Target Display */}
-          <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 rounded-xl p-3 mb-3 border border-cyan-500/30">
-            <div className="text-center">
-              <p className="text-xs text-cyan-300 mb-1 font-semibold">🎯 RECOMMENDED FOR YOU</p>
-              <p className="text-2xl font-bold text-cyan-400">
-                {calculatePersonalizedHydrationTarget(waterCardDate)} oz
-              </p>
-              <p className="text-xs text-gray-400 mt-1">Based on weight, gender, ejection fraction & medications</p>
-            </div>
-          </div>
-
-          {/* Target and Current Intake Display */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center">
-              <p className="text-xs text-gray-400 mb-1">YOUR TARGET</p>
-              <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
-                {(() => {
-                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                  const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
-                  return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : `${recommended} oz`;
-                })()}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-400 mb-1">CONSUMED</p>
-              <p className="text-2xl font-bold" style={{
-                color: (() => {
-                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                  const consumed = selectedLog?.totalOunces || 0;
-                  const personalTarget = calculatePersonalizedHydrationTarget(waterCardDate);
-
-                  // Dynamic zones based on personal target
-                  if (consumed < personalTarget * 0.5) return '#ef4444'; // < 50% = critical red
-                  if (consumed < personalTarget * 0.75) return '#eab308'; // < 75% = yellow
-                  if (consumed > personalTarget * 1.3) return '#3b82f6'; // > 130% = blue (too much)
-                  return '#10b981'; // 75-130% = green
-                })()
-              }}>
-                {(() => {
-                  const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                  return selectedLog ? `${selectedLog.totalOunces} oz` : '0 oz';
-                })()}
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Add Buttons */}
-          <div className="grid grid-cols-5 gap-2 mt-4">
-            {[4, 8, 16, 32].map((oz) => (
-              <button
-                key={oz}
-                onClick={() => handleAddWater(oz)}
-                className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                  boxShadow: '0 2px 8px rgba(6, 182, 212, 0.4)',
-                }}
-              >
-                +{oz}
-              </button>
-            ))}
-            <button
-              onClick={() => {
-                const custom = prompt('Enter custom amount (oz):');
-                if (custom && !isNaN(parseInt(custom))) {
-                  handleAddWater(parseInt(custom));
-                }
-              }}
-              className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
-              }}
-            >
-              +?
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <button
-              onClick={async () => {
-                const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
-                const target = prompt(`Set daily target (oz):\n\n💡 Recommended for you: ${recommended} oz\n(Based on your profile)`, String(recommended));
-                if (target && !isNaN(parseInt(target))) {
-                  const targetInt = parseInt(target);
-                  try {
-                    const existingLog = hydrationLogs.find(log => log.date === waterCardDate);
-                    if (existingLog) {
-                      await api.updateHydrationLog(existingLog.id, { targetOunces: targetInt });
-                    } else {
-                      await api.createHydrationLog({
-                        date: waterCardDate,
-                        totalOunces: 0,
-                        targetOunces: targetInt,
-                        userId: selectedUserId || user?.id,
-                      });
-                    }
-                    toast.success(`Target set to ${targetInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}`);
-                    await loadHydrationLogs();
-                  } catch (error) {
-                    toast.error('Failed to set target');
-                  }
-                }
-              }}
-              className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
-              }}
-            >
-              Set Target
-            </button>
-            <button
-              onClick={async () => {
-                const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                if (!selectedLog) {
-                  toast.error('No data to delete');
-                  return;
-                }
-                if (window.confirm(`Delete water data for ${format(new Date(waterCardDate), 'MMM dd, yyyy')}?`)) {
-                  try {
-                    await api.deleteHydrationLog(selectedLog.id);
-                    toast.success('Water data deleted');
-                    await loadHydrationLogs();
-                  } catch (error) {
-                    toast.error('Failed to delete data');
-                  }
-                }
-              }}
-              className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
-              }}
-            >
-              Delete Date
-            </button>
-          </div>
-        </GlassCard>
-      </div>
-
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* NEW: Low Oxygen Alert (SpO2 <90%) */}
-        {filteredLatest?.oxygenSaturation && filteredLatest.oxygenSaturation < 90 && (
-          <div
-            className="relative overflow-hidden rounded-2xl p-6 mb-6"
-            style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
-              border: '3px solid rgba(239, 68, 68, 0.6)',
-              boxShadow: '0 0 40px rgba(239, 68, 68, 0.3)',
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 rounded-full bg-red-500/30 animate-pulse">
-                <Wind className="h-7 w-7 text-red-300" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-red-300 mb-2 flex items-center gap-2">
-                  <AlertCircle className="h-6 w-6 animate-pulse" />
-                  🚨 CRITICAL: Low Oxygen Saturation
-                </h3>
-                <p className="text-white text-lg mb-4">
-                  Current SpO2: <strong className="text-red-300 text-2xl">{filteredLatest.oxygenSaturation}%</strong>
-                  <span className="text-red-400 ml-3">(Normal: 95-100%)</span>
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div className="p-4 rounded-lg bg-red-500/20 border-2 border-red-500/40">
-                    <p className="text-base font-bold text-red-200 mb-2">⚠️ IMMEDIATE ACTIONS:</p>
-                    <ul className="text-sm text-gray-200 space-y-2">
-                      <li>• Sit upright or elevate head of bed</li>
-                      <li>• Take slow, deep breaths</li>
-                      <li>• Use prescribed oxygen if available</li>
-                      <li>• Avoid physical exertion</li>
-                    </ul>
-                  </div>
-                  <div className="p-4 rounded-lg bg-red-600/30 border-2 border-red-500/50">
-                    <p className="text-base font-bold text-red-100 mb-2">🚨 CALL 911 IF:</p>
-                    <ul className="text-sm text-gray-100 space-y-2 font-semibold">
-                      <li>• SpO2 remains below 90% for more than 5 minutes</li>
-                      <li>• Experiencing chest pain or pressure</li>
-                      <li>• Severe shortness of breath</li>
-                      <li>• Confusion or drowsiness</li>
-                      <li>• Bluish lips or fingernails</li>
-                    </ul>
+            <GlassCard className="relative">
+              {filteredLatest && (
+                <div className="absolute top-3 right-3">
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
+                    filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                    filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                    'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                  }`}>
+                    {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
+                      <><Smartphone className="h-3 w-3" /> Samsung</>
+                    ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
+                      <><Watch className="h-3 w-3" /> Polar</>
+                    ) : (
+                      <>✋ Manual</>
+                    )}
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-4 italic">
-                  SpO2 below 90% is a medical emergency for cardiac patients. Do not ignore this warning.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+              )}
 
-        {/* NEW: Oxygen Saturation */}
-        <GlassCard className="relative">
-          {filteredLatest && (
-            <div className="absolute top-3 right-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-              }`}>
-                {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                  <><Smartphone className="h-3 w-3" /> Samsung</>
-                ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                  <><Watch className="h-3 w-3" /> Polar</>
-                ) : (
-                  <>✋ Manual</>
-                )}
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold">Water Intake</p>
+                <Droplet className="h-8 w-8 text-blue-500" />
               </div>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">O₂ Saturation</p>
-              <p className="text-2xl font-bold font-bold">
-                {filteredLatest?.oxygenSaturation || '--'} <span className="text-sm">%</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${
-                !filteredLatest?.oxygenSaturation
-                  ? 'text-yellow-500'
-                  : filteredLatest.oxygenSaturation < 90
-                  ? 'text-red-500'
-                  : filteredLatest.oxygenSaturation < 95
-                  ? 'text-yellow-500'
-                  : 'text-white'
-              }`}>
-                {!filteredLatest?.oxygenSaturation
-                  ? 'Unknown'
-                  : filteredLatest.oxygenSaturation < 90
-                  ? 'Critical'
-                  : filteredLatest.oxygenSaturation < 95
-                  ? 'Low'
-                  : 'Normal'}
-              </p>
-              <p className="text-xs mt-1">Normal: 95-100%</p>
-            </div>
-            <Wind className="h-8 w-8 text-cyan-500" />
-          </div>
-        </GlassCard>
 
-        {/* NEW: Peak Flow Meter */}
-        {filteredLatest?.peakFlow && (
-          <GlassCard className="relative">
-            {filteredLatest && (
-              <div className="absolute top-3 right-3">
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                  filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                  filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                  'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                }`}>
-                  {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                    <><Smartphone className="h-3 w-3" /> Samsung</>
-                  ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                    <><Watch className="h-3 w-3" /> Polar</>
-                  ) : (
-                    <>✋ Manual</>
-                  )}
+              {/* Date Display - Centered Below Header */}
+              <div className="flex justify-center mb-3">
+                <div
+                  className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500 cursor-pointer hover:border-purple-400 transition-all"
+                  style={{
+                    boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
+                  }}
+                  onClick={() => setShowWaterDatePicker(!showWaterDatePicker)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-purple-300" />
+                    <span className="text-purple-200 font-bold text-sm">
+                      {format(new Date(waterCardDate), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                  <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
+                    {waterCardDate === format(new Date(), 'yyyy-MM-dd') ? '✨ Today' : '📜 Historic Entry'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date Picker */}
+              {showWaterDatePicker && (
+                <div className="flex justify-center mb-3">
+                  <input
+                    type="date"
+                    value={waterCardDate}
+                    onChange={(e) => {
+                      setWaterCardDate(e.target.value);
+                      toast.success(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
+                        duration: 2000,
+                      });
+                    }}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                    className="w-full bg-purple-950 text-white px-4 py-3 rounded-xl text-base font-bold border-2 border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-purple-300"
+                    style={{
+                      colorScheme: 'dark',
+                      fontSize: '16px',
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Recommended Target Display */}
+              <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 rounded-xl p-3 mb-3 border border-cyan-500/30">
+                <div className="text-center">
+                  <p className="text-xs text-cyan-300 mb-1 font-semibold">🎯 RECOMMENDED FOR YOU</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    {calculatePersonalizedHydrationTarget(waterCardDate)} oz
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Based on weight, gender, ejection fraction & medications</p>
+                </div>
+              </div>
+
+              {/* Target and Current Intake Display */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-400 mb-1">YOUR TARGET</p>
+                  <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
+                    {(() => {
+                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                      const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
+                      return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : `${recommended} oz`;
+                    })()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-400 mb-1">CONSUMED</p>
+                  <p className="text-2xl font-bold" style={{
+                    color: (() => {
+                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                      const consumed = selectedLog?.totalOunces || 0;
+                      const personalTarget = calculatePersonalizedHydrationTarget(waterCardDate);
+
+                      // Dynamic zones based on personal target
+                      if (consumed < personalTarget * 0.5) return '#ef4444'; // < 50% = critical red
+                      if (consumed < personalTarget * 0.75) return '#eab308'; // < 75% = yellow
+                      if (consumed > personalTarget * 1.3) return '#3b82f6'; // > 130% = blue (too much)
+                      return '#10b981'; // 75-130% = green
+                    })()
+                  }}>
+                    {(() => {
+                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                      return selectedLog ? `${selectedLog.totalOunces} oz` : '0 oz';
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Add Buttons */}
+              <div className="grid grid-cols-5 gap-2 mt-4">
+                {[4, 8, 16, 32].map((oz) => (
+                  <button
+                    key={oz}
+                    onClick={() => handleAddWater(oz)}
+                    className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                      boxShadow: '0 2px 8px rgba(6, 182, 212, 0.4)',
+                    }}
+                  >
+                    +{oz}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    const custom = prompt('Enter custom amount (oz):');
+                    if (custom && !isNaN(parseInt(custom))) {
+                      handleAddWater(parseInt(custom));
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
+                  }}
+                >
+                  +?
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
+                    const target = prompt(`Set daily target (oz):\n\n💡 Recommended for you: ${recommended} oz\n(Based on your profile)`, String(recommended));
+                    if (target && !isNaN(parseInt(target))) {
+                      const targetInt = parseInt(target);
+                      try {
+                        const existingLog = hydrationLogs.find(log => log.date === waterCardDate);
+                        if (existingLog) {
+                          await api.updateHydrationLog(existingLog.id, { targetOunces: targetInt });
+                        } else {
+                          await api.createHydrationLog({
+                            date: waterCardDate,
+                            totalOunces: 0,
+                            targetOunces: targetInt,
+                            userId: selectedUserId || user?.id,
+                          });
+                        }
+                        toast.success(`Target set to ${targetInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}`);
+                        await loadHydrationLogs();
+                      } catch (error) {
+                        toast.error('Failed to set target');
+                      }
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+                  }}
+                >
+                  Set Target
+                </button>
+                <button
+                  onClick={async () => {
+                    const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
+                    if (!selectedLog) {
+                      toast.error('No data to delete');
+                      return;
+                    }
+                    if (window.confirm(`Delete water data for ${format(new Date(waterCardDate), 'MMM dd, yyyy')}?`)) {
+                      try {
+                        await api.deleteHydrationLog(selectedLog.id);
+                        toast.success('Water data deleted');
+                        await loadHydrationLogs();
+                      } catch (error) {
+                        toast.error('Failed to delete data');
+                      }
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+                  }}
+                >
+                  Delete Date
+                </button>
+              </div>
+            </GlassCard>
+          </div>
+
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* NEW: Low Oxygen Alert (SpO2 <90%) */}
+            {filteredLatest?.oxygenSaturation && filteredLatest.oxygenSaturation < 90 && (
+              <div
+                className="relative overflow-hidden rounded-2xl p-6 mb-6"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+                  border: '3px solid rgba(239, 68, 68, 0.6)',
+                  boxShadow: '0 0 40px rgba(239, 68, 68, 0.3)',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 p-3 rounded-full bg-red-500/30 animate-pulse">
+                    <Wind className="h-7 w-7 text-red-300" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-red-300 mb-2 flex items-center gap-2">
+                      <AlertCircle className="h-6 w-6 animate-pulse" />
+                      🚨 CRITICAL: Low Oxygen Saturation
+                    </h3>
+                    <p className="text-white text-lg mb-4">
+                      Current SpO2: <strong className="text-red-300 text-2xl">{filteredLatest.oxygenSaturation}%</strong>
+                      <span className="text-red-400 ml-3">(Normal: 95-100%)</span>
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div className="p-4 rounded-lg bg-red-500/20 border-2 border-red-500/40">
+                        <p className="text-base font-bold text-red-200 mb-2">⚠️ IMMEDIATE ACTIONS:</p>
+                        <ul className="text-sm text-gray-200 space-y-2">
+                          <li>• Sit upright or elevate head of bed</li>
+                          <li>• Take slow, deep breaths</li>
+                          <li>• Use prescribed oxygen if available</li>
+                          <li>• Avoid physical exertion</li>
+                        </ul>
+                      </div>
+                      <div className="p-4 rounded-lg bg-red-600/30 border-2 border-red-500/50">
+                        <p className="text-base font-bold text-red-100 mb-2">🚨 CALL 911 IF:</p>
+                        <ul className="text-sm text-gray-100 space-y-2 font-semibold">
+                          <li>• SpO2 remains below 90% for more than 5 minutes</li>
+                          <li>• Experiencing chest pain or pressure</li>
+                          <li>• Severe shortness of breath</li>
+                          <li>• Confusion or drowsiness</li>
+                          <li>• Bluish lips or fingernails</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4 italic">
+                      SpO2 below 90% is a medical emergency for cardiac patients. Do not ignore this warning.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold mb-1">Peak Flow</p>
-                <p className="text-2xl font-bold font-bold">
-                  {filteredLatest.peakFlow || '--'} <span className="text-sm">L/min</span>
-                </p>
-                <p className={`text-sm font-bold mt-1 ${
-                  !filteredLatest?.peakFlow
-                    ? 'text-yellow-500'
-                    : filteredLatest.peakFlow < 200
-                    ? 'text-red-500'
-                    : filteredLatest.peakFlow < 400
-                    ? 'text-yellow-500'
-                    : filteredLatest.peakFlow < 600
-                    ? 'text-green-400'
-                    : 'text-cyan-400'
-                }`}>
-                  {!filteredLatest?.peakFlow
-                    ? 'Unknown'
-                    : filteredLatest.peakFlow < 200
-                    ? 'Critical'
-                    : filteredLatest.peakFlow < 400
-                    ? 'Low'
-                    : filteredLatest.peakFlow < 600
-                    ? 'Normal'
-                    : 'Excellent'}
-                </p>
-                <p className="text-xs mt-1">Normal: 400-600 L/min</p>
-              </div>
-              <Wind className="h-8 w-8 text-green-500" />
-            </div>
-          </GlassCard>
-        )}
-      </div>
 
-      {/* NEW: Resting Heart Rate & 7-Day Average - ALWAYS use unfiltered vitals data */}
-      {vitals.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold mb-1">Resting Heart Rate</p>
-                <p className="text-3xl font-bold font-bold">
-                  {(() => {
+            {/* NEW: Peak Flow Meter */}
+            {filteredLatest?.peakFlow && (
+              <GlassCard className="relative">
+                {filteredLatest && (
+                  <div className="absolute top-3 right-3">
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
+                      filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                      filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                      'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                    }`}>
+                      {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
+                        <><Smartphone className="h-3 w-3" /> Samsung</>
+                      ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
+                        <><Watch className="h-3 w-3" /> Polar</>
+                      ) : (
+                        <>✋ Manual</>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold mb-1">Peak Flow</p>
+                    <p className="text-2xl font-bold font-bold">
+                      {filteredLatest.peakFlow || '--'} <span className="text-sm">L/min</span>
+                    </p>
+                    <p className={`text-sm font-bold mt-1 ${
+                      !filteredLatest?.peakFlow
+                        ? 'text-yellow-500'
+                        : filteredLatest.peakFlow < 200
+                        ? 'text-red-500'
+                        : filteredLatest.peakFlow < 400
+                        ? 'text-yellow-500'
+                        : filteredLatest.peakFlow < 600
+                        ? 'text-green-400'
+                        : 'text-cyan-400'
+                    }`}>
+                      {!filteredLatest?.peakFlow
+                        ? 'Unknown'
+                        : filteredLatest.peakFlow < 200
+                        ? 'Critical'
+                        : filteredLatest.peakFlow < 400
+                        ? 'Low'
+                        : filteredLatest.peakFlow < 600
+                        ? 'Normal'
+                        : 'Excellent'}
+                    </p>
+                    <p className="text-xs mt-1">Normal: 400-600 L/min</p>
+                  </div>
+                  <Wind className="h-8 w-8 text-green-500" />
+                </div>
+              </GlassCard>
+            )}
+          </div>
+
+          {/* NEW: Resting Heart Rate & 7-Day Average - ALWAYS use unfiltered vitals data */}
+          {vitals.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <GlassCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold mb-1">Resting Heart Rate</p>
+                    <p className="text-3xl font-bold font-bold">
+                      {(() => {
+                        // Use unfiltered vitals to get absolute latest data
+                        const recentVitals = vitals.slice(-7);
+                        const validHRs = recentVitals.filter(v => v.heartRate);
+                        if (validHRs.length === 0) return '--';
+                        const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                        return minHR;
+                      })()} <span className="text-sm">bpm</span>
+                    </p>
+                    <p className={`text-sm font-bold mt-1 ${(() => {
+                      const recentVitals = vitals.slice(-7);
+                      const validHRs = recentVitals.filter(v => v.heartRate);
+                      if (validHRs.length === 0) return 'text-yellow-500';
+                      const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                      return minHR < 60 ? 'text-yellow-500' : minHR > 100 ? 'text-red-500' : 'text-white';
+                    })()}`}>
+                      {(() => {
+                        const recentVitals = vitals.slice(-7);
+                        const validHRs = recentVitals.filter(v => v.heartRate);
+                        if (validHRs.length === 0) return 'No data';
+                        const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
+                        if (minHR < 60) return 'Athletic/Low';
+                        if (minHR > 100) return 'Elevated';
+                        return 'Normal';
+                      })()}
+                    </p>
+                    <p className="text-xs mt-1">Lowest in last 7 days</p>
+                  </div>
+                  <Heart className="h-8 w-8 text-pink-500" />
+                </div>
+              </GlassCard>
+
+              <GlassCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
+                  <p className="text-3xl font-bold font-bold">
+                    {(() => {
+                      // Use unfiltered vitals to get absolute latest data
+                      const recentVitals = vitals.slice(-7);
+                      const validHRs = recentVitals.filter(v => v.heartRate);
+                      if (validHRs.length === 0) return '--';
+                      const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                      return Math.round(avg);
+                    })()} <span className="text-sm">bpm</span>
+                  </p>
+                  <p className={`text-sm font-bold mt-1 ${(() => {
                     // Use unfiltered vitals to get absolute latest data
                     const recentVitals = vitals.slice(-7);
                     const validHRs = recentVitals.filter(v => v.heartRate);
-                    if (validHRs.length === 0) return '--';
-                    const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                    return minHR;
-                  })()} <span className="text-sm">bpm</span>
-                </p>
-                <p className={`text-sm font-bold mt-1 ${(() => {
-                  const recentVitals = vitals.slice(-7);
-                  const validHRs = recentVitals.filter(v => v.heartRate);
-                  if (validHRs.length === 0) return 'text-yellow-500';
-                  const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                  return minHR < 60 ? 'text-yellow-500' : minHR > 100 ? 'text-red-500' : 'text-white';
-                })()}`}>
-                  {(() => {
+                    if (validHRs.length === 0) return 'text-yellow-500';
+                    const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                    return avg < 60 || avg > 100 ? 'text-red-500' : 'text-white';
+                  })()}`}>
+                    {(() => {
+                      const recentVitals = vitals.slice(-7);
+                      const validHRs = recentVitals.filter(v => v.heartRate);
+                      if (validHRs.length === 0) return 'No data';
+                      const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
+                      if (avg < 60) return 'Below normal';
+                      if (avg > 100) return 'Above normal';
+                      return 'Normal range';
+                    })()}
+                  </p>
+                  <p className="text-xs mt-1">Last {(() => {
                     const recentVitals = vitals.slice(-7);
-                    const validHRs = recentVitals.filter(v => v.heartRate);
-                    if (validHRs.length === 0) return 'No data';
-                    const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                    if (minHR < 60) return 'Athletic/Low';
-                    if (minHR > 100) return 'Elevated';
-                    return 'Normal';
-                  })()}
-                </p>
-                <p className="text-xs mt-1">Lowest in last 7 days</p>
+                    return recentVitals.filter(v => v.heartRate).length;
+                  })()} readings</p>
+                </div>
+                  <Activity className="h-8 w-8 text-red-500" />
+                </div>
+              </GlassCard>
+            </div>
+          )}
+
+          {/* NEW: Blood Pressure Trend */}
+          {filteredVitals.length >= 7 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold mb-1">Blood Pressure Trend</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const recentVitals = filteredVitals.slice(-7);
+                    const olderVitals = filteredVitals.slice(-14, -7);
+                    const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                    const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                    if (validRecent.length === 0 || validOlder.length === 0) return 'text-white';
+                    const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                    const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                    const diff = recentAvg - olderAvg;
+                    return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
+                  })()}`}>
+                    {(() => {
+                      const recentVitals = filteredVitals.slice(-7);
+                      const olderVitals = filteredVitals.slice(-14, -7);
+                      const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                      const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                      if (validRecent.length === 0 || validOlder.length === 0) return 'No data';
+                      const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                      const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                      const diff = recentAvg - olderAvg;
+                      if (diff < -5) return 'Improving';
+                      if (diff > 5) return 'Rising';
+                      return 'Stable';
+                    })()}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {(() => {
+                      const recentVitals = filteredVitals.slice(-7);
+                      const olderVitals = filteredVitals.slice(-14, -7);
+                      const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                      const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                      if (validRecent.length === 0 || validOlder.length === 0) return 'Need more data';
+                      const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                      const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                      const diff = recentAvg - olderAvg;
+                      return `${diff > 0 ? '+' : ''}${diff.toFixed(0)} mmHg vs last week`;
+                    })()}
+                  </p>
+                </div>
+                <TrendingUp className={`h-8 w-8 ${(() => {
+                  const recentVitals = filteredVitals.slice(-7);
+                  const olderVitals = filteredVitals.slice(-14, -7);
+                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
+                  if (validRecent.length === 0 || validOlder.length === 0) return 'text-gray-500';
+                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
+                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
+                  const diff = recentAvg - olderAvg;
+                  return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
+                })()}`} />
               </div>
-              <Heart className="h-8 w-8 text-pink-500" />
-            </div>
-          </GlassCard>
+            </GlassCard>
+          )}
 
+          {/* NEW: Hydration Goal Tracker */}
+          {filteredLatest?.hydrationStatus && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-bold mb-2">Daily Hydration Goal</p>
+                  <div className="w-full bg-gray-700 rounded-full h-4">
+                    <div
+                      className={`h-4 rounded-full transition-all ${
+                        filteredLatest.hydrationStatus >= 70 ? 'bg-green-500' :
+                        filteredLatest.hydrationStatus >= 50 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min(filteredLatest.hydrationStatus, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs mt-2">
+                    {filteredLatest.hydrationStatus}% of recommended daily intake
+                  </p>
+                </div>
+                <div className="ml-4 text-right">
+                  <p className="text-3xl font-bold font-bold">{filteredLatest.hydrationStatus}%</p>
+                  <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${
+                    filteredLatest.hydrationStatus >= 70 ? 'bg-green-500 text-white' :
+                    filteredLatest.hydrationStatus >= 50 ? 'bg-yellow-500 text-black' :
+                    'bg-red-500 text-white'
+                  }`}>
+                    {filteredLatest.hydrationStatus >= 70 ? 'Well Hydrated' :
+                     filteredLatest.hydrationStatus >= 50 ? 'Moderate' :
+                     'Dehydrated'}
+                  </p>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* NEW: Fever Pattern Detection Alert */}
+          {(() => {
+            const tempReadings = filteredVitals.filter(v => v.temperature).sort((a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+
+            if (tempReadings.length < 2) return null;
+
+            // Check for consecutive fever readings (>100.4°F)
+            let consecutiveFeverCount = 0;
+            let maxConsecutive = 0;
+            let latestFeverTemp = 0;
+
+            for (let i = 0; i < tempReadings.length; i++) {
+              if (tempReadings[i].temperature! >= 100.4) {
+                consecutiveFeverCount++;
+                latestFeverTemp = tempReadings[i].temperature!;
+                maxConsecutive = Math.max(maxConsecutive, consecutiveFeverCount);
+              } else {
+                consecutiveFeverCount = 0;
+              }
+            }
+
+            if (maxConsecutive < 2) return null;
+
+            return (
+              <div
+                className="relative overflow-hidden rounded-2xl p-6 mb-6"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))',
+                  border: '2px solid rgba(239, 68, 68, 0.4)',
+                  boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 p-3 rounded-full bg-red-500/20">
+                    <Thermometer className="h-6 w-6 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-red-400 mb-2 flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Fever Pattern Detected
+                    </h3>
+                    <p className="text-white mb-3">
+                      <strong>{maxConsecutive} consecutive readings</strong> above 100.4°F detected.
+                      Latest temperature: <strong>{latestFeverTemp.toFixed(1)}°F</strong>
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <p className="text-sm font-semibold text-red-300 mb-1">⚠️ Action Needed:</p>
+                        <ul className="text-xs text-gray-300 space-y-1">
+                          <li>• Monitor temperature every 2-4 hours</li>
+                          <li>• Stay hydrated</li>
+                          <li>• Rest and avoid strenuous activity</li>
+                        </ul>
+                      </div>
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <p className="text-sm font-semibold text-red-300 mb-1">🚨 Seek Medical Attention If:</p>
+                        <ul className="text-xs text-gray-300 space-y-1">
+                          <li>• Temperature exceeds 103°F</li>
+                          <li>• Fever lasts more than 3 days</li>
+                          <li>• Accompanied by chest pain or breathing difficulty</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* NEW: Average Body Temperature */}
+          {filteredVitals.length > 0 && filteredVitals.filter(v => v.temperature).length > 0 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold mb-1">Average Body Temperature</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
+                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                    if (avg >= 99.5) return 'text-red-400';
+                    if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
+                    return 'text-yellow-400';
+                  })()}`}>
+                    {(() => {
+                      const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
+                      const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                      return avg.toFixed(1);
+                    })()}°F
+                  </p>
+                  <p className="text-xs mt-1">
+                    Based on {filteredVitals.filter(v => v.temperature).length} readings
+                  </p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Thermometer className={`h-8 w-8 ${(() => {
+                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
+                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                    if (avg >= 99.5) return 'text-red-400';
+                    if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
+                    return 'text-yellow-400';
+                  })()}`} />
+                  <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
+                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                    if (avg >= 99.5) return 'bg-red-500 text-white';
+                    if (avg >= 98.0 && avg <= 99.0) return 'bg-green-500 text-white';
+                    return 'bg-yellow-500 text-black';
+                  })()}`}>
+                    {(() => {
+                      const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
+                      const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
+                      if (avg >= 99.5) return 'Elevated';
+                      if (avg >= 98.0 && avg <= 99.0) return 'Normal';
+                      return 'Low';
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* NEW: Blood Pressure Variability */}
+          {filteredVitals.length >= 3 && filteredVitals.filter(v => v.bloodPressureSystolic).length >= 3 && (
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold mb-1">Blood Pressure Variability</p>
+                  <p className={`text-3xl font-bold ${(() => {
+                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                    const stdDev = Math.sqrt(variance);
+                    if (stdDev <= 10) return 'text-green-400';
+                    if (stdDev <= 15) return 'text-yellow-400';
+                    return 'text-red-400';
+                  })()}`}>
+                    {(() => {
+                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                      const stdDev = Math.sqrt(variance);
+                      if (stdDev <= 10) return 'Low';
+                      if (stdDev <= 15) return 'Moderate';
+                      return 'High';
+                    })()}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {(() => {
+                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                      const stdDev = Math.sqrt(variance);
+                      return `±${stdDev.toFixed(1)} mmHg variation`;
+                    })()}
+                  </p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Activity className={`h-8 w-8 ${(() => {
+                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                    const stdDev = Math.sqrt(variance);
+                    if (stdDev <= 10) return 'text-green-400';
+                    if (stdDev <= 15) return 'text-yellow-400';
+                    return 'text-red-400';
+                  })()}`} />
+                  <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
+                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                    const stdDev = Math.sqrt(variance);
+                    if (stdDev <= 10) return 'bg-green-500 text-white';
+                    if (stdDev <= 15) return 'bg-yellow-500 text-black';
+                    return 'bg-red-500 text-white';
+                  })()}`}>
+                    {(() => {
+                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
+                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
+                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
+                      const stdDev = Math.sqrt(variance);
+                      if (stdDev <= 10) return 'Consistent';
+                      if (stdDev <= 15) return 'Variable';
+                      return 'Very Variable';
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* NEW: Mean Arterial Pressure (MAP) */}
+          {(() => {
+            // Get latest reading that has BP data (same approach as BP Variability)
+            const latestBP = filteredVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic).slice(-1)[0];
+            if (!latestBP) return null;
+
+            const systolic = latestBP.bloodPressureSystolic!;
+            const diastolic = latestBP.bloodPressureDiastolic!;
+            const map = Math.round((systolic + 2 * diastolic) / 3);
+
+            return (
+              <GlassCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
+                    <p className={`text-3xl font-bold ${
+                      map < 70 ? 'text-red-400' :
+                      map >= 70 && map <= 100 ? 'text-green-400' :
+                      map > 100 && map <= 110 ? 'text-yellow-400' :
+                      'text-red-400'
+                    }`}>
+                      {map}
+                      <span className="text-sm ml-1">mmHg</span>
+                    </p>
+                    <p className={`text-sm font-bold mt-1 ${
+                      map < 70 ? 'text-red-400' :
+                      map >= 70 && map <= 100 ? 'text-green-400' :
+                      map > 100 && map <= 110 ? 'text-yellow-400' :
+                      'text-red-400'
+                    }`}>
+                      {map < 70 ? 'Low' :
+                       map >= 70 && map <= 100 ? 'Normal' :
+                       map > 100 && map <= 110 ? 'Elevated' :
+                       'High'}
+                    </p>
+                    <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Heart className={`h-8 w-8 ${
+                      map < 70 || map > 110 ? 'text-red-400' :
+                      map >= 70 && map <= 100 ? 'text-green-400' :
+                      'text-yellow-400'
+                    }`} />
+                    <div className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      map < 70 || map > 110 ? 'bg-red-500 text-white' :
+                      map >= 70 && map <= 100 ? 'bg-green-500 text-white' :
+                      'bg-yellow-500 text-black'
+                    }`}>
+                      MAP
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            );
+          })()}
+
+          {/* Chart Controls */}
           <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
-              <p className="text-3xl font-bold font-bold">
-                {(() => {
-                  // Use unfiltered vitals to get absolute latest data
-                  const recentVitals = vitals.slice(-7);
-                  const validHRs = recentVitals.filter(v => v.heartRate);
-                  if (validHRs.length === 0) return '--';
-                  const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                  return Math.round(avg);
-                })()} <span className="text-sm">bpm</span>
-              </p>
-              <p className={`text-sm font-bold mt-1 ${(() => {
-                // Use unfiltered vitals to get absolute latest data
-                const recentVitals = vitals.slice(-7);
-                const validHRs = recentVitals.filter(v => v.heartRate);
-                if (validHRs.length === 0) return 'text-yellow-500';
-                const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                return avg < 60 || avg > 100 ? 'text-red-500' : 'text-white';
-              })()}`}>
-                {(() => {
-                  const recentVitals = vitals.slice(-7);
-                  const validHRs = recentVitals.filter(v => v.heartRate);
-                  if (validHRs.length === 0) return 'No data';
-                  const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                  if (avg < 60) return 'Below normal';
-                  if (avg > 100) return 'Above normal';
-                  return 'Normal range';
-                })()}
-              </p>
-              <p className="text-xs mt-1">Last {(() => {
-                const recentVitals = vitals.slice(-7);
-                return recentVitals.filter(v => v.heartRate).length;
-              })()} readings</p>
-            </div>
-              <Activity className="h-8 w-8 text-red-500" />
-            </div>
-          </GlassCard>
-        </div>
-      )}
-
-      {/* NEW: Blood Pressure Trend */}
-      {filteredVitals.length >= 7 && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Blood Pressure Trend</p>
-              <p className={`text-3xl font-bold ${(() => {
-                const recentVitals = filteredVitals.slice(-7);
-                const olderVitals = filteredVitals.slice(-14, -7);
-                const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                if (validRecent.length === 0 || validOlder.length === 0) return 'text-white';
-                const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                const diff = recentAvg - olderAvg;
-                return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
-              })()}`}>
-                {(() => {
-                  const recentVitals = filteredVitals.slice(-7);
-                  const olderVitals = filteredVitals.slice(-14, -7);
-                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  if (validRecent.length === 0 || validOlder.length === 0) return 'No data';
-                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                  const diff = recentAvg - olderAvg;
-                  if (diff < -5) return 'Improving';
-                  if (diff > 5) return 'Rising';
-                  return 'Stable';
-                })()}
-              </p>
-              <p className="text-xs mt-1">
-                {(() => {
-                  const recentVitals = filteredVitals.slice(-7);
-                  const olderVitals = filteredVitals.slice(-14, -7);
-                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  if (validRecent.length === 0 || validOlder.length === 0) return 'Need more data';
-                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                  const diff = recentAvg - olderAvg;
-                  return `${diff > 0 ? '+' : ''}${diff.toFixed(0)} mmHg vs last week`;
-                })()}
-              </p>
-            </div>
-            <TrendingUp className={`h-8 w-8 ${(() => {
-              const recentVitals = filteredVitals.slice(-7);
-              const olderVitals = filteredVitals.slice(-14, -7);
-              const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-              const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-              if (validRecent.length === 0 || validOlder.length === 0) return 'text-gray-500';
-              const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-              const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-              const diff = recentAvg - olderAvg;
-              return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
-            })()}`} />
-          </div>
-        </GlassCard>
-      )}
-
-      {/* NEW: Hydration Goal Tracker */}
-      {filteredLatest?.hydrationStatus && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-bold mb-2">Daily Hydration Goal</p>
-              <div className="w-full bg-gray-700 rounded-full h-4">
-                <div
-                  className={`h-4 rounded-full transition-all ${
-                    filteredLatest.hydrationStatus >= 70 ? 'bg-green-500' :
-                    filteredLatest.hydrationStatus >= 50 ? 'bg-yellow-500' :
-                    'bg-red-500'
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setSelectedMetric('bp')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'bp' 
+                      ? 'bg-blue-500' 
+                      : 'glass-button font-bold'
                   }`}
-                  style={{ width: `${Math.min(filteredLatest.hydrationStatus, 100)}%` }}
-                ></div>
-              </div>
-              <p className="text-xs mt-2">
-                {filteredLatest.hydrationStatus}% of recommended daily intake
-              </p>
-            </div>
-            <div className="ml-4 text-right">
-              <p className="text-3xl font-bold font-bold">{filteredLatest.hydrationStatus}%</p>
-              <p className={`text-xs font-bold px-3 py-1 rounded-full mt-1 ${
-                filteredLatest.hydrationStatus >= 70 ? 'bg-green-500 text-white' :
-                filteredLatest.hydrationStatus >= 50 ? 'bg-yellow-500 text-black' :
-                'bg-red-500 text-white'
-              }`}>
-                {filteredLatest.hydrationStatus >= 70 ? 'Well Hydrated' :
-                 filteredLatest.hydrationStatus >= 50 ? 'Moderate' :
-                 'Dehydrated'}
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* NEW: Fever Pattern Detection Alert */}
-      {(() => {
-        const tempReadings = filteredVitals.filter(v => v.temperature).sort((a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-
-        if (tempReadings.length < 2) return null;
-
-        // Check for consecutive fever readings (>100.4°F)
-        let consecutiveFeverCount = 0;
-        let maxConsecutive = 0;
-        let latestFeverTemp = 0;
-
-        for (let i = 0; i < tempReadings.length; i++) {
-          if (tempReadings[i].temperature! >= 100.4) {
-            consecutiveFeverCount++;
-            latestFeverTemp = tempReadings[i].temperature!;
-            maxConsecutive = Math.max(maxConsecutive, consecutiveFeverCount);
-          } else {
-            consecutiveFeverCount = 0;
-          }
-        }
-
-        if (maxConsecutive < 2) return null;
-
-        return (
-          <div
-            className="relative overflow-hidden rounded-2xl p-6 mb-6"
-            style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))',
-              border: '2px solid rgba(239, 68, 68, 0.4)',
-              boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 rounded-full bg-red-500/20">
-                <Thermometer className="h-6 w-6 text-red-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-red-400 mb-2 flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  Fever Pattern Detected
-                </h3>
-                <p className="text-white mb-3">
-                  <strong>{maxConsecutive} consecutive readings</strong> above 100.4°F detected.
-                  Latest temperature: <strong>{latestFeverTemp.toFixed(1)}°F</strong>
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <p className="text-sm font-semibold text-red-300 mb-1">⚠️ Action Needed:</p>
-                    <ul className="text-xs text-gray-300 space-y-1">
-                      <li>• Monitor temperature every 2-4 hours</li>
-                      <li>• Stay hydrated</li>
-                      <li>• Rest and avoid strenuous activity</li>
-                    </ul>
-                  </div>
-                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <p className="text-sm font-semibold text-red-300 mb-1">🚨 Seek Medical Attention If:</p>
-                    <ul className="text-xs text-gray-300 space-y-1">
-                      <li>• Temperature exceeds 103°F</li>
-                      <li>• Fever lasts more than 3 days</li>
-                      <li>• Accompanied by chest pain or breathing difficulty</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* NEW: Average Body Temperature */}
-      {filteredVitals.length > 0 && filteredVitals.filter(v => v.temperature).length > 0 && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Average Body Temperature</p>
-              <p className={`text-3xl font-bold ${(() => {
-                const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                if (avg >= 99.5) return 'text-red-400';
-                if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
-                return 'text-yellow-400';
-              })()}`}>
-                {(() => {
-                  const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                  const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                  return avg.toFixed(1);
-                })()}°F
-              </p>
-              <p className="text-xs mt-1">
-                Based on {filteredVitals.filter(v => v.temperature).length} readings
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Thermometer className={`h-8 w-8 ${(() => {
-                const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                if (avg >= 99.5) return 'text-red-400';
-                if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
-                return 'text-yellow-400';
-              })()}`} />
-              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
-                const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                if (avg >= 99.5) return 'bg-red-500 text-white';
-                if (avg >= 98.0 && avg <= 99.0) return 'bg-green-500 text-white';
-                return 'bg-yellow-500 text-black';
-              })()}`}>
-                {(() => {
-                  const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                  const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                  if (avg >= 99.5) return 'Elevated';
-                  if (avg >= 98.0 && avg <= 99.0) return 'Normal';
-                  return 'Low';
-                })()}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* NEW: Blood Pressure Variability */}
-      {filteredVitals.length >= 3 && filteredVitals.filter(v => v.bloodPressureSystolic).length >= 3 && (
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold mb-1">Blood Pressure Variability</p>
-              <p className={`text-3xl font-bold ${(() => {
-                const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                const stdDev = Math.sqrt(variance);
-                if (stdDev <= 10) return 'text-green-400';
-                if (stdDev <= 15) return 'text-yellow-400';
-                return 'text-red-400';
-              })()}`}>
-                {(() => {
-                  const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                  const stdDev = Math.sqrt(variance);
-                  if (stdDev <= 10) return 'Low';
-                  if (stdDev <= 15) return 'Moderate';
-                  return 'High';
-                })()}
-              </p>
-              <p className="text-xs mt-1">
-                {(() => {
-                  const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                  const stdDev = Math.sqrt(variance);
-                  return `±${stdDev.toFixed(1)} mmHg variation`;
-                })()}
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Activity className={`h-8 w-8 ${(() => {
-                const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                const stdDev = Math.sqrt(variance);
-                if (stdDev <= 10) return 'text-green-400';
-                if (stdDev <= 15) return 'text-yellow-400';
-                return 'text-red-400';
-              })()}`} />
-              <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
-                const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                const stdDev = Math.sqrt(variance);
-                if (stdDev <= 10) return 'bg-green-500 text-white';
-                if (stdDev <= 15) return 'bg-yellow-500 text-black';
-                return 'bg-red-500 text-white';
-              })()}`}>
-                {(() => {
-                  const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                  const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                  const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                  const stdDev = Math.sqrt(variance);
-                  if (stdDev <= 10) return 'Consistent';
-                  if (stdDev <= 15) return 'Variable';
-                  return 'Very Variable';
-                })()}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* NEW: Mean Arterial Pressure (MAP) */}
-      {(() => {
-        // Get latest reading that has BP data (same approach as BP Variability)
-        const latestBP = filteredVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic).slice(-1)[0];
-        if (!latestBP) return null;
-
-        const systolic = latestBP.bloodPressureSystolic!;
-        const diastolic = latestBP.bloodPressureDiastolic!;
-        const map = Math.round((systolic + 2 * diastolic) / 3);
-
-        return (
-          <GlassCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
-                <p className={`text-3xl font-bold ${
-                  map < 70 ? 'text-red-400' :
-                  map >= 70 && map <= 100 ? 'text-green-400' :
-                  map > 100 && map <= 110 ? 'text-yellow-400' :
-                  'text-red-400'
-                }`}>
-                  {map}
-                  <span className="text-sm ml-1">mmHg</span>
-                </p>
-                <p className={`text-sm font-bold mt-1 ${
-                  map < 70 ? 'text-red-400' :
-                  map >= 70 && map <= 100 ? 'text-green-400' :
-                  map > 100 && map <= 110 ? 'text-yellow-400' :
-                  'text-red-400'
-                }`}>
-                  {map < 70 ? 'Low' :
-                   map >= 70 && map <= 100 ? 'Normal' :
-                   map > 100 && map <= 110 ? 'Elevated' :
-                   'High'}
-                </p>
-                <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Heart className={`h-8 w-8 ${
-                  map < 70 || map > 110 ? 'text-red-400' :
-                  map >= 70 && map <= 100 ? 'text-green-400' :
-                  'text-yellow-400'
-                }`} />
-                <div className={`text-xs font-bold px-3 py-1 rounded-full ${
-                  map < 70 || map > 110 ? 'bg-red-500 text-white' :
-                  map >= 70 && map <= 100 ? 'bg-green-500 text-white' :
-                  'bg-yellow-500 text-black'
-                }`}>
+                >
+                  Blood Pressure
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('hr')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'hr' 
+                      ? 'bg-red-500' 
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Heart Rate
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('weight')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'weight' 
+                      ? 'bg-green-500' 
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Weight
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('sugar')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'sugar'
+                      ? 'bg-orange-500'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Blood Sugar
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('temp')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'temp'
+                      ? 'bg-orange-600'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Temperature
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('hydration')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'hydration'
+                      ? 'bg-blue-600'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Hydration
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('o2')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'o2'
+                      ? 'bg-cyan-500'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  O₂ Sat
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('peakflow')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'peakflow'
+                      ? 'bg-green-600'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  Peak Flow
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('map')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'map'
+                      ? 'bg-purple-600'
+                      : 'glass-button font-bold'
+                  }`}
+                >
                   MAP
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('bpvariability')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    selectedMetric === 'bpvariability'
+                      ? 'bg-pink-600'
+                      : 'glass-button font-bold'
+                  }`}
+                >
+                  BP Variability
+                </button>
+              </div>
+
+              {/* Surgery Date Timeline Info */}
+              <div className="flex items-center justify-between gap-3 px-4 py-2 rounded-lg" style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
+                border: '1px solid rgba(59, 130, 246, 0.3)'
+              }}>
+                <div className="flex items-center gap-3">
+                  {surgeryDate ? (
+                    <>
+                      <Calendar className="h-4 w-4 text-blue-400" />
+                      <span className="text-xs text-blue-300">
+                        <strong>Surgery Date (Day 0):</strong> {format(new Date(surgeryDate), 'MMM dd, yyyy')}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-2">
+                        Timeline: {format(subMonths(new Date(surgeryDate), 1), 'MMM yyyy')} - {format(addMonths(new Date(), 1), 'MMM yyyy')}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                      <span className="text-xs text-yellow-300">
+                        No surgery date set - Showing last 3 months
+                      </span>
+                    </>
+                  )}
                 </div>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-all hover:bg-blue-500/20"
+                  style={{ color: 'rgba(96, 165, 250, 1)' }}
+                  title="Edit surgery date in Profile"
+                >
+                  <Edit className="h-3 w-3" />
+                  Edit
+                </button>
               </div>
             </div>
-          </GlassCard>
-        );
-      })()}
 
-      {/* Chart Controls */}
-      <GlassCard>
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setSelectedMetric('bp')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'bp' 
-                  ? 'bg-blue-500' 
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Blood Pressure
-            </button>
-            <button
-              onClick={() => setSelectedMetric('hr')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'hr' 
-                  ? 'bg-red-500' 
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Heart Rate
-            </button>
-            <button
-              onClick={() => setSelectedMetric('weight')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'weight' 
-                  ? 'bg-green-500' 
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Weight
-            </button>
-            <button
-              onClick={() => setSelectedMetric('sugar')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'sugar'
-                  ? 'bg-orange-500'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Blood Sugar
-            </button>
-            <button
-              onClick={() => setSelectedMetric('temp')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'temp'
-                  ? 'bg-orange-600'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Temperature
-            </button>
-            <button
-              onClick={() => setSelectedMetric('hydration')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'hydration'
-                  ? 'bg-blue-600'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Hydration
-            </button>
-            <button
-              onClick={() => setSelectedMetric('o2')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'o2'
-                  ? 'bg-cyan-500'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              O₂ Sat
-            </button>
-            <button
-              onClick={() => setSelectedMetric('peakflow')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'peakflow'
-                  ? 'bg-green-600'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              Peak Flow
-            </button>
-            <button
-              onClick={() => setSelectedMetric('map')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'map'
-                  ? 'bg-purple-600'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              MAP
-            </button>
-            <button
-              onClick={() => setSelectedMetric('bpvariability')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedMetric === 'bpvariability'
-                  ? 'bg-pink-600'
-                  : 'glass-button font-bold'
-              }`}
-            >
-              BP Variability
-            </button>
-          </div>
-
-          {/* Surgery Date Timeline Info */}
-          <div className="flex items-center justify-between gap-3 px-4 py-2 rounded-lg" style={{
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
-            border: '1px solid rgba(59, 130, 246, 0.3)'
-          }}>
-            <div className="flex items-center gap-3">
-              {surgeryDate ? (
-                <>
-                  <Calendar className="h-4 w-4 text-blue-400" />
-                  <span className="text-xs text-blue-300">
-                    <strong>Surgery Date (Day 0):</strong> {format(new Date(surgeryDate), 'MMM dd, yyyy')}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    Timeline: {format(subMonths(new Date(surgeryDate), 1), 'MMM yyyy')} - {format(addMonths(new Date(), 1), 'MMM yyyy')}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                  <span className="text-xs text-yellow-300">
-                    No surgery date set - Showing last 3 months
-                  </span>
-                </>
-              )}
+            {/* UNIFIED TIME VIEW SELECTOR */}
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <span className="text-sm font-semibold text-gray-400 mr-2">Time Range:</span>
+              <button
+                onClick={() => setGlobalTimeView('7d')}
+                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+                  globalTimeView === '7d'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'glass-button hover:bg-purple-600/20'
+                }`}
+              >
+                7 Days
+              </button>
+              <button
+                onClick={() => setGlobalTimeView('30d')}
+                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+                  globalTimeView === '30d'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'glass-button hover:bg-purple-600/20'
+                }`}
+              >
+                30 Days
+              </button>
+              <button
+                onClick={() => setGlobalTimeView('90d')}
+                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+                  globalTimeView === '90d'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'glass-button hover:bg-purple-600/20'
+                }`}
+              >
+                90 Days
+              </button>
+              <button
+                onClick={() => setGlobalTimeView('surgery')}
+                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
+                  globalTimeView === 'surgery'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
+                    : 'glass-button hover:bg-blue-600/20'
+                }`}
+                disabled={!surgeryDate}
+                title={surgeryDate ? 'Show surgery-based timeline' : 'No surgery date set'}
+              >
+                {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
+              </button>
             </div>
-            <button
-              onClick={() => navigate('/profile')}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-all hover:bg-blue-500/20"
-              style={{ color: 'rgba(96, 165, 250, 1)' }}
-              title="Edit surgery date in Profile"
-            >
-              <Edit className="h-3 w-3" />
-              Edit
-            </button>
-          </div>
-        </div>
 
-        {/* UNIFIED TIME VIEW SELECTOR */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <span className="text-sm font-semibold text-gray-400 mr-2">Time Range:</span>
-          <button
-            onClick={() => setGlobalTimeView('7d')}
-            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-              globalTimeView === '7d'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                : 'glass-button hover:bg-purple-600/20'
-            }`}
-          >
-            7 Days
-          </button>
-          <button
-            onClick={() => setGlobalTimeView('30d')}
-            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-              globalTimeView === '30d'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                : 'glass-button hover:bg-purple-600/20'
-            }`}
-          >
-            30 Days
-          </button>
-          <button
-            onClick={() => setGlobalTimeView('90d')}
-            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-              globalTimeView === '90d'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                : 'glass-button hover:bg-purple-600/20'
-            }`}
-          >
-            90 Days
-          </button>
-          <button
-            onClick={() => setGlobalTimeView('surgery')}
-            className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-              globalTimeView === 'surgery'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
-                : 'glass-button hover:bg-blue-600/20'
-            }`}
-            disabled={!surgeryDate}
-            title={surgeryDate ? 'Show surgery-based timeline' : 'No surgery date set'}
-          >
-            {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
-          </button>
-        </div>
+            {/* Surgery Date Display (Day 0) - UNIFIED */}
+            {surgeryDate && globalTimeView === 'surgery' && (
+              <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-lg mb-4" style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
+                border: '2px solid rgba(59, 130, 246, 0.5)',
+                boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+              }}>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/30 border border-blue-400">
+                  <Activity className="h-5 w-5 text-blue-300" />
+                  <span className="text-blue-200 font-bold text-sm">DAY 0</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-200">
+                  Surgery Date:{' '}
+                  <span className="text-blue-300 font-bold text-base">
+                    {format(new Date(surgeryDate), 'MMM dd, yyyy')}
+                  </span>
+                </span>
+              </div>
+            )}
 
-        {/* Surgery Date Display (Day 0) - UNIFIED */}
-        {surgeryDate && globalTimeView === 'surgery' && (
-          <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-lg mb-4" style={{
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
-            border: '2px solid rgba(59, 130, 246, 0.5)',
-            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
-          }}>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/30 border border-blue-400">
-              <Activity className="h-5 w-5 text-blue-300" />
-              <span className="text-blue-200 font-bold text-sm">DAY 0</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-200">
-              Surgery Date:{' '}
-              <span className="text-blue-300 font-bold text-base">
-                {format(new Date(surgeryDate), 'MMM dd, yyyy')}
+            {/* Date Range Display - UNIFIED */}
+            <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
+              background: selectedMetric === 'hydration'
+                ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))'
+                : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
+              border: selectedMetric === 'hydration'
+                ? '1px solid rgba(6, 182, 212, 0.4)'
+                : '1px solid rgba(59, 130, 246, 0.3)',
+            }}>
+              <Calendar className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-semibold text-gray-300">
+                {(() => {
+                  const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
+                  const viewLabel =
+                    globalTimeView === '7d' ? '7 days with 1-month buffer' :
+                    globalTimeView === '30d' ? '30 days with 1-month buffer' :
+                    globalTimeView === '90d' ? '90 days with 1-month buffer' :
+                    surgeryDate ? '1 month pre-surgery to 1 month ahead' : 'Last 3 months with buffer';
+
+                  return (
+                    <>
+                      Showing data from{' '}
+                      <span className="text-blue-400 font-bold">
+                        {format(new Date(startDate), 'MMM dd, yyyy')}
+                      </span>
+                      {' '}to{' '}
+                      <span className="text-blue-400 font-bold">
+                        {format(new Date(endDate), 'MMM dd, yyyy')}
+                      </span>
+                      {' '}({viewLabel})
+                    </>
+                  );
+                })()}
               </span>
-            </span>
-          </div>
-        )}
+            </div>
 
-        {/* Date Range Display - UNIFIED */}
-        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
-          background: selectedMetric === 'hydration'
-            ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))'
-            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
-          border: selectedMetric === 'hydration'
-            ? '1px solid rgba(6, 182, 212, 0.4)'
-            : '1px solid rgba(59, 130, 246, 0.3)',
-        }}>
-          <Calendar className="h-4 w-4 text-blue-400" />
-          <span className="text-sm font-semibold text-gray-300">
-            {(() => {
-              const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
-              const viewLabel =
-                globalTimeView === '7d' ? '7 days with 1-month buffer' :
-                globalTimeView === '30d' ? '30 days with 1-month buffer' :
-                globalTimeView === '90d' ? '90 days with 1-month buffer' :
-                surgeryDate ? '1 month pre-surgery to 1 month ahead' : 'Last 3 months with buffer';
-
-              return (
-                <>
-                  Showing data from{' '}
-                  <span className="text-blue-400 font-bold">
-                    {format(new Date(startDate), 'MMM dd, yyyy')}
-                  </span>
-                  {' '}to{' '}
-                  <span className="text-blue-400 font-bold">
-                    {format(new Date(endDate), 'MMM dd, yyyy')}
-                  </span>
-                  {' '}({viewLabel})
-                </>
-              );
-            })()}
-          </span>
-        </div>
-
-        {/* Chart */}
-        <div className="h-96">
-          {activeChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              {selectedMetric === 'bp' ? (
-                <AreaChart data={activeChartData}>
-                  <defs>
-                    {/* Enhanced 3D gradients for blood pressure */}
-                    <linearGradient id="systolic" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f87171" stopOpacity={0.9}/>
-                      <stop offset="50%" stopColor="#ef4444" stopOpacity={0.5}/>
-                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="diastolic" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.9}/>
-                      <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.5}/>
-                      <stop offset="100%" stopColor="#2563eb" stopOpacity={0.1}/>
-                    </linearGradient>
-                    {/* Glow filter for areas */}
-                    <filter id="vitalsAreaGlow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                  {/* Surgery Date Reference Line (Day 0) */}
-                  {surgeryDate && (
-                    <ReferenceLine
-                      x={format(new Date(surgeryDate), 'MMM dd, yyyy')}
-                      stroke="#fbbf24"
-                      strokeWidth={3}
-                      strokeDasharray="5 5"
-                      label={{
-                        value: 'Surgery (Day 0)',
-                        position: 'top',
-                        fill: '#fbbf24',
-                        fontSize: 12,
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  )}
-                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 10, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis domain={[60, 200]} stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
-                      border: '2px solid #60a5fa',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
-                      backdropFilter: 'blur(10px)'
-                    }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
-                    cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
-                  />
-                  <Legend iconType="circle" />
-                  <Area
-                    type="monotone"
-                    dataKey="systolic"
-                    stroke="#ef4444"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#systolic)"
-                    name="Systolic"
-                    filter="url(#vitalsAreaGlow)"
-                    dot={{ r: 5, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 7, strokeWidth: 3 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="diastolic"
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#diastolic)"
-                    name="Diastolic"
-                    filter="url(#vitalsAreaGlow)"
-                    dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 7, strokeWidth: 3 }}
-                  />
-
-                  {/* Normal Range Reference Lines for Blood Pressure */}
-                  <ReferenceLine y={120} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Systolic (120)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                  <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Diastolic (80)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                </AreaChart>
-              ) : (
-                <LineChart data={activeChartData}>
-                  <defs>
-                    {/* Glow filter for lines */}
-                    <filter id="vitalsLineGlow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
-                  <YAxis
-                    domain={
-                      selectedMetric === 'hr' ? [0, 180] :
-                      selectedMetric === 'weight' ? [0, 320] :
-                      selectedMetric === 'sugar' ? [0, 300] :
-                      selectedMetric === 'temp' ? [90, 108] :
-                      selectedMetric === 'o2' ? [85, 105] :
-                      selectedMetric === 'peakflow' ? [0, 850] :
-                      selectedMetric === 'map' ? [40, 140] :
-                      selectedMetric === 'bpvariability' ? [0, 30] :
-                      selectedMetric === 'hydration' ? [0, 128] :
-                      undefined
-                    }
-                    ticks={selectedMetric === 'hydration' ? [0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128] : undefined}
-                    stroke={selectedMetric === 'hydration' ? '#10b981' : '#9ca3af'}
-                    tick={{
-                      fill: selectedMetric === 'hydration' ? '#10b981' : '#d1d5db',
-                      fontSize: 12,
-                      fontWeight: selectedMetric === 'hydration' ? 'bold' : 600
-                    }}
-                    tickLine={{ stroke: selectedMetric === 'hydration' ? '#10b981' : '#6b7280' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
-                      border: '2px solid #60a5fa',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
-                      backdropFilter: 'blur(10px)'
-                    }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
-                    cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
-                  />
-                  <Legend iconType="circle" />
-                  <Line
-                    type="monotone"
-                    dataKey={
-                      selectedMetric === 'hr' ? 'heartRate' :
-                      selectedMetric === 'weight' ? 'weight' :
-                      selectedMetric === 'sugar' ? 'bloodSugar' :
-                      selectedMetric === 'temp' ? 'temperature' :
-                      selectedMetric === 'hydration' ? 'hydrationOunces' :
-                      selectedMetric === 'peakflow' ? 'peakFlow' :
-                      selectedMetric === 'map' ? 'map' :
-                      selectedMetric === 'bpvariability' ? 'bpVariability' :
-                      'o2'
-                    }
-                    stroke={
-                      selectedMetric === 'hr' ? '#ef4444' :
-                      selectedMetric === 'weight' ? '#10b981' :
-                      selectedMetric === 'sugar' ? '#f97316' :
-                      selectedMetric === 'temp' ? '#ea580c' :
-                      selectedMetric === 'hydration' ? '#3b82f6' :
-                      selectedMetric === 'peakflow' ? '#22c55e' :
-                      selectedMetric === 'map' ? '#9333ea' :
-                      selectedMetric === 'bpvariability' ? '#ec4899' :
-                      '#06b6d4'
-                    }
-                    strokeWidth={4}
-                    dot={{
-                      r: 6,
-                      strokeWidth: 2,
-                      stroke: '#fff',
-                      fill: selectedMetric === 'hr' ? '#ef4444' :
-                            selectedMetric === 'weight' ? '#10b981' :
-                            selectedMetric === 'sugar' ? '#f97316' :
-                            selectedMetric === 'temp' ? '#ea580c' :
-                            selectedMetric === 'hydration' ? '#3b82f6' :
-                            selectedMetric === 'peakflow' ? '#22c55e' :
-                            selectedMetric === 'map' ? '#9333ea' :
-                            selectedMetric === 'bpvariability' ? '#ec4899' :
-                            '#06b6d4'
-                    }}
-                    activeDot={{ r: 9, strokeWidth: 3 }}
-                    name={
-                      selectedMetric === 'hr' ? 'Heart Rate (bpm)' :
-                      selectedMetric === 'weight' ? 'Weight (lbs)' :
-                      selectedMetric === 'sugar' ? 'Blood Sugar (mg/dL)' :
-                      selectedMetric === 'temp' ? 'Temperature (°F)' :
-                      selectedMetric === 'hydration' ? 'Water Intake (oz)' :
-                      selectedMetric === 'peakflow' ? 'Peak Flow (L/min)' :
-                      selectedMetric === 'map' ? 'Mean Arterial Pressure (mmHg)' :
-                      selectedMetric === 'bpvariability' ? 'BP Variability (StdDev)' :
-                      'O₂ Saturation (%)'
-                    }
-                    filter="url(#vitalsLineGlow)"
-                  />
-
-                  {/* Hydration Target Line */}
-                  {selectedMetric === 'hydration' && (
-                    <Line
-                      type="monotone"
-                      dataKey="hydrationTarget"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name="Daily Target (oz)"
-                    />
-                  )}
-
-                  {/* Hydration Reference Lines - PERSONALIZED */}
-                  {selectedMetric === 'hydration' && (() => {
-                    const personalTarget = calculatePersonalizedHydrationTarget();
-                    const criticalLow = Math.round(personalTarget * 0.5); // 50% of target
-                    const low = Math.round(personalTarget * 0.75); // 75% of target
-                    const optimalMax = Math.round(personalTarget * 1.3); // 130% of target
-
-                    return (
-                      <>
-                        {/* Colored zones as background areas */}
-                        <ReferenceArea y1={0} y2={criticalLow} fill="#ef4444" fillOpacity={0.1} />
-                        <ReferenceArea y1={criticalLow} y2={low} fill="#eab308" fillOpacity={0.1} />
-                        <ReferenceArea y1={low} y2={optimalMax} fill="#10b981" fillOpacity={0.1} />
-
-                        {/* Reference lines */}
+            {/* Chart */}
+            <div className="h-96">
+              {activeChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  {selectedMetric === 'bp' ? (
+                    <AreaChart data={activeChartData}>
+                      <defs>
+                        {/* Enhanced 3D gradients for blood pressure */}
+                        <linearGradient id="systolic" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f87171" stopOpacity={0.9}/>
+                          <stop offset="50%" stopColor="#ef4444" stopOpacity={0.5}/>
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="diastolic" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.9}/>
+                          <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.5}/>
+                          <stop offset="100%" stopColor="#2563eb" stopOpacity={0.1}/>
+                        </linearGradient>
+                        {/* Glow filter for areas */}
+                        <filter id="vitalsAreaGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      {/* Surgery Date Reference Line (Day 0) */}
+                      {surgeryDate && (
                         <ReferenceLine
-                          y={criticalLow}
-                          stroke="#ef4444"
-                          strokeDasharray="3 3"
-                          strokeWidth={2}
-                          label={{
-                            value: `Critical Low (${criticalLow} oz)`,
-                            position: 'insideTopRight',
-                            fill: '#ef4444',
-                            fontSize: 11,
-                            fontWeight: 'bold'
-                          }}
-                        />
-                        <ReferenceLine
-                          y={low}
-                          stroke="#eab308"
-                          strokeDasharray="3 3"
-                          strokeWidth={2}
-                          label={{
-                            value: `Low (${low} oz)`,
-                            position: 'insideTopRight',
-                            fill: '#eab308',
-                            fontSize: 11,
-                            fontWeight: 'bold'
-                          }}
-                        />
-                        <ReferenceLine
-                          y={personalTarget}
-                          stroke="#10b981"
-                          strokeDasharray="5 5"
+                          x={format(new Date(surgeryDate), 'MMM dd, yyyy')}
+                          stroke="#fbbf24"
                           strokeWidth={3}
+                          strokeDasharray="5 5"
                           label={{
-                            value: `🎯 YOUR TARGET (${personalTarget} oz)`,
-                            position: 'insideTopRight',
-                            fill: '#10b981',
+                            value: 'Surgery (Day 0)',
+                            position: 'top',
+                            fill: '#fbbf24',
                             fontSize: 12,
                             fontWeight: 'bold'
                           }}
                         />
-                        <ReferenceLine
-                          y={optimalMax}
-                          stroke="#3b82f6"
-                          strokeDasharray="5 5"
+                      )}
+                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 10, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} angle={-45} textAnchor="end" height={80} />
+                      <YAxis domain={[60, 200]} stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #60a5fa',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                        cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
+                      />
+                      <Legend iconType="circle" />
+                      <Area
+                        type="monotone"
+                        dataKey="systolic"
+                        stroke="#ef4444"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#systolic)"
+                        name="Systolic"
+                        filter="url(#vitalsAreaGlow)"
+                        dot={{ r: 5, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 7, strokeWidth: 3 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="diastolic"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#diastolic)"
+                        name="Diastolic"
+                        filter="url(#vitalsAreaGlow)"
+                        dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 7, strokeWidth: 3 }}
+                      />
+
+                      {/* Normal Range Reference Lines for Blood Pressure */}
+                      <ReferenceLine y={120} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Systolic (120)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Diastolic (80)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                    </AreaChart>
+                  ) : (
+                    <LineChart data={activeChartData}>
+                      <defs>
+                        {/* Glow filter for lines */}
+                        <filter id="vitalsLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 12, fontWeight: 600 }} tickLine={{ stroke: '#6b7280' }} />
+                      <YAxis
+                        domain={
+                          selectedMetric === 'hr' ? [0, 180] :
+                          selectedMetric === 'weight' ? [0, 320] :
+                          selectedMetric === 'sugar' ? [0, 300] :
+                          selectedMetric === 'temp' ? [90, 108] :
+                          selectedMetric === 'o2' ? [85, 105] :
+                          selectedMetric === 'peakflow' ? [0, 850] :
+                          selectedMetric === 'map' ? [40, 140] :
+                          selectedMetric === 'bpvariability' ? [0, 30] :
+                          selectedMetric === 'hydration' ? [0, 128] :
+                          undefined
+                        }
+                        ticks={selectedMetric === 'hydration' ? [0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128] : undefined}
+                        stroke={selectedMetric === 'hydration' ? '#10b981' : '#9ca3af'}
+                        tick={{
+                          fill: selectedMetric === 'hydration' ? '#10b981' : '#d1d5db',
+                          fontSize: 12,
+                          fontWeight: selectedMetric === 'hydration' ? 'bold' : 600
+                        }}
+                        tickLine={{ stroke: selectedMetric === 'hydration' ? '#10b981' : '#6b7280' }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
+                          border: '2px solid #60a5fa',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                        cursor={{ fill: 'rgba(96, 165, 250, 0.1)', stroke: '#60a5fa', strokeWidth: 2 }}
+                      />
+                      <Legend iconType="circle" />
+                      <Line
+                        type="monotone"
+                        dataKey={
+                          selectedMetric === 'hr' ? 'heartRate' :
+                          selectedMetric === 'weight' ? 'weight' :
+                          selectedMetric === 'sugar' ? 'bloodSugar' :
+                          selectedMetric === 'temp' ? 'temperature' :
+                          selectedMetric === 'hydration' ? 'hydrationOunces' :
+                          selectedMetric === 'peakflow' ? 'peakFlow' :
+                          selectedMetric === 'map' ? 'map' :
+                          selectedMetric === 'bpvariability' ? 'bpVariability' :
+                          'o2'
+                        }
+                        stroke={
+                          selectedMetric === 'hr' ? '#ef4444' :
+                          selectedMetric === 'weight' ? '#10b981' :
+                          selectedMetric === 'sugar' ? '#f97316' :
+                          selectedMetric === 'temp' ? '#ea580c' :
+                          selectedMetric === 'hydration' ? '#3b82f6' :
+                          selectedMetric === 'peakflow' ? '#22c55e' :
+                          selectedMetric === 'map' ? '#9333ea' :
+                          selectedMetric === 'bpvariability' ? '#ec4899' :
+                          '#06b6d4'
+                        }
+                        strokeWidth={4}
+                        dot={{
+                          r: 6,
+                          strokeWidth: 2,
+                          stroke: '#fff',
+                          fill: selectedMetric === 'hr' ? '#ef4444' :
+                                selectedMetric === 'weight' ? '#10b981' :
+                                selectedMetric === 'sugar' ? '#f97316' :
+                                selectedMetric === 'temp' ? '#ea580c' :
+                                selectedMetric === 'hydration' ? '#3b82f6' :
+                                selectedMetric === 'peakflow' ? '#22c55e' :
+                                selectedMetric === 'map' ? '#9333ea' :
+                                selectedMetric === 'bpvariability' ? '#ec4899' :
+                                '#06b6d4'
+                        }}
+                        activeDot={{ r: 9, strokeWidth: 3 }}
+                        name={
+                          selectedMetric === 'hr' ? 'Heart Rate (bpm)' :
+                          selectedMetric === 'weight' ? 'Weight (lbs)' :
+                          selectedMetric === 'sugar' ? 'Blood Sugar (mg/dL)' :
+                          selectedMetric === 'temp' ? 'Temperature (°F)' :
+                          selectedMetric === 'hydration' ? 'Water Intake (oz)' :
+                          selectedMetric === 'peakflow' ? 'Peak Flow (L/min)' :
+                          selectedMetric === 'map' ? 'Mean Arterial Pressure (mmHg)' :
+                          selectedMetric === 'bpvariability' ? 'BP Variability (StdDev)' :
+                          'O₂ Saturation (%)'
+                        }
+                        filter="url(#vitalsLineGlow)"
+                      />
+
+                      {/* Hydration Target Line */}
+                      {selectedMetric === 'hydration' && (
+                        <Line
+                          type="monotone"
+                          dataKey="hydrationTarget"
+                          stroke="#10b981"
                           strokeWidth={2}
-                          label={{
-                            value: `Max (${optimalMax} oz)`,
-                            position: 'insideBottomRight',
-                            fill: '#3b82f6',
-                            fontSize: 11,
-                            fontWeight: 'bold'
-                          }}
+                          strokeDasharray="5 5"
+                          dot={false}
+                          name="Daily Target (oz)"
                         />
-                      </>
-                    );
-                  })()}
+                      )}
 
-                  {/* Normal Range Reference Lines */}
-                  {selectedMetric === 'hr' && (
-                    <>
-                      <ReferenceLine y={60} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (60)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                    </>
+                      {/* Hydration Reference Lines - PERSONALIZED */}
+                      {selectedMetric === 'hydration' && (() => {
+                        const personalTarget = calculatePersonalizedHydrationTarget();
+                        const criticalLow = Math.round(personalTarget * 0.5); // 50% of target
+                        const low = Math.round(personalTarget * 0.75); // 75% of target
+                        const optimalMax = Math.round(personalTarget * 1.3); // 130% of target
+
+                        return (
+                          <>
+                            {/* Colored zones as background areas */}
+                            <ReferenceArea y1={0} y2={criticalLow} fill="#ef4444" fillOpacity={0.1} />
+                            <ReferenceArea y1={criticalLow} y2={low} fill="#eab308" fillOpacity={0.1} />
+                            <ReferenceArea y1={low} y2={optimalMax} fill="#10b981" fillOpacity={0.1} />
+
+                            {/* Reference lines */}
+                            <ReferenceLine
+                              y={criticalLow}
+                              stroke="#ef4444"
+                              strokeDasharray="3 3"
+                              strokeWidth={2}
+                              label={{
+                                value: `Critical Low (${criticalLow} oz)`,
+                                position: 'insideTopRight',
+                                fill: '#ef4444',
+                                fontSize: 11,
+                                fontWeight: 'bold'
+                              }}
+                            />
+                            <ReferenceLine
+                              y={low}
+                              stroke="#eab308"
+                              strokeDasharray="3 3"
+                              strokeWidth={2}
+                              label={{
+                                value: `Low (${low} oz)`,
+                                position: 'insideTopRight',
+                                fill: '#eab308',
+                                fontSize: 11,
+                                fontWeight: 'bold'
+                              }}
+                            />
+                            <ReferenceLine
+                              y={personalTarget}
+                              stroke="#10b981"
+                              strokeDasharray="5 5"
+                              strokeWidth={3}
+                              label={{
+                                value: `🎯 YOUR TARGET (${personalTarget} oz)`,
+                                position: 'insideTopRight',
+                                fill: '#10b981',
+                                fontSize: 12,
+                                fontWeight: 'bold'
+                              }}
+                            />
+                            <ReferenceLine
+                              y={optimalMax}
+                              stroke="#3b82f6"
+                              strokeDasharray="5 5"
+                              strokeWidth={2}
+                              label={{
+                                value: `Max (${optimalMax} oz)`,
+                                position: 'insideBottomRight',
+                                fill: '#3b82f6',
+                                fontSize: 11,
+                                fontWeight: 'bold'
+                              }}
+                            />
+                          </>
+                        );
+                      })()}
+
+                      {/* Normal Range Reference Lines */}
+                      {selectedMetric === 'hr' && (
+                        <>
+                          <ReferenceLine y={60} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (60)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                      {selectedMetric === 'sugar' && (
+                        <>
+                          <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                      {selectedMetric === 'temp' && (
+                        <ReferenceLine y={98.6} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal (98.6°F)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      )}
+                      {selectedMetric === 'o2' && (
+                        <>
+                          <ReferenceLine y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger Low (90%)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={92} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Low (92%)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={95} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (95%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                      {selectedMetric === 'peakflow' && (
+                        <>
+                          <ReferenceLine y={400} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (400)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={600} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (600)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                      {selectedMetric === 'map' && (
+                        <>
+                          <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger Low (60)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={65} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Low (65)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={110} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate High (110)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (120)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                      {selectedMetric === 'bpvariability' && (
+                        <>
+                          <ReferenceLine y={10} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Good (<10)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          <ReferenceLine y={15} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate (15)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
+                          <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (20)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
+                        </>
+                      )}
+                    </LineChart>
                   )}
-                  {selectedMetric === 'sugar' && (
-                    <>
-                      <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                  {selectedMetric === 'temp' && (
-                    <ReferenceLine y={98.6} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal (98.6°F)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                  )}
-                  {selectedMetric === 'o2' && (
-                    <>
-                      <ReferenceLine y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger Low (90%)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={92} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Low (92%)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={95} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (95%)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                  {selectedMetric === 'peakflow' && (
-                    <>
-                      <ReferenceLine y={400} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (400)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={600} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (600)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                  {selectedMetric === 'map' && (
-                    <>
-                      <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger Low (60)', position: 'insideTopRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={65} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate Low (65)', position: 'insideTopRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={110} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate High (110)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (120)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                  {selectedMetric === 'bpvariability' && (
-                    <>
-                      <ReferenceLine y={10} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Good (<10)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={15} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Moderate (15)', position: 'insideBottomRight', fill: '#eab308', fontSize: 10, fontWeight: 'bold' }} />
-                      <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: 'Danger High (20)', position: 'insideBottomRight', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                    </>
-                  )}
-                </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full font-bold">
+                  <div className="text-center">
+                    <Activity className="h-12 w-12 mx-auto mb-3 font-bold" />
+                    <p>
+                      {selectedMetric === 'hydration'
+                        ? 'No water intake logged for this period. Use the floating water button to add entries!'
+                        : 'No vitals data available for this period'}
+                    </p>
+                  </div>
+                </div>
               )}
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full font-bold">
-              <div className="text-center">
-                <Activity className="h-12 w-12 mx-auto mb-3 font-bold" />
-                <p>
-                  {selectedMetric === 'hydration'
-                    ? 'No water intake logged for this period. Use the floating water button to add entries!'
-                    : 'No vitals data available for this period'}
-                </p>
-              </div>
             </div>
-          )}
-        </div>
-      </GlassCard>
+          </GlassCard>
 
-      {/* Recent Vitals Table */}
-      <GlassCard>
-        <h2 className="text-xl font-semibold font-bold mb-4">Recent Readings</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Date</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">BP</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">HR</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Temp</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Weight</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">O₂</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Peak Flow</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
-                <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
-                <th className="text-center py-2 px-2 text-sm font-medium font-bold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vitals.slice(-10).reverse().map((vital) => (
-                <tr key={vital.id} className="border-b border-gray-100 hover:bg-white/30">
-                  <td className="py-2 px-2 text-sm">
-                    {format(new Date(vital.timestamp), 'MMM d, h:mm a')}
-                  </td>
-                  <td className="py-2 px-2 text-sm">
-                    {vital.bloodPressureSystolic && vital.bloodPressureDiastolic
-                      ? `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`
-                      : '--'}
-                  </td>
-                  <td className="py-2 px-2 text-sm">{vital.heartRate || '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.weight || '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.peakFlow ? `${vital.peakFlow} L/min` : '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
-                  <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
-                  <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
-                  <td className="py-2 px-2 text-center">
-                    <button
-                      onClick={() => handleDeleteVitalReading(vital.id, vital.timestamp)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-500 hover:text-red-400 transition-all"
-                      title="Delete reading"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {vitals.length === 0 && (
-            <p className="text-center py-8 font-bold">No vitals recorded yet</p>
-          )}
-        </div>
-      </GlassCard>
+          {/* Recent Vitals Table */}
+          <GlassCard>
+            <h2 className="text-xl font-semibold font-bold mb-4">Recent Readings</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Date</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">BP</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">HR</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Temp</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Weight</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">O₂</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Peak Flow</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
+                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
+                    <th className="text-center py-2 px-2 text-sm font-medium font-bold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vitals.slice(-10).reverse().map((vital) => (
+                    <tr key={vital.id} className="border-b border-gray-100 hover:bg-white/30">
+                      <td className="py-2 px-2 text-sm">
+                        {format(new Date(vital.timestamp), 'MMM d, h:mm a')}
+                      </td>
+                      <td className="py-2 px-2 text-sm">
+                        {vital.bloodPressureSystolic && vital.bloodPressureDiastolic
+                          ? `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`
+                          : '--'}
+                      </td>
+                      <td className="py-2 px-2 text-sm">{vital.heartRate || '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.weight || '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.peakFlow ? `${vital.peakFlow} L/min` : '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
+                      <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
+                      <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
+                      <td className="py-2 px-2 text-center">
+                        <button
+                          onClick={() => handleDeleteVitalReading(vital.id, vital.timestamp)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-500 hover:text-red-400 transition-all"
+                          title="Delete reading"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {vitals.length === 0 && (
+                <p className="text-center py-8 font-bold">No vitals recorded yet</p>
+              )}
+            </div>
+          </GlassCard>
 
         </>
       )}
