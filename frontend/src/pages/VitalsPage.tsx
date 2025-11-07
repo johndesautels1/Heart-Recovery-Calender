@@ -53,6 +53,19 @@ const vitalsSchema = z.object({
   hydrationStatus: z.number().optional(),
   peakFlow: z.number().optional(),
   respiratoryRate: z.number().optional(),
+  // HRV Metrics (Heart Rate Variability)
+  sdnn: z.number().optional(), // Standard Deviation of NN intervals (ms)
+  rmssd: z.number().optional(), // Root Mean Square of Successive Differences (ms)
+  pnn50: z.number().optional(), // Percentage of NN intervals > 50ms (%)
+  // Exercise Capacity Metrics
+  vo2Max: z.number().optional(), // VO₂ Max (mL/kg/min)
+  sixMinWalk: z.number().optional(), // 6-Minute Walk Test distance (meters)
+  hrRecovery: z.number().optional(), // Heart Rate Recovery (bpm/min)
+  // Advanced Cardiac Metrics
+  ejectionFraction: z.number().optional(), // Ejection Fraction (%)
+  meanArterialPressure: z.number().optional(), // MAP (mmHg)
+  pulsePressure: z.number().optional(), // Pulse Pressure (mmHg)
+  bpVariability: z.number().optional(), // BP Variability (SD)
   notes: z.string().optional(),
   symptoms: z.string().optional(),
   medicationsTaken: z.boolean().optional(),
@@ -83,6 +96,16 @@ const vitalsSchema = z.object({
       data.hydrationStatus,
       data.peakFlow,
       data.respiratoryRate,
+      data.sdnn,
+      data.rmssd,
+      data.pnn50,
+      data.vo2Max,
+      data.sixMinWalk,
+      data.hrRecovery,
+      data.ejectionFraction,
+      data.meanArterialPressure,
+      data.pulsePressure,
+      data.bpVariability,
       data.chestPain,
       data.dyspnea,
       data.dizziness,
@@ -2694,10 +2717,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#10b981"
                           onClick={() => {
-                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('sdnn');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -2714,10 +2735,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#059669"
                           onClick={() => {
-                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('rmssd');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -2734,10 +2753,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#047857"
                           onClick={() => {
-                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('pnn50');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -3134,10 +3151,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#a855f7"
                           onClick={() => {
-                            toast('🏃 Exercise capacity metrics require cardiopulmonary exercise testing or stress test data. These fields will be available for manual entry from physician test results.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('vo2Max');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -3154,10 +3169,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#8b5cf6"
                           onClick={() => {
-                            toast('🚶 6-Minute Walk Test results can be manually entered from your healthcare provider. This field will be available soon for manual data entry.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('sixMinWalk');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -3174,10 +3187,8 @@ export function VitalsPage() {
                           style="modern"
                           color="#a78bfa"
                           onClick={() => {
-                            toast('❤️ Heart Rate Recovery data from exercise stress tests will be available for manual entry from physician test results.', {
-                              icon: '💡',
-                              duration: 5000,
-                            });
+                            setFocusedField('hrRecovery');
+                            setIsModalOpen(true);
                           }}
                         />
                       </div>
@@ -6386,6 +6397,116 @@ export function VitalsPage() {
                 {...register('respiratoryRate', { valueAsNumber: true })}
               />
             </div>
+          </div>
+
+          {/* Advanced Cardiac Metrics Section */}
+          <div className="p-4 rounded-lg" style={{
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(251, 191, 36, 0.1))',
+            border: '2px solid rgba(212, 175, 55, 0.3)'
+          }}>
+            <div className="flex items-center gap-3 mb-4">
+              <Heart className="h-5 w-5 text-yellow-400" />
+              <h3 className="font-bold text-yellow-400">⭐ Advanced Cardiac Metrics</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* HRV Metrics Column */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-emerald-400">HRV Metrics (Heart Rate Variability)</h4>
+
+                <Input
+                  label="SDNN (ms)"
+                  type="number"
+                  placeholder="50-100"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('sdnn', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="RMSSD (ms)"
+                  type="number"
+                  placeholder="20-50"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('rmssd', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="pNN50 (%)"
+                  type="number"
+                  placeholder="10-40"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('pnn50', { valueAsNumber: true })}
+                />
+
+                <h4 className="font-semibold text-sm text-purple-400 mt-6">Exercise Capacity</h4>
+
+                <Input
+                  label="VO₂ Max (mL/kg/min)"
+                  type="number"
+                  placeholder="25-35"
+                  icon={<TrendingUp className="h-5 w-5" />}
+                  {...register('vo2Max', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="6-Min Walk (meters)"
+                  type="number"
+                  placeholder="400-700"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('sixMinWalk', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="HR Recovery (bpm/min)"
+                  type="number"
+                  placeholder="12-25"
+                  icon={<Heart className="h-5 w-5" />}
+                  {...register('hrRecovery', { valueAsNumber: true })}
+                />
+              </div>
+
+              {/* Cardiac Function Column */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-amber-400">Cardiac Function</h4>
+
+                <Input
+                  label="Ejection Fraction (%)"
+                  type="number"
+                  placeholder="50-70"
+                  icon={<Heart className="h-5 w-5" />}
+                  {...register('ejectionFraction', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="MAP (mmHg)"
+                  type="number"
+                  placeholder="70-100"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('meanArterialPressure', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="Pulse Pressure (mmHg)"
+                  type="number"
+                  placeholder="30-50"
+                  icon={<Activity className="h-5 w-5" />}
+                  {...register('pulsePressure', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="BP Variability (SD)"
+                  type="number"
+                  step="0.1"
+                  placeholder="< 25"
+                  icon={<BarChart3 className="h-5 w-5" />}
+                  {...register('bpVariability', { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs mt-4" style={{ color: 'var(--muted)' }}>
+              💡 Tip: These advanced metrics are typically obtained from physician testing (echocardiograms, stress tests, HRV monitors, etc.)
+            </p>
           </div>
 
           <div className="space-y-2">
