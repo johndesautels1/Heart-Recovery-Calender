@@ -2056,8 +2056,6 @@ export function VitalsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
                 <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
-                <CircularGauge value={mets} label="METs" unit="METs" min={1} max={15} targetMin={5} targetMax={8} size="small" style="modern" color="#7c3aed" />
-                <CircularGauge value={restingHR} label="Resting HR" unit="bpm" min={40} max={100} targetMin={50} targetMax={70} size="small" style="luxury" color="#D4AF37" />
                 <CircularGauge value={maxHR} label="Max HR" unit="bpm" min={100} max={200} size="small" style="modern" color="#c084fc" />
                 <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
               </div>

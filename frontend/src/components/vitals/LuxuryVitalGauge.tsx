@@ -473,6 +473,40 @@ export function LuxuryVitalGauge({
           >
             {displayMode === 'recent' ? 'Recent' : displayMode === 'resting' ? `Resting ${timePeriod}` : `Avg ${timePeriod}`}
           </button>
+
+          {/* Cursive "avg" button below Recent - clickable to switch to average mode */}
+          {displayMode === 'recent' && averageValue !== null && (
+            <button
+              onClick={() => setDisplayMode('average')}
+              style={{
+                marginTop: '4px',
+                fontSize: `${labelSize}px`,
+                fontWeight: '500',
+                color: '#eab308', // Yellow
+                background: 'rgba(234, 179, 8, 0.15)',
+                padding: '2px 10px',
+                borderRadius: '8px',
+                border: '1px solid rgba(234, 179, 8, 0.4)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontFamily: '"Brush Script MT", "Apple Chancery", cursive',
+                fontStyle: 'italic',
+                letterSpacing: '0.8px',
+                textShadow: '0 0 6px rgba(234, 179, 8, 0.6)',
+                boxShadow: '0 0 8px rgba(234, 179, 8, 0.3), inset 0 1px 2px rgba(255,255,255,0.1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(234, 179, 8, 0.5), inset 0 1px 2px rgba(255,255,255,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 0 8px rgba(234, 179, 8, 0.3), inset 0 1px 2px rgba(255,255,255,0.1)';
+              }}
+            >
+              avg
+            </button>
+          )}
         </div>
 
         {/* Average Heart Rate Toggle - Cursive "A" button at BOTTOM LEFT (inside bezel) */}
