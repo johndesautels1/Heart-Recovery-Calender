@@ -1037,21 +1037,21 @@ export function VitalsPage() {
     ? filteredLatest.bloodPressureSystolic - filteredLatest.bloodPressureDiastolic
     : null;
   const latestBPVariability = chartData.length > 0 ? chartData[chartData.length - 1].bpVariability : null;
-  const sdnn = null;
-  const rmssd = null;
-  const pnn50 = null;
+  const sdnn = filteredLatest?.sdnn || null;
+  const rmssd = filteredLatest?.rmssd || null;
+  const pnn50 = filteredLatest?.pnn50 || null;
   const todayDate = format(new Date(), 'yyyy-MM-dd');
   const todayHydration = hydrationLogs.find(log => log.date === todayDate);
   const hydrationTarget = todayHydration?.targetOunces || calculatePersonalizedHydrationTarget();
   const hydrationActual = todayHydration?.totalOunces || 0;
   const restingHR = vitals.length > 0 ? Math.min(...vitals.filter(v => v.heartRate).map(v => v.heartRate!)) : null;
   const avgHR = vitals.length > 0 ? Math.round(vitals.filter(v => v.heartRate).map(v => v.heartRate!).reduce((a, b) => a + b, 0) / vitals.filter(v => v.heartRate).length) : null;
-  const vo2Max = null;
-  const sixMinWalk = null;
+  const vo2Max = filteredLatest?.vo2Max || null;
+  const sixMinWalk = filteredLatest?.sixMinWalk || null;
   const mets = null;
   const maxHR = null;
-  const hrRecovery = null;
-  const ejectionFraction = patientData?.ejectionFraction || null;
+  const hrRecovery = filteredLatest?.hrRecovery || null;
+  const ejectionFraction = filteredLatest?.ejectionFraction || null;
 
   // LUXURY GAUGE CALCULATIONS - Filter vitals by throttle position or globalTimeView
   const getLuxuryTimePeriodFilter = () => {
