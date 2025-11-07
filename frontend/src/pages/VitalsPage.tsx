@@ -2310,47 +2310,6 @@ export function VitalsPage() {
 
           {/* Latest Vitals Cards with Device Badges */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* NEW: Weekly Weight Change */}
-            <GlassCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold mb-1">Weekly Weight Change</p>
-                  <p className="text-2xl font-bold font-bold">
-                    {(() => {
-                      if (!latestVitals?.weight || vitals.length < 2) return '--';
-                      const sevenDaysAgo = subDays(new Date(), 7);
-                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                      if (oldWeights.length === 0) return '--';
-                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                      const change = latestVitals.weight - oldWeight;
-                      return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
-                    })()} <span className="text-sm">lbs</span>
-                  </p>
-                  <p className={`text-sm font-bold mt-1 ${(() => {
-                    if (!latestVitals?.weight || vitals.length < 2) return 'text-yellow-500';
-                    const sevenDaysAgo = subDays(new Date(), 7);
-                    const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                    if (oldWeights.length === 0) return 'text-yellow-500';
-                    const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                    const change = latestVitals.weight - oldWeight;
-                    return Math.abs(change) < 0.5 ? 'text-white' : change > 0 ? 'text-yellow-500' : 'text-green-500';
-                  })()}`}>
-                    {(() => {
-                      if (!latestVitals?.weight || vitals.length < 2) return 'Not enough data';
-                      const sevenDaysAgo = subDays(new Date(), 7);
-                      const oldWeights = vitals.filter(v => v.weight && new Date(v.timestamp) <= sevenDaysAgo);
-                      if (oldWeights.length === 0) return 'Not enough data';
-                      const oldWeight = oldWeights[oldWeights.length - 1].weight!;
-                      const change = latestVitals.weight - oldWeight;
-                      return Math.abs(change) < 0.5 ? 'Stable' : change > 0 ? 'Gained' : 'Lost';
-                    })()}
-                  </p>
-                  <p className="text-xs mt-1">Last 7 days</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
-              </div>
-            </GlassCard>
-
             <GlassCard className="relative">
               {filteredLatest && (
                 <div className="absolute top-3 right-3">
