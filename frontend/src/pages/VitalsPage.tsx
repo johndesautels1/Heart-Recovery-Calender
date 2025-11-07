@@ -4350,13 +4350,32 @@ export function VitalsPage() {
                         }}
                       >
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Timestamp</th>
+
+                        {/* Basic Vitals */}
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>BP</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>HR</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Temp</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Weight</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>O₂</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Peak Flow</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Sugar</th>
+
+                        {/* HRV Metrics - Emerald Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>SDNN</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>RMSSD</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>pNN50</th>
+
+                        {/* Cardiac Function - Gold Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>EF%</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>MAP</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>PP</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>BP VAR</th>
+
+                        {/* Exercise Capacity - Purple Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>VO₂</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>6MW</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>HRR</th>
+
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Peak Flow</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Hydration</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Notes</th>
                         <th className="text-center py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Actions</th>
@@ -4392,11 +4411,218 @@ export function VitalsPage() {
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
                             {vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}
                           </td>
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#22c55e' }}>
-                            {vital.peakFlow ? `${vital.peakFlow}` : '--'}
-                          </td>
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f59e0b' }}>
                             {vital.bloodSugar || '--'}
+                          </td>
+
+                          {/* HRV Metrics - Emerald Theme with Medical Ranges */}
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.sdnn;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].sdnn : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // SDNN ranges: <50 poor, 50-100 fair, >100 good
+                              const color = value < 30 ? '#ef4444' : value < 50 ? '#f59e0b' : value < 70 ? '#fbbf24' : value < 100 ? '#34d399' : '#22c55e';
+                              const alert = value < 30 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.rmssd;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].rmssd : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // RMSSD ranges: <15 poor, 15-25 fair, 25-35 good, >35 excellent
+                              const color = value < 15 ? '#ef4444' : value < 20 ? '#f59e0b' : value < 25 ? '#fbbf24' : value < 35 ? '#34d399' : '#22c55e';
+                              const alert = value < 15 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.pnn50;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].pnn50 : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // pNN50 ranges: <5% poor, 5-15% fair, 15-25% good, >25% excellent
+                              const color = value < 5 ? '#ef4444' : value < 10 ? '#f59e0b' : value < 15 ? '#fbbf24' : value < 25 ? '#34d399' : '#22c55e';
+                              const alert = value < 5 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}%
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+
+                          {/* Cardiac Function - Gold Theme with Medical Ranges */}
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.ejectionFraction;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].ejectionFraction : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // EF ranges: <40% severe, 40-50% moderate, 50-70% normal, >70% high
+                              const color = value < 35 ? '#dc2626' : value < 40 ? '#ef4444' : value < 50 ? '#f59e0b' : value <= 70 ? '#22c55e' : '#fbbf24';
+                              const alert = value < 40 ? '🚨' : value > 75 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 10px ${color}80` }}>
+                                    {value.toFixed(1)}%
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.meanArterialPressure;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].meanArterialPressure : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // MAP ranges: <60 low, 60-70 borderline, 70-100 normal, >110 high
+                              const color = value < 60 ? '#ef4444' : value < 70 ? '#f59e0b' : value <= 100 ? '#22c55e' : value <= 110 ? '#fbbf24' : '#ef4444';
+                              const alert = value < 60 || value > 110 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-orange-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(0)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.pulsePressure;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].pulsePressure : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // PP ranges: <30 low, 30-40 normal, 40-60 wide, >60 very wide
+                              const color = value < 25 ? '#ef4444' : value < 30 ? '#f59e0b' : value <= 50 ? '#22c55e' : value <= 60 ? '#fbbf24' : '#ef4444';
+                              const alert = value < 25 || value > 60 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-orange-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(0)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.bpVariability;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].bpVariability : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // BP Variability: <10 excellent, 10-15 good, 15-25 acceptable, >25 concerning
+                              const color = value < 10 ? '#22c55e' : value < 15 ? '#34d399' : value < 25 ? '#fbbf24' : '#ef4444';
+                              const alert = value > 25 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-orange-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+
+                          {/* Exercise Capacity - Purple Theme with Medical Ranges */}
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.vo2Max;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].vo2Max : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // VO2 Max: <20 poor, 20-30 fair, 30-40 good, >40 excellent
+                              const color = value < 20 ? '#ef4444' : value < 25 ? '#f59e0b' : value < 30 ? '#fbbf24' : value < 40 ? '#a78bfa' : '#8b5cf6';
+                              const alert = value < 20 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.sixMinWalk;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].sixMinWalk : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // 6MW: <300m poor, 300-450m fair, 450-550m good, >550m excellent
+                              const color = value < 300 ? '#ef4444' : value < 400 ? '#f59e0b' : value < 500 ? '#fbbf24' : value < 550 ? '#a78bfa' : '#8b5cf6';
+                              const alert = value < 300 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(0)}m
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.hrRecovery;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].hrRecovery : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // HR Recovery: <12 poor, 12-20 fair, 20-25 good, >25 excellent
+                              const color = value < 12 ? '#ef4444' : value < 15 ? '#f59e0b' : value < 20 ? '#fbbf24' : value < 25 ? '#a78bfa' : '#8b5cf6';
+                              const alert = value < 12 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(0)}
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#22c55e' }}>
+                            {vital.peakFlow ? `${vital.peakFlow}` : '--'}
                           </td>
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
                             {vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}
