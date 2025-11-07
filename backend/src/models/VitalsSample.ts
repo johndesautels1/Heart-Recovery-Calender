@@ -39,6 +39,19 @@ interface VitalsSampleAttributes {
   energyLevel?: number;
   stressLevel?: number;
   anxietyLevel?: number;
+  // Advanced Cardiac Metrics - HRV
+  sdnn?: number;
+  rmssd?: number;
+  pnn50?: number;
+  // Advanced Cardiac Metrics - Exercise Capacity
+  vo2Max?: number;
+  sixMinWalk?: number;
+  hrRecovery?: number;
+  // Advanced Cardiac Metrics - Cardiac Function
+  ejectionFraction?: number;
+  meanArterialPressure?: number;
+  pulsePressure?: number;
+  bpVariability?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -83,6 +96,19 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
   public energyLevel?: number;
   public stressLevel?: number;
   public anxietyLevel?: number;
+  // Advanced Cardiac Metrics - HRV
+  public sdnn?: number;
+  public rmssd?: number;
+  public pnn50?: number;
+  // Advanced Cardiac Metrics - Exercise Capacity
+  public vo2Max?: number;
+  public sixMinWalk?: number;
+  public hrRecovery?: number;
+  // Advanced Cardiac Metrics - Cardiac Function
+  public ejectionFraction?: number;
+  public meanArterialPressure?: number;
+  public pulsePressure?: number;
+  public bpVariability?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -323,6 +349,63 @@ class VitalsSample extends Model<VitalsSampleAttributes, VitalsSampleCreationAtt
             min: 1,
             max: 10,
           },
+        },
+        // Advanced Cardiac Metrics - HRV (Heart Rate Variability)
+        sdnn: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'SDNN - Standard Deviation of NN intervals in milliseconds (HRV metric)',
+        },
+        rmssd: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'RMSSD - Root Mean Square of Successive Differences in milliseconds (HRV metric)',
+        },
+        pnn50: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'pNN50 - Percentage of successive NN intervals differing by >50ms (HRV metric)',
+        },
+        // Advanced Cardiac Metrics - Exercise Capacity
+        vo2Max: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'VO2 Max in mL/kg/min - Maximum oxygen uptake during exercise',
+        },
+        sixMinWalk: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: '6-Minute Walk Test distance in meters',
+        },
+        hrRecovery: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'Heart Rate Recovery in bpm/min - HR drop 1 minute after exercise',
+        },
+        // Advanced Cardiac Metrics - Cardiac Function
+        ejectionFraction: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'Ejection Fraction percentage - Amount of blood pumped out per heartbeat',
+          validate: {
+            min: 0,
+            max: 100,
+          },
+        },
+        meanArterialPressure: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'Mean Arterial Pressure in mmHg - Average arterial pressure during one cardiac cycle',
+        },
+        pulsePressure: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'Pulse Pressure in mmHg - Difference between systolic and diastolic BP',
+        },
+        bpVariability: {
+          type: DataTypes.FLOAT,
+          allowNull: true,
+          comment: 'Blood Pressure Variability - Standard deviation of BP readings',
         },
       },
       {
