@@ -107,6 +107,7 @@ export function VitalsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow' | 'map' | 'bpvariability'>('bp');
+  const [focusedField, setFocusedField] = useState<string | null>(null); // Track which gauge was clicked for modal focus
   const [patientData, setPatientData] = useState<Patient | null>(null);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // Co-Pilot: whose data to display (User ID, not patient ID)
@@ -2681,13 +2682,64 @@ export function VitalsPage() {
 
                     <div className="space-y-4 flex flex-col items-center">
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={sdnn} label="SDNN" unit="ms" min={0} max={200} targetMin={50} targetMax={100} size="small" style="modern" color="#10b981" />
+                        <CircularGauge
+                          value={sdnn}
+                          label="SDNN"
+                          unit="ms"
+                          min={0}
+                          max={200}
+                          targetMin={50}
+                          targetMax={100}
+                          size="small"
+                          style="modern"
+                          color="#10b981"
+                          onClick={() => {
+                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={rmssd} label="RMSSD" unit="ms" min={0} max={100} targetMin={20} targetMax={50} size="small" style="modern" color="#059669" />
+                        <CircularGauge
+                          value={rmssd}
+                          label="RMSSD"
+                          unit="ms"
+                          min={0}
+                          max={100}
+                          targetMin={20}
+                          targetMax={50}
+                          size="small"
+                          style="modern"
+                          color="#059669"
+                          onClick={() => {
+                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={pnn50} label="pNN50" unit="%" min={0} max={60} targetMin={10} targetMax={40} size="small" style="modern" color="#047857" />
+                        <CircularGauge
+                          value={pnn50}
+                          label="pNN50"
+                          unit="%"
+                          min={0}
+                          max={60}
+                          targetMin={10}
+                          targetMax={40}
+                          size="small"
+                          style="modern"
+                          color="#047857"
+                          onClick={() => {
+                            toast('📊 HRV metrics require advanced cardiac monitoring device data. This field will be available when integrating with compatible devices.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -3070,16 +3122,82 @@ export function VitalsPage() {
 
                     <div className="space-y-4 flex flex-col items-center">
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
+                        <CircularGauge
+                          value={vo2Max}
+                          label="VO₂ Max"
+                          unit="mL/kg/min"
+                          min={15}
+                          max={60}
+                          targetMin={25}
+                          targetMax={35}
+                          size="small"
+                          style="modern"
+                          color="#a855f7"
+                          onClick={() => {
+                            toast('🏃 Exercise capacity metrics require cardiopulmonary exercise testing or stress test data. These fields will be available for manual entry from physician test results.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
+                        <CircularGauge
+                          value={sixMinWalk}
+                          label="6-Min Walk"
+                          unit="m"
+                          min={200}
+                          max={800}
+                          targetMin={400}
+                          targetMax={700}
+                          size="small"
+                          style="modern"
+                          color="#8b5cf6"
+                          onClick={() => {
+                            toast('🚶 6-Minute Walk Test results can be manually entered from your healthcare provider. This field will be available soon for manual data entry.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
+                        <CircularGauge
+                          value={hrRecovery}
+                          label="HR Recovery"
+                          unit="bpm/min"
+                          min={5}
+                          max={40}
+                          targetMin={12}
+                          targetMax={25}
+                          size="small"
+                          style="modern"
+                          color="#a78bfa"
+                          onClick={() => {
+                            toast('❤️ Heart Rate Recovery data from exercise stress tests will be available for manual entry from physician test results.', {
+                              icon: '💡',
+                              duration: 5000,
+                            });
+                          }}
+                        />
                       </div>
                       <div className="w-full flex justify-center">
-                        <CircularGauge value={filteredLatest?.peakFlow || null} label="Peak Flow" unit="L/min" min={200} max={700} targetMin={400} targetMax={600} size="small" style="modern" color="#c084fc" />
+                        <CircularGauge
+                          value={filteredLatest?.peakFlow || null}
+                          label="Peak Flow"
+                          unit="L/min"
+                          min={200}
+                          max={700}
+                          targetMin={400}
+                          targetMax={600}
+                          size="small"
+                          style="modern"
+                          color="#c084fc"
+                          onClick={() => {
+                            setFocusedField('peakFlow');
+                            setIsModalOpen(true);
+                          }}
+                        />
                       </div>
                     </div>
 
