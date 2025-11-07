@@ -303,12 +303,12 @@ export function LuxuryVitalGauge({
           }}
         >
           <span style={{
-            fontSize: size === 'large' ? '8px' : '6px',
+            fontSize: size === 'large' ? '7px' : '6px',
             fontWeight: 'bold',
             color: '#ffffff',
             textShadow: '0 1px 2px rgba(0,0,0,0.5)',
             fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-            letterSpacing: size === 'large' ? '0.3px' : '0.3px',
+            letterSpacing: size === 'large' ? '0.2px' : '0.3px',
             pointerEvents: 'none',
           }}>
             {isAuto ? 'AUTO' : 'MANUAL'}
