@@ -507,6 +507,25 @@ export function LuxuryVitalGauge({
               avg
             </button>
           )}
+
+          {/* Cursive "M" below avg for Heart Rate gauge - indicates resting heart rate available */}
+          {displayMode === 'recent' && showRestingToggle && restingValue !== null && (
+            <div
+              style={{
+                marginTop: '2px',
+                fontSize: `${(labelSize - 4) * 3}px`,
+                fontWeight: '400',
+                color: '#ef4444', // Bright red
+                fontFamily: '"Brush Script MT", "Apple Chancery", cursive',
+                fontStyle: 'italic',
+                letterSpacing: '0.3px',
+                textShadow: '0 0 6px rgba(239, 68, 68, 0.8)',
+                opacity: 0.9,
+              }}
+            >
+              M
+            </div>
+          )}
         </div>
 
         {/* Average Heart Rate Toggle - Cursive "A" button at BOTTOM LEFT (inside bezel) */}
