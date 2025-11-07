@@ -1065,6 +1065,17 @@ export function VitalsPage() {
     ? Math.round(hrVitals.map(v => v.heartRate!).reduce((a, b) => a + b, 0) / hrVitals.length)
     : null;
 
+  // Resting Heart Rate - Calculate from lowest 10% of readings (proxy for resting state)
+  // Device data (Samsung/Polar) is included in hrVitals if available
+  const restingHeartRate = hrVitals.length >= 5
+    ? (() => {
+        const sorted = [...hrVitals].sort((a, b) => a.heartRate! - b.heartRate!);
+        const bottom10PercentCount = Math.max(3, Math.ceil(sorted.length * 0.1));
+        const lowestReadings = sorted.slice(0, bottom10PercentCount);
+        return Math.round(lowestReadings.map(v => v.heartRate!).reduce((a, b) => a + b, 0) / lowestReadings.length);
+      })()
+    : null;
+
   const o2Vitals = filteredForLuxury.filter(v => v.oxygenSaturation);
   const avgO2Saturation = o2Vitals.length > 0
     ? Math.round(o2Vitals.map(v => v.oxygenSaturation!).reduce((a, b) => a + b, 0) / o2Vitals.length)
@@ -1073,6 +1084,48 @@ export function VitalsPage() {
   const respVitals = filteredForLuxury.filter(v => v.respiratoryRate);
   const avgRespiratoryRate = respVitals.length > 0
     ? Math.round(respVitals.map(v => v.respiratoryRate!).reduce((a, b) => a + b, 0) / respVitals.length)
+    : null;
+
+  // Resting Blood Pressure - Calculate from lowest 10% of systolic readings (proxy for resting state)
+  const restingBP = bpVitals.length >= 5
+    ? (() => {
+        const sorted = [...bpVitals].sort((a, b) => a.bloodPressureSystolic! - b.bloodPressureSystolic!);
+        const bottom10PercentCount = Math.max(3, Math.ceil(sorted.length * 0.1));
+        const lowestReadings = sorted.slice(0, bottom10PercentCount);
+        const restingSystolic = Math.round(lowestReadings.map(v => v.bloodPressureSystolic!).reduce((a, b) => a + b, 0) / lowestReadings.length);
+        const restingDiastolic = Math.round(lowestReadings.map(v => v.bloodPressureDiastolic!).reduce((a, b) => a + b, 0) / lowestReadings.length);
+        return `${restingSystolic}/${restingDiastolic}`;
+      })()
+    : null;
+
+  // Temperature calculations - Recent and Average
+  const tempVitalsForRecent = filteredForLuxury.filter(v => v.temperature)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentTemp = tempVitalsForRecent.length > 0 ? tempVitalsForRecent[0].temperature! : null;
+
+  const tempVitals = filteredForLuxury.filter(v => v.temperature);
+  const avgTemperature = tempVitals.length > 0
+    ? Math.round((tempVitals.map(v => v.temperature!).reduce((a, b) => a + b, 0) / tempVitals.length) * 10) / 10
+    : null;
+
+  // Blood Sugar calculations - Recent and Average
+  const sugarVitalsForRecent = filteredForLuxury.filter(v => v.bloodSugar)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentBloodSugar = sugarVitalsForRecent.length > 0 ? sugarVitalsForRecent[0].bloodSugar! : null;
+
+  const sugarVitals = filteredForLuxury.filter(v => v.bloodSugar);
+  const avgBloodSugar = sugarVitals.length > 0
+    ? Math.round(sugarVitals.map(v => v.bloodSugar!).reduce((a, b) => a + b, 0) / sugarVitals.length)
+    : null;
+
+  // Weight calculations - Recent and Average
+  const weightVitalsForRecent = filteredForLuxury.filter(v => v.weight)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const recentWeight = weightVitalsForRecent.length > 0 ? weightVitalsForRecent[0].weight! : null;
+
+  const weightVitals = filteredForLuxury.filter(v => v.weight);
+  const avgWeight = weightVitals.length > 0
+    ? Math.round((weightVitals.map(v => v.weight!).reduce((a, b) => a + b, 0) / weightVitals.length) * 10) / 10
     : null;
 
   // Map globalTimeView to timePeriod display string
@@ -1091,6 +1144,9 @@ export function VitalsPage() {
   const isHRAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
   const isO2Auto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
   const isRespAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isTempAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isBloodSugarAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
+  const isWeightAuto = filteredLatest?.source === 'device' || filteredLatest?.source === 'import';
 
   return (
     <div className="space-y-6">
@@ -1656,6 +1712,8 @@ export function VitalsPage() {
                 label="Blood Pressure"
                 recentValue={recentBP}
                 averageValue={avgBP}
+                restingValue={restingBP}
+                showRestingToggle={true}
                 unit="mmHg"
                 min={80}
                 max={180}
@@ -1674,6 +1732,8 @@ export function VitalsPage() {
                 label="Heart Rate"
                 recentValue={recentHR}
                 averageValue={avgHeartRate}
+                restingValue={restingHeartRate}
+                showRestingToggle={true}
                 unit="bpm"
                 min={40}
                 max={180}
@@ -1741,17 +1801,21 @@ export function VitalsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center mb-8">
             {/* Temperature Gauge - Left */}
             <div className="flex justify-center items-center">
-              <CircularGauge
-                value={filteredLatest?.temperature}
+              <LuxuryVitalGauge
                 label="Temperature"
+                recentValue={recentTemp}
+                averageValue={avgTemperature}
                 unit="°F"
                 min={95}
                 max={103}
                 targetMin={97.8}
                 targetMax={99.1}
                 size="medium"
-                style="modern"
                 color="#f97316"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isTempAuto}
+                icon={<Thermometer className="h-5 w-5 text-orange-400" />}
+                onManualClick={() => setIsModalOpen(true)}
               />
             </div>
 
@@ -1779,17 +1843,21 @@ export function VitalsPage() {
 
             {/* Blood Sugar Gauge - Right */}
             <div className="flex justify-center items-center">
-              <CircularGauge
-                value={filteredLatest?.bloodSugar}
+              <LuxuryVitalGauge
                 label="Blood Sugar"
+                recentValue={recentBloodSugar}
+                averageValue={avgBloodSugar}
                 unit="mg/dL"
                 min={50}
                 max={200}
                 targetMin={70}
                 targetMax={130}
                 size="medium"
-                style="modern"
                 color="#eab308"
+                timePeriod={getTimePeriodLabel()}
+                isAuto={isBloodSugarAuto}
+                icon={<Droplet className="h-5 w-5 text-yellow-400" />}
+                onManualClick={() => setIsModalOpen(true)}
               />
             </div>
           </div>
@@ -1804,15 +1872,19 @@ export function VitalsPage() {
             <div className="grid grid-cols-1 gap-6">
               {/* Weight Gauge Above Charts */}
               <div className="flex justify-center">
-                <CircularGauge
-                  value={filteredLatest?.weight}
+                <LuxuryVitalGauge
                   label="Weight"
+                  recentValue={recentWeight}
+                  averageValue={avgWeight}
                   unit="lbs"
                   min={100}
                   max={300}
                   size="medium"
-                  style="modern"
                   color="#10b981"
+                  timePeriod={getTimePeriodLabel()}
+                  isAuto={isWeightAuto}
+                  icon={<Weight className="h-5 w-5 text-green-400" />}
+                  onManualClick={() => setIsModalOpen(true)}
                 />
               </div>
 
@@ -2565,46 +2637,9 @@ export function VitalsPage() {
             )}
           </div>
 
-          {/* NEW: Resting Heart Rate & 7-Day Average - ALWAYS use unfiltered vitals data */}
+          {/* NEW: 7-Day Average Heart Rate - ALWAYS use unfiltered vitals data */}
           {vitals.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <GlassCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold mb-1">Resting Heart Rate</p>
-                    <p className="text-3xl font-bold font-bold">
-                      {(() => {
-                        // Use unfiltered vitals to get absolute latest data
-                        const recentVitals = vitals.slice(-7);
-                        const validHRs = recentVitals.filter(v => v.heartRate);
-                        if (validHRs.length === 0) return '--';
-                        const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                        return minHR;
-                      })()} <span className="text-sm">bpm</span>
-                    </p>
-                    <p className={`text-sm font-bold mt-1 ${(() => {
-                      const recentVitals = vitals.slice(-7);
-                      const validHRs = recentVitals.filter(v => v.heartRate);
-                      if (validHRs.length === 0) return 'text-yellow-500';
-                      const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                      return minHR < 60 ? 'text-yellow-500' : minHR > 100 ? 'text-red-500' : 'text-white';
-                    })()}`}>
-                      {(() => {
-                        const recentVitals = vitals.slice(-7);
-                        const validHRs = recentVitals.filter(v => v.heartRate);
-                        if (validHRs.length === 0) return 'No data';
-                        const minHR = Math.min(...validHRs.map(v => v.heartRate || 0));
-                        if (minHR < 60) return 'Athletic/Low';
-                        if (minHR > 100) return 'Elevated';
-                        return 'Normal';
-                      })()}
-                    </p>
-                    <p className="text-xs mt-1">Lowest in last 7 days</p>
-                  </div>
-                  <Heart className="h-8 w-8 text-pink-500" />
-                </div>
-              </GlassCard>
-
+            <div className="grid grid-cols-1 gap-4">
               <GlassCard>
                 <div className="flex items-center justify-between">
                   <div>

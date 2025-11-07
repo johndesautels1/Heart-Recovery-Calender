@@ -4,6 +4,8 @@ interface LuxuryVitalGaugeProps {
   label: string;
   recentValue: number | string | null;
   averageValue: number | string | null;
+  restingValue?: number | string | null; // Resting heart rate (for HR gauge only)
+  showRestingToggle?: boolean; // Show the "R" resting toggle button
   unit: string;
   min: number;
   max: number;
@@ -21,6 +23,8 @@ export function LuxuryVitalGauge({
   label,
   recentValue,
   averageValue,
+  restingValue,
+  showRestingToggle = false,
   unit,
   min,
   max,
@@ -33,7 +37,8 @@ export function LuxuryVitalGauge({
   icon,
   onManualClick,
 }: LuxuryVitalGaugeProps) {
-  const [showingRecent, setShowingRecent] = useState(true);
+  // State: 'recent' | 'average' | 'resting'
+  const [displayMode, setDisplayMode] = useState<'recent' | 'average' | 'resting'>('recent');
 
   const sizes = {
     medium: { diameter: 180, stroke: 14, fontSize: 36, labelSize: 11, subFontSize: 13 },
@@ -45,7 +50,9 @@ export function LuxuryVitalGauge({
   const circumference = 2 * Math.PI * radius;
 
   // Calculate percentage for the dial
-  const displayValue = showingRecent ? recentValue : averageValue;
+  const displayValue = displayMode === 'recent' ? recentValue :
+                       displayMode === 'resting' ? restingValue :
+                       averageValue;
   const numValue = typeof displayValue === 'number' ? displayValue :
                    typeof displayValue === 'string' && displayValue.includes('/')
                      ? parseFloat(displayValue.split('/')[0]) // Use systolic for BP
@@ -428,41 +435,131 @@ export function LuxuryVitalGauge({
             {unit}
           </div>
 
-          {/* Toggle indicator */}
+          {/* Mode toggle button - Centered, clickable - toggles between recent and average */}
           <button
-            onClick={() => setShowingRecent(!showingRecent)}
+            onClick={() => {
+              if (displayMode === 'recent') {
+                setDisplayMode('average');
+              } else {
+                setDisplayMode('recent');
+              }
+            }}
             style={{
               marginTop: '8px',
               fontSize: `${labelSize}px`,
               fontWeight: 'bold',
-              color: showingRecent ? color : 'rgba(255,255,255,0.5)',
+              color: displayMode === 'recent' ? color : displayMode === 'resting' ? '#a78bfa' : '#60a5fa',
               background: 'rgba(0,0,0,0.4)',
               padding: '4px 12px',
               borderRadius: '12px',
-              border: `1px solid ${showingRecent ? color + '60' : 'rgba(255,255,255,0.2)'}`,
+              border: `1px solid ${displayMode === 'recent' ? color + '60' : displayMode === 'resting' ? '#a78bfa60' : '#60a5fa60'}`,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
               letterSpacing: '0.8px',
               textTransform: 'uppercase',
-              boxShadow: showingRecent
-                ? `0 0 12px ${color}60, inset 0 1px 2px rgba(255,255,255,0.2)`
-                : '0 2px 4px rgba(0,0,0,0.3)',
+              boxShadow: `0 0 12px ${displayMode === 'recent' ? color : displayMode === 'resting' ? '#a78bfa' : '#60a5fa'}60, inset 0 1px 2px rgba(255,255,255,0.2)`,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = `0 0 16px ${color}80, inset 0 1px 2px rgba(255,255,255,0.3)`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = showingRecent
-                ? `0 0 12px ${color}60, inset 0 1px 2px rgba(255,255,255,0.2)`
+            }}
+          >
+            {displayMode === 'recent' ? 'Recent' : displayMode === 'resting' ? `Resting ${timePeriod}` : `Avg ${timePeriod}`}
+          </button>
+        </div>
+
+        {/* Average Heart Rate Toggle - Cursive "A" button at BOTTOM LEFT (inside bezel) */}
+        {showRestingToggle && (
+          <button
+            onClick={() => {
+              setDisplayMode('average');
+            }}
+            title="Toggle Average Heart Rate"
+            style={{
+              position: 'absolute',
+              bottom: size === 'large' ? '50px' : '40px',
+              left: size === 'large' ? '55px' : '45px',
+              fontSize: `${labelSize + 4}px`,
+              fontWeight: '400',
+              color: displayMode === 'average' ? '#60a5fa' : 'rgba(96, 165, 250, 0.6)',
+              background: 'rgba(0,0,0,0.5)',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              border: `1px solid ${displayMode === 'average' ? '#60a5fa80' : '#60a5fa40'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontFamily: '"Brush Script MT", "Apple Chancery", cursive',
+              fontStyle: 'italic',
+              letterSpacing: '0.5px',
+              boxShadow: displayMode === 'average'
+                ? '0 0 12px #60a5fa60, inset 0 1px 2px rgba(255,255,255,0.2)'
+                : '0 2px 4px rgba(0,0,0,0.3)',
+              zIndex: 10,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.boxShadow = displayMode === 'average'
+                ? '0 0 16px #60a5fa80, inset 0 1px 2px rgba(255,255,255,0.3)'
+                : '0 0 12px #60a5fa60, inset 0 1px 2px rgba(255,255,255,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = displayMode === 'average'
+                ? '0 0 12px #60a5fa60, inset 0 1px 2px rgba(255,255,255,0.2)'
                 : '0 2px 4px rgba(0,0,0,0.3)';
             }}
           >
-            {showingRecent ? 'Recent' : `Avg ${timePeriod}`}
+            A
           </button>
-        </div>
+        )}
+
+        {/* Resting Heart Rate Toggle - Cursive "R" button at BOTTOM RIGHT (inside bezel) */}
+        {showRestingToggle && (
+          <button
+            onClick={() => {
+              setDisplayMode('resting');
+            }}
+            title="Toggle Resting Heart Rate"
+            style={{
+              position: 'absolute',
+              bottom: size === 'large' ? '50px' : '40px',
+              right: size === 'large' ? '55px' : '45px',
+              fontSize: `${labelSize + 4}px`,
+              fontWeight: '400',
+              color: displayMode === 'resting' ? '#a78bfa' : 'rgba(167, 139, 250, 0.6)',
+              background: 'rgba(0,0,0,0.5)',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              border: `1px solid ${displayMode === 'resting' ? '#a78bfa80' : '#a78bfa40'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontFamily: '"Brush Script MT", "Apple Chancery", cursive',
+              fontStyle: 'italic',
+              letterSpacing: '0.5px',
+              boxShadow: displayMode === 'resting'
+                ? '0 0 12px #a78bfa60, inset 0 1px 2px rgba(255,255,255,0.2)'
+                : '0 2px 4px rgba(0,0,0,0.3)',
+              zIndex: 10,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.boxShadow = displayMode === 'resting'
+                ? '0 0 16px #a78bfa80, inset 0 1px 2px rgba(255,255,255,0.3)'
+                : '0 0 12px #a78bfa60, inset 0 1px 2px rgba(255,255,255,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = displayMode === 'resting'
+                ? '0 0 12px #a78bfa60, inset 0 1px 2px rgba(255,255,255,0.2)'
+                : '0 2px 4px rgba(0,0,0,0.3)';
+            }}
+          >
+            R
+          </button>
+        )}
       </div>
 
       {/* Label below gauge - Elegant display */}
