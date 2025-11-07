@@ -32,9 +32,9 @@ export function CircularGauge({
   onClick,
 }: CircularGaugeProps) {
   const sizes = {
-    small: { diameter: 120, stroke: 8, fontSize: 24, labelSize: 10 },
-    medium: { diameter: 160, stroke: 10, fontSize: 32, labelSize: 12 },
-    large: { diameter: 200, stroke: 12, fontSize: 40, labelSize: 14 },
+    small: { diameter: 120, stroke: 8, fontSize: 24, labelSize: 12 },
+    medium: { diameter: 160, stroke: 10, fontSize: 32, labelSize: 14 },
+    large: { diameter: 200, stroke: 12, fontSize: 40, labelSize: 16 },
   };
 
   const { diameter, stroke, fontSize, labelSize } = sizes[size];
@@ -213,10 +213,12 @@ export function CircularGauge({
           </div>
           {unit && (
             <div
-              className="text-xs font-semibold"
+              className="text-xs font-bold"
               style={{
-                color: style === 'luxury' ? '#A58F4D' : 'rgba(255,255,255,0.6)',
+                color: style === 'luxury' ? '#F4E6B8' : 'rgba(255,255,255,0.95)',
                 fontFamily: style === 'luxury' ? 'serif' : 'sans-serif',
+                textShadow: style === 'modern' ? `0 0 12px ${statusColor}80, 0 0 24px ${statusColor}40` : '0 2px 4px rgba(0,0,0,0.5)',
+                fontWeight: '700',
               }}
             >
               {unit}
@@ -234,8 +236,12 @@ export function CircularGauge({
           className="font-bold uppercase tracking-wide"
           style={{
             fontSize: `${labelSize}px`,
-            color: style === 'luxury' ? '#D4AF37' : statusColor,
+            color: style === 'luxury' ? '#FFFFFF' : '#FFFFFF',
             fontFamily: style === 'luxury' ? 'serif' : 'sans-serif',
+            textShadow: style === 'modern' ? `0 0 20px ${statusColor}, 0 0 40px ${statusColor}, 0 0 60px ${statusColor}80, 0 2px 4px rgba(0,0,0,0.8)` : '0 0 20px #F4E6B8, 0 0 40px #D4AF37, 0 2px 4px rgba(0,0,0,0.8)',
+            fontWeight: '900',
+            letterSpacing: '0.1em',
+            filter: `drop-shadow(0 0 10px ${statusColor}) drop-shadow(0 0 20px ${statusColor}80)`,
           }}
         >
           {label}

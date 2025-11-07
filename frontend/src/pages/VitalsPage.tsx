@@ -27,7 +27,9 @@ import {
   AlertCircle,
   Edit,
   Trash2,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -132,6 +134,9 @@ export function VitalsPage() {
   // UNIFIED: Global time view for ALL charts
   const [globalTimeView, setGlobalTimeView] = useState<'7d' | '30d' | '90d' | 'surgery'>('surgery');
   const [throttleTargetDate, setThrottleTargetDate] = useState<Date | null>(null);
+
+  // Historical readings collapse state
+  const [isHistoricalReadingsExpanded, setIsHistoricalReadingsExpanded] = useState(false);
 
   const {
     register,
@@ -1335,16 +1340,307 @@ export function VitalsPage() {
 
       {/* A380 COCKPIT LAYOUT */}
       <HeartFrame>
-        {/* Cockpit Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Vitals Command Center - A380 Cockpit</h1>
-            <p className="text-gray-400">Comprehensive cardiac monitoring and analytics</p>
+        {/* Cockpit Header with Water Intake Card on Right */}
+        <div className="mb-8 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Left: Title */}
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">Vitals Command Center - A380 Cockpit</h1>
+              <p className="text-gray-400">Comprehensive cardiac monitoring and analytics</p>
+            </div>
+
+            {/* Right: Hydration Gauge - Luxury Chronographic Design */}
+            <div className="lg:ml-auto w-full flex justify-center lg:justify-end">
+              <div style={{
+                width: '240px',
+                height: '240px',
+                position: 'relative',
+              }}>
+                {/* Platinum Bezel - Outer Ring */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E5E4E2 0%, #BCC6CC 30%, #98A2A8 50%, #BCC6CC 70%, #E5E4E2 100%)',
+                  boxShadow: `
+                    0 8px 32px rgba(0,0,0,0.6),
+                    inset 0 2px 4px rgba(255,255,255,0.4),
+                    inset 0 -2px 4px rgba(0,0,0,0.4)
+                  `,
+                  padding: '8px',
+                }}>
+                  {/* Bezel Inner Ring */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: '5px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                  }} />
+
+                  {/* Gauge Face Background */}
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle at 35% 35%, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%)',
+                    boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.8)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Subtle Light Reflection */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '10%',
+                      left: '10%',
+                      width: '40%',
+                      height: '40%',
+                      background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
+                      borderRadius: '50%',
+                    }} />
+
+                    {/* Target at 12 o'clock position */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '12%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      textAlign: 'center',
+                    }}>
+                      <div style={{
+                        fontSize: '8px',
+                        fontWeight: '600',
+                        fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                        letterSpacing: '1.2px',
+                        color: '#D4AF37',
+                        textShadow: '0 0 6px rgba(212, 175, 55, 0.6)',
+                        marginBottom: '2px',
+                      }}>
+                        TARGET
+                      </div>
+                      <div style={{
+                        fontSize: '16px',
+                        fontWeight: '700',
+                        fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                        color: '#D4AF37',
+                        textShadow: '0 0 8px rgba(212, 175, 55, 0.6)',
+                      }}>
+                        {(() => {
+                          const todayDate = format(new Date(), 'yyyy-MM-dd');
+                          const selectedLog = hydrationLogs.find(log => log.date === todayDate);
+                          const recommended = calculatePersonalizedHydrationTarget(todayDate);
+                          return selectedLog?.targetOunces || recommended;
+                        })()}
+                      </div>
+                      <div style={{
+                        fontSize: '7px',
+                        fontWeight: '600',
+                        fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                        color: '#D4AF37',
+                        textShadow: '0 0 4px rgba(212, 175, 55, 0.4)',
+                        opacity: 0.7,
+                      }}>
+                        oz
+                      </div>
+                    </div>
+
+                    {/* Center: Consumed Amount */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      textAlign: 'center',
+                    }}>
+                      {/* Droplet Icon */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: '4px',
+                      }}>
+                        <Droplet
+                          className="h-8 w-8"
+                          fill="#06b6d4"
+                          style={{
+                            color: '#06b6d4',
+                            filter: 'drop-shadow(0 0 10px rgba(6, 182, 212, 0.8))',
+                          }}
+                        />
+                      </div>
+
+                      {/* Consumed Amount */}
+                      <div style={{
+                        fontSize: '32px',
+                        fontWeight: '700',
+                        fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                        color: '#C0C0C0',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                        lineHeight: '1',
+                      }}>
+                        {(() => {
+                          const todayDate = format(new Date(), 'yyyy-MM-dd');
+                          const selectedLog = hydrationLogs.find(log => log.date === todayDate);
+                          return Math.round(selectedLog?.totalOunces || 0);
+                        })()}
+                      </div>
+                      <div style={{
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                        color: '#06b6d4',
+                        textShadow: '0 0 6px rgba(6, 182, 212, 0.6)',
+                        marginTop: '2px',
+                      }}>
+                        oz
+                      </div>
+                    </div>
+
+                    {/* Bottom: Deficiency Display */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '15%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      textAlign: 'center',
+                    }}>
+                      {(() => {
+                        const todayDate = format(new Date(), 'yyyy-MM-dd');
+                        const selectedLog = hydrationLogs.find(log => log.date === todayDate);
+                        const consumed = Math.round(selectedLog?.totalOunces || 0);
+                        const target = selectedLog?.targetOunces || calculatePersonalizedHydrationTarget(todayDate);
+                        const deficiency = target - consumed;
+
+                        if (deficiency > 0) {
+                          return (
+                            <>
+                              <div style={{
+                                fontSize: '8px',
+                                fontWeight: '600',
+                                fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                                letterSpacing: '1px',
+                                color: '#ef4444',
+                                textShadow: '0 0 6px rgba(239, 68, 68, 0.6)',
+                              }}>
+                                DEF
+                              </div>
+                              <div style={{
+                                fontSize: '16px',
+                                fontWeight: '700',
+                                fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                                color: '#ef4444',
+                                textShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
+                              }}>
+                                -{deficiency}
+                              </div>
+                            </>
+                          );
+                        } else if (deficiency < 0) {
+                          return (
+                            <>
+                              <div style={{
+                                fontSize: '8px',
+                                fontWeight: '600',
+                                fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                                letterSpacing: '1px',
+                                color: '#10b981',
+                                textShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
+                              }}>
+                                SURPLUS
+                              </div>
+                              <div style={{
+                                fontSize: '16px',
+                                fontWeight: '700',
+                                fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                                color: '#10b981',
+                                textShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
+                              }}>
+                                +{Math.abs(deficiency)}
+                              </div>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <div style={{
+                              fontSize: '10px',
+                              fontWeight: '700',
+                              fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                              letterSpacing: '1.2px',
+                              color: '#10b981',
+                              textShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
+                            }}>
+                              ✓ TARGET MET
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+
+                    {/* Progress Arc */}
+                    <svg
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        transform: 'rotate(-90deg)',
+                      }}
+                    >
+                      {/* Background Arc */}
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r="42%"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="6"
+                      />
+                      {/* Progress Arc */}
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r="42%"
+                        fill="none"
+                        stroke="#06b6d4"
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        style={{
+                          strokeDasharray: '264',
+                          strokeDashoffset: (() => {
+                            const todayDate = format(new Date(), 'yyyy-MM-dd');
+                            const selectedLog = hydrationLogs.find(log => log.date === todayDate);
+                            const consumed = selectedLog?.totalOunces || 0;
+                            const target = selectedLog?.targetOunces || calculatePersonalizedHydrationTarget(todayDate);
+                            const percentage = Math.min((consumed / target) * 100, 100);
+                            return 264 - (264 * percentage) / 100;
+                          })(),
+                          filter: 'drop-shadow(0 0 8px rgba(6, 182, 212, 0.8))',
+                        }}
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Label Below Gauge */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-30px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  color: '#C0C0C0',
+                  fontFamily: 'Georgia, serif',
+                  letterSpacing: '2px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                }}>
+                  HYDRATION MONITOR
+                </div>
+              </div>
+            </div>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="group">
-            <Plus className="h-5 w-5 mr-2" />
-            Record Vitals
-          </Button>
         </div>
 
         {/* Upper Level - Primary Flight Deck - Critical Vitals */}
@@ -1420,6 +1716,74 @@ export function VitalsPage() {
 
             {/* Luxury Atomic Clock - Center */}
             <div className="flex flex-col items-center justify-center">
+              {/* Record Vitals Button - Luxury Chronographic Theme */}
+              <div className="mb-6 flex justify-center">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="group relative"
+                  style={{
+                    background: 'linear-gradient(135deg, #E5E4E2 0%, #BCC6CC 30%, #98A2A8 50%, #BCC6CC 70%, #E5E4E2 100%)',
+                    borderRadius: '12px',
+                    padding: '3px',
+                    boxShadow: `
+                      0 6px 20px rgba(0,0,0,0.5),
+                      inset 0 2px 4px rgba(255,255,255,0.4),
+                      inset 0 -2px 4px rgba(0,0,0,0.4)
+                    `,
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = `
+                      0 8px 28px rgba(0,0,0,0.6),
+                      inset 0 2px 4px rgba(255,255,255,0.5),
+                      inset 0 -2px 4px rgba(0,0,0,0.5)
+                    `;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = `
+                      0 6px 20px rgba(0,0,0,0.5),
+                      inset 0 2px 4px rgba(255,255,255,0.4),
+                      inset 0 -2px 4px rgba(0,0,0,0.4)
+                    `;
+                  }}
+                >
+                  {/* Inner button face */}
+                  <div style={{
+                    background: 'radial-gradient(circle at 35% 35%, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%)',
+                    borderRadius: '10px',
+                    padding: '12px 28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                  }}>
+                    {/* Plus icon with gold accent */}
+                    <Plus
+                      className="h-5 w-5"
+                      style={{
+                        color: '#D4AF37',
+                        filter: 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.6))',
+                      }}
+                    />
+                    {/* Text */}
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      fontFamily: '"SF Pro Display", -apple-system, sans-serif',
+                      letterSpacing: '1.2px',
+                      color: '#C0C0C0',
+                      textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                      textTransform: 'uppercase',
+                    }}>
+                      Record Vitals
+                    </span>
+                  </div>
+                </button>
+              </div>
+
               {/* Small Digital Display at Top */}
               <div style={{
                 fontSize: '9px',
@@ -2213,53 +2577,526 @@ export function VitalsPage() {
           </div>
         </div>
 
-        {/* Lower Level - Advanced Analytics */}
+        {/* Medical Grade Cardiac Diagnostic Panel */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-emerald-400 mb-6 flex items-center gap-3">
-            <Zap className="h-6 w-6" />
-            Lower Deck - Advanced Analytics
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left - Performance Metrics */}
-            <div className="glass-card p-6 rounded-2xl" style={{
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.15))',
-              border: '2px solid rgba(139, 92, 246, 0.4)'
+          <div className="relative overflow-hidden rounded-2xl p-8 mb-8"
+            style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(45, 55, 72, 0.98) 50%, rgba(30, 41, 59, 0.98) 100%)',
+              backdropFilter: 'blur(20px)',
+              border: '3px solid rgba(212, 175, 55, 0.7)',
+              boxShadow: '0 0 80px rgba(212, 175, 55, 0.4), inset 0 0 80px rgba(212, 175, 55, 0.1), 0 8px 32px rgba(0,0,0,0.5)'
             }}>
-              <h3 className="text-lg font-bold text-purple-400 mb-4">Performance Metrics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
-                <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
-                <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
+            <div className="absolute inset-0 opacity-15" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.5) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.5) 0%, transparent 50%)',
+            }}></div>
+
+            <div className="relative">
+              <div className="flex items-center justify-center gap-4 mb-8">
+                <div className="h-1 w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80" style={{
+                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.6)'
+                }}></div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl" style={{
+                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.5), rgba(251, 191, 36, 0.5))',
+                    boxShadow: '0 0 40px rgba(212, 175, 55, 0.7), inset 0 2px 4px rgba(255,255,255,0.2)'
+                  }}>
+                    <Activity className="h-8 w-8" style={{
+                      color: '#FCD34D',
+                      filter: 'drop-shadow(0 0 8px rgba(252, 211, 77, 0.8))'
+                    }} />
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-3xl font-bold" style={{
+                      color: '#FCD34D',
+                      fontFamily: '"SF Pro Display", sans-serif',
+                      letterSpacing: '2px',
+                      textShadow: '0 0 30px rgba(252, 211, 77, 0.9), 0 0 60px rgba(251, 191, 36, 0.5)'
+                    }}>
+                      MEDICAL GRADE CARDIAC DIAGNOSTICS
+                    </h2>
+                    <p className="text-xs uppercase tracking-widest mt-1" style={{
+                      color: '#FDE68A',
+                      textShadow: '0 0 10px rgba(253, 230, 138, 0.6)'
+                    }}>
+                      Advanced Hemodynamic & Autonomic Analysis
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 px-3 py-1 rounded-full" style={{
+                    background: 'rgba(34, 197, 94, 0.35)',
+                    border: '2px solid rgba(34, 197, 94, 0.7)',
+                    boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)'
+                  }}>
+                    <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" style={{
+                      boxShadow: '0 0 10px rgba(134, 239, 172, 1)'
+                    }}></div>
+                    <span className="text-xs font-bold" style={{
+                      color: '#86EFAC',
+                      textShadow: '0 0 8px rgba(134, 239, 172, 0.8)'
+                    }}>LIVE</span>
+                  </div>
+                </div>
+                <div className="h-1 w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80" style={{
+                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.6)'
+                }}></div>
               </div>
-            </div>
 
-            {/* Right - HRV Analytics */}
-            <div className="glass-card p-6 rounded-2xl" style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15))',
-              border: '2px solid rgba(16, 185, 129, 0.4)'
-            }}>
-              <h3 className="text-lg font-bold text-emerald-400 mb-4">HRV Analytics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <CircularGauge value={sdnn} label="SDNN" unit="ms" min={0} max={200} targetMin={50} targetMax={100} size="small" style="modern" color="#10b981" />
-                <CircularGauge value={rmssd} label="RMSSD" unit="ms" min={0} max={100} targetMin={20} targetMax={50} size="small" style="modern" color="#059669" />
-                <CircularGauge value={pnn50} label="pNN50" unit="%" min={0} max={60} targetMin={10} targetMax={40} size="small" style="modern" color="#047857" />
-                <CircularGauge value={currentMAP} label="MAP" unit="mmHg" min={50} max={130} targetMin={70} targetMax={100} size="small" style="modern" color="#34d399" />
-                <CircularGauge value={pulsePressure} label="Pulse Pressure" unit="mmHg" min={20} max={100} targetMin={40} targetMax={60} size="small" style="modern" color="#6ee7b7" />
-                <CircularGauge value={latestBPVariability} label="BP Variability" unit="mmHg SD" min={0} max={30} size="small" style="modern" color="#a7f3d0" />
-              </div>
-            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* LEFT PANEL - Autonomic Function */}
+                <div className="relative overflow-hidden rounded-2xl p-6" style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.25))',
+                  border: '2px solid rgba(16, 185, 129, 0.8)',
+                  boxShadow: '0 8px 32px rgba(16, 185, 129, 0.45), inset 0 2px 8px rgba(16, 185, 129, 0.2), 0 0 60px rgba(16, 185, 129, 0.25)'
+                }}>
+                  {/* Holographic shine effect */}
+                  <div className="absolute inset-0 opacity-40" style={{
+                    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)',
+                    backgroundSize: '200% 200%',
+                    animation: 'shimmer 3s infinite'
+                  }}></div>
 
-            {/* Specialty Gauges */}
-            <div className="glass-card p-6 rounded-2xl" style={{
-              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15))',
-              border: '2px solid rgba(251, 191, 36, 0.4)'
-            }}>
-              <h3 className="text-lg font-bold text-amber-400 mb-4">Specialty Metrics</h3>
-              <div className="flex flex-col gap-4">
-                <CircularGauge value={ejectionFraction} label="Ejection Fraction" unit="%" min={20} max={80} targetMin={50} targetMax={70} size="medium" style="luxury" color="#D4AF37" />
-                <CircularGauge value={filteredLatest?.peakFlow || null} label="Peak Flow" unit="L/min" min={200} max={700} targetMin={400} targetMax={600} size="medium" style="modern" color="#22c55e" />
-                <CircularGauge value={hydrationActual} label="Hydration" unit={`${hydrationActual}/${hydrationTarget} oz`} min={0} max={hydrationTarget} size="medium" style="modern" color="#3b82f6" />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold uppercase tracking-wider" style={{
+                        color: '#6EE7B7',
+                        fontFamily: '"SF Pro Display", sans-serif',
+                        textShadow: '0 0 20px rgba(110, 231, 183, 0.9), 0 0 40px rgba(16, 185, 129, 0.6)'
+                      }}>
+                        Autonomic Function
+                      </h3>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded" style={{
+                        background: 'rgba(16, 185, 129, 0.35)',
+                        border: '2px solid rgba(16, 185, 129, 0.6)',
+                        boxShadow: '0 0 15px rgba(16, 185, 129, 0.5)'
+                      }}>
+                        <Heart className="h-3 w-3 animate-pulse" style={{
+                          color: '#6EE7B7',
+                          filter: 'drop-shadow(0 0 6px rgba(110, 231, 183, 0.9))'
+                        }} />
+                        <span className="text-[10px] font-bold" style={{
+                          color: '#A7F3D0',
+                          textShadow: '0 0 8px rgba(167, 243, 208, 0.8)'
+                        }}>HRV</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 flex flex-col items-center">
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={sdnn} label="SDNN" unit="ms" min={0} max={200} targetMin={50} targetMax={100} size="small" style="modern" color="#10b981" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={rmssd} label="RMSSD" unit="ms" min={0} max={100} targetMin={20} targetMax={50} size="small" style="modern" color="#059669" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={pnn50} label="pNN50" unit="%" min={0} max={60} targetMin={10} targetMax={40} size="small" style="modern" color="#047857" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 rounded-lg" style={{
+                      background: 'rgba(16, 185, 129, 0.25)',
+                      border: '2px solid rgba(16, 185, 129, 0.4)',
+                      boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      <p className="text-[10px] uppercase tracking-wide font-semibold" style={{
+                        color: '#A7F3D0',
+                        textShadow: '0 0 8px rgba(167, 243, 208, 0.7)'
+                      }}>
+                        Parasympathetic Activity Monitor
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CENTER PANEL - Cardiac Function (PRIMARY) */}
+                <div className="relative overflow-hidden rounded-2xl p-6" style={{
+                  background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(251, 191, 36, 0.3))',
+                  border: '3px solid rgba(212, 175, 55, 0.85)',
+                  boxShadow: '0 12px 48px rgba(212, 175, 55, 0.55), inset 0 4px 12px rgba(212, 175, 55, 0.25), 0 0 80px rgba(212, 175, 55, 0.35)'
+                }}>
+                  {/* Enhanced holographic effect for primary panel */}
+                  <div className="absolute inset-0 opacity-50" style={{
+                    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%)',
+                    backgroundSize: '200% 200%',
+                    animation: 'shimmer 2s infinite'
+                  }}></div>
+
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold uppercase tracking-wider" style={{
+                        color: '#FCD34D',
+                        fontFamily: '"SF Pro Display", sans-serif',
+                        textShadow: '0 0 25px rgba(252, 211, 77, 1), 0 0 50px rgba(251, 191, 36, 0.7)'
+                      }}>
+                        ★ Cardiac Function ★
+                      </h3>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded" style={{
+                        background: 'rgba(212, 175, 55, 0.45)',
+                        border: '2px solid rgba(212, 175, 55, 0.8)',
+                        boxShadow: '0 0 20px rgba(212, 175, 55, 0.6)'
+                      }}>
+                        <Activity className="h-3 w-3 animate-pulse" style={{
+                          color: '#FCD34D',
+                          filter: 'drop-shadow(0 0 6px rgba(252, 211, 77, 0.9))'
+                        }} />
+                        <span className="text-[10px] font-bold" style={{
+                          color: '#FDE68A',
+                          textShadow: '0 0 10px rgba(253, 230, 138, 0.8)'
+                        }}>PRIMARY</span>
+                      </div>
+                    </div>
+
+                    {/* EJECTION FRACTION - HERO GAUGE */}
+                    <div className="mb-6 flex justify-center">
+                      <div style={{ width: '280px', height: '280px', position: 'relative' }}>
+                        {/* Platinum Bezel - Extra Thick & Bright */}
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 15%, #C0C0C0 30%, #A8A8A8 45%, #C0C0C0 60%, #E0E0E0 75%, #F5F5F5 90%, #FFFFFF 100%)',
+                          boxShadow: `0 16px 64px rgba(0,0,0,0.8), inset 0 6px 12px rgba(255,255,255,0.8), inset 0 -6px 12px rgba(0,0,0,0.6), 0 0 40px rgba(212, 175, 55, 0.4)`,
+                          padding: '12px',
+                        }}>
+                          {/* Dark Face */}
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '50%',
+                            background: 'radial-gradient(circle at 35% 35%, #3a3a3a 0%, #2a2a2a 30%, #1a1a1a 60%, #0a0a0a 100%)',
+                            boxShadow: 'inset 0 8px 24px rgba(0,0,0,0.9), inset 0 0 50px rgba(212, 175, 55, 0.35)',
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            {/* Label at top */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '15%',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{
+                                fontSize: '9px',
+                                color: '#FCD34D',
+                                fontFamily: '"SF Pro Display", sans-serif',
+                                letterSpacing: '2px',
+                                fontWeight: '700',
+                                textShadow: '0 0 15px rgba(252, 211, 77, 1), 0 0 30px rgba(251, 191, 36, 0.8)'
+                              }}>
+                                EJECTION FRACTION
+                              </div>
+                              <div style={{
+                                fontSize: '7px',
+                                color: '#E5E5E5',
+                                marginTop: '2px',
+                                letterSpacing: '1px',
+                                textShadow: '0 0 8px rgba(229, 229, 229, 0.7)'
+                              }}>
+                                LEFT VENTRICULAR
+                              </div>
+                            </div>
+
+                            {/* Main value - HUGE LED display */}
+                            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                              <div style={{
+                                fontSize: '72px',
+                                fontWeight: '700',
+                                color: ejectionFraction === null ? '#666' :
+                                       ejectionFraction < 40 ? '#ef4444' :
+                                       ejectionFraction < 50 ? '#eab308' :
+                                       '#10b981',
+                                fontFamily: '"SF Pro Display", sans-serif',
+                                textShadow: ejectionFraction === null ? 'none' :
+                                           ejectionFraction < 40 ? '0 0 20px rgba(239, 68, 68, 0.9), 0 0 40px rgba(239, 68, 68, 0.6)' :
+                                           ejectionFraction < 50 ? '0 0 20px rgba(234, 179, 8, 0.9), 0 0 40px rgba(234, 179, 8, 0.6)' :
+                                           '0 0 20px rgba(16, 185, 129, 0.9), 0 0 40px rgba(16, 185, 129, 0.6)',
+                                lineHeight: '1',
+                                filter: ejectionFraction !== null ? 'drop-shadow(0 0 10px currentColor)' : 'none'
+                              }}>
+                                {ejectionFraction !== null ? ejectionFraction : '--'}
+                              </div>
+                              <div style={{
+                                fontSize: '20px',
+                                color: '#FCD34D',
+                                fontWeight: '600',
+                                marginTop: '4px',
+                                textShadow: '0 0 15px rgba(252, 211, 77, 0.9), 0 0 30px rgba(251, 191, 36, 0.7)'
+                              }}>
+                                %
+                              </div>
+                            </div>
+
+                            {/* Status at bottom */}
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '12%',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{
+                                fontSize: '10px',
+                                fontWeight: '700',
+                                color: ejectionFraction === null ? '#999' :
+                                       ejectionFraction < 40 ? '#FCA5A5' :
+                                       ejectionFraction < 50 ? '#FCD34D' :
+                                       '#6EE7B7',
+                                textShadow: ejectionFraction !== null ? '0 0 12px currentColor, 0 0 24px currentColor' : 'none',
+                                letterSpacing: '1px'
+                              }}>
+                                {ejectionFraction === null ? 'NO DATA' :
+                                 ejectionFraction < 40 ? 'HFrEF - REDUCED' :
+                                 ejectionFraction < 50 ? 'HFmrEF - MID-RANGE' :
+                                 'HFpEF - PRESERVED'}
+                              </div>
+                              <div style={{
+                                fontSize: '7px',
+                                color: '#E5E5E5',
+                                marginTop: '2px',
+                                textShadow: '0 0 8px rgba(229, 229, 229, 0.7)'
+                              }}>
+                                TARGET: 50-70%
+                              </div>
+                            </div>
+
+                            {/* Progress ring */}
+                            <svg style={{
+                              position: 'absolute',
+                              inset: '8px',
+                              width: 'calc(100% - 16px)',
+                              height: 'calc(100% - 16px)',
+                              transform: 'rotate(-90deg)'
+                            }}>
+                              <circle
+                                cx="50%"
+                                cy="50%"
+                                r="46%"
+                                fill="none"
+                                stroke="rgba(255,255,255,0.08)"
+                                strokeWidth="4"
+                              />
+                              {ejectionFraction !== null && (
+                                <circle
+                                  cx="50%"
+                                  cy="50%"
+                                  r="46%"
+                                  fill="none"
+                                  stroke={ejectionFraction < 40 ? '#ef4444' :
+                                         ejectionFraction < 50 ? '#eab308' :
+                                         '#10b981'}
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  style={{
+                                    strokeDasharray: '290',
+                                    strokeDashoffset: 290 - (290 * Math.min(ejectionFraction / 80, 1)),
+                                    filter: `drop-shadow(0 0 6px ${ejectionFraction < 40 ? '#ef4444' :
+                                            ejectionFraction < 50 ? '#eab308' : '#10b981'})`
+                                  }}
+                                />
+                              )}
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secondary metrics in grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        background: 'rgba(16, 185, 129, 0.3)',
+                        border: '2px solid rgba(16, 185, 129, 0.6)',
+                        textAlign: 'center',
+                        boxShadow: '0 0 20px rgba(16, 185, 129, 0.35), inset 0 2px 4px rgba(16, 185, 129, 0.2)'
+                      }}>
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#FFFFFF',
+                          fontWeight: '900',
+                          letterSpacing: '1.5px',
+                          textShadow: '0 0 15px rgba(110, 231, 183, 1), 0 0 30px rgba(16, 185, 129, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 10px rgba(110, 231, 183, 0.8))'
+                        }}>MAP</div>
+                        <div style={{
+                          fontSize: '28px',
+                          fontWeight: '900',
+                          color: '#FFFFFF',
+                          fontFamily: '"SF Pro Display", sans-serif',
+                          textShadow: '0 0 20px rgba(110, 231, 183, 1), 0 0 40px rgba(16, 185, 129, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 12px rgba(110, 231, 183, 0.9))',
+                          marginTop: '4px',
+                          marginBottom: '4px'
+                        }}>
+                          {currentMAP || '--'}
+                        </div>
+                        <div style={{
+                          fontSize: '9px',
+                          color: '#FFFFFF',
+                          fontWeight: '700',
+                          textShadow: '0 0 10px rgba(167, 243, 208, 0.9), 0 0 20px rgba(16, 185, 129, 0.6)'
+                        }}>mmHg</div>
+                      </div>
+
+                      <div style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        background: 'rgba(59, 130, 246, 0.3)',
+                        border: '2px solid rgba(59, 130, 246, 0.6)',
+                        textAlign: 'center',
+                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.35), inset 0 2px 4px rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#FFFFFF',
+                          fontWeight: '900',
+                          letterSpacing: '1.5px',
+                          textShadow: '0 0 15px rgba(147, 197, 253, 1), 0 0 30px rgba(59, 130, 246, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 10px rgba(147, 197, 253, 0.8))'
+                        }}>PULSE PP</div>
+                        <div style={{
+                          fontSize: '28px',
+                          fontWeight: '900',
+                          color: '#FFFFFF',
+                          fontFamily: '"SF Pro Display", sans-serif',
+                          textShadow: '0 0 20px rgba(147, 197, 253, 1), 0 0 40px rgba(59, 130, 246, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 12px rgba(147, 197, 253, 0.9))',
+                          marginTop: '4px',
+                          marginBottom: '4px'
+                        }}>
+                          {pulsePressure || '--'}
+                        </div>
+                        <div style={{
+                          fontSize: '9px',
+                          color: '#FFFFFF',
+                          fontWeight: '700',
+                          textShadow: '0 0 10px rgba(191, 219, 254, 0.9), 0 0 20px rgba(59, 130, 246, 0.6)'
+                        }}>mmHg</div>
+                      </div>
+
+                      <div style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        background: 'rgba(236, 72, 153, 0.3)',
+                        border: '2px solid rgba(236, 72, 153, 0.6)',
+                        textAlign: 'center',
+                        boxShadow: '0 0 20px rgba(236, 72, 153, 0.35), inset 0 2px 4px rgba(236, 72, 153, 0.2)'
+                      }}>
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#FFFFFF',
+                          fontWeight: '900',
+                          letterSpacing: '1.5px',
+                          textShadow: '0 0 15px rgba(249, 168, 212, 1), 0 0 30px rgba(236, 72, 153, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 10px rgba(249, 168, 212, 0.8))'
+                        }}>BP VAR</div>
+                        <div style={{
+                          fontSize: '28px',
+                          fontWeight: '900',
+                          color: '#FFFFFF',
+                          fontFamily: '"SF Pro Display", sans-serif',
+                          textShadow: '0 0 20px rgba(249, 168, 212, 1), 0 0 40px rgba(236, 72, 153, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 12px rgba(249, 168, 212, 0.9))',
+                          marginTop: '4px',
+                          marginBottom: '4px'
+                        }}>
+                          {latestBPVariability?.toFixed(1) || '--'}
+                        </div>
+                        <div style={{
+                          fontSize: '9px',
+                          color: '#FFFFFF',
+                          fontWeight: '700',
+                          textShadow: '0 0 10px rgba(251, 207, 232, 0.9), 0 0 20px rgba(236, 72, 153, 0.6)'
+                        }}>SD</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 rounded-lg" style={{
+                      background: 'rgba(212, 175, 55, 0.3)',
+                      border: '2px solid rgba(212, 175, 55, 0.5)',
+                      boxShadow: '0 0 20px rgba(212, 175, 55, 0.3)'
+                    }}>
+                      <p className="text-[12px] uppercase font-semibold" style={{
+                        color: '#FFFFFF',
+                        fontWeight: '900',
+                        letterSpacing: '1.5px',
+                        textShadow: '0 0 20px rgba(252, 211, 77, 1), 0 0 40px rgba(245, 158, 11, 0.8), 0 0 60px rgba(217, 119, 6, 0.6), 0 2px 4px rgba(0,0,0,0.8)',
+                        filter: 'drop-shadow(0 0 12px rgba(252, 211, 77, 0.9)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.7))'
+                      }}>
+                        Hemodynamic Performance Analysis
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT PANEL - Exercise Capacity */}
+                <div className="relative overflow-hidden rounded-2xl p-6" style={{
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.25))',
+                  border: '2px solid rgba(139, 92, 246, 0.8)',
+                  boxShadow: '0 8px 32px rgba(139, 92, 246, 0.45), inset 0 2px 8px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.25)'
+                }}>
+                  {/* Holographic shine effect */}
+                  <div className="absolute inset-0 opacity-40" style={{
+                    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)',
+                    backgroundSize: '200% 200%',
+                    animation: 'shimmer 3s infinite'
+                  }}></div>
+
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold uppercase tracking-wider" style={{
+                        color: '#C4B5FD',
+                        fontFamily: '"SF Pro Display", sans-serif',
+                        textShadow: '0 0 20px rgba(196, 181, 253, 0.9), 0 0 40px rgba(139, 92, 246, 0.6)'
+                      }}>
+                        Exercise Capacity
+                      </h3>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded" style={{
+                        background: 'rgba(139, 92, 246, 0.35)',
+                        border: '2px solid rgba(139, 92, 246, 0.6)',
+                        boxShadow: '0 0 15px rgba(139, 92, 246, 0.5)'
+                      }}>
+                        <Activity className="h-3 w-3 animate-pulse" style={{
+                          color: '#C4B5FD',
+                          filter: 'drop-shadow(0 0 6px rgba(196, 181, 253, 0.9))'
+                        }} />
+                        <span className="text-[10px] font-bold" style={{
+                          color: '#DDD6FE',
+                          textShadow: '0 0 8px rgba(221, 214, 254, 0.8)'
+                        }}>FUNCTIONAL</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 flex flex-col items-center">
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        <CircularGauge value={filteredLatest?.peakFlow || null} label="Peak Flow" unit="L/min" min={200} max={700} targetMin={400} targetMax={600} size="small" style="modern" color="#c084fc" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 rounded-lg" style={{
+                      background: 'rgba(139, 92, 246, 0.25)',
+                      border: '2px solid rgba(139, 92, 246, 0.4)',
+                      boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)'
+                    }}>
+                      <p className="text-[10px] uppercase tracking-wide font-semibold" style={{
+                        color: '#DDD6FE',
+                        textShadow: '0 0 8px rgba(221, 214, 254, 0.7)'
+                      }}>
+                        Aerobic & Recovery Assessment
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2417,213 +3254,7 @@ export function VitalsPage() {
 
           {/* Latest Vitals Cards with Device Badges */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <GlassCard className="relative">
-              {filteredLatest && (
-                <div className="absolute top-3 right-3">
-                  <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                    filteredLatest.deviceId?.toLowerCase().includes('samsung') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                    filteredLatest.deviceId?.toLowerCase().includes('polar') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                    'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                  }`}>
-                    {filteredLatest.deviceId?.toLowerCase().includes('samsung') ? (
-                      <><Smartphone className="h-3 w-3" /> Samsung</>
-                    ) : filteredLatest.deviceId?.toLowerCase().includes('polar') ? (
-                      <><Watch className="h-3 w-3" /> Polar</>
-                    ) : (
-                      <>✋ Manual</>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold">Water Intake</p>
-                <Droplet className="h-8 w-8 text-blue-500" />
-              </div>
-
-              {/* Date Display - Centered Below Header */}
-              <div className="flex justify-center mb-3">
-                <div
-                  className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-lg px-3 py-1.5 border-2 border-purple-500 cursor-pointer hover:border-purple-400 transition-all"
-                  style={{
-                    boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
-                  }}
-                  onClick={() => setShowWaterDatePicker(!showWaterDatePicker)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-purple-300" />
-                    <span className="text-purple-200 font-bold text-sm">
-                      {format(new Date(waterCardDate), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                  <p className="text-purple-300 text-xs text-center mt-0.5 font-semibold">
-                    {waterCardDate === format(new Date(), 'yyyy-MM-dd') ? '✨ Today' : '📜 Historic Entry'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Date Picker */}
-              {showWaterDatePicker && (
-                <div className="flex justify-center mb-3">
-                  <input
-                    type="date"
-                    value={waterCardDate}
-                    onChange={(e) => {
-                      setWaterCardDate(e.target.value);
-                      toast.success(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
-                        duration: 2000,
-                      });
-                    }}
-                    max={format(new Date(), 'yyyy-MM-dd')}
-                    className="w-full bg-purple-950 text-white px-4 py-3 rounded-xl text-base font-bold border-2 border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-purple-300"
-                    style={{
-                      colorScheme: 'dark',
-                      fontSize: '16px',
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Recommended Target Display */}
-              <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 rounded-xl p-3 mb-3 border border-cyan-500/30">
-                <div className="text-center">
-                  <p className="text-xs text-cyan-300 mb-1 font-semibold">🎯 RECOMMENDED FOR YOU</p>
-                  <p className="text-2xl font-bold text-cyan-400">
-                    {calculatePersonalizedHydrationTarget(waterCardDate)} oz
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">Based on weight, gender, ejection fraction & medications</p>
-                </div>
-              </div>
-
-              {/* Target and Current Intake Display */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-1">YOUR TARGET</p>
-                  <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
-                    {(() => {
-                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                      const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
-                      return selectedLog?.targetOunces ? `${selectedLog.targetOunces} oz` : `${recommended} oz`;
-                    })()}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-1">CONSUMED</p>
-                  <p className="text-2xl font-bold" style={{
-                    color: (() => {
-                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                      const consumed = selectedLog?.totalOunces || 0;
-                      const personalTarget = calculatePersonalizedHydrationTarget(waterCardDate);
-
-                      // Dynamic zones based on personal target
-                      if (consumed < personalTarget * 0.5) return '#ef4444'; // < 50% = critical red
-                      if (consumed < personalTarget * 0.75) return '#eab308'; // < 75% = yellow
-                      if (consumed > personalTarget * 1.3) return '#3b82f6'; // > 130% = blue (too much)
-                      return '#10b981'; // 75-130% = green
-                    })()
-                  }}>
-                    {(() => {
-                      const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                      return selectedLog ? `${selectedLog.totalOunces} oz` : '0 oz';
-                    })()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Add Buttons */}
-              <div className="grid grid-cols-5 gap-2 mt-4">
-                {[4, 8, 16, 32].map((oz) => (
-                  <button
-                    key={oz}
-                    onClick={() => handleAddWater(oz)}
-                    className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
-                    style={{
-                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                      boxShadow: '0 2px 8px rgba(6, 182, 212, 0.4)',
-                    }}
-                  >
-                    +{oz}
-                  </button>
-                ))}
-                <button
-                  onClick={() => {
-                    const custom = prompt('Enter custom amount (oz):');
-                    if (custom && !isNaN(parseInt(custom))) {
-                      handleAddWater(parseInt(custom));
-                    }
-                  }}
-                  className="px-3 py-2 rounded-lg font-bold text-white transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                    boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
-                  }}
-                >
-                  +?
-                </button>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <button
-                  onClick={async () => {
-                    const recommended = calculatePersonalizedHydrationTarget(waterCardDate);
-                    const target = prompt(`Set daily target (oz):\n\n💡 Recommended for you: ${recommended} oz\n(Based on your profile)`, String(recommended));
-                    if (target && !isNaN(parseInt(target))) {
-                      const targetInt = parseInt(target);
-                      try {
-                        const existingLog = hydrationLogs.find(log => log.date === waterCardDate);
-                        if (existingLog) {
-                          await api.updateHydrationLog(existingLog.id, { targetOunces: targetInt });
-                        } else {
-                          await api.createHydrationLog({
-                            date: waterCardDate,
-                            totalOunces: 0,
-                            targetOunces: targetInt,
-                            userId: selectedUserId || user?.id,
-                          });
-                        }
-                        toast.success(`Target set to ${targetInt} oz for ${format(new Date(waterCardDate), 'MMM dd')}`);
-                        await loadHydrationLogs();
-                      } catch (error) {
-                        toast.error('Failed to set target');
-                      }
-                    }
-                  }}
-                  className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
-                  }}
-                >
-                  Set Target
-                </button>
-                <button
-                  onClick={async () => {
-                    const selectedLog = hydrationLogs.find(log => log.date === waterCardDate);
-                    if (!selectedLog) {
-                      toast.error('No data to delete');
-                      return;
-                    }
-                    if (window.confirm(`Delete water data for ${format(new Date(waterCardDate), 'MMM dd, yyyy')}?`)) {
-                      try {
-                        await api.deleteHydrationLog(selectedLog.id);
-                        toast.success('Water data deleted');
-                        await loadHydrationLogs();
-                      } catch (error) {
-                        toast.error('Failed to delete data');
-                      }
-                    }
-                  }}
-                  className="px-3 py-2 rounded-lg font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
-                  }}
-                >
-                  Delete Date
-                </button>
-              </div>
-            </GlassCard>
+            {/* Water intake card moved to A380 cockpit section */}
           </div>
 
 
@@ -2840,182 +3471,6 @@ export function VitalsPage() {
                   </div>
                 </div>
               </div>
-            );
-          })()}
-
-          {/* NEW: Average Body Temperature */}
-          {filteredVitals.length > 0 && filteredVitals.filter(v => v.temperature).length > 0 && (
-            <GlassCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold mb-1">Average Body Temperature</p>
-                  <p className={`text-3xl font-bold ${(() => {
-                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                    if (avg >= 99.5) return 'text-red-400';
-                    if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
-                    return 'text-yellow-400';
-                  })()}`}>
-                    {(() => {
-                      const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                      const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                      return avg.toFixed(1);
-                    })()}°F
-                  </p>
-                  <p className="text-xs mt-1">
-                    Based on {filteredVitals.filter(v => v.temperature).length} readings
-                  </p>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <Thermometer className={`h-8 w-8 ${(() => {
-                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                    if (avg >= 99.5) return 'text-red-400';
-                    if (avg >= 98.0 && avg <= 99.0) return 'text-green-400';
-                    return 'text-yellow-400';
-                  })()}`} />
-                  <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
-                    const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                    const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                    if (avg >= 99.5) return 'bg-red-500 text-white';
-                    if (avg >= 98.0 && avg <= 99.0) return 'bg-green-500 text-white';
-                    return 'bg-yellow-500 text-black';
-                  })()}`}>
-                    {(() => {
-                      const temps = filteredVitals.filter(v => v.temperature).map(v => v.temperature!);
-                      const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-                      if (avg >= 99.5) return 'Elevated';
-                      if (avg >= 98.0 && avg <= 99.0) return 'Normal';
-                      return 'Low';
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* NEW: Blood Pressure Variability */}
-          {filteredVitals.length >= 3 && filteredVitals.filter(v => v.bloodPressureSystolic).length >= 3 && (
-            <GlassCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold mb-1">Blood Pressure Variability</p>
-                  <p className={`text-3xl font-bold ${(() => {
-                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                    const stdDev = Math.sqrt(variance);
-                    if (stdDev <= 10) return 'text-green-400';
-                    if (stdDev <= 15) return 'text-yellow-400';
-                    return 'text-red-400';
-                  })()}`}>
-                    {(() => {
-                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                      const stdDev = Math.sqrt(variance);
-                      if (stdDev <= 10) return 'Low';
-                      if (stdDev <= 15) return 'Moderate';
-                      return 'High';
-                    })()}
-                  </p>
-                  <p className="text-xs mt-1">
-                    {(() => {
-                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                      const stdDev = Math.sqrt(variance);
-                      return `±${stdDev.toFixed(1)} mmHg variation`;
-                    })()}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <Activity className={`h-8 w-8 ${(() => {
-                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                    const stdDev = Math.sqrt(variance);
-                    if (stdDev <= 10) return 'text-green-400';
-                    if (stdDev <= 15) return 'text-yellow-400';
-                    return 'text-red-400';
-                  })()}`} />
-                  <div className={`text-xs font-bold px-3 py-1 rounded-full ${(() => {
-                    const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                    const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                    const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                    const stdDev = Math.sqrt(variance);
-                    if (stdDev <= 10) return 'bg-green-500 text-white';
-                    if (stdDev <= 15) return 'bg-yellow-500 text-black';
-                    return 'bg-red-500 text-white';
-                  })()}`}>
-                    {(() => {
-                      const readings = filteredVitals.filter(v => v.bloodPressureSystolic).map(v => v.bloodPressureSystolic!);
-                      const avg = readings.reduce((sum, r) => sum + r, 0) / readings.length;
-                      const variance = readings.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / readings.length;
-                      const stdDev = Math.sqrt(variance);
-                      if (stdDev <= 10) return 'Consistent';
-                      if (stdDev <= 15) return 'Variable';
-                      return 'Very Variable';
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* NEW: Mean Arterial Pressure (MAP) */}
-          {(() => {
-            // Get latest reading that has BP data (same approach as BP Variability)
-            const latestBP = filteredVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic).slice(-1)[0];
-            if (!latestBP) return null;
-
-            const systolic = latestBP.bloodPressureSystolic!;
-            const diastolic = latestBP.bloodPressureDiastolic!;
-            const map = Math.round((systolic + 2 * diastolic) / 3);
-
-            return (
-              <GlassCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold mb-1">Mean Arterial Pressure (MAP)</p>
-                    <p className={`text-3xl font-bold ${
-                      map < 70 ? 'text-red-400' :
-                      map >= 70 && map <= 100 ? 'text-green-400' :
-                      map > 100 && map <= 110 ? 'text-yellow-400' :
-                      'text-red-400'
-                    }`}>
-                      {map}
-                      <span className="text-sm ml-1">mmHg</span>
-                    </p>
-                    <p className={`text-sm font-bold mt-1 ${
-                      map < 70 ? 'text-red-400' :
-                      map >= 70 && map <= 100 ? 'text-green-400' :
-                      map > 100 && map <= 110 ? 'text-yellow-400' :
-                      'text-red-400'
-                    }`}>
-                      {map < 70 ? 'Low' :
-                       map >= 70 && map <= 100 ? 'Normal' :
-                       map > 100 && map <= 110 ? 'Elevated' :
-                       'High'}
-                    </p>
-                    <p className="text-xs mt-1">Normal: 70-100 mmHg</p>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <Heart className={`h-8 w-8 ${
-                      map < 70 || map > 110 ? 'text-red-400' :
-                      map >= 70 && map <= 100 ? 'text-green-400' :
-                      'text-yellow-400'
-                    }`} />
-                    <div className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      map < 70 || map > 110 ? 'bg-red-500 text-white' :
-                      map >= 70 && map <= 100 ? 'bg-green-500 text-white' :
-                      'bg-yellow-500 text-black'
-                    }`}>
-                      MAP
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
             );
           })()}
 
@@ -3602,63 +4057,255 @@ export function VitalsPage() {
             </div>
           </GlassCard>
 
-          {/* Recent Vitals Table */}
-          <GlassCard>
-            <h2 className="text-xl font-semibold font-bold mb-4">Recent Readings</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Date</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">BP</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">HR</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Temp</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Weight</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">O₂</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Peak Flow</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Sugar</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Hydration</th>
-                    <th className="text-left py-2 px-2 text-sm font-medium font-bold">Notes</th>
-                    <th className="text-center py-2 px-2 text-sm font-medium font-bold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vitals.slice(-10).reverse().map((vital) => (
-                    <tr key={vital.id} className="border-b border-gray-100 hover:bg-white/30">
-                      <td className="py-2 px-2 text-sm">
-                        {format(new Date(vital.timestamp), 'MMM d, h:mm a')}
-                      </td>
-                      <td className="py-2 px-2 text-sm">
-                        {vital.bloodPressureSystolic && vital.bloodPressureDiastolic
-                          ? `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`
-                          : '--'}
-                      </td>
-                      <td className="py-2 px-2 text-sm">{vital.heartRate || '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.weight || '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.peakFlow ? `${vital.peakFlow} L/min` : '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.bloodSugar || '--'}</td>
-                      <td className="py-2 px-2 text-sm">{vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}</td>
-                      <td className="py-2 px-2 text-sm font-bold">{vital.notes || '--'}</td>
-                      <td className="py-2 px-2 text-center">
-                        <button
-                          onClick={() => handleDeleteVitalReading(vital.id, vital.timestamp)}
-                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-500 hover:text-red-400 transition-all"
-                          title="Delete reading"
+          {/* Recent Vitals Table - High-End Spacecraft Collapsible Design */}
+          <div
+            className="relative overflow-hidden rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95))',
+              border: '2px solid rgba(59, 130, 246, 0.4)',
+              boxShadow: '0 0 40px rgba(59, 130, 246, 0.2), inset 0 0 60px rgba(59, 130, 246, 0.05)'
+            }}
+          >
+            {/* Cockpit-Style Header Button */}
+            <button
+              onClick={() => setIsHistoricalReadingsExpanded(!isHistoricalReadingsExpanded)}
+              className="w-full p-6 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:bg-white/5"
+              style={{
+                borderBottom: isHistoricalReadingsExpanded ? '1px solid rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              <div className="flex items-center gap-4">
+                {/* Aircraft Panel Indicator Light */}
+                <div className="relative">
+                  <div
+                    className="w-4 h-4 rounded-full animate-pulse"
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 197, 94, 1) 0%, rgba(34, 197, 94, 0.4) 70%)',
+                      boxShadow: '0 0 20px rgba(34, 197, 94, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.3)'
+                    }}
+                  ></div>
+                  <div
+                    className="absolute top-0 left-0 w-4 h-4 rounded-full animate-ping"
+                    style={{
+                      background: 'rgba(34, 197, 94, 0.4)'
+                    }}
+                  ></div>
+                </div>
+
+                {/* Aviation-Style Label */}
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="text-xs font-mono tracking-widest"
+                      style={{
+                        color: '#22c55e',
+                        textShadow: '0 0 10px rgba(34, 197, 94, 0.5)',
+                        letterSpacing: '0.15em'
+                      }}
+                    >
+                      SYS-DATA-LOG
+                    </span>
+                    <div
+                      className="px-2 py-0.5 rounded text-xs font-mono"
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.2)',
+                        border: '1px solid rgba(59, 130, 246, 0.4)',
+                        color: '#60a5fa'
+                      }}
+                    >
+                      {vitals.length} REC
+                    </div>
+                  </div>
+                  <h2
+                    className="text-2xl font-bold tracking-wide mt-1"
+                    style={{
+                      color: '#ffffff',
+                      textShadow: '0 0 20px rgba(59, 130, 246, 0.3)',
+                      fontFamily: '"Orbitron", "Rajdhani", sans-serif'
+                    }}
+                  >
+                    HISTORICAL FLIGHT DATA
+                  </h2>
+                </div>
+              </div>
+
+              {/* Chevron with Aerospace Styling */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="text-xs font-mono uppercase tracking-widest"
+                  style={{
+                    color: '#60a5fa',
+                    textShadow: '0 0 8px rgba(59, 130, 246, 0.6)'
+                  }}
+                >
+                  {isHistoricalReadingsExpanded ? 'COLLAPSE' : 'EXPAND'}
+                </div>
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    boxShadow: isHistoricalReadingsExpanded
+                      ? '0 0 20px rgba(59, 130, 246, 0.5)'
+                      : '0 0 10px rgba(59, 130, 246, 0.3)',
+                    transform: isHistoricalReadingsExpanded ? 'rotate(0deg)' : 'rotate(0deg)'
+                  }}
+                >
+                  {isHistoricalReadingsExpanded ? (
+                    <ChevronUp className="h-6 w-6 text-blue-400" />
+                  ) : (
+                    <ChevronDown className="h-6 w-6 text-blue-400" />
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Collapsible Content with Smooth Animation */}
+            <div
+              style={{
+                maxHeight: isHistoricalReadingsExpanded ? '2000px' : '0',
+                opacity: isHistoricalReadingsExpanded ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out'
+              }}
+            >
+              <div className="p-6">
+                {/* Scanning Line Effect */}
+                {isHistoricalReadingsExpanded && (
+                  <div
+                    className="absolute top-0 left-0 w-full h-0.5 opacity-50"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.8), transparent)',
+                      animation: 'scan 3s linear infinite'
+                    }}
+                  ></div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr
+                        className="border-b"
+                        style={{
+                          borderColor: 'rgba(59, 130, 246, 0.3)'
+                        }}
+                      >
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Timestamp</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>BP</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>HR</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Temp</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Weight</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>O₂</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Peak Flow</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Sugar</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Hydration</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Notes</th>
+                        <th className="text-center py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vitals.slice(-10).reverse().map((vital, index) => (
+                        <tr
+                          key={vital.id}
+                          className="border-b transition-all duration-200 hover:bg-blue-500/10"
+                          style={{
+                            borderColor: 'rgba(59, 130, 246, 0.15)',
+                            animation: isHistoricalReadingsExpanded ? `fadeInRow 0.3s ease-out ${index * 0.05}s both` : 'none'
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {vitals.length === 0 && (
-                <p className="text-center py-8 font-bold">No vitals recorded yet</p>
-              )}
+                          <td className="py-3 px-3 text-sm font-mono" style={{ color: '#e2e8f0' }}>
+                            {format(new Date(vital.timestamp), 'MMM d, h:mm a')}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
+                            {vital.bloodPressureSystolic && vital.bloodPressureDiastolic
+                              ? `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`
+                              : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#ef4444' }}>
+                            {vital.heartRate || '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f97316' }}>
+                            {vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#10b981' }}>
+                            {vital.weight || '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
+                            {vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#22c55e' }}>
+                            {vital.peakFlow ? `${vital.peakFlow}` : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f59e0b' }}>
+                            {vital.bloodSugar || '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
+                            {vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm" style={{ color: '#cbd5e1' }}>
+                            {vital.notes || '--'}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={() => handleDeleteVitalReading(vital.id, vital.timestamp)}
+                              className="p-2 rounded-lg transition-all duration-200"
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#ef4444'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                                e.currentTarget.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.4)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                              title="Delete reading"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {vitals.length === 0 && (
+                    <p
+                      className="text-center py-12 font-mono uppercase tracking-widest"
+                      style={{
+                        color: '#60a5fa',
+                        textShadow: '0 0 10px rgba(59, 130, 246, 0.5)'
+                      }}
+                    >
+                      NO DATA RECORDS AVAILABLE
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </GlassCard>
+          </div>
+
+          {/* Add scanning animation keyframes */}
+          <style>
+            {`
+              @keyframes scan {
+                0% { top: 0; }
+                100% { top: 100%; }
+              }
+              @keyframes fadeInRow {
+                from {
+                  opacity: 0;
+                  transform: translateX(-20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateX(0);
+                }
+              }
+            `}
+          </style>
 
         </>
       )}
