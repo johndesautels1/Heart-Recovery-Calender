@@ -2839,7 +2839,13 @@ export function VitalsPage() {
 
                     {/* EJECTION FRACTION - HERO GAUGE */}
                     <div className="mb-6 flex justify-center">
-                      <div style={{ width: '280px', height: '280px', position: 'relative' }}>
+                      <div
+                        style={{ width: '280px', height: '280px', position: 'relative', cursor: 'pointer' }}
+                        onClick={() => {
+                          setFocusedField('ejectionFraction');
+                          setIsModalOpen(true);
+                        }}
+                      >
                         {/* Platinum Bezel - Extra Thick & Bright */}
                         <div style={{
                           position: 'absolute',
