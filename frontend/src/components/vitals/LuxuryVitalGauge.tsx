@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 interface LuxuryVitalGaugeProps {
   label: string;
+  subtitle?: string; // Optional subtitle (e.g., "A1C: 5.7%")
   recentValue: number | string | null;
   averageValue: number | string | null;
   restingValue?: number | string | null; // Resting heart rate (for HR gauge only)
@@ -17,10 +18,12 @@ interface LuxuryVitalGaugeProps {
   isAuto: boolean; // true = auto-calculated, false = manual entry
   icon?: React.ReactNode;
   onManualClick?: () => void; // Click handler for MANUAL badge
+  defaultMode?: 'recent' | 'average' | 'resting'; // Default display mode
 }
 
 export function LuxuryVitalGauge({
   label,
+  subtitle,
   recentValue,
   averageValue,
   restingValue,
@@ -36,9 +39,10 @@ export function LuxuryVitalGauge({
   isAuto,
   icon,
   onManualClick,
+  defaultMode = 'recent',
 }: LuxuryVitalGaugeProps) {
   // State: 'recent' | 'average' | 'resting'
-  const [displayMode, setDisplayMode] = useState<'recent' | 'average' | 'resting'>('recent');
+  const [displayMode, setDisplayMode] = useState<'recent' | 'average' | 'resting'>(defaultMode);
 
   const sizes = {
     medium: { diameter: 180, stroke: 14, fontSize: 36, labelSize: 11, subFontSize: 13 },
@@ -577,6 +581,22 @@ export function LuxuryVitalGauge({
         >
           {label}
         </div>
+        {/* Subtitle - Optional additional info like A1C */}
+        {subtitle && (
+          <div
+            style={{
+              fontSize: `${labelSize}px`,
+              fontWeight: '500',
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+              letterSpacing: '1px',
+              marginTop: '4px',
+              textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
       </div>
     </div>
   );

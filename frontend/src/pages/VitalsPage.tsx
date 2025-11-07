@@ -131,6 +131,7 @@ export function VitalsPage() {
 
   // UNIFIED: Global time view for ALL charts
   const [globalTimeView, setGlobalTimeView] = useState<'7d' | '30d' | '90d' | 'surgery'>('surgery');
+  const [throttleTargetDate, setThrottleTargetDate] = useState<Date | null>(null);
 
   const {
     register,
@@ -999,18 +1000,27 @@ export function VitalsPage() {
   const hrRecovery = null;
   const ejectionFraction = patientData?.ejectionFraction || null;
 
-  // LUXURY GAUGE CALCULATIONS - Filter vitals by globalTimeView
-  // IMPORTANT: All time periods are capped at 90 days maximum
-  const getLuxuryTimePeriodFilter = (view: '7d' | '30d' | '90d' | 'surgery') => {
+  // LUXURY GAUGE CALCULATIONS - Filter vitals by throttle position or globalTimeView
+  const getLuxuryTimePeriodFilter = () => {
+    // If throttle is providing a custom target date, use that
+    if (throttleTargetDate && surgeryDate) {
+      const surgeryDateObj = new Date(surgeryDate);
+      return (v: VitalsSample) => {
+        const vitalDate = new Date(v.timestamp);
+        return vitalDate >= surgeryDateObj && vitalDate <= throttleTargetDate;
+      };
+    }
+
+    // Otherwise use the preset time periods
     const now = new Date();
     const maxCutoffDate = subDays(now, 90); // App max is 90 days
     let cutoffDate: Date;
 
-    if (view === '7d') {
+    if (globalTimeView === '7d') {
       cutoffDate = subDays(now, 7);
-    } else if (view === '30d') {
+    } else if (globalTimeView === '30d') {
       cutoffDate = subDays(now, 30);
-    } else if (view === '90d') {
+    } else if (globalTimeView === '90d') {
       cutoffDate = subDays(now, 90);
     } else {
       // 'surgery' - from surgery date OR 90 days ago, whichever is more recent
@@ -1028,7 +1038,7 @@ export function VitalsPage() {
     return (v: VitalsSample) => new Date(v.timestamp) >= cutoffDate;
   };
 
-  const luxuryFilter = getLuxuryTimePeriodFilter(globalTimeView);
+  const luxuryFilter = getLuxuryTimePeriodFilter();
   const filteredForLuxury = vitals.filter(luxuryFilter);
 
   // Calculate MOST RECENT within the time period (not absolute latest)
@@ -1118,6 +1128,12 @@ export function VitalsPage() {
     ? Math.round(sugarVitals.map(v => v.bloodSugar!).reduce((a, b) => a + b, 0) / sugarVitals.length)
     : null;
 
+  // A1C calculation from average blood sugar
+  // Formula: A1C (%) = (Average Blood Glucose in mg/dL + 46.7) / 28.7
+  const a1c = avgBloodSugar !== null
+    ? Math.round(((avgBloodSugar + 46.7) / 28.7) * 10) / 10
+    : null;
+
   // Weight calculations - Recent and Average
   const weightVitalsForRecent = filteredForLuxury.filter(v => v.weight)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -1128,8 +1144,20 @@ export function VitalsPage() {
     ? Math.round((weightVitals.map(v => v.weight!).reduce((a, b) => a + b, 0) / weightVitals.length) * 10) / 10
     : null;
 
-  // Map globalTimeView to timePeriod display string
+  // Map globalTimeView or throttle position to timePeriod display string
   const getTimePeriodLabel = (): 'Wk' | '30d' | '60d' | 'ssd' => {
+    // If throttle is providing custom date, calculate days and return appropriate label
+    if (throttleTargetDate && surgeryDate) {
+      const surgeryDateObj = new Date(surgeryDate);
+      const days = Math.floor((throttleTargetDate.getTime() - surgeryDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (days <= 7) return 'Wk';
+      if (days <= 30) return '30d';
+      if (days <= 60) return '60d';
+      return 'ssd';
+    }
+
+    // Otherwise use globalTimeView
     switch (globalTimeView) {
       case '7d': return 'Wk';
       case '30d': return '30d';
@@ -1836,7 +1864,10 @@ export function VitalsPage() {
               </div>
               <TimeThrottleLever
                 surgeryDate={surgeryDate}
-                onTimeChange={(view) => setGlobalTimeView(view)}
+                onTimeChange={(view, customDate) => {
+                  setGlobalTimeView(view);
+                  setThrottleTargetDate(customDate || null);
+                }}
                 currentView={globalTimeView}
               />
             </div>
@@ -1845,6 +1876,7 @@ export function VitalsPage() {
             <div className="flex justify-center items-center">
               <LuxuryVitalGauge
                 label="Blood Sugar"
+                subtitle={a1c !== null ? `A1C: ${a1c}%` : undefined}
                 recentValue={recentBloodSugar}
                 averageValue={avgBloodSugar}
                 unit="mg/dL"
@@ -1858,6 +1890,7 @@ export function VitalsPage() {
                 isAuto={isBloodSugarAuto}
                 icon={<Droplet className="h-5 w-5 text-yellow-400" />}
                 onManualClick={() => setIsModalOpen(true)}
+                defaultMode="average"
               />
             </div>
           </div>

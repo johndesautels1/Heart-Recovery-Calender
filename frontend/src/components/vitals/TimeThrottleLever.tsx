@@ -18,19 +18,13 @@ export function TimeThrottleLever({
   const throttleRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Map throttle position to time view
+  // Initialize throttle position to top (max days) on mount
   useEffect(() => {
-    if (!isDragging) {
-      // Snap to preset positions when not dragging
-      const positionMap: Record<string, number> = {
-        '7d': 50,  // Middle position - Last 7 Days
-        '30d': 25, // Lower position - 30 Days
-        '90d': 75, // Top position - Current (using 90d temporarily for current view)
-        'surgery': 0, // Bottom position - Since Surgery
-      };
-      setThrottlePosition(positionMap[currentView] || 50);
+    if (!isDragging && surgeryDate) {
+      // Start at top position (max days) by default
+      setThrottlePosition(100);
     }
-  }, [currentView, isDragging]);
+  }, [surgeryDate]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -38,7 +32,7 @@ export function TimeThrottleLever({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
+    if (!isDragging || !containerRef.current || !surgeryDate) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const y = e.clientY - rect.top;
@@ -47,16 +41,17 @@ export function TimeThrottleLever({
 
     setThrottlePosition(position);
 
-    // Determine view based on position
-    if (position >= 65) {
-      onTimeChange('90d'); // Top - CURRENT (using 90d temporarily for current view)
-    } else if (position >= 40) {
-      onTimeChange('7d');  // Middle - Last 7 Days
-    } else if (position >= 15) {
-      onTimeChange('30d'); // Lower - 30 Days
-    } else {
-      onTimeChange('surgery'); // Bottom - Since Surgery Date
-    }
+    // Calculate the date based on throttle position
+    const maxDays = getMaxDays();
+    const days = Math.round((position / 100) * maxDays);
+
+    const surgery = new Date(surgeryDate);
+    const targetDate = new Date(surgery);
+    targetDate.setDate(targetDate.getDate() + days);
+
+    // Pass surgery as the view with the target date
+    // This tells VitalsPage to show data from surgery date to targetDate
+    onTimeChange('surgery', targetDate);
   };
 
   const handleMouseUp = () => {
@@ -74,46 +69,66 @@ export function TimeThrottleLever({
     }
   }, [isDragging]);
 
-  // Calculate display date based on view
+  // Calculate display date based on throttle position
   const getDisplayDate = () => {
-    const today = new Date();
-    switch (currentView) {
-      case '90d':
-        // CURRENT - Show today's date (using 90d view temporarily)
-        return format(today, 'MMM d, yyyy');
-      case '7d':
-        return `${format(subDays(today, 7), 'MMM d')} - ${format(today, 'MMM d, yyyy')}`;
-      case '30d':
-        return `${format(subDays(today, 30), 'MMM d')} - ${format(today, 'MMM d, yyyy')}`;
-      case 'surgery':
-        if (surgeryDate) {
-          return `${format(new Date(surgeryDate), 'MMM d, yyyy')} - ${format(today, 'MMM d, yyyy')}`;
-        }
-        return 'Full History';
-      default:
-        return format(today, 'MMM d, yyyy');
+    if (!surgeryDate) return format(new Date(), 'MMM d, yyyy');
+
+    const surgery = new Date(surgeryDate);
+    const days = getCurrentDays();
+
+    if (days === null || days === 0) {
+      // Bottom position - Day Zero
+      return format(surgery, 'MMM d, yyyy');
     }
+
+    const targetDate = new Date(surgery);
+    targetDate.setDate(targetDate.getDate() + days);
+
+    return `${format(surgery, 'MMM d')} - ${format(targetDate, 'MMM d, yyyy')}`;
   };
 
   const getViewLabel = () => {
-    switch (currentView) {
-      case '90d':
-        return 'CURRENT';  // Top position - Current readings
-      case '7d':
-        return 'LAST 7 DAYS';  // Middle position
-      case '30d':
-        return 'LAST 30 DAYS';  // Lower position
-      case 'surgery':
-        return 'SINCE SURGERY (SSD)';  // Bottom position
-      default:
-        return 'CURRENT';
+    const days = getCurrentDays();
+
+    if (days === null) return 'NO SURGERY DATE';
+    if (days === 0) return 'DAY ZERO';
+    if (days === 1) return '1 DAY';
+
+    const maxDays = getMaxDays();
+    if (days === maxDays && maxDays === 90) {
+      return '90 DAYS (DISCHARGE)';
     }
+
+    return `${days} DAYS`;
+  };
+
+  // Calculate maximum days for this user (days since surgery capped at 90)
+  const getMaxDays = () => {
+    if (!surgeryDate) return 90;
+
+    const today = new Date();
+    const surgery = new Date(surgeryDate);
+    const daysSinceSurgery = Math.floor((today.getTime() - surgery.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Cap at 90 days (discharge from program)
+    return Math.min(daysSinceSurgery, 90);
+  };
+
+  // Calculate current days based on throttle position
+  // Bottom (0%) = Day 0 (surgery date)
+  // Top (100%) = Max days (current days since surgery or 90, whichever is less)
+  const getCurrentDays = () => {
+    if (!surgeryDate) return null;
+
+    const maxDays = getMaxDays();
+    // Map throttle position (0-100) to days (0 to maxDays)
+    return Math.round((throttlePosition / 100) * maxDays);
   };
 
   return (
     <div className="flex flex-col items-center gap-4 py-6">
       {/* Display Panel - Centered */}
-      <div className="flex justify-center w-full">
+      <div className="flex justify-center w-full" style={{ marginBottom: '64px', marginTop: '-20px' }}>
         <div
           className="px-5 py-3 rounded-lg"
           style={{
@@ -310,6 +325,44 @@ export function TimeThrottleLever({
                   {/* Gold accent strips */}
                   <div className="absolute top-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-80" />
                   <div className="absolute bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-80" />
+
+                  {/* Small Digital Day Counter */}
+                  {getCurrentDays() !== null && (
+                    <div
+                      className="absolute left-1/2 top-3 -translate-x-1/2 px-2 py-0.5 rounded"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(10, 10, 10, 0.95), rgba(30, 30, 30, 0.95))',
+                        border: '1px solid rgba(212, 175, 55, 0.4)',
+                        boxShadow: '0 0 8px rgba(212, 175, 55, 0.3), inset 0 1px 2px rgba(212, 175, 55, 0.2)',
+                      }}
+                    >
+                      <div
+                        className="text-center font-mono font-bold"
+                        style={{
+                          fontSize: '9px',
+                          color: '#FFD700',
+                          textShadow: '0 0 6px rgba(255, 215, 0, 0.8)',
+                          letterSpacing: '0.5px',
+                          lineHeight: '1',
+                        }}
+                      >
+                        {getCurrentDays()}
+                      </div>
+                      <div
+                        className="text-center font-mono"
+                        style={{
+                          fontSize: '6px',
+                          color: '#D4AF37',
+                          textShadow: '0 0 4px rgba(212, 175, 55, 0.6)',
+                          letterSpacing: '0.3px',
+                          lineHeight: '1',
+                          marginTop: '1px',
+                        }}
+                      >
+                        DAYS
+                      </div>
+                    </div>
+                  )}
 
                   {/* LED Status Indicator */}
                   <div
