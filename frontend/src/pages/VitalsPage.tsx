@@ -41,47 +41,71 @@ import toast from 'react-hot-toast';
 import { format, subDays, addDays, subMonths, addMonths } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 
+// Helper to convert empty/NaN values to undefined for optional number fields
+const optionalNumber = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+  z.number().optional()
+);
+
 const vitalsSchema = z.object({
   timestamp: z.string().optional(), // Date/time for historical data entry
-  bloodPressureSystolic: z.number().optional(),
-  bloodPressureDiastolic: z.number().optional(),
-  heartRate: z.number().optional(),
-  weight: z.number().optional(),
-  temperature: z.number().optional(),
-  oxygenSaturation: z.number().optional(),
-  bloodSugar: z.number().optional(),
-  hydrationStatus: z.number().optional(),
-  peakFlow: z.number().optional(),
-  respiratoryRate: z.number().optional(),
+  bloodPressureSystolic: optionalNumber,
+  bloodPressureDiastolic: optionalNumber,
+  heartRate: optionalNumber,
+  weight: optionalNumber,
+  temperature: optionalNumber,
+  oxygenSaturation: optionalNumber,
+  bloodSugar: optionalNumber,
+  hydrationStatus: optionalNumber,
+  peakFlow: optionalNumber,
+  respiratoryRate: optionalNumber,
   // HRV Metrics (Heart Rate Variability)
-  sdnn: z.number().optional(), // Standard Deviation of NN intervals (ms)
-  rmssd: z.number().optional(), // Root Mean Square of Successive Differences (ms)
-  pnn50: z.number().optional(), // Percentage of NN intervals > 50ms (%)
+  sdnn: optionalNumber, // Standard Deviation of NN intervals (ms)
+  rmssd: optionalNumber, // Root Mean Square of Successive Differences (ms)
+  pnn50: optionalNumber, // Percentage of NN intervals > 50ms (%)
   // Exercise Capacity Metrics
-  vo2Max: z.number().optional(), // VO₂ Max (mL/kg/min)
-  sixMinWalk: z.number().optional(), // 6-Minute Walk Test distance (meters)
-  hrRecovery: z.number().optional(), // Heart Rate Recovery (bpm/min)
+  vo2Max: optionalNumber, // VO₂ Max (mL/kg/min)
+  sixMinWalk: optionalNumber, // 6-Minute Walk Test distance (meters)
+  hrRecovery: optionalNumber, // Heart Rate Recovery (bpm/min)
   // Advanced Cardiac Metrics
-  ejectionFraction: z.number().optional(), // Ejection Fraction (%)
-  meanArterialPressure: z.number().optional(), // MAP (mmHg)
-  pulsePressure: z.number().optional(), // Pulse Pressure (mmHg)
-  bpVariability: z.number().optional(), // BP Variability (SD)
+  ejectionFraction: optionalNumber, // Ejection Fraction (%)
+  meanArterialPressure: optionalNumber, // MAP (mmHg)
+  pulsePressure: optionalNumber, // Pulse Pressure (mmHg)
+  bpVariability: optionalNumber, // BP Variability (SD)
   notes: z.string().optional(),
   symptoms: z.string().optional(),
   medicationsTaken: z.boolean().optional(),
   edema: z.string().optional(),
   edemaSeverity: z.enum(['none', 'mild', 'moderate', 'severe']).optional(),
   chestPain: z.boolean().optional(),
-  chestPainSeverity: z.number().min(1).max(10).optional(),
+  chestPainSeverity: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(1).max(10).optional()
+  ),
   chestPainType: z.string().optional(),
-  dyspnea: z.number().min(0).max(4).optional(),
+  dyspnea: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(0).max(4).optional()
+  ),
   dyspneaTriggers: z.string().optional(),
   dizziness: z.boolean().optional(),
-  dizzinessSeverity: z.number().min(1).max(10).optional(),
+  dizzinessSeverity: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(1).max(10).optional()
+  ),
   dizzinessFrequency: z.string().optional(),
-  energyLevel: z.number().min(1).max(10).optional(),
-  stressLevel: z.number().min(1).max(10).optional(),
-  anxietyLevel: z.number().min(1).max(10).optional(),
+  energyLevel: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(1).max(10).optional()
+  ),
+  stressLevel: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(1).max(10).optional()
+  ),
+  anxietyLevel: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
+    z.number().min(1).max(10).optional()
+  ),
 }).refine(
   (data) => {
     // Ensure at least one vital field is provided
