@@ -2197,9 +2197,7 @@ export function VitalsPage() {
             </div>
             <div className="flex gap-2">
               {[
-                { id: 'all' as const, icon: BarChart3, label: 'All Devices', color: 'blue' },
-                { id: 'samsung' as const, icon: Smartphone, label: 'Samsung Health', color: 'cyan' },
-                { id: 'polar' as const, icon: Watch, label: 'Polar H10', color: 'purple' }
+                { id: 'all' as const, icon: BarChart3, label: 'All Devices', color: 'blue' }
               ].map(device => (
                 <button
                   key={device.id}
