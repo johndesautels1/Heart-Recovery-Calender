@@ -5,8 +5,10 @@ interface LuxuryVitalGaugeProps {
   subtitle?: string; // Optional subtitle (e.g., "A1C: 5.7%")
   recentValue: number | string | null;
   averageValue: number | string | null;
-  restingValue?: number | string | null; // Resting heart rate (for HR gauge only)
+  restingValue?: number | string | null; // Resting value (lowest readings)
+  maxValue?: number | string | null; // MAX value (highest readings)
   showRestingToggle?: boolean; // Show the "R" resting toggle button
+  showMaxIndicator?: boolean; // Show the "M" max indicator (clickable to show max values)
   unit: string;
   min: number;
   max: number;
@@ -18,7 +20,7 @@ interface LuxuryVitalGaugeProps {
   isAuto: boolean; // true = auto-calculated, false = manual entry
   icon?: React.ReactNode;
   onManualClick?: () => void; // Click handler for MANUAL badge
-  defaultMode?: 'recent' | 'average' | 'resting'; // Default display mode
+  defaultMode?: 'recent' | 'average' | 'resting' | 'max'; // Default display mode
 }
 
 export function LuxuryVitalGauge({
@@ -27,7 +29,9 @@ export function LuxuryVitalGauge({
   recentValue,
   averageValue,
   restingValue,
+  maxValue,
   showRestingToggle = false,
+  showMaxIndicator = false,
   unit,
   min,
   max,
@@ -41,12 +45,12 @@ export function LuxuryVitalGauge({
   onManualClick,
   defaultMode = 'recent',
 }: LuxuryVitalGaugeProps) {
-  // State: 'recent' | 'average' | 'resting'
-  const [displayMode, setDisplayMode] = useState<'recent' | 'average' | 'resting'>(defaultMode);
+  // State: 'recent' | 'average' | 'resting' | 'max'
+  const [displayMode, setDisplayMode] = useState<'recent' | 'average' | 'resting' | 'max'>(defaultMode);
 
   const sizes = {
     medium: { diameter: 180, stroke: 14, fontSize: 36, labelSize: 11, subFontSize: 13 },
-    large: { diameter: 240, stroke: 18, fontSize: 48, labelSize: 13, subFontSize: 16 },
+    large: { diameter: 240, stroke: 18, fontSize: 40, labelSize: 13, subFontSize: 16 },
   };
 
   const { diameter, stroke, fontSize, labelSize, subFontSize } = sizes[size];
@@ -56,6 +60,7 @@ export function LuxuryVitalGauge({
   // Calculate percentage for the dial
   const displayValue = displayMode === 'recent' ? recentValue :
                        displayMode === 'resting' ? restingValue :
+                       displayMode === 'max' ? maxValue :
                        averageValue;
   const numValue = typeof displayValue === 'number' ? displayValue :
                    typeof displayValue === 'string' && displayValue.includes('/')
@@ -471,7 +476,7 @@ export function LuxuryVitalGauge({
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            {displayMode === 'recent' ? 'Recent' : displayMode === 'resting' ? `Resting ${timePeriod}` : `Avg ${timePeriod}`}
+            {displayMode === 'recent' ? 'Recent' : displayMode === 'resting' ? `Resting ${timePeriod}` : displayMode === 'max' ? `MAX ${timePeriod}` : `Avg ${timePeriod}`}
           </button>
 
           {/* Cursive "avg" button below Recent - clickable to switch to average mode */}
@@ -508,9 +513,10 @@ export function LuxuryVitalGauge({
             </button>
           )}
 
-          {/* Cursive "M" below avg for Heart Rate gauge - indicates resting heart rate available */}
-          {displayMode === 'recent' && showRestingToggle && restingValue !== null && (
-            <div
+          {/* Cursive "M" below avg - clickable to show MAX values */}
+          {displayMode === 'recent' && showMaxIndicator && maxValue !== null && (
+            <button
+              onClick={() => setDisplayMode('max')}
               style={{
                 marginTop: '2px',
                 fontSize: `${(labelSize - 4) * 3}px`,
@@ -521,10 +527,23 @@ export function LuxuryVitalGauge({
                 letterSpacing: '0.3px',
                 textShadow: '0 0 6px rgba(239, 68, 68, 0.8)',
                 opacity: 0.9,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.2)';
+                e.currentTarget.style.textShadow = '0 0 10px rgba(239, 68, 68, 1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.textShadow = '0 0 6px rgba(239, 68, 68, 0.8)';
               }}
             >
               M
-            </div>
+            </button>
           )}
         </div>
 

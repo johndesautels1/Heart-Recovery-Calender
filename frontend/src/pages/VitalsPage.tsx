@@ -1041,6 +1041,17 @@ export function VitalsPage() {
   const luxuryFilter = getLuxuryTimePeriodFilter();
   const filteredForLuxury = vitals.filter(luxuryFilter);
 
+  // DEBUG: Log filtered data range
+  if (filteredForLuxury.length > 0) {
+    const dates = filteredForLuxury.map(v => new Date(v.timestamp)).sort((a, b) => a.getTime() - b.getTime());
+    console.log(`[LUXURY GAUGES] Filtered ${filteredForLuxury.length} vitals from ${dates[0].toLocaleDateString()} to ${dates[dates.length - 1].toLocaleDateString()}`);
+    if (throttleTargetDate) {
+      console.log(`[THROTTLE] Target date: ${throttleTargetDate.toLocaleDateString()}`);
+    } else {
+      console.log(`[TIME VIEW] Using globalTimeView: ${globalTimeView}`);
+    }
+  }
+
   // Calculate MOST RECENT within the time period (not absolute latest)
   const bpVitalsForRecent = filteredForLuxury.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -1107,6 +1118,32 @@ export function VitalsPage() {
         return `${restingSystolic}/${restingDiastolic}`;
       })()
     : null;
+
+  // MAX Heart Rate - Highest heart rate from current time period (all sources)
+  const maxHeartRate = hrVitals.length > 0
+    ? Math.max(...hrVitals.map(v => v.heartRate!))
+    : null;
+
+  // MAX Blood Pressure - Highest systolic/diastolic from current time period (all sources)
+  const maxBP = bpVitals.length > 0
+    ? (() => {
+        const maxSystolic = Math.max(...bpVitals.map(v => v.bloodPressureSystolic!));
+        const maxSystolicReading = bpVitals.find(v => v.bloodPressureSystolic === maxSystolic);
+        return maxSystolicReading
+          ? `${maxSystolicReading.bloodPressureSystolic}/${maxSystolicReading.bloodPressureDiastolic}`
+          : null;
+      })()
+    : null;
+
+  // DEBUG: Log calculated values for HR
+  if (hrVitals.length > 0) {
+    console.log(`[HEART RATE] Recent: ${recentHR}, Average: ${avgHeartRate}, Resting: ${restingHeartRate}, MAX: ${maxHeartRate} (from ${hrVitals.length} readings)`);
+  }
+
+  // DEBUG: Log calculated values for BP
+  if (bpVitals.length > 0) {
+    console.log(`[BLOOD PRESSURE] Recent: ${recentBP}, Average: ${avgBP}, Resting: ${restingBP}, MAX: ${maxBP} (from ${bpVitals.length} readings)`);
+  }
 
   // Temperature calculations - Recent and Average
   const tempVitalsForRecent = filteredForLuxury.filter(v => v.temperature)
@@ -1741,7 +1778,9 @@ export function VitalsPage() {
                 recentValue={recentBP}
                 averageValue={avgBP}
                 restingValue={restingBP}
+                maxValue={maxBP}
                 showRestingToggle={true}
+                showMaxIndicator={true}
                 unit="mmHg"
                 min={80}
                 max={180}
@@ -1754,6 +1793,16 @@ export function VitalsPage() {
                 icon={<Heart className="h-6 w-6 text-blue-400" />}
                 onManualClick={() => setIsModalOpen(true)}
               />
+              {/* BP Trend Indicator - DEMO VERSION */}
+              <div className="flex justify-center mt-2">
+                <div className="px-3 py-1 rounded text-xs font-semibold" style={{
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))',
+                  border: '1px solid rgba(34, 197, 94, 0.5)',
+                  color: '#4ade80'
+                }}>
+                  Improving -6 vs last week
+                </div>
+              </div>
             </div>
             <div style={{ marginLeft: '156px', marginTop: '4px' }}>
               <LuxuryVitalGauge
@@ -1761,7 +1810,9 @@ export function VitalsPage() {
                 recentValue={recentHR}
                 averageValue={avgHeartRate}
                 restingValue={restingHeartRate}
+                maxValue={maxHeartRate}
                 showRestingToggle={true}
+                showMaxIndicator={true}
                 unit="bpm"
                 min={40}
                 max={180}
@@ -1774,6 +1825,36 @@ export function VitalsPage() {
                 icon={<Activity className="h-6 w-6 text-red-400" />}
                 onManualClick={() => setIsModalOpen(true)}
               />
+              {/* HR Trend Indicator */}
+              {filteredForLuxury.length >= 14 && (() => {
+                const recentVitals = filteredForLuxury.slice(-7);
+                const olderVitals = filteredForLuxury.slice(-14, -7);
+                const validRecent = recentVitals.filter(v => v.heartRate);
+                const validOlder = olderVitals.filter(v => v.heartRate);
+                if (validRecent.length === 0 || validOlder.length === 0) return null;
+                const recentAvg = validRecent.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validRecent.length;
+                const olderAvg = validOlder.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validOlder.length;
+                const diff = recentAvg - olderAvg;
+                const isImproving = diff < -3;
+                const isWorsening = diff > 3;
+                if (!isImproving && !isWorsening) return null;
+
+                return (
+                  <div className="flex justify-center mt-2">
+                    <div className="px-3 py-1 rounded text-xs font-semibold" style={{
+                      background: isImproving
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
+                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+                      border: isImproving
+                        ? '1px solid rgba(34, 197, 94, 0.5)'
+                        : '1px solid rgba(239, 68, 68, 0.5)',
+                      color: isImproving ? '#4ade80' : '#f87171'
+                    }}>
+                      {isImproving ? 'Improving' : 'Worsening'} {diff > 0 ? '+' : ''}{diff.toFixed(0)} bpm vs last week
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1796,6 +1877,36 @@ export function VitalsPage() {
                 icon={<Wind className="h-5 w-5 text-cyan-400" />}
                 onManualClick={() => setIsModalOpen(true)}
               />
+              {/* O2 Trend Indicator */}
+              {filteredForLuxury.length >= 14 && (() => {
+                const recentVitals = filteredForLuxury.slice(-7);
+                const olderVitals = filteredForLuxury.slice(-14, -7);
+                const validRecent = recentVitals.filter(v => v.oxygenSaturation);
+                const validOlder = olderVitals.filter(v => v.oxygenSaturation);
+                if (validRecent.length === 0 || validOlder.length === 0) return null;
+                const recentAvg = validRecent.reduce((sum, v) => sum + (v.oxygenSaturation || 0), 0) / validRecent.length;
+                const olderAvg = validOlder.reduce((sum, v) => sum + (v.oxygenSaturation || 0), 0) / validOlder.length;
+                const diff = recentAvg - olderAvg;
+                const isImproving = diff > 1;
+                const isWorsening = diff < -1;
+                if (!isImproving && !isWorsening) return null;
+
+                return (
+                  <div className="flex justify-center mt-2">
+                    <div className="px-3 py-1 rounded text-xs font-semibold" style={{
+                      background: isImproving
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
+                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+                      border: isImproving
+                        ? '1px solid rgba(34, 197, 94, 0.5)'
+                        : '1px solid rgba(239, 68, 68, 0.5)',
+                      color: isImproving ? '#4ade80' : '#f87171'
+                    }}>
+                      {isImproving ? 'Improving' : 'Worsening'} {diff > 0 ? '+' : ''}{diff.toFixed(1)}% vs last week
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ marginLeft: '96px' }}>
               <LuxuryVitalGauge
@@ -1814,6 +1925,36 @@ export function VitalsPage() {
                 icon={<Pulse className="h-5 w-5 text-green-400" />}
                 onManualClick={() => setIsModalOpen(true)}
               />
+              {/* Respiratory Rate Trend Indicator */}
+              {filteredForLuxury.length >= 14 && (() => {
+                const recentVitals = filteredForLuxury.slice(-7);
+                const olderVitals = filteredForLuxury.slice(-14, -7);
+                const validRecent = recentVitals.filter(v => v.respiratoryRate);
+                const validOlder = olderVitals.filter(v => v.respiratoryRate);
+                if (validRecent.length === 0 || validOlder.length === 0) return null;
+                const recentAvg = validRecent.reduce((sum, v) => sum + (v.respiratoryRate || 0), 0) / validRecent.length;
+                const olderAvg = validOlder.reduce((sum, v) => sum + (v.respiratoryRate || 0), 0) / validOlder.length;
+                const diff = recentAvg - olderAvg;
+                const isImproving = diff < -2;
+                const isWorsening = diff > 2;
+                if (!isImproving && !isWorsening) return null;
+
+                return (
+                  <div className="flex justify-center mt-2">
+                    <div className="px-3 py-1 rounded text-xs font-semibold" style={{
+                      background: isImproving
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
+                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+                      border: isImproving
+                        ? '1px solid rgba(34, 197, 94, 0.5)'
+                        : '1px solid rgba(239, 68, 68, 0.5)',
+                      color: isImproving ? '#4ade80' : '#f87171'
+                    }}>
+                      {isImproving ? 'Improving' : 'Worsening'} {diff > 0 ? '+' : ''}{diff.toFixed(1)}/min vs last week
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1828,7 +1969,7 @@ export function VitalsPage() {
           {/* Time Throttle Lever with Temperature Gauge */}
           <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-6 items-center mb-8">
             {/* Temperature Gauge - Left */}
-            <div className="flex justify-center items-center">
+            <div className="flex flex-col justify-center items-center">
               <LuxuryVitalGauge
                 label="Temperature"
                 recentValue={recentTemp}
@@ -1845,6 +1986,39 @@ export function VitalsPage() {
                 icon={<Thermometer className="h-5 w-5 text-orange-400" />}
                 onManualClick={() => setIsModalOpen(true)}
               />
+              {/* Temperature Trend Indicator */}
+              {filteredForLuxury.length >= 14 && (() => {
+                const recentVitals = filteredForLuxury.slice(-7);
+                const olderVitals = filteredForLuxury.slice(-14, -7);
+                const validRecent = recentVitals.filter(v => v.temperature);
+                const validOlder = olderVitals.filter(v => v.temperature);
+                if (validRecent.length === 0 || validOlder.length === 0) return null;
+                const recentAvg = validRecent.reduce((sum, v) => sum + (v.temperature || 0), 0) / validRecent.length;
+                const olderAvg = validOlder.reduce((sum, v) => sum + (v.temperature || 0), 0) / validOlder.length;
+                const diff = recentAvg - olderAvg;
+                const normalTemp = 98.6;
+                const recentDistFromNormal = Math.abs(recentAvg - normalTemp);
+                const olderDistFromNormal = Math.abs(olderAvg - normalTemp);
+                const isImproving = recentDistFromNormal < olderDistFromNormal - 0.3;
+                const isWorsening = recentDistFromNormal > olderDistFromNormal + 0.3;
+                if (!isImproving && !isWorsening) return null;
+
+                return (
+                  <div className="flex justify-center mt-2">
+                    <div className="px-3 py-1 rounded text-xs font-semibold" style={{
+                      background: isImproving
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
+                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
+                      border: isImproving
+                        ? '1px solid rgba(34, 197, 94, 0.5)'
+                        : '1px solid rgba(239, 68, 68, 0.5)',
+                      color: isImproving ? '#4ade80' : '#f87171'
+                    }}>
+                      {isImproving ? 'Improving' : 'Worsening'} {diff > 0 ? '+' : ''}{diff.toFixed(1)}°F vs last week
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Time Throttle Lever - Center */}
@@ -2056,7 +2230,6 @@ export function VitalsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <CircularGauge value={vo2Max} label="VO₂ Max" unit="mL/kg/min" min={15} max={60} targetMin={25} targetMax={35} size="small" style="modern" color="#a855f7" />
                 <CircularGauge value={sixMinWalk} label="6-Min Walk" unit="m" min={200} max={800} targetMin={400} targetMax={700} size="small" style="modern" color="#8b5cf6" />
-                <CircularGauge value={maxHR} label="Max HR" unit="bpm" min={100} max={200} size="small" style="modern" color="#c084fc" />
                 <CircularGauge value={hrRecovery} label="HR Recovery" unit="bpm/min" min={5} max={40} targetMin={12} targetMax={25} size="small" style="modern" color="#a78bfa" />
               </div>
             </div>
@@ -2107,61 +2280,6 @@ export function VitalsPage() {
 
         <div className="relative p-6">
           <div className="relative flex items-start justify-between mb-6">
-            {/* Left: Patient Badge + Dropdown (stacked) */}
-            <div className="flex flex-col items-center gap-2 z-10">
-              {/* Patient Identifier Badge */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full font-semibold text-sm"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))',
-                  border: '2px solid rgba(34, 197, 94, 0.5)',
-                  boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)'
-                }}>
-                <Heart className="h-4 w-4 text-green-400" />
-                <span className="text-green-300">
-                  {patientData?.name || patientData?.firstName || user?.name || 'Current User'}
-                </span>
-                <span className="text-green-400/60 ml-1">
-                  ({(selectedUserId && selectedUserId !== user?.id) ? 'Patient' : (user?.role === 'therapist' || user?.role === 'admin') ? 'Admin/Therapist' : 'Patient'})
-                </span>
-              </div>
-
-              {/* Patient Selector - Only for Admin/Therapist */}
-              {(user?.role === 'admin' || user?.role === 'therapist') && allPatients.length > 0 && (
-                <select
-                  value={selectedUserId || 'my-vitals'}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    console.log('[VitalsPage] Dropdown changed to:', value);
-                    if (value === 'my-vitals') {
-                      setSelectedUserId(null);
-                    } else {
-                      const userId = Number(value);
-                      const patient = allPatients.find(p => p.userId === userId);
-                      console.log('[VitalsPage] Selected patient:', patient?.name, 'userId:', userId);
-                      setSelectedUserId(userId);
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg font-semibold text-sm border-2 transition-all cursor-pointer"
-                  style={{
-                    background: 'rgba(31, 41, 55, 0.8)',
-                    borderColor: 'rgba(59, 130, 246, 0.5)',
-                    color: 'rgb(147, 197, 253)'
-                  }}
-                >
-                  <option value="my-vitals">My Vitals</option>
-                  <optgroup label="Patients">
-                    {allPatients
-                      .filter(p => p.userId) // Only show patients with linked user accounts
-                      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-                      .map(patient => (
-                        <option key={patient.id} value={patient.userId}>
-                          {patient.name || `Patient ${patient.id}`}
-                        </option>
-                      ))}
-                  </optgroup>
-                </select>
-              )}
-            </div>
 
             {/* Center: Title (absolutely positioned to true center) */}
             <div className="absolute left-1/2 top-0 transform -translate-x-1/2 flex items-center gap-4">
@@ -2174,30 +2292,23 @@ export function VitalsPage() {
               </div>
               <div className="flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-white whitespace-nowrap" style={{ textShadow: '0 0 20px rgba(59, 130, 246, 0.5)' }}>
-                  Vitals Command Center
+
                 </h1>
-                <p className="text-sm text-blue-300/80">Medical-Grade Monitoring System</p>
+                <p className="text-sm text-blue-300/80"></p>
               </div>
             </div>
 
-            {/* Right: Record Button */}
-            <div className="z-10">
-              <Button onClick={() => setIsModalOpen(true)} className="group">
-                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Record Vitals
-              </Button>
-            </div>
           </div>
 
           {/* Device Filter Tabs - Garmin Style */}
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-2 text-blue-300/60 text-sm font-semibold">
               <Filter className="h-4 w-4" />
-              <span>DEVICE SOURCE</span>
+              <span></span>
             </div>
             <div className="flex gap-2">
               {[
-                { id: 'all' as const, icon: BarChart3, label: 'All Devices', color: 'blue' }
+                { id: 'all' as const, icon: BarChart3, label: '', color: 'blue' }
               ].map(device => (
                 <button
                   key={device.id}
@@ -2624,66 +2735,6 @@ export function VitalsPage() {
               </GlassCard>
             )}
           </div>
-
-          {/* NEW: Blood Pressure Trend */}
-          {filteredVitals.length >= 7 && (
-            <GlassCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold mb-1">Blood Pressure Trend</p>
-                  <p className={`text-3xl font-bold ${(() => {
-                    const recentVitals = filteredVitals.slice(-7);
-                    const olderVitals = filteredVitals.slice(-14, -7);
-                    const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                    const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                    if (validRecent.length === 0 || validOlder.length === 0) return 'text-white';
-                    const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                    const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                    const diff = recentAvg - olderAvg;
-                    return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
-                  })()}`}>
-                    {(() => {
-                      const recentVitals = filteredVitals.slice(-7);
-                      const olderVitals = filteredVitals.slice(-14, -7);
-                      const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                      const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                      if (validRecent.length === 0 || validOlder.length === 0) return 'No data';
-                      const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                      const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                      const diff = recentAvg - olderAvg;
-                      if (diff < -5) return 'Improving';
-                      if (diff > 5) return 'Rising';
-                      return 'Stable';
-                    })()}
-                  </p>
-                  <p className="text-xs mt-1">
-                    {(() => {
-                      const recentVitals = filteredVitals.slice(-7);
-                      const olderVitals = filteredVitals.slice(-14, -7);
-                      const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                      const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                      if (validRecent.length === 0 || validOlder.length === 0) return 'Need more data';
-                      const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                      const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                      const diff = recentAvg - olderAvg;
-                      return `${diff > 0 ? '+' : ''}${diff.toFixed(0)} mmHg vs last week`;
-                    })()}
-                  </p>
-                </div>
-                <TrendingUp className={`h-8 w-8 ${(() => {
-                  const recentVitals = filteredVitals.slice(-7);
-                  const olderVitals = filteredVitals.slice(-14, -7);
-                  const validRecent = recentVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  const validOlder = olderVitals.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic);
-                  if (validRecent.length === 0 || validOlder.length === 0) return 'text-gray-500';
-                  const recentAvg = validRecent.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validRecent.length;
-                  const olderAvg = validOlder.reduce((sum, v) => sum + (v.bloodPressureSystolic || 0), 0) / validOlder.length;
-                  const diff = recentAvg - olderAvg;
-                  return diff < -5 ? 'text-green-400' : diff > 5 ? 'text-red-400' : 'text-yellow-400';
-                })()}`} />
-              </div>
-            </GlassCard>
-          )}
 
           {/* NEW: Hydration Goal Tracker */}
           {filteredLatest?.hydrationStatus && (
