@@ -2629,52 +2629,6 @@ export function VitalsPage() {
             )}
           </div>
 
-          {/* NEW: 7-Day Average Heart Rate - ALWAYS use unfiltered vitals data */}
-          {vitals.length > 0 && (
-            <div className="grid grid-cols-1 gap-4">
-              <GlassCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold mb-1">7-Day Average Heart Rate</p>
-                  <p className="text-3xl font-bold font-bold">
-                    {(() => {
-                      // Use unfiltered vitals to get absolute latest data
-                      const recentVitals = vitals.slice(-7);
-                      const validHRs = recentVitals.filter(v => v.heartRate);
-                      if (validHRs.length === 0) return '--';
-                      const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                      return Math.round(avg);
-                    })()} <span className="text-sm">bpm</span>
-                  </p>
-                  <p className={`text-sm font-bold mt-1 ${(() => {
-                    // Use unfiltered vitals to get absolute latest data
-                    const recentVitals = vitals.slice(-7);
-                    const validHRs = recentVitals.filter(v => v.heartRate);
-                    if (validHRs.length === 0) return 'text-yellow-500';
-                    const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                    return avg < 60 || avg > 100 ? 'text-red-500' : 'text-white';
-                  })()}`}>
-                    {(() => {
-                      const recentVitals = vitals.slice(-7);
-                      const validHRs = recentVitals.filter(v => v.heartRate);
-                      if (validHRs.length === 0) return 'No data';
-                      const avg = validHRs.reduce((sum, v) => sum + (v.heartRate || 0), 0) / validHRs.length;
-                      if (avg < 60) return 'Below normal';
-                      if (avg > 100) return 'Above normal';
-                      return 'Normal range';
-                    })()}
-                  </p>
-                  <p className="text-xs mt-1">Last {(() => {
-                    const recentVitals = vitals.slice(-7);
-                    return recentVitals.filter(v => v.heartRate).length;
-                  })()} readings</p>
-                </div>
-                  <Activity className="h-8 w-8 text-red-500" />
-                </div>
-              </GlassCard>
-            </div>
-          )}
-
           {/* NEW: Blood Pressure Trend */}
           {filteredVitals.length >= 7 && (
             <GlassCard>
