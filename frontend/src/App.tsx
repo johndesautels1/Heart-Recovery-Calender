@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ViewProvider } from './contexts/ViewContext';
 import { PatientSelectionProvider } from './contexts/PatientSelectionContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import { CompleteProfileModal } from './components/CompleteProfileModal';
@@ -65,10 +66,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ProfileChecker>
-          <ViewProvider>
-            <PatientSelectionProvider>
-              <Router>
+        <WebSocketProvider>
+          <ProfileChecker>
+            <ViewProvider>
+              <PatientSelectionProvider>
+                <Router>
                 <ScrollToTop />
             <Routes>
               {/* Public routes */}
@@ -104,10 +106,11 @@ function App() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
-            </Router>
-          </PatientSelectionProvider>
-        </ViewProvider>
-        </ProfileChecker>
+              </Router>
+            </PatientSelectionProvider>
+          </ViewProvider>
+          </ProfileChecker>
+        </WebSocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

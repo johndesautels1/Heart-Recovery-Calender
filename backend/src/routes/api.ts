@@ -32,8 +32,8 @@ import garminRoutes from './garmin';
 import googlefitRoutes from './googlefit';
 import weatherRoutes from './weather';
 import hawkRoutes from './hawk';
-// import polarRoutes from './polar';
-// import samsungRoutes from './samsung';
+import polarRoutes from './polar';
+import samsungRoutes from './samsung';
 
 const router = Router();
 
@@ -63,6 +63,8 @@ router.use('/strava', stravaRoutes);
 router.use('/fitbit', fitbitRoutes);
 router.use('/garmin', garminRoutes);
 router.use('/googlefit', googlefitRoutes);
+router.use('/polar', polarRoutes);
+router.use('/samsung', samsungRoutes);
 
 // All routes below require authentication
 router.use(authenticateToken);
@@ -655,9 +657,6 @@ router.use('/devices', devicesRoutes);
  */
 router.use('/strava', stravaRoutes);
 
-// router.use('/polar', polarRoutes);  // Keep disabled for now
-// router.use('/samsung', samsungRoutes);  // Keep disabled for now
-
 // ========== WEATHER & HAWK ALERT ROUTES ==========
 
 /**
@@ -679,3 +678,4 @@ router.use('/weather', weatherRoutes);
 router.use('/hawk', hawkRoutes);
 
 export default router;
+

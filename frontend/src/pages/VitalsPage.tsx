@@ -7,6 +7,9 @@ import { HeartFrame } from '../components/vitals/HeartFrame';
 import { CircularGauge } from '../components/vitals/CircularGauge';
 import { TimeThrottleLever } from '../components/vitals/TimeThrottleLever';
 import { LuxuryVitalGauge } from '../components/vitals/LuxuryVitalGauge';
+import { LiveVitalsDisplay } from '../components/LiveVitalsDisplay';
+import { SpirometryDataEntry } from '../components/SpirometryDataEntry';
+import { TreadmillDataEntry } from '../components/TreadmillDataEntry';
 import {
   Activity,
   Heart,
@@ -44,9 +47,9 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Helper to convert empty/NaN values to undefined for optional number fields
 const optionalNumber = z.preprocess(
-  (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-  z.number().optional()
-);
+  (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+  z.number()
+).optional();
 
 const vitalsSchema = z.object({
   timestamp: z.string().optional(), // Date/time for historical data entry
@@ -80,33 +83,33 @@ const vitalsSchema = z.object({
   edemaSeverity: z.enum(['none', 'mild', 'moderate', 'severe']).optional(),
   chestPain: z.boolean().optional(),
   chestPainSeverity: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(1).max(10).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(1).max(10)
+  ).optional(),
   chestPainType: z.string().optional(),
   dyspnea: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(0).max(4).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(0).max(4)
+  ).optional(),
   dyspneaTriggers: z.string().optional(),
   dizziness: z.boolean().optional(),
   dizzinessSeverity: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(1).max(10).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(1).max(10)
+  ).optional(),
   dizzinessFrequency: z.string().optional(),
   energyLevel: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(1).max(10).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(1).max(10)
+  ).optional(),
   stressLevel: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(1).max(10).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(1).max(10)
+  ).optional(),
   anxietyLevel: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : val),
-    z.number().min(1).max(10).optional()
-  ),
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().min(1).max(10)
+  ).optional(),
 }).refine(
   (data) => {
     // Ensure at least one vital field is provided
@@ -193,6 +196,14 @@ export function VitalsPage() {
 
   // Metrics Command Center collapse state
   const [isMetricsExpanded, setIsMetricsExpanded] = useState(true);
+
+  // Medical Grade Cardiac Diagnostics collapse state
+  const [isCardiacDiagnosticsExpanded, setIsCardiacDiagnosticsExpanded] = useState(true);
+
+  // Medical Test Modals state
+  const [showECGModal, setShowECGModal] = useState(false);
+  const [showTreadmillModal, setShowTreadmillModal] = useState(false);
+  const [showSpirometryModal, setShowSpirometryModal] = useState(false);
 
   const {
     register,
@@ -324,26 +335,27 @@ export function VitalsPage() {
     if (!patientData && !user) return 64; // Default fallback
 
     const patient = patientData || user;
+    if (!patient) return 64; // If no patient data, return default
     let target = 64; // Base target in ounces
 
     // 1. WEIGHT-BASED CALCULATION (most important factor)
-    const weightLbs = patient.currentWeight || patient.startingWeight;
+    const weightLbs = ('currentWeight' in patient ? patient.currentWeight : null) || ('startingWeight' in patient ? patient.startingWeight : null);
     if (weightLbs) {
       // Convert kg to lbs if needed
-      const weight = patient.weightUnit === 'kg' ? weightLbs * 2.20462 : weightLbs;
+      const weight = ('weightUnit' in patient && patient.weightUnit === 'kg') ? weightLbs * 2.20462 : weightLbs;
       // Base formula: 0.5 oz per pound of body weight
       target = weight * 0.5;
       console.log(`[HYDRATION CALC] Weight: ${weight} lbs → Base target: ${target} oz`);
     }
 
     // 2. GENDER ADJUSTMENT
-    if (patient.gender === 'male') {
+    if ('gender' in patient && patient.gender === 'male') {
       target *= 1.1; // Men need ~10% more
       console.log(`[HYDRATION CALC] Gender (male) → +10%: ${target} oz`);
     }
 
     // 3. AGE ADJUSTMENT
-    if (patient.age && patient.age >= 65) {
+    if ('age' in patient && patient.age && (patient.age as number) >= 65) {
       // Same amount but will flag for reminders (no calculation change)
       console.log(`[HYDRATION CALC] Age 65+ → monitoring needed`);
     }
@@ -352,8 +364,8 @@ export function VitalsPage() {
     // EF < 40% = Reduced (HFrEF) - STRICT fluid restriction
     // EF 40-49% = Mid-range (HFmrEF) - Moderate restriction
     // EF ≥ 50% = Preserved (HFpEF) - Normal hydration
-    if (patient.ejectionFraction !== undefined && patient.ejectionFraction !== null) {
-      const ef = patient.ejectionFraction;
+    if ('ejectionFraction' in patient && patient.ejectionFraction !== undefined && patient.ejectionFraction !== null) {
+      const ef = patient.ejectionFraction as number;
 
       if (ef < 40) {
         // Severely reduced EF - MAJOR restriction
@@ -369,13 +381,13 @@ export function VitalsPage() {
     }
 
     // 5. HEART FAILURE CHECK (also critical!)
-    const hasHeartFailure = patient.heartConditions?.some(condition =>
+    const hasHeartFailure = ('heartConditions' in patient && patient.heartConditions) ? (patient.heartConditions as string[]).some((condition: string) =>
       condition.toLowerCase().includes('heart failure') ||
       condition.toLowerCase().includes('chf') ||
       condition.toLowerCase().includes('congestive')
-    );
+    ) : false;
 
-    if (hasHeartFailure && !patient.ejectionFraction) {
+    if (hasHeartFailure && !('ejectionFraction' in patient && patient.ejectionFraction)) {
       // CHF but no EF data - use conservative restriction
       target = Math.min(target, 64);
       console.log(`[HYDRATION CALC] ⚠️  HEART FAILURE (no EF data) → Capped at 64 oz`);
@@ -383,7 +395,7 @@ export function VitalsPage() {
 
     // 6. MEDICATIONS CHECK - Diuretics increase fluid needs!
     // Check medicationsAffectingHR field (may contain diuretic info)
-    const hasDiuretics = patient.medicationsAffectingHR?.some(med =>
+    const hasDiuretics = ('medicationsAffectingHR' in patient && patient.medicationsAffectingHR) ? (patient.medicationsAffectingHR as string[]).some((med: string) =>
       med.toLowerCase().includes('lasix') ||
       med.toLowerCase().includes('furosemide') ||
       med.toLowerCase().includes('diuretic') ||
@@ -391,7 +403,7 @@ export function VitalsPage() {
       med.toLowerCase().includes('torsemide') ||
       med.toLowerCase().includes('hydrochlorothiazide') ||
       med.toLowerCase().includes('hctz')
-    );
+    ) : false;
 
     if (hasDiuretics && !hasHeartFailure) {
       // Diuretics WITHOUT heart failure = need MORE fluid to compensate
@@ -429,7 +441,7 @@ export function VitalsPage() {
   useEffect(() => {
     const loadHawkAlerts = async () => {
       try {
-        const response = await api.getHawkAlerts();
+        const response = await api.getHAWKAlerts();
         setHawkAlerts(response.alerts || []);
       } catch (error) {
         console.error('Failed to load Hawk Alerts:', error);
@@ -2548,7 +2560,11 @@ export function VitalsPage() {
 
           {/* MEDICAL TESTS SECTION */}
           {showMedicalTests && (
-            <div className="space-y-6">
+            <div className="space-y-6" style={{
+              transform: 'scale(0.7)',
+              transformOrigin: 'top center',
+              marginBottom: '-200px'
+            }}>
               {/* Medical Provider Tests Section */}
               <GlassCard className="relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 opacity-10" style={{
@@ -2579,63 +2595,209 @@ export function VitalsPage() {
                     </Button>
                   </div>
 
-                  {/* Coming Soon Placeholder */}
+                  {/* Real-Time Heart Rate Display - Polar H10 / Samsung Watch */}
+                  <div className="mb-8">
+                    <LiveVitalsDisplay deviceType="polar" />
+                  </div>
+
+                  {/* Medical-Grade Display Tabs - Ultra Premium */}
                   <div className="p-12 text-center">
-                    <div className="inline-block p-6 rounded-2xl mb-6" style={{
-                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))',
-                      border: '2px solid rgba(99, 102, 241, 0.3)',
-                      boxShadow: '0 0 40px rgba(99, 102, 241, 0.2)'
+                    <div className="flex justify-center items-center gap-6 mb-8">
+                      {/* ECG/EKG Tab - Left */}
+                      <div
+                        onClick={() => setShowECGModal(true)}
+                        className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
+                        width: '280px',
+                        height: '140px',
+                        borderRadius: '50%/40%',
+                        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))',
+                        border: '3px solid transparent',
+                        backgroundImage: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)), linear-gradient(135deg, #ef4444, #dc2626, #b91c1c)',
+                        backgroundOrigin: 'border-box',
+                        backgroundClip: 'padding-box, border-box',
+                        boxShadow: '0 0 40px rgba(239, 68, 68, 0.4), inset 0 0 30px rgba(239, 68, 68, 0.1), 0 8px 32px rgba(0,0,0,0.5)',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Animated scan line */}
+                        <div className="absolute inset-0 opacity-30" style={{
+                          background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent)',
+                          animation: 'scan 3s linear infinite',
+                          transform: 'translateX(-100%)'
+                        }}></div>
+
+                        {/* Content */}
+                        <div className="relative h-full flex flex-col items-center justify-center p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-full" style={{
+                              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3))',
+                              boxShadow: '0 0 20px rgba(239, 68, 68, 0.6), inset 0 0 10px rgba(239, 68, 68, 0.3)'
+                            }}>
+                              <Heart className="h-6 w-6" style={{
+                                color: '#fca5a5',
+                                filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))'
+                              }} />
+                            </div>
+                            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" style={{
+                              boxShadow: '0 0 12px rgba(239, 68, 68, 1)'
+                            }}></div>
+                          </div>
+                          <h3 className="text-xl font-black tracking-wider mb-1" style={{
+                            fontFamily: '"Orbitron", "Rajdhani", monospace',
+                            color: '#fca5a5',
+                            textShadow: '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4)',
+                            letterSpacing: '3px'
+                          }}>
+                            ECG / EKG
+                          </h3>
+                          <p className="text-xs uppercase tracking-widest" style={{
+                            color: '#f87171',
+                            textShadow: '0 0 10px rgba(239, 68, 68, 0.6)'
+                          }}>
+                            CARDIAC RHYTHM
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Treadmill/Stress Tab - Middle (Larger/Featured) */}
+                      <div
+                        onClick={() => setShowTreadmillModal(true)}
+                        className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
+                        width: '320px',
+                        height: '160px',
+                        borderRadius: '50%/40%',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2))',
+                        border: '4px solid transparent',
+                        backgroundImage: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98)), linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8)',
+                        backgroundOrigin: 'border-box',
+                        backgroundClip: 'padding-box, border-box',
+                        boxShadow: '0 0 60px rgba(59, 130, 246, 0.5), inset 0 0 40px rgba(59, 130, 246, 0.15), 0 12px 48px rgba(0,0,0,0.6)',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Premium badge */}
+                        <div className="absolute top-2 right-4 px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest" style={{
+                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3))',
+                          border: '2px solid rgba(34, 197, 94, 0.6)',
+                          color: '#6ee7b7',
+                          boxShadow: '0 0 15px rgba(34, 197, 94, 0.6)',
+                          textShadow: '0 0 10px rgba(34, 197, 94, 0.8)'
+                        }}>
+                          PRIMARY
+                        </div>
+
+                        {/* Animated scan line */}
+                        <div className="absolute inset-0 opacity-40" style={{
+                          background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), transparent)',
+                          animation: 'scan 2.5s linear infinite',
+                          transform: 'translateX(-100%)'
+                        }}></div>
+
+                        {/* Content */}
+                        <div className="relative h-full flex flex-col items-center justify-center p-6">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-3 rounded-full" style={{
+                              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(37, 99, 235, 0.4))',
+                              boxShadow: '0 0 30px rgba(59, 130, 246, 0.8), inset 0 0 15px rgba(59, 130, 246, 0.4)'
+                            }}>
+                              <TrendingUp className="h-7 w-7" style={{
+                                color: '#93c5fd',
+                                filter: 'drop-shadow(0 0 10px rgba(59, 130, 246, 1))'
+                              }} />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{
+                                boxShadow: '0 0 15px rgba(59, 130, 246, 1)'
+                              }}></div>
+                              <div className="w-2 h-2 rounded-full bg-blue-300" style={{
+                                boxShadow: '0 0 12px rgba(59, 130, 246, 0.8)'
+                              }}></div>
+                            </div>
+                          </div>
+                          <h3 className="text-2xl font-black tracking-wider mb-1" style={{
+                            fontFamily: '"Orbitron", "Rajdhani", monospace',
+                            color: '#93c5fd',
+                            textShadow: '0 0 25px rgba(59, 130, 246, 1), 0 0 50px rgba(59, 130, 246, 0.5)',
+                            letterSpacing: '4px'
+                          }}>
+                            TREADMILL
+                          </h3>
+                          <p className="text-sm uppercase tracking-widest font-bold" style={{
+                            color: '#60a5fa',
+                            textShadow: '0 0 15px rgba(59, 130, 246, 0.8)'
+                          }}>
+                            STRESS TEST
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Spirometry/Breathing Tab - Right */}
+                      <div
+                        onClick={() => setShowSpirometryModal(true)}
+                        className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
+                        width: '280px',
+                        height: '140px',
+                        borderRadius: '50%/40%',
+                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))',
+                        border: '3px solid transparent',
+                        backgroundImage: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)), linear-gradient(135deg, #06b6d4, #0891b2, #0e7490)',
+                        backgroundOrigin: 'border-box',
+                        backgroundClip: 'padding-box, border-box',
+                        boxShadow: '0 0 40px rgba(6, 182, 212, 0.4), inset 0 0 30px rgba(6, 182, 212, 0.1), 0 8px 32px rgba(0,0,0,0.5)',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Animated scan line */}
+                        <div className="absolute inset-0 opacity-30" style={{
+                          background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.5), transparent)',
+                          animation: 'scan 3s linear infinite',
+                          transform: 'translateX(-100%)'
+                        }}></div>
+
+                        {/* Content */}
+                        <div className="relative h-full flex flex-col items-center justify-center p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-full" style={{
+                              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(8, 145, 178, 0.3))',
+                              boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), inset 0 0 10px rgba(6, 182, 212, 0.3)'
+                            }}>
+                              <Wind className="h-6 w-6" style={{
+                                color: '#67e8f9',
+                                filter: 'drop-shadow(0 0 8px rgba(6, 182, 212, 0.8))'
+                              }} />
+                            </div>
+                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" style={{
+                              boxShadow: '0 0 12px rgba(6, 182, 212, 1)'
+                            }}></div>
+                          </div>
+                          <h3 className="text-xl font-black tracking-wider mb-1" style={{
+                            fontFamily: '"Orbitron", "Rajdhani", monospace',
+                            color: '#67e8f9',
+                            textShadow: '0 0 20px rgba(6, 182, 212, 0.8), 0 0 40px rgba(6, 182, 212, 0.4)',
+                            letterSpacing: '3px'
+                          }}>
+                            SPIROMETRY
+                          </h3>
+                          <p className="text-xs uppercase tracking-widest" style={{
+                            color: '#22d3ee',
+                            textShadow: '0 0 10px rgba(6, 182, 212, 0.6)'
+                          }}>
+                            LUNG FUNCTION
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Add scan animation */}
+                    <style>{`
+                      @keyframes scan {
+                        0% { transform: translateX(-100%); }
+                        100% { transform: translateX(200%); }
+                      }
+                    `}</style>
+
+                    <p className="text-sm text-gray-500 mt-6 text-center" style={{
+                      color: '#ffffff',
+                      textShadow: '0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)'
                     }}>
-                      <Activity className="h-16 w-16 text-purple-400 mx-auto" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-3">Advanced Cardiac Metrics Section</h3>
-                    <p className="text-gray-400 max-w-2xl mx-auto mb-6">
-                      This section will display professional medical test results including:
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
-                      <div className="p-4 rounded-xl" style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5 text-blue-400" />
-                          Treadmill Stress Tests
-                        </h4>
-                        <p className="text-sm text-gray-400">Exercise capacity, heart rate response, blood pressure during exercise</p>
-                      </div>
-                      <div className="p-4 rounded-xl" style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                          <Wind className="h-5 w-5 text-cyan-400" />
-                          Spirometry / Breathing Tests
-                        </h4>
-                        <p className="text-sm text-gray-400">Lung function, FEV1, FVC, breathing capacity measurements</p>
-                      </div>
-                      <div className="p-4 rounded-xl" style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                          <Heart className="h-5 w-5 text-red-400" />
-                          ECG / EKG Results
-                        </h4>
-                        <p className="text-sm text-gray-400">Electrical activity of the heart, rhythm analysis, QT interval</p>
-                      </div>
-                      <div className="p-4 rounded-xl" style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                          <Activity className="h-5 w-5 text-purple-400" />
-                          Clinical Lab Work
-                        </h4>
-                        <p className="text-sm text-gray-400">Blood panels, cardiac biomarkers, BNP, troponin levels</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-8">
-                      Manual data entry interface for healthcare provider test results
+                      Professional Medical Test Results Interface • Pulse Technology Precision
                     </p>
                   </div>
                 </div>
@@ -2900,55 +3062,87 @@ export function VitalsPage() {
               backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.5) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.5) 0%, transparent 50%)',
             }}></div>
 
-            <div className="relative">
-              <div className="flex items-center justify-center gap-4 mb-8">
-                <div className="h-1 w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80" style={{
-                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.6)'
-                }}></div>
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl" style={{
-                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.5), rgba(251, 191, 36, 0.5))',
-                    boxShadow: '0 0 40px rgba(212, 175, 55, 0.7), inset 0 2px 4px rgba(255,255,255,0.2)'
-                  }}>
-                    <Activity className="h-8 w-8" style={{
-                      color: '#FCD34D',
-                      filter: 'drop-shadow(0 0 8px rgba(252, 211, 77, 0.8))'
-                    }} />
-                  </div>
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold" style={{
-                      color: '#FCD34D',
-                      fontFamily: '"SF Pro Display", sans-serif',
-                      letterSpacing: '2px',
-                      textShadow: '0 0 30px rgba(252, 211, 77, 0.9), 0 0 60px rgba(251, 191, 36, 0.5)'
-                    }}>
-                      MEDICAL GRADE CARDIAC DIAGNOSTICS
-                    </h2>
-                    <p className="text-xs uppercase tracking-widest mt-1" style={{
-                      color: '#FDE68A',
-                      textShadow: '0 0 10px rgba(253, 230, 138, 0.6)'
-                    }}>
-                      Advanced Hemodynamic & Autonomic Analysis
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 px-3 py-1 rounded-full" style={{
-                    background: 'rgba(34, 197, 94, 0.35)',
-                    border: '2px solid rgba(34, 197, 94, 0.7)',
-                    boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)'
-                  }}>
-                    <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" style={{
-                      boxShadow: '0 0 10px rgba(134, 239, 172, 1)'
-                    }}></div>
-                    <span className="text-xs font-bold" style={{
-                      color: '#86EFAC',
-                      textShadow: '0 0 8px rgba(134, 239, 172, 0.8)'
-                    }}>LIVE</span>
-                  </div>
+            {/* Cockpit-Style Collapsible Header Button */}
+            <button
+              onClick={() => setIsCardiacDiagnosticsExpanded(!isCardiacDiagnosticsExpanded)}
+              className="w-full p-6 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
+              style={{
+                borderBottom: isCardiacDiagnosticsExpanded ? '2px solid rgba(212, 175, 55, 0.5)' : 'none'
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl transition-all duration-300" style={{
+                  background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.5), rgba(251, 191, 36, 0.5))',
+                  boxShadow: isCardiacDiagnosticsExpanded ? '0 0 40px rgba(212, 175, 55, 0.7), inset 0 2px 4px rgba(255,255,255,0.2)' : '0 0 20px rgba(212, 175, 55, 0.4)'
+                }}>
+                  <Activity className="h-8 w-8" style={{
+                    color: '#FCD34D',
+                    filter: 'drop-shadow(0 0 8px rgba(252, 211, 77, 0.8))'
+                  }} />
                 </div>
-                <div className="h-1 w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80" style={{
-                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.6)'
-                }}></div>
+                <div className="text-left">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-full" style={{
+                      background: 'rgba(34, 197, 94, 0.35)',
+                      border: '2px solid rgba(34, 197, 94, 0.7)',
+                      boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)'
+                    }}>
+                      <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" style={{
+                        boxShadow: '0 0 10px rgba(134, 239, 172, 1)'
+                      }}></div>
+                      <span className="text-xs font-bold" style={{
+                        color: '#86EFAC',
+                        textShadow: '0 0 8px rgba(134, 239, 172, 0.8)'
+                      }}>LIVE</span>
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold tracking-wide" style={{
+                    color: '#FCD34D',
+                    fontFamily: '"SF Pro Display", sans-serif',
+                    letterSpacing: '2px',
+                    textShadow: '0 0 30px rgba(252, 211, 77, 0.9), 0 0 60px rgba(251, 191, 36, 0.5)'
+                  }}>
+                    MEDICAL GRADE CARDIAC DIAGNOSTICS
+                  </h2>
+                  <p className="text-xs uppercase tracking-widest mt-1" style={{
+                    color: '#FDE68A',
+                    textShadow: '0 0 10px rgba(253, 230, 138, 0.6)'
+                  }}>
+                    Advanced Hemodynamic & Autonomic Analysis
+                  </p>
+                </div>
               </div>
+
+              {/* Chevron with Aerospace Styling */}
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-mono uppercase tracking-widest" style={{
+                  color: '#FCD34D',
+                  textShadow: '0 0 12px rgba(252, 211, 77, 0.8)'
+                }}>
+                  {isCardiacDiagnosticsExpanded ? 'COLLAPSE' : 'EXPAND'}
+                </div>
+                <div className="p-2 rounded-lg transition-all duration-300" style={{
+                  background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(251, 191, 36, 0.3))',
+                  border: '2px solid rgba(212, 175, 55, 0.6)',
+                  boxShadow: isCardiacDiagnosticsExpanded ? '0 0 25px rgba(212, 175, 55, 0.7)' : '0 0 15px rgba(212, 175, 55, 0.4)'
+                }}>
+                  {isCardiacDiagnosticsExpanded ? (
+                    <ChevronUp className="h-6 w-6" style={{ color: '#FCD34D' }} />
+                  ) : (
+                    <ChevronDown className="h-6 w-6" style={{ color: '#FCD34D' }} />
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Collapsible Content with Smooth Animation */}
+            <div style={{
+              maxHeight: isCardiacDiagnosticsExpanded ? '5000px' : '0',
+              opacity: isCardiacDiagnosticsExpanded ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out'
+            }}>
+              <div className="relative p-8">
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* LEFT PANEL - Autonomic Function */}
@@ -3575,7 +3769,8 @@ export function VitalsPage() {
                   </div>
                 </div>
               </div>
-            </div>
+              </div> {/* End relative p-8 */}
+            </div> {/* End collapsible content wrapper */}
           </div>
         </div>
       </HeartFrame>
@@ -5545,8 +5740,8 @@ export function VitalsPage() {
                         const firstWeight = filteredWeightVitals[0].weight!;
                         const lastWeight = filteredWeightVitals[filteredWeightVitals.length - 1].weight!;
 
-                        let firstWeightKg = patientData.weightUnit === 'kg' ? firstWeight : firstWeight * 0.453592;
-                        let lastWeightKg = patientData.weightUnit === 'kg' ? lastWeight : lastWeight * 0.453592;
+                        let firstWeightKg = (patientData && patientData.weightUnit === 'kg') ? firstWeight : firstWeight * 0.453592;
+                        let lastWeightKg = (patientData && patientData.weightUnit === 'kg') ? lastWeight : lastWeight * 0.453592;
 
                         const firstBMI = firstWeightKg / (heightInMeters * heightInMeters);
                         const lastBMI = lastWeightKg / (heightInMeters * heightInMeters);
@@ -7409,6 +7604,50 @@ export function VitalsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* ECG/EKG Live Data Modal */}
+      {showECGModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-2xl w-full">
+            <div className="relative">
+              <button
+                onClick={() => setShowECGModal(false)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-black/50 hover:bg-black/70 transition-all"
+              >
+                <X className="h-6 w-6 text-white" />
+              </button>
+              <LiveVitalsDisplay />
+              <div className="mt-4 p-4 bg-black/40 rounded-lg border border-red-500/30">
+                <p className="text-sm text-gray-300 text-center">
+                  Connect your Samsung Galaxy Watch 8 or Polar H10 via{' '}
+                  <button
+                    onClick={() => {
+                      setShowECGModal(false);
+                      navigate('/devices');
+                    }}
+                    className="text-red-400 hover:text-red-300 underline"
+                  >
+                    My Devices
+                  </button>
+                  {' '}to see live heart rate data here
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Treadmill Test Entry Modal */}
+      <TreadmillDataEntry
+        isOpen={showTreadmillModal}
+        onClose={() => setShowTreadmillModal(false)}
+      />
+
+      {/* Spirometry Test Entry Modal */}
+      <SpirometryDataEntry
+        isOpen={showSpirometryModal}
+        onClose={() => setShowSpirometryModal(false)}
+      />
     </div>
   );
 }

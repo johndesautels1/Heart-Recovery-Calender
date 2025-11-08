@@ -32,11 +32,11 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     if (error) {
       console.error('Polar OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL}/settings/devices?error=polar_auth_failed`);
+      return res.redirect(`${process.env.FRONTEND_URL}/devices?error=polar_auth_failed`);
     }
 
     if (!code || !state) {
-      return res.redirect(`${process.env.FRONTEND_URL}/settings/devices?error=missing_parameters`);
+      return res.redirect(`${process.env.FRONTEND_URL}/devices?error=missing_parameters`);
     }
 
     // Decode state to get user ID
@@ -97,10 +97,10 @@ router.get('/callback', async (req: Request, res: Response) => {
       console.error('Error in initial Polar sync:', error);
     });
 
-    res.redirect(`${process.env.FRONTEND_URL}/settings/devices?success=polar_connected`);
+    res.redirect(`${process.env.FRONTEND_URL}/devices?success=polar_connected`);
   } catch (error) {
     console.error('Error in Polar callback:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/settings/devices?error=callback_failed`);
+    res.redirect(`${process.env.FRONTEND_URL}/devices?error=callback_failed`);
   }
 });
 
@@ -151,6 +151,41 @@ router.post('/webhook', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error handling Polar webhook:', error);
     res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Real-time heart rate streaming endpoint
+// Accepts live heart rate data from Samsung phone Bluetooth connection
+// POST /api/polar/live-hr
+// Body: { userId: number, heartRate: number, timestamp?: string }
+router.post('/live-hr', async (req: Request, res: Response) => {
+  try {
+    const { userId, heartRate, timestamp } = req.body;
+
+    if (!userId || !heartRate) {
+      return res.status(400).json({ error: 'userId and heartRate are required' });
+    }
+
+    // Validate heart rate is within reasonable range
+    if (heartRate < 30 || heartRate > 250) {
+      return res.status(400).json({ error: 'Heart rate must be between 30-250 BPM' });
+    }
+
+    console.log(`[POLAR-LIVE] Received live HR from user ${userId}: ${heartRate} BPM`);
+
+    // Broadcast to WebSocket clients
+    const { broadcastHeartRate } = await import('../services/websocketService');
+    broadcastHeartRate(userId, {
+      heartRate,
+      timestamp: timestamp || new Date().toISOString(),
+      source: 'polar_h10_bluetooth',
+      device: 'Polar H10'
+    });
+
+    res.json({ success: true, message: 'Heart rate broadcasted' });
+  } catch (error) {
+    console.error('Error handling live heart rate:', error);
+    res.status(500).json({ error: 'Failed to process heart rate data' });
   }
 });
 

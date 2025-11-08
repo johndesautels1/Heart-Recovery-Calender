@@ -754,7 +754,7 @@ export function ExercisesPage() {
       // Check contra indications from exercise
       if (exercise.contraindications) {
         const contraLower = exercise.contraindications.toLowerCase();
-        if (restrictions.split(/\W+/).some(word => contraLower.includes(word) && word.length > 3)) {
+        if (restrictions.split(/\W+/).some((word: string) => contraLower.includes(word) && word.length > 3)) {
           hasConflict = true;
         }
       }

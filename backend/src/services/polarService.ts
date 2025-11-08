@@ -141,15 +141,25 @@ export const polarService = {
   // Get available exercises
   async getAvailableExercises(accessToken: string): Promise<string[]> {
     try {
+      console.log('[POLAR-API] Fetching available exercises from Polar AccessLink...');
+      console.log('[POLAR-API] Using access token:', accessToken.substring(0, 20) + '...');
       const response = await axios.get(`${POLAR_API_BASE}/exercises`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
 
-      return response.data.exercises || [];
+      console.log('[POLAR-API] Full response data:', JSON.stringify(response.data, null, 2));
+      const exercises = response.data.exercises || [];
+      console.log(`[POLAR-API] Response: ${exercises.length} exercises available`);
+      if (exercises.length > 0) {
+        console.log('[POLAR-API] Exercise URLs:', exercises);
+      }
+      return exercises;
     } catch (error: any) {
-      console.error('Error fetching available exercises:', error.response?.data || error.message);
+      console.error('[POLAR-API] Error fetching available exercises:', error.response?.data || error.message);
+      console.error('[POLAR-API] Status:', error.response?.status);
+      console.error('[POLAR-API] Headers sent:', error.config?.headers);
       return [];
     }
   },
@@ -264,6 +274,11 @@ export async function syncPolarData(
     const exerciseUrls = await polarService.getAvailableExercises(device.accessToken);
     recordsProcessed = exerciseUrls.length;
 
+    console.log(`[POLAR-SYNC] Polar API returned ${exerciseUrls.length} available exercises`);
+    if (exerciseUrls.length > 0) {
+      console.log('[POLAR-SYNC] Exercise URLs:', exerciseUrls);
+    }
+
     // Get patient for this user
     const patient = await Patient.findOne({ where: { userId: device.userId } });
     if (!patient) {
@@ -329,7 +344,7 @@ export async function syncPolarData(
               userId: device.userId,
               timestamp: new Date(exercise['stop-time']),
               heartRate: exercise['heart-rate'].average,
-              heartRateVariability: exercise['heart-rate'].maximum - exercise['heart-rate'].average, // Simple HRV approximation
+              heartRateVariability: null, // HRV requires R-R interval data from Polar's dedicated HRV endpoint, not available in exercise summary
               source: 'device',
               deviceId: `polar_${device.id}`,
               notes: `Polar ${exercise.sport} - avg HR during exercise`,

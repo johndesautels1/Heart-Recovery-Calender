@@ -137,7 +137,7 @@ export function GlobalWaterButton() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
-    toast.info(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
+    toast(`Date set to: ${format(new Date(e.target.value), 'MMM dd, yyyy')}`, {
       duration: 2000,
     });
   };

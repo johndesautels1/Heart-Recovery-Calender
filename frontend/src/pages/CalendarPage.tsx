@@ -853,7 +853,7 @@ export function CalendarPage() {
       }
 
       // Refresh events
-      fetchEvents();
+      loadCalendarsAndEvents();
 
       // Show result
       if (successCount > 0) {
