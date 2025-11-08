@@ -2506,39 +2506,6 @@ export function VitalsPage() {
                   onManualClick={() => setIsModalOpen(true)}
                 />
               </div>
-
-              {/* Blood Pressure Chart */}
-              <div className="glass-card p-6 rounded-2xl" style={{
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
-                border: '2px solid rgba(59, 130, 246, 0.4)',
-                boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
-              }}>
-                <h3 className="text-lg font-bold text-blue-400 mb-4">Blood Pressure Trend</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#3b82f6" domain={[0, 200]} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                    <Legend />
-                    {surgeryDate && (
-                      <ReferenceLine x={format(new Date(surgeryDate), 'MMM dd, yyyy')} stroke="#fbbf24" strokeWidth={2} label="Day 0" />
-                    )}
-                    <Area type="monotone" dataKey="systolic" stroke="#3b82f6" fill="url(#colorSystolic)" name="Systolic" />
-                    <Area type="monotone" dataKey="diastolic" stroke="#60a5fa" fill="url(#colorDiastolic)" name="Diastolic" />
-                    <defs>
-                      <linearGradient id="colorSystolic" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorDiastolic" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
             </div>
 
             {/* Right Side - Empty for now */}
