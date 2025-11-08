@@ -3936,6 +3936,7 @@ export function VitalsPage() {
             </div>
           </div>
 
+          <GlassCard>
             {/* Surgery Date Display (Day 0) - Luxury Design */}
             {surgeryDate && globalTimeView === 'surgery' && (
               <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-xl mb-6" style={{
