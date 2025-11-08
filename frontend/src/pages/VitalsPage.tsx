@@ -29,7 +29,8 @@ import {
   Trash2,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sliders
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ComposedChart } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -189,6 +190,9 @@ export function VitalsPage() {
 
   // Chart collapse state
   const [isChartExpanded, setIsChartExpanded] = useState(true);
+
+  // Metrics Command Center collapse state
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState(true);
 
   const {
     register,
@@ -3902,8 +3906,8 @@ export function VitalsPage() {
             );
           })()}
 
-          {/* Chart Controls - Luxury Spacecraft Command Panel */}
-          <div className="relative overflow-hidden rounded-2xl p-8 mb-8" style={{
+          {/* Chart Controls - Luxury Spacecraft Command Panel - COLLAPSIBLE */}
+          <div className="relative overflow-hidden rounded-2xl mb-8" style={{
             background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%)',
             backdropFilter: 'blur(20px)',
             border: '2px solid rgba(96, 165, 250, 0.3)',
@@ -3914,21 +3918,93 @@ export function VitalsPage() {
               backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 50%)',
             }}></div>
 
-            <div className="relative">
-              {/* Header with decorative lines */}
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
-                <h3 className="text-sm font-bold tracking-[0.2em] uppercase" style={{
-                  background: 'linear-gradient(135deg, #60a5fa, #a78bfa, #60a5fa)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  textShadow: '0 0 30px rgba(96, 165, 250, 0.5)',
-                  filter: 'drop-shadow(0 0 10px rgba(96, 165, 250, 0.3))'
-                }}>
-                  VITAL METRICS COMMAND CENTER
-                </h3>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+            {/* Cockpit-Style Collapsible Header Button */}
+            <button
+              onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
+              className="w-full p-6 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
+              style={{
+                borderBottom: isMetricsExpanded ? '1px solid rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.3), rgba(168, 85, 247, 0.3))',
+                    border: '1px solid rgba(96, 165, 250, 0.5)',
+                    boxShadow: isMetricsExpanded
+                      ? '0 0 20px rgba(96, 165, 250, 0.6)'
+                      : '0 0 10px rgba(96, 165, 250, 0.3)'
+                  }}
+                >
+                  <Sliders className="h-6 w-6 text-blue-300" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="px-2 py-0.5 rounded text-xs font-mono"
+                      style={{
+                        background: 'rgba(96, 165, 250, 0.2)',
+                        border: '1px solid rgba(96, 165, 250, 0.4)',
+                        color: '#60a5fa'
+                      }}
+                    >
+                      CONTROLS
+                    </div>
+                  </div>
+                  <h2
+                    className="text-2xl font-bold tracking-wide mt-1"
+                    style={{
+                      color: '#ffffff',
+                      textShadow: '0 0 20px rgba(96, 165, 250, 0.3)',
+                      fontFamily: '"Orbitron", "Rajdhani", sans-serif'
+                    }}
+                  >
+                    VITAL METRICS COMMAND CENTER
+                  </h2>
+                </div>
               </div>
+
+              {/* Chevron with Aerospace Styling */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="text-xs font-mono uppercase tracking-widest"
+                  style={{
+                    color: '#60a5fa',
+                    textShadow: '0 0 8px rgba(59, 130, 246, 0.6)'
+                  }}
+                >
+                  {isMetricsExpanded ? 'COLLAPSE' : 'EXPAND'}
+                </div>
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(168, 85, 247, 0.2))',
+                    border: '1px solid rgba(96, 165, 250, 0.4)',
+                    boxShadow: isMetricsExpanded
+                      ? '0 0 20px rgba(96, 165, 250, 0.5)'
+                      : '0 0 10px rgba(96, 165, 250, 0.3)'
+                  }}
+                >
+                  {isMetricsExpanded ? (
+                    <ChevronUp className="h-6 w-6 text-blue-400" />
+                  ) : (
+                    <ChevronDown className="h-6 w-6 text-blue-400" />
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Collapsible Content with Smooth Animation */}
+            <div
+              style={{
+                maxHeight: isMetricsExpanded ? '3000px' : '0',
+                opacity: isMetricsExpanded ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out'
+              }}
+            >
+              <div className="relative p-8">
 
               {/* Metric Selector Buttons - Premium Glass Design */}
               <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
@@ -4257,8 +4333,9 @@ export function VitalsPage() {
                   {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
                 </button>
               </div>
-            </div>
-          </div>
+              </div> {/* End relative p-8 */}
+            </div> {/* End collapsible content wrapper */}
+          </div> {/* End VITAL METRICS COMMAND CENTER container */}
 
           {/* Chart Section - Collapsible */}
           <div className="relative overflow-hidden rounded-2xl mb-8" style={{
