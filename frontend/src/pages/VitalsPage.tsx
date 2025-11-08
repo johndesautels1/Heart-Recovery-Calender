@@ -760,12 +760,66 @@ export function VitalsPage() {
     return { status: 'Stage 2 Hypertension', className: 'text-red-500' };
   };
 
-  // Filter vitals by selected device for CHARTS ONLY
+  // Filter vitals by selected device AND time range for CHARTS ONLY
   const filteredVitals = vitals.filter(v => {
-    if (selectedDevice === 'all') return true;
-    if (selectedDevice === 'samsung') return v.deviceId?.toLowerCase().includes('samsung') || v.source === 'device';
-    if (selectedDevice === 'polar') return v.deviceId?.toLowerCase().includes('polar');
-    return true;
+    // Device filter
+    let deviceMatch = true;
+    if (selectedDevice === 'samsung') {
+      deviceMatch = v.deviceId?.toLowerCase().includes('samsung') || v.source === 'device';
+    } else if (selectedDevice === 'polar') {
+      deviceMatch = v.deviceId?.toLowerCase().includes('polar');
+    }
+
+    // Time range filter based on globalTimeView - ALWAYS start from surgery date
+    let timeMatch = true;
+    const vitalDate = new Date(v.timestamp);
+
+    if (surgeryDate) {
+      const surgeryDateObj = new Date(surgeryDate);
+
+      switch (globalTimeView) {
+        case '7d':
+          // Surgery date to 7 days after surgery
+          const sevenDaysAfter = addDays(surgeryDateObj, 7);
+          timeMatch = vitalDate >= surgeryDateObj && vitalDate <= sevenDaysAfter;
+          break;
+        case '30d':
+          // Surgery date to 30 days after surgery
+          const thirtyDaysAfter = addDays(surgeryDateObj, 30);
+          timeMatch = vitalDate >= surgeryDateObj && vitalDate <= thirtyDaysAfter;
+          break;
+        case '90d':
+          // Surgery date to 90 days after surgery
+          const ninetyDaysAfter = addDays(surgeryDateObj, 90);
+          timeMatch = vitalDate >= surgeryDateObj && vitalDate <= ninetyDaysAfter;
+          break;
+        case 'surgery':
+          // 1 month before surgery to 3 months after surgery
+          const oneMonthBefore = subMonths(surgeryDateObj, 1);
+          const threeMonthsAfter = addMonths(surgeryDateObj, 3);
+          timeMatch = vitalDate >= oneMonthBefore && vitalDate <= threeMonthsAfter;
+          break;
+      }
+    } else {
+      // Fallback if no surgery date: use current date ranges
+      const now = new Date();
+      switch (globalTimeView) {
+        case '7d':
+          timeMatch = vitalDate >= subDays(now, 7) && vitalDate <= now;
+          break;
+        case '30d':
+          timeMatch = vitalDate >= subDays(now, 30) && vitalDate <= now;
+          break;
+        case '90d':
+          timeMatch = vitalDate >= subDays(now, 90) && vitalDate <= now;
+          break;
+        case 'surgery':
+          timeMatch = vitalDate >= subMonths(now, 3) && vitalDate <= now;
+          break;
+      }
+    }
+
+    return deviceMatch && timeMatch;
   });
 
   // ALWAYS use the absolute latest vitals for dashboard display (not filtered)
@@ -1020,8 +1074,75 @@ export function VitalsPage() {
 
   console.log('[CHART] hydrationChartData with full range:', hydrationChartData);
 
+  // Fill in missing dates for ALL chart data (not just hydration) to ensure X-axis starts at surgery date
+  const filledChartData = (() => {
+    if (!surgeryDate) return chartData;
+
+    // Determine date range based on globalTimeView
+    let startDate: Date;
+    let endDate: Date;
+    const today = new Date();
+    const surgeryDateObj = new Date(surgeryDate);
+
+    switch (globalTimeView) {
+      case '7d':
+        startDate = surgeryDateObj;
+        endDate = addDays(surgeryDateObj, 7);
+        break;
+      case '30d':
+        startDate = surgeryDateObj;
+        endDate = addDays(surgeryDateObj, 30);
+        break;
+      case '90d':
+        startDate = surgeryDateObj;
+        endDate = addDays(surgeryDateObj, 90);
+        break;
+      case 'surgery':
+        startDate = subMonths(surgeryDateObj, 1);
+        endDate = addMonths(surgeryDateObj, 3);
+        break;
+      default:
+        return chartData;
+    }
+
+    // Create array with ALL dates in range
+    const dateArray = [];
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateStr = format(currentDate, 'MMM dd, yyyy');
+
+      // Find existing data for this date
+      const existingData = chartData.find(d => d.date === dateStr);
+
+      if (existingData) {
+        dateArray.push(existingData);
+      } else {
+        // Add placeholder with null values
+        dateArray.push({
+          date: dateStr,
+          systolic: null,
+          diastolic: null,
+          heartRate: null,
+          weight: null,
+          temp: null,
+          hydration: null,
+          o2: null,
+          peakflow: null,
+          map: null,
+          bpVariability: null,
+        });
+      }
+
+      currentDate = addDays(currentDate, 1);
+    }
+
+    console.log(`[CHART] Filled ${globalTimeView}: ${dateArray.length} total dates from ${format(startDate, 'MMM dd')} to ${format(endDate, 'MMM dd')}`);
+    return dateArray;
+  })();
+
   // Use hydration-specific chart data when hydration metric is selected
-  const activeChartData = selectedMetric === 'hydration' ? hydrationChartData : chartData;
+  const activeChartData = selectedMetric === 'hydration' ? hydrationChartData : filledChartData;
 
   const bpStatus = getBloodPressureStatus(
     filteredLatest?.bloodPressureSystolic,
@@ -4012,7 +4133,7 @@ export function VitalsPage() {
               {activeChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   {selectedMetric === 'bp' ? (
-                    <AreaChart data={activeChartData}>
+                    <AreaChart key={`bp-${globalTimeView}`} data={activeChartData}>
                       <defs>
                         {/* Enhanced 3D gradients for blood pressure */}
                         <linearGradient id="systolic" x1="0" y1="0" x2="0" y2="1">
@@ -4095,7 +4216,7 @@ export function VitalsPage() {
                       <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Diastolic (80)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
                     </AreaChart>
                   ) : (
-                    <LineChart data={activeChartData}>
+                    <LineChart key={`${selectedMetric}-${globalTimeView}`} data={activeChartData}>
                       <defs>
                         {/* Glow filter for lines */}
                         <filter id="vitalsLineGlow" x="-50%" y="-50%" width="200%" height="200%">
