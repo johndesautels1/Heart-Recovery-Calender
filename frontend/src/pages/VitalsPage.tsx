@@ -2740,6 +2740,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#10b981"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('sdnn');
                             setIsModalOpen(true);
@@ -2758,6 +2760,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#059669"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('rmssd');
                             setIsModalOpen(true);
@@ -2776,6 +2780,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#047857"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('pnn50');
                             setIsModalOpen(true);
@@ -2846,6 +2852,38 @@ export function VitalsPage() {
                           setIsModalOpen(true);
                         }}
                       >
+                        {/* Device Mode Indicator Badge */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            zIndex: 10,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 8px',
+                            borderRadius: '9999px',
+                            border: `1px solid ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}`,
+                            backgroundColor: filteredLatest?.source === 'device' ? 'rgba(34, 197, 94, 0.15)' : filteredLatest?.source === 'import' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(96, 165, 250, 0.15)',
+                            color: filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            fontFamily: 'monospace',
+                            textShadow: `0 0 8px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}80`,
+                            boxShadow: `0 0 12px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}40, inset 0 0 8px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}20`,
+                            backdropFilter: 'blur(8px)',
+                            animation: filteredLatest?.source === 'device' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+                          }}
+                        >
+                          <span style={{ fontSize: '10px' }}>
+                            {filteredLatest?.source === 'device' ? '📡' : filteredLatest?.source === 'import' ? '📥' : '✍️'}
+                          </span>
+                          <span style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                            {filteredLatest?.source === 'device' ? (filteredLatest?.deviceId?.split('_')[0].toUpperCase() || 'AUTO') : filteredLatest?.source === 'import' ? 'IMPORT' : 'MANUAL'}
+                          </span>
+                        </div>
+
                         {/* Platinum Bezel - Extra Thick & Bright */}
                         <div style={{
                           position: 'absolute',
@@ -3180,6 +3218,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#a855f7"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('vo2Max');
                             setIsModalOpen(true);
@@ -3198,6 +3238,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#8b5cf6"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('sixMinWalk');
                             setIsModalOpen(true);
@@ -3216,6 +3258,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#a78bfa"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('hrRecovery');
                             setIsModalOpen(true);
@@ -3234,6 +3278,8 @@ export function VitalsPage() {
                           size="small"
                           style="modern"
                           color="#c084fc"
+                          source={filteredLatest?.source}
+                          deviceId={filteredLatest?.deviceId}
                           onClick={() => {
                             setFocusedField('peakFlow');
                             setIsModalOpen(true);

@@ -133,6 +133,19 @@ export interface VitalsSample {
   energyLevel?: number;
   stressLevel?: number;
   anxietyLevel?: number;
+  // Advanced Cardiac Metrics - HRV
+  sdnn?: number;
+  rmssd?: number;
+  pnn50?: number;
+  // Advanced Cardiac Metrics - Exercise Capacity
+  vo2Max?: number;
+  sixMinWalk?: number;
+  hrRecovery?: number;
+  // Advanced Cardiac Metrics - Cardiac Function
+  ejectionFraction?: number;
+  meanArterialPressure?: number;
+  pulsePressure?: number;
+  bpVariability?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -241,6 +254,19 @@ export interface CreateVitalsInput {
   medicationsTaken?: boolean;
   source?: VitalsSample['source'];
   deviceId?: string;
+  // Advanced Cardiac Metrics - HRV
+  sdnn?: number;
+  rmssd?: number;
+  pnn50?: number;
+  // Advanced Cardiac Metrics - Exercise Capacity
+  vo2Max?: number;
+  sixMinWalk?: number;
+  hrRecovery?: number;
+  // Advanced Cardiac Metrics - Cardiac Function
+  ejectionFraction?: number;
+  meanArterialPressure?: number;
+  pulsePressure?: number;
+  bpVariability?: number;
 }
 
 export interface CreateMedicationInput {

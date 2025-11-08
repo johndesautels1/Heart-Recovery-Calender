@@ -14,6 +14,8 @@ interface CircularGaugeProps {
   icon?: React.ReactNode;
   subLabel?: string;
   onClick?: () => void;
+  source?: 'manual' | 'device' | 'import';
+  deviceId?: string;
 }
 
 export function CircularGauge({
@@ -30,6 +32,8 @@ export function CircularGauge({
   icon,
   subLabel,
   onClick,
+  source = 'manual',
+  deviceId,
 }: CircularGaugeProps) {
   const sizes = {
     small: { diameter: 120, stroke: 8, fontSize: 24, labelSize: 12 },
@@ -59,12 +63,60 @@ export function CircularGauge({
   // Display value
   const displayValue = value !== null && value !== undefined ? value : '--';
 
+  // Device mode indicator
+  const getModeIndicator = () => {
+    if (source === 'device') {
+      return {
+        label: deviceId ? deviceId.split('_')[0].toUpperCase() : 'AUTO',
+        color: '#22c55e',
+        bgColor: 'rgba(34, 197, 94, 0.15)',
+        borderColor: '#22c55e',
+        icon: '📡',
+      };
+    } else if (source === 'import') {
+      return {
+        label: 'IMPORT',
+        color: '#fbbf24',
+        bgColor: 'rgba(251, 191, 36, 0.15)',
+        borderColor: '#fbbf24',
+        icon: '📥',
+      };
+    } else {
+      return {
+        label: 'MANUAL',
+        color: '#60a5fa',
+        bgColor: 'rgba(96, 165, 250, 0.15)',
+        borderColor: '#60a5fa',
+        icon: '✍️',
+      };
+    }
+  };
+
+  const modeIndicator = getModeIndicator();
+
   return (
     <div
       className={`relative flex flex-col items-center justify-center ${onClick ? 'cursor-pointer' : ''}`}
       style={{ width: diameter, height: diameter + 60 }}
       onClick={onClick}
     >
+      {/* Device Mode Indicator Badge */}
+      <div
+        className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold font-mono"
+        style={{
+          backgroundColor: modeIndicator.bgColor,
+          borderColor: modeIndicator.borderColor,
+          color: modeIndicator.color,
+          textShadow: `0 0 8px ${modeIndicator.color}80`,
+          boxShadow: `0 0 12px ${modeIndicator.color}40, inset 0 0 8px ${modeIndicator.color}20`,
+          backdropFilter: 'blur(8px)',
+          animation: source === 'device' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+        }}
+      >
+        <span className="text-[10px]">{modeIndicator.icon}</span>
+        <span className="text-[9px] tracking-wide">{modeIndicator.label}</span>
+      </div>
+
       {/* Gauge SVG */}
       <div
         className="relative"
