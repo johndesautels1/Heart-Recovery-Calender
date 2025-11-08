@@ -102,19 +102,29 @@ export function CircularGauge({
     >
       {/* Device Mode Indicator Badge */}
       <div
-        className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold font-mono"
+        className="absolute top-0 right-0 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold group"
         style={{
           backgroundColor: modeIndicator.bgColor,
           borderColor: modeIndicator.borderColor,
-          color: modeIndicator.color,
-          textShadow: `0 0 8px ${modeIndicator.color}80`,
-          boxShadow: `0 0 12px ${modeIndicator.color}40, inset 0 0 8px ${modeIndicator.color}20`,
-          backdropFilter: 'blur(8px)',
+          color: '#FFFFFF',
+          fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          textShadow: `0 0 12px ${modeIndicator.color}, 0 0 24px ${modeIndicator.color}80, 0 2px 4px rgba(0,0,0,0.8)`,
+          boxShadow: `0 0 16px ${modeIndicator.color}50, inset 0 0 12px ${modeIndicator.color}30`,
+          backdropFilter: 'blur(10px)',
           animation: source === 'device' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+          transition: 'all 0.2s ease-in-out',
         }}
       >
-        <span className="text-[10px]">{modeIndicator.icon}</span>
-        <span className="text-[9px] tracking-wide">{modeIndicator.label}</span>
+        <span style={{ fontSize: '10px' }}>{modeIndicator.icon}</span>
+        <span
+          className="opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[60px] overflow-hidden"
+          style={{
+            fontSize: '9px',
+            letterSpacing: '0.5px',
+            fontWeight: '900',
+            transition: 'all 0.3s ease-in-out',
+          }}
+        >{modeIndicator.label}</span>
       </div>
 
       {/* Gauge SVG */}

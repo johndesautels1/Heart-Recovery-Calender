@@ -2592,31 +2592,6 @@ export function VitalsPage() {
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-
-              {/* Weight Chart */}
-              <div className="glass-card p-6 rounded-2xl" style={{
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
-                border: '2px solid rgba(16, 185, 129, 0.4)',
-                boxShadow: '0 0 30px rgba(16, 185, 129, 0.3)'
-              }}>
-                <h3 className="text-lg font-bold text-emerald-400 mb-4">Weight Trend</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#10b981" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                    <Legend />
-                    <Area type="monotone" dataKey="weight" stroke="#10b981" fill="url(#colorWeight)" name="Weight (lbs)" />
-                    <defs>
-                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
             </div>
 
             {/* Right Side - Empty for now */}
@@ -2795,7 +2770,7 @@ export function VitalsPage() {
                       border: '2px solid rgba(16, 185, 129, 0.4)',
                       boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)'
                     }}>
-                      <p className="text-[10px] uppercase tracking-wide font-semibold" style={{
+                      <p className="text-[10px] uppercase tracking-wide font-semibold text-center" style={{
                         color: '#A7F3D0',
                         textShadow: '0 0 8px rgba(167, 243, 208, 0.7)'
                       }}>
@@ -2854,6 +2829,7 @@ export function VitalsPage() {
                       >
                         {/* Device Mode Indicator Badge */}
                         <div
+                          className="group"
                           style={{
                             position: 'absolute',
                             top: '5px',
@@ -2866,20 +2842,29 @@ export function VitalsPage() {
                             borderRadius: '9999px',
                             border: `1px solid ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}`,
                             backgroundColor: filteredLatest?.source === 'device' ? 'rgba(34, 197, 94, 0.15)' : filteredLatest?.source === 'import' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(96, 165, 250, 0.15)',
-                            color: filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa',
+                            color: '#FFFFFF',
                             fontSize: '9px',
-                            fontWeight: 'bold',
-                            fontFamily: 'monospace',
-                            textShadow: `0 0 8px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}80`,
-                            boxShadow: `0 0 12px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}40, inset 0 0 8px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}20`,
-                            backdropFilter: 'blur(8px)',
+                            fontWeight: '900',
+                            fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            textShadow: `0 0 12px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}, 0 0 24px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}80, 0 2px 4px rgba(0,0,0,0.8)`,
+                            boxShadow: `0 0 16px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}50, inset 0 0 12px ${filteredLatest?.source === 'device' ? '#22c55e' : filteredLatest?.source === 'import' ? '#fbbf24' : '#60a5fa'}30`,
+                            backdropFilter: 'blur(10px)',
                             animation: filteredLatest?.source === 'device' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+                            transition: 'all 0.2s ease-in-out',
                           }}
                         >
                           <span style={{ fontSize: '10px' }}>
                             {filteredLatest?.source === 'device' ? '📡' : filteredLatest?.source === 'import' ? '📥' : '✍️'}
                           </span>
-                          <span style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                          <span
+                            className="opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[60px] overflow-hidden"
+                            style={{
+                              fontSize: '9px',
+                              letterSpacing: '0.5px',
+                              fontWeight: '900',
+                              transition: 'all 0.3s ease-in-out',
+                            }}
+                          >
                             {filteredLatest?.source === 'device' ? (filteredLatest?.deviceId?.split('_')[0].toUpperCase() || 'AUTO') : filteredLatest?.source === 'import' ? 'IMPORT' : 'MANUAL'}
                           </span>
                         </div>
@@ -3154,10 +3139,10 @@ export function VitalsPage() {
                       border: '2px solid rgba(212, 175, 55, 0.5)',
                       boxShadow: '0 0 20px rgba(212, 175, 55, 0.3)'
                     }}>
-                      <p className="text-[12px] uppercase font-semibold" style={{
+                      <p className="text-[10px] uppercase font-semibold text-center" style={{
                         color: '#FFFFFF',
                         fontWeight: '900',
-                        letterSpacing: '1.5px',
+                        letterSpacing: '0.8px',
                         textShadow: '0 0 20px rgba(252, 211, 77, 1), 0 0 40px rgba(245, 158, 11, 0.8), 0 0 60px rgba(217, 119, 6, 0.6), 0 2px 4px rgba(0,0,0,0.8)',
                         filter: 'drop-shadow(0 0 12px rgba(252, 211, 77, 0.9)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.7))'
                       }}>
@@ -3293,7 +3278,7 @@ export function VitalsPage() {
                       border: '2px solid rgba(139, 92, 246, 0.4)',
                       boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)'
                     }}>
-                      <p className="text-[10px] uppercase tracking-wide font-semibold" style={{
+                      <p className="text-[10px] uppercase tracking-wide font-semibold text-center" style={{
                         color: '#DDD6FE',
                         textShadow: '0 0 8px rgba(221, 214, 254, 0.7)'
                       }}>
