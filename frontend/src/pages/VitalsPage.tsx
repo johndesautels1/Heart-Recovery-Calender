@@ -3578,132 +3578,254 @@ export function VitalsPage() {
             );
           })()}
 
-          {/* Chart Controls */}
-          <GlassCard>
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className="flex space-x-2">
+          {/* Chart Controls - Luxury Spacecraft Command Panel */}
+          <div className="relative overflow-hidden rounded-2xl p-8 mb-8" style={{
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '2px solid rgba(96, 165, 250, 0.3)',
+            boxShadow: '0 0 60px rgba(96, 165, 250, 0.2), inset 0 0 60px rgba(96, 165, 250, 0.05), 0 8px 32px rgba(0,0,0,0.3)'
+          }}>
+            {/* Animated background glow */}
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 50%)',
+            }}></div>
+
+            <div className="relative">
+              {/* Header with decorative lines */}
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+                <h3 className="text-sm font-bold tracking-[0.2em] uppercase" style={{
+                  background: 'linear-gradient(135deg, #60a5fa, #a78bfa, #60a5fa)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '0 0 30px rgba(96, 165, 250, 0.5)',
+                  filter: 'drop-shadow(0 0 10px rgba(96, 165, 250, 0.3))'
+                }}>
+                  VITAL METRICS COMMAND CENTER
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+              </div>
+
+              {/* Metric Selector Buttons - Premium Glass Design */}
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
                 <button
                   onClick={() => setSelectedMetric('bp')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'bp' 
-                      ? 'bg-blue-500' 
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'bp' ? {
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9))',
+                    border: '2px solid rgba(96, 165, 250, 0.8)',
+                    boxShadow: '0 0 30px rgba(59, 130, 246, 0.6), inset 0 0 20px rgba(96, 165, 250, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(96, 165, 250, 0.3)',
+                    color: '#93c5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Blood Pressure
                 </button>
                 <button
                   onClick={() => setSelectedMetric('hr')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'hr' 
-                      ? 'bg-red-500' 
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'hr' ? {
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9))',
+                    border: '2px solid rgba(248, 113, 113, 0.8)',
+                    boxShadow: '0 0 30px rgba(239, 68, 68, 0.6), inset 0 0 20px rgba(248, 113, 113, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(248, 113, 113, 0.3)',
+                    color: '#fca5a5',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Heart Rate
                 </button>
                 <button
                   onClick={() => setSelectedMetric('weight')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'weight' 
-                      ? 'bg-green-500' 
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'weight' ? {
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9))',
+                    border: '2px solid rgba(52, 211, 153, 0.8)',
+                    boxShadow: '0 0 30px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(52, 211, 153, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(52, 211, 153, 0.3)',
+                    color: '#6ee7b7',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Weight
                 </button>
                 <button
                   onClick={() => setSelectedMetric('sugar')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'sugar'
-                      ? 'bg-orange-500'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'sugar' ? {
+                    background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9))',
+                    border: '2px solid rgba(251, 146, 60, 0.8)',
+                    boxShadow: '0 0 30px rgba(249, 115, 22, 0.6), inset 0 0 20px rgba(251, 146, 60, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(251, 146, 60, 0.3)',
+                    color: '#fdba74',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Blood Sugar
                 </button>
                 <button
                   onClick={() => setSelectedMetric('temp')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'temp'
-                      ? 'bg-orange-600'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'temp' ? {
+                    background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.9), rgba(194, 65, 12, 0.9))',
+                    border: '2px solid rgba(251, 146, 60, 0.8)',
+                    boxShadow: '0 0 30px rgba(234, 88, 12, 0.6), inset 0 0 20px rgba(251, 146, 60, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(251, 146, 60, 0.3)',
+                    color: '#fdba74',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Temperature
                 </button>
                 <button
                   onClick={() => setSelectedMetric('hydration')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'hydration'
-                      ? 'bg-blue-600'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'hydration' ? {
+                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9))',
+                    border: '2px solid rgba(96, 165, 250, 0.8)',
+                    boxShadow: '0 0 30px rgba(37, 99, 235, 0.6), inset 0 0 20px rgba(96, 165, 250, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(96, 165, 250, 0.3)',
+                    color: '#93c5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Hydration
                 </button>
                 <button
                   onClick={() => setSelectedMetric('o2')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'o2'
-                      ? 'bg-cyan-500'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'o2' ? {
+                    background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(8, 145, 178, 0.9))',
+                    border: '2px solid rgba(34, 211, 238, 0.8)',
+                    boxShadow: '0 0 30px rgba(6, 182, 212, 0.6), inset 0 0 20px rgba(34, 211, 238, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(34, 211, 238, 0.3)',
+                    color: '#67e8f9',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   O₂ Sat
                 </button>
                 <button
                   onClick={() => setSelectedMetric('peakflow')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'peakflow'
-                      ? 'bg-green-600'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'peakflow' ? {
+                    background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.9), rgba(4, 120, 87, 0.9))',
+                    border: '2px solid rgba(52, 211, 153, 0.8)',
+                    boxShadow: '0 0 30px rgba(5, 150, 105, 0.6), inset 0 0 20px rgba(52, 211, 153, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(52, 211, 153, 0.3)',
+                    color: '#6ee7b7',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   Peak Flow
                 </button>
                 <button
                   onClick={() => setSelectedMetric('map')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'map'
-                      ? 'bg-purple-600'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'map' ? {
+                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.9), rgba(126, 34, 206, 0.9))',
+                    border: '2px solid rgba(168, 85, 247, 0.8)',
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.6), inset 0 0 20px rgba(168, 85, 247, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#c4b5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   MAP
                 </button>
                 <button
                   onClick={() => setSelectedMetric('bpvariability')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedMetric === 'bpvariability'
-                      ? 'bg-pink-600'
-                      : 'glass-button font-bold'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={selectedMetric === 'bpvariability' ? {
+                    background: 'linear-gradient(135deg, rgba(219, 39, 119, 0.9), rgba(190, 24, 93, 0.9))',
+                    border: '2px solid rgba(236, 72, 153, 0.8)',
+                    boxShadow: '0 0 30px rgba(219, 39, 119, 0.6), inset 0 0 20px rgba(236, 72, 153, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(236, 72, 153, 0.3)',
+                    color: '#f9a8d4',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 >
                   BP Variability
                 </button>
               </div>
 
-              {/* Surgery Date Timeline Info */}
-              <div className="flex items-center justify-between gap-3 px-4 py-2 rounded-lg" style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
-                border: '1px solid rgba(59, 130, 246, 0.3)'
+              {/* Surgery Date Timeline Info - Luxury Design */}
+              <div className="flex items-center justify-between gap-4 px-6 py-4 rounded-xl mb-6" style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15))',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(59, 130, 246, 0.05)',
+                backdropFilter: 'blur(10px)'
               }}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   {surgeryDate ? (
                     <>
-                      <Calendar className="h-4 w-4 text-blue-400" />
-                      <span className="text-xs text-blue-300">
-                        <strong>Surgery Date (Day 0):</strong> {format(new Date(surgeryDate), 'MMM dd, yyyy')}
-                      </span>
-                      <span className="text-xs text-gray-400 ml-2">
-                        Timeline: {format(subMonths(new Date(surgeryDate), 1), 'MMM yyyy')} - {format(addMonths(new Date(), 1), 'MMM yyyy')}
+                      <div className="p-2 rounded-lg" style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.3))',
+                        boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
+                      }}>
+                        <Calendar className="h-5 w-5 text-blue-300" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">
+                          Surgery Date (Day 0)
+                        </span>
+                        <span className="text-sm font-bold text-white" style={{
+                          textShadow: '0 0 10px rgba(96, 165, 250, 0.8)'
+                        }}>
+                          {format(new Date(surgeryDate), 'MMM dd, yyyy')}
+                        </span>
+                      </div>
+                      <div className="h-8 w-px bg-gradient-to-b from-transparent via-blue-400/50 to-transparent mx-2"></div>
+                      <span className="text-xs text-gray-300">
+                        <span className="font-semibold text-blue-200">Timeline:</span>{' '}
+                        {format(subMonths(new Date(surgeryDate), 1), 'MMM yyyy')} - {format(addMonths(new Date(), 1), 'MMM yyyy')}
                       </span>
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                      <span className="text-xs text-yellow-300">
+                      <AlertTriangle className="h-5 w-5 text-yellow-400 animate-pulse" />
+                      <span className="text-sm font-semibold text-yellow-300">
                         No surgery date set - Showing last 3 months
                       </span>
                     </>
@@ -3711,80 +3833,140 @@ export function VitalsPage() {
                 </div>
                 <button
                   onClick={() => navigate('/profile')}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-all hover:bg-blue-500/20"
-                  style={{ color: 'rgba(96, 165, 250, 1)' }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2))',
+                    border: '1px solid rgba(96, 165, 250, 0.5)',
+                    color: '#93c5fd',
+                    boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)'
+                  }}
                   title="Edit surgery date in Profile"
                 >
-                  <Edit className="h-3 w-3" />
-                  Edit
+                  <Edit className="h-3.5 w-3.5" />
+                  <span>Edit</span>
+                </button>
+              </div>
+
+              {/* Time Range Selector - Premium Design */}
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <span className="text-sm font-bold uppercase tracking-[0.15em] mr-3" style={{
+                  background: 'linear-gradient(135deg, #a78bfa, #c4b5fd)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Time Range
+                </span>
+                <button
+                  onClick={() => setGlobalTimeView('7d')}
+                  className="px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={globalTimeView === '7d' ? {
+                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.9), rgba(126, 34, 206, 0.9))',
+                    border: '2px solid rgba(168, 85, 247, 0.8)',
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.6), inset 0 0 20px rgba(168, 85, 247, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#c4b5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  7 Days
+                </button>
+                <button
+                  onClick={() => setGlobalTimeView('30d')}
+                  className="px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={globalTimeView === '30d' ? {
+                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.9), rgba(126, 34, 206, 0.9))',
+                    border: '2px solid rgba(168, 85, 247, 0.8)',
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.6), inset 0 0 20px rgba(168, 85, 247, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#c4b5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  30 Days
+                </button>
+                <button
+                  onClick={() => setGlobalTimeView('90d')}
+                  className="px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  style={globalTimeView === '90d' ? {
+                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.9), rgba(126, 34, 206, 0.9))',
+                    border: '2px solid rgba(168, 85, 247, 0.8)',
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.6), inset 0 0 20px rgba(168, 85, 247, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#c4b5fd',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  90 Days
+                </button>
+                <button
+                  onClick={() => setGlobalTimeView('surgery')}
+                  className="px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  disabled={!surgeryDate}
+                  style={globalTimeView === 'surgery' ? {
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9))',
+                    border: '2px solid rgba(96, 165, 250, 0.8)',
+                    boxShadow: '0 0 30px rgba(59, 130, 246, 0.6), inset 0 0 20px rgba(96, 165, 250, 0.3)',
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                  } : {
+                    background: surgeryDate ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6))' : 'linear-gradient(135deg, rgba(17, 24, 39, 0.6), rgba(31, 41, 55, 0.6))',
+                    border: surgeryDate ? '1px solid rgba(96, 165, 250, 0.3)' : '1px solid rgba(75, 85, 99, 0.3)',
+                    color: surgeryDate ? '#93c5fd' : '#6b7280',
+                    backdropFilter: 'blur(10px)',
+                    cursor: surgeryDate ? 'pointer' : 'not-allowed',
+                    opacity: surgeryDate ? 1 : 0.5
+                  }}
+                  title={surgeryDate ? 'Show surgery-based timeline' : 'No surgery date set'}
+                >
+                  {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* UNIFIED TIME VIEW SELECTOR */}
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="text-sm font-semibold text-gray-400 mr-2">Time Range:</span>
-              <button
-                onClick={() => setGlobalTimeView('7d')}
-                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-                  globalTimeView === '7d'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                    : 'glass-button hover:bg-purple-600/20'
-                }`}
-              >
-                7 Days
-              </button>
-              <button
-                onClick={() => setGlobalTimeView('30d')}
-                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-                  globalTimeView === '30d'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                    : 'glass-button hover:bg-purple-600/20'
-                }`}
-              >
-                30 Days
-              </button>
-              <button
-                onClick={() => setGlobalTimeView('90d')}
-                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-                  globalTimeView === '90d'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
-                    : 'glass-button hover:bg-purple-600/20'
-                }`}
-              >
-                90 Days
-              </button>
-              <button
-                onClick={() => setGlobalTimeView('surgery')}
-                className={`px-4 py-2 rounded-lg transition-all font-bold text-sm ${
-                  globalTimeView === 'surgery'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
-                    : 'glass-button hover:bg-blue-600/20'
-                }`}
-                disabled={!surgeryDate}
-                title={surgeryDate ? 'Show surgery-based timeline' : 'No surgery date set'}
-              >
-                {surgeryDate ? 'Surgery Timeline' : 'Surgery Timeline (N/A)'}
-              </button>
-            </div>
-
-            {/* Surgery Date Display (Day 0) - UNIFIED */}
+            {/* Surgery Date Display (Day 0) - Luxury Design */}
             {surgeryDate && globalTimeView === 'surgery' && (
-              <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-lg mb-4" style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
-                border: '2px solid rgba(59, 130, 246, 0.5)',
-                boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+              <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-xl mb-6" style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25))',
+                border: '2px solid rgba(59, 130, 246, 0.6)',
+                boxShadow: '0 0 40px rgba(59, 130, 246, 0.4), inset 0 0 30px rgba(59, 130, 246, 0.1)',
+                backdropFilter: 'blur(10px)'
               }}>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/30 border border-blue-400">
-                  <Activity className="h-5 w-5 text-blue-300" />
-                  <span className="text-blue-200 font-bold text-sm">DAY 0</span>
+                <div className="flex items-center gap-3 px-4 py-2 rounded-lg" style={{
+                  background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.5), rgba(29, 78, 216, 0.5))',
+                  border: '2px solid rgba(96, 165, 250, 0.6)',
+                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), inset 0 0 15px rgba(96, 165, 250, 0.2)'
+                }}>
+                  <Activity className="h-6 w-6 text-blue-200 animate-pulse" />
+                  <span className="font-black text-base tracking-wider" style={{
+                    color: '#ffffff',
+                    textShadow: '0 0 20px rgba(96, 165, 250, 1), 0 0 40px rgba(59, 130, 246, 0.8), 0 2px 4px rgba(0,0,0,0.8)'
+                  }}>DAY 0</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-200">
-                  Surgery Date:{' '}
-                  <span className="text-blue-300 font-bold text-base">
+                <div className="h-10 w-px bg-gradient-to-b from-transparent via-blue-400/60 to-transparent"></div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">
+                    Surgery Date
+                  </span>
+                  <span className="text-lg font-black" style={{
+                    color: '#ffffff',
+                    textShadow: '0 0 15px rgba(96, 165, 250, 0.9), 0 2px 4px rgba(0,0,0,0.8)'
+                  }}>
                     {format(new Date(surgeryDate), 'MMM dd, yyyy')}
                   </span>
-                </span>
+                </div>
               </div>
             )}
 
