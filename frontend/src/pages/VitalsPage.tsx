@@ -2540,34 +2540,6 @@ export function VitalsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Heart Rate / Pulse Chart */}
-              <div className="glass-card p-6 rounded-2xl" style={{
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
-                border: '2px solid rgba(239, 68, 68, 0.4)',
-                boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)'
-              }}>
-                <h3 className="text-lg font-bold text-red-400 mb-4">Heart Rate / Pulse</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#ef4444" domain={[40, 180]} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                    <Legend />
-                    {surgeryDate && (
-                      <ReferenceLine x={format(new Date(surgeryDate), 'MMM dd, yyyy')} stroke="#fbbf24" strokeWidth={2} label="Day 0" />
-                    )}
-                    <Line type="monotone" dataKey="heartRate" stroke="#ef4444" strokeWidth={2} name="Heart Rate (bpm)" />
-                    <defs>
-                      <linearGradient id="colorHeartRate" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-
               {/* Oxygen Saturation Chart */}
               <div className="glass-card p-6 rounded-2xl" style={{
                 background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
