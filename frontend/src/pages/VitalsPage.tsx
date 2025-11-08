@@ -2539,31 +2539,6 @@ export function VitalsPage() {
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-
-              {/* Oxygen Saturation Chart */}
-              <div className="glass-card p-6 rounded-2xl" style={{
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))',
-                border: '2px solid rgba(6, 182, 212, 0.4)',
-                boxShadow: '0 0 30px rgba(6, 182, 212, 0.3)'
-              }}>
-                <h3 className="text-lg font-bold text-cyan-400 mb-4">Oxygen Saturation (SpO₂)</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#06b6d4" domain={[85, 100]} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="o2" stroke="#06b6d4" strokeWidth={2} name="O₂ Sat (%)" />
-                    <defs>
-                      <linearGradient id="colorO2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
             </div>
 
             {/* Right Side - Empty for now */}
