@@ -1081,6 +1081,11 @@
 ## 🔴 CRITICAL (Must Fix/Do First)
 
 ### Critical Bug Fixes
+- [ ] **VitalsPage JSX Error** - Pre-existing JSX parse error at line 5348 in VitalsPage.tsx
+  - Error: "Expected corresponding JSX closing tag for <div>. (5348:8)"
+  - Location: C:\Users\broke\Heart-Recovery-Calender\frontend\src\pages\VitalsPage.tsx:5348
+  - Impact: Not blocking functionality, but should be fixed for clean compilation
+  - Note: This error has existed for days, unrelated to recent collapsible features
 - [x] **Patient Chart Visibility Bug** - Fixed PatientSelectionContext
 - [x] **isViewingAsTherapist Logic** - Fixed therapist-role check
 - [x] **Backend TypeScript Compilation** - 0 errors (COMPLETE!)
