@@ -80,6 +80,41 @@ interface PatientData {
   nonCardiacMedications?: string;
   allergies?: string;
 
+  // Lab Results
+  labResults?: Array<{
+    id?: string;
+    testName: string;
+    testDate: string;
+    testCategory?: string; // 'Blood Work', 'Cardiac', 'Metabolic', 'Other'
+    results: Array<{
+      parameter: string;
+      value: string;
+      unit: string;
+      referenceRange?: string;
+      status?: 'Normal' | 'High' | 'Low' | 'Critical';
+    }>;
+    orderedBy?: string;
+    labFacility?: string;
+    notes?: string;
+  }>;
+
+  // Medical Reports
+  medicalReports?: Array<{
+    id?: string;
+    reportType: string; // 'Imaging', 'Pathology', 'Cardiology', 'Consultation', 'Other'
+    reportName: string;
+    reportDate: string;
+    provider?: string;
+    facility?: string;
+    findings?: string;
+    recommendations?: string;
+    fileUrl?: string; // URL or base64 for uploaded file
+    fileName?: string;
+    fileType?: string; // 'pdf', 'jpg', 'png', 'dcm'
+    notes?: string;
+  }>;
+
+
   // Cardiac Profile
   diagnosisDate?: string;
   heartConditions?: string[];
@@ -163,6 +198,9 @@ export function ProfilePage() {
   const [showMedSuggestions, setShowMedSuggestions] = useState(false);
   const [highlightedMedIndex, setHighlightedMedIndex] = useState(-1);
   const [originalMedications, setOriginalMedications] = useState<string[]>([]);
+
+  // Medical History tab state
+  const [medicalHistoryTab, setMedicalHistoryTab] = useState<'overview' | 'labs' | 'reports'>('overview');
 
   // Document upload state - stores base64 data URLs for previews
   const [uploadedDocuments, setUploadedDocuments] = useState<{
@@ -2694,52 +2732,469 @@ export function ProfilePage() {
 
                   {section.id === 'medical' && (
                     <>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Current Conditions (comma-separated)
-                        </label>
-                        <Input
-                          value={patientData?.currentConditions?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('currentConditions', e.target.value)}
-                          placeholder="Non-cardiac current conditions"
-                        />
+                      {/* Tab Navigation */}
+                      <div className="flex gap-2 mb-6 border-b border-purple-500/30">
+                        <button
+                          onClick={() => setMedicalHistoryTab('overview')}
+                          className={`px-6 py-3 font-semibold transition-all duration-300 ${
+                            medicalHistoryTab === 'overview'
+                              ? 'text-purple-600 border-b-2 border-purple-600'
+                              : 'text-gray-500 hover:text-purple-500'
+                          }`}
+                        >
+                          📋 Overview
+                        </button>
+                        <button
+                          onClick={() => setMedicalHistoryTab('labs')}
+                          className={`px-6 py-3 font-semibold transition-all duration-300 ${
+                            medicalHistoryTab === 'labs'
+                              ? 'text-purple-600 border-b-2 border-purple-600'
+                              : 'text-gray-500 hover:text-purple-500'
+                          }`}
+                        >
+                          🧪 My Labs
+                        </button>
+                        <button
+                          onClick={() => setMedicalHistoryTab('reports')}
+                          className={`px-6 py-3 font-semibold transition-all duration-300 ${
+                            medicalHistoryTab === 'reports'
+                              ? 'text-purple-600 border-b-2 border-purple-600'
+                              : 'text-gray-500 hover:text-purple-500'
+                          }`}
+                        >
+                          📄 My Reports
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Prior Health Conditions (comma-separated)
-                        </label>
-                        <Input
-                          value={patientData?.priorHealthConditions?.join(', ') || ''}
-                          onChange={(e) => handleArrayChange('priorHealthConditions', e.target.value)}
-                          placeholder="Diabetes, CKD, COPD"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Non-Cardiac Medications
-                        </label>
-                        <textarea
-                          value={patientData?.nonCardiacMedications || ''}
-                          onChange={(e) => handleChange('nonCardiacMedications', e.target.value)}
-                          rows={3}
-                          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#000000', fontWeight: '800' }}
-                          placeholder="List all medications..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                          Allergies
-                        </label>
-                        <textarea
-                          value={patientData?.allergies || ''}
-                          onChange={(e) => handleChange('allergies', e.target.value)}
-                          rows={3}
-                          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 outline-none transition-all resize-none"
-                          style={{ color: '#000000', fontWeight: '800' }}
-                          placeholder="List all known allergies..."
-                        />
-                      </div>
+
+                      {/* Overview Tab */}
+                      {medicalHistoryTab === 'overview' && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                              Current Conditions (comma-separated)
+                            </label>
+                            <Input
+                              value={patientData?.currentConditions?.join(', ') || ''}
+                              onChange={(e) => handleArrayChange('currentConditions', e.target.value)}
+                              placeholder="Non-cardiac current conditions"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                              Prior Health Conditions (comma-separated)
+                            </label>
+                            <Input
+                              value={patientData?.priorHealthConditions?.join(', ') || ''}
+                              onChange={(e) => handleArrayChange('priorHealthConditions', e.target.value)}
+                              placeholder="Diabetes, CKD, COPD"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                              Non-Cardiac Medications
+                            </label>
+                            <textarea
+                              value={patientData?.nonCardiacMedications || ''}
+                              onChange={(e) => handleChange('nonCardiacMedications', e.target.value)}
+                              rows={3}
+                              className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
+                              style={{ color: '#000000', fontWeight: '800' }}
+                              placeholder="List all medications..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                              Allergies
+                            </label>
+                            <textarea
+                              value={patientData?.allergies || ''}
+                              onChange={(e) => handleChange('allergies', e.target.value)}
+                              rows={3}
+                              className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 outline-none transition-all resize-none"
+                              style={{ color: '#000000', fontWeight: '800' }}
+                              placeholder="List all known allergies..."
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* My Labs Tab */}
+                      {medicalHistoryTab === 'labs' && (
+                        <div className="space-y-6">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>Laboratory Results</h3>
+                            <Button
+                              onClick={() => {
+                                // Add new lab result
+                                const newLab = {
+                                  id: Date.now().toString(),
+                                  testName: '',
+                                  testDate: new Date().toISOString().split('T')[0],
+                                  testCategory: 'Blood Work',
+                                  results: [],
+                                  orderedBy: '',
+                                  labFacility: '',
+                                  notes: ''
+                                };
+                                setPatientData(prev => ({
+                                  ...prev,
+                                  labResults: [...(prev?.labResults || []), newLab]
+                                }));
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Add Lab Result
+                            </Button>
+                          </div>
+
+                          {/* Lab Results List */}
+                          {patientData?.labResults && patientData.labResults.length > 0 ? (
+                            <div className="space-y-4">
+                              {patientData.labResults.map((lab, labIndex) => (
+                                <div
+                                  key={lab.id || labIndex}
+                                  className="p-6 rounded-xl"
+                                  style={{
+                                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(109, 40, 217, 0.05))',
+                                    border: '2px solid rgba(139, 92, 246, 0.3)',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                                  }}
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Test Name *
+                                      </label>
+                                      <Input
+                                        value={lab.testName}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.labResults || [])];
+                                          updated[labIndex] = { ...updated[labIndex], testName: e.target.value };
+                                          setPatientData(prev => ({ ...prev, labResults: updated }));
+                                        }}
+                                        placeholder="CBC, Lipid Panel, BMP"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Test Date *
+                                      </label>
+                                      <Input
+                                        type="date"
+                                        value={lab.testDate}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.labResults || [])];
+                                          updated[labIndex] = { ...updated[labIndex], testDate: e.target.value };
+                                          setPatientData(prev => ({ ...prev, labResults: updated }));
+                                        }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Category
+                                      </label>
+                                      <select
+                                        value={lab.testCategory || 'Blood Work'}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.labResults || [])];
+                                          updated[labIndex] = { ...updated[labIndex], testCategory: e.target.value };
+                                          setPatientData(prev => ({ ...prev, labResults: updated }));
+                                        }}
+                                        className="glass-input w-full"
+                                      >
+                                        <option value="Blood Work">Blood Work</option>
+                                        <option value="Cardiac">Cardiac</option>
+                                        <option value="Metabolic">Metabolic</option>
+                                        <option value="Thyroid">Thyroid</option>
+                                        <option value="Kidney">Kidney</option>
+                                        <option value="Liver">Liver</option>
+                                        <option value="Other">Other</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Ordered By
+                                      </label>
+                                      <Input
+                                        value={lab.orderedBy || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.labResults || [])];
+                                          updated[labIndex] = { ...updated[labIndex], orderedBy: e.target.value };
+                                          setPatientData(prev => ({ ...prev, labResults: updated }));
+                                        }}
+                                        placeholder="Dr. Smith"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Lab Facility
+                                      </label>
+                                      <Input
+                                        value={lab.labFacility || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.labResults || [])];
+                                          updated[labIndex] = { ...updated[labIndex], labFacility: e.target.value };
+                                          setPatientData(prev => ({ ...prev, labResults: updated }));
+                                        }}
+                                        placeholder="Quest Diagnostics"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                      Notes
+                                    </label>
+                                    <textarea
+                                      value={lab.notes || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(patientData?.labResults || [])];
+                                        updated[labIndex] = { ...updated[labIndex], notes: e.target.value };
+                                        setPatientData(prev => ({ ...prev, labResults: updated }));
+                                      }}
+                                      rows={2}
+                                      className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
+                                      style={{ color: '#000000', fontWeight: '800' }}
+                                      placeholder="Additional notes about this lab test..."
+                                    />
+                                  </div>
+
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={() => {
+                                        const updated = patientData?.labResults?.filter((_, i) => i !== labIndex);
+                                        setPatientData(prev => ({ ...prev, labResults: updated }));
+                                      }}
+                                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Delete Lab Result
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-12 text-gray-500">
+                              <p className="text-lg mb-2">No lab results added yet</p>
+                              <p className="text-sm">Click "Add Lab Result" to track your laboratory tests</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* My Reports Tab */}
+                      {medicalHistoryTab === 'reports' && (
+                        <div className="space-y-6">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>Medical Reports</h3>
+                            <Button
+                              onClick={() => {
+                                // Add new medical report
+                                const newReport = {
+                                  id: Date.now().toString(),
+                                  reportType: 'Imaging',
+                                  reportName: '',
+                                  reportDate: new Date().toISOString().split('T')[0],
+                                  provider: '',
+                                  facility: '',
+                                  findings: '',
+                                  recommendations: '',
+                                  fileUrl: '',
+                                  fileName: '',
+                                  fileType: '',
+                                  notes: ''
+                                };
+                                setPatientData(prev => ({
+                                  ...prev,
+                                  medicalReports: [...(prev?.medicalReports || []), newReport]
+                                }));
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Add Report
+                            </Button>
+                          </div>
+
+                          {/* Medical Reports List */}
+                          {patientData?.medicalReports && patientData.medicalReports.length > 0 ? (
+                            <div className="space-y-4">
+                              {patientData.medicalReports.map((report, reportIndex) => (
+                                <div
+                                  key={report.id || reportIndex}
+                                  className="p-6 rounded-xl"
+                                  style={{
+                                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(109, 40, 217, 0.05))',
+                                    border: '2px solid rgba(139, 92, 246, 0.3)',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                                  }}
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Report Type *
+                                      </label>
+                                      <select
+                                        value={report.reportType}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.medicalReports || [])];
+                                          updated[reportIndex] = { ...updated[reportIndex], reportType: e.target.value };
+                                          setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                        }}
+                                        className="glass-input w-full"
+                                      >
+                                        <option value="Imaging">Imaging (X-ray, CT, MRI)</option>
+                                        <option value="Cardiology">Cardiology (Echo, EKG, Stress Test)</option>
+                                        <option value="Pathology">Pathology</option>
+                                        <option value="Consultation">Consultation Note</option>
+                                        <option value="Discharge Summary">Discharge Summary</option>
+                                        <option value="Operative Report">Operative Report</option>
+                                        <option value="Other">Other</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Report Name *
+                                      </label>
+                                      <Input
+                                        value={report.reportName}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.medicalReports || [])];
+                                          updated[reportIndex] = { ...updated[reportIndex], reportName: e.target.value };
+                                          setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                        }}
+                                        placeholder="Chest X-Ray, Echocardiogram"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Report Date *
+                                      </label>
+                                      <Input
+                                        type="date"
+                                        value={report.reportDate}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.medicalReports || [])];
+                                          updated[reportIndex] = { ...updated[reportIndex], reportDate: e.target.value };
+                                          setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Provider
+                                      </label>
+                                      <Input
+                                        value={report.provider || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.medicalReports || [])];
+                                          updated[reportIndex] = { ...updated[reportIndex], provider: e.target.value };
+                                          setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                        }}
+                                        placeholder="Dr. Johnson"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                        Facility
+                                      </label>
+                                      <Input
+                                        value={report.facility || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(patientData?.medicalReports || [])];
+                                          updated[reportIndex] = { ...updated[reportIndex], facility: e.target.value };
+                                          setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                        }}
+                                        placeholder="City Hospital Radiology"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                      Findings
+                                    </label>
+                                    <textarea
+                                      value={report.findings || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(patientData?.medicalReports || [])];
+                                        updated[reportIndex] = { ...updated[reportIndex], findings: e.target.value };
+                                        setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                      }}
+                                      rows={3}
+                                      className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
+                                      style={{ color: '#000000', fontWeight: '800' }}
+                                      placeholder="Summary of findings from the report..."
+                                    />
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                      Recommendations
+                                    </label>
+                                    <textarea
+                                      value={report.recommendations || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(patientData?.medicalReports || [])];
+                                        updated[reportIndex] = { ...updated[reportIndex], recommendations: e.target.value };
+                                        setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                      }}
+                                      rows={2}
+                                      className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
+                                      style={{ color: '#000000', fontWeight: '800' }}
+                                      placeholder="Follow-up recommendations..."
+                                    />
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
+                                      Notes
+                                    </label>
+                                    <textarea
+                                      value={report.notes || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(patientData?.medicalReports || [])];
+                                        updated[reportIndex] = { ...updated[reportIndex], notes: e.target.value };
+                                        setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                      }}
+                                      rows={2}
+                                      className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all resize-none"
+                                      style={{ color: '#000000', fontWeight: '800' }}
+                                      placeholder="Additional notes..."
+                                    />
+                                  </div>
+
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={() => {
+                                        const updated = patientData?.medicalReports?.filter((_, i) => i !== reportIndex);
+                                        setPatientData(prev => ({ ...prev, medicalReports: updated }));
+                                      }}
+                                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Delete Report
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-12 text-gray-500">
+                              <p className="text-lg mb-2">No medical reports added yet</p>
+                              <p className="text-sm">Click "Add Report" to track your medical reports and imaging studies</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 

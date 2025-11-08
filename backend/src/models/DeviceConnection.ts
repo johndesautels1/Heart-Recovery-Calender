@@ -4,7 +4,7 @@ import sequelize from './database';
 interface DeviceConnectionAttributes {
   id: number;
   userId: number;
-  deviceType: 'polar' | 'samsung_health' | 'health_connect' | 'strava';
+  deviceType: 'polar' | 'samsung_health' | 'health_connect' | 'strava' | 'fitbit' | 'garmin' | 'googlefit';
   deviceId?: string;
   deviceName?: string;
 
@@ -38,7 +38,7 @@ interface DeviceConnectionCreationAttributes extends Optional<DeviceConnectionAt
 class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectionCreationAttributes> implements DeviceConnectionAttributes {
   public id!: number;
   public userId!: number;
-  public deviceType!: 'polar' | 'samsung_health' | 'health_connect' | 'strava';
+  public deviceType!: 'polar' | 'samsung_health' | 'health_connect' | 'strava' | 'fitbit' | 'garmin' | 'googlefit';
   public deviceId?: string;
   public deviceName?: string;
 
@@ -80,7 +80,7 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
           },
         },
         deviceType: {
-          type: DataTypes.ENUM('polar', 'samsung_health', 'health_connect', 'strava'),
+          type: DataTypes.ENUM('polar', 'samsung_health', 'health_connect', 'strava', 'fitbit', 'garmin', 'googlefit'),
           allowNull: false,
           comment: 'Type of device/service connected',
         },

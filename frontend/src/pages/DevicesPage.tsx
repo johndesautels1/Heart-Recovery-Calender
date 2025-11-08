@@ -177,6 +177,60 @@ export function DevicesPage() {
     }
   };
 
+  const handleConnectAppleHealth = async () => {
+    toast.info('Apple Health integration coming soon! Requires iOS HealthKit integration.');
+  };
+
+  const handleConnectFitbit = async () => {
+    try {
+      const { authUrl } = await api.initiateFitbitAuth();
+      window.location.href = authUrl;
+    } catch (error: any) {
+      console.error('Error initiating Fitbit auth:', error);
+      toast.error('Failed to connect to Fitbit. Please ensure API credentials are configured.');
+    }
+  };
+
+  const handleConnectGarmin = async () => {
+    try {
+      const { authUrl } = await api.initiateGarminAuth();
+      window.location.href = authUrl;
+    } catch (error: any) {
+      console.error('Error initiating Garmin auth:', error);
+      toast.error('Failed to connect to Garmin. Please ensure API credentials are configured.');
+    }
+  };
+
+  const handleConnectWHOOP = async () => {
+    toast.info('WHOOP integration coming soon! Requires WHOOP API access.');
+  };
+
+  const handleConnectOura = async () => {
+    toast.info('Oura Ring integration coming soon! Requires Oura Cloud API access.');
+  };
+
+  const handleConnectGoogleFit = async () => {
+    try {
+      const { authUrl } = await api.initiateGoogleFitAuth();
+      window.location.href = authUrl;
+    } catch (error: any) {
+      console.error('Error initiating Google Fit auth:', error);
+      toast.error('Failed to connect to Google Fit. Please ensure API credentials are configured.');
+    }
+  };
+
+  const handleConnectWithings = async () => {
+    toast.info('Withings integration coming soon! Requires Withings developer account.');
+  };
+
+  const handleConnectAmazfit = async () => {
+    toast.info('Amazfit/Zepp integration coming soon! Requires Zepp API access.');
+  };
+
+  const handleConnectCoros = async () => {
+    toast.info('Coros integration coming soon! Requires Coros developer access.');
+  };
+
   const handleSync = async (device: DeviceConnection) => {
     try {
       setIsSyncing(device.id);
@@ -408,13 +462,19 @@ export function DevicesPage() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
         <button
-          onClick={() => setActiveTab('implants')}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clicking Medical Implants tab');
+            setActiveTab('implants');
+          }}
           className={`px-6 py-3 font-semibold transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'implants'
               ? 'border-red-500 text-red-400'
               : 'border-transparent hover:border-gray-500'
           }`}
-          style={{ color: activeTab === 'implants' ? '#f87171' : 'var(--muted)' }}
+          style={{ color: activeTab === 'implants' ? '#f87171' : 'var(--muted)', cursor: 'pointer' }}
         >
           <AlertTriangle className="h-4 w-4" />
           {t('devices.tabs.medicalImplants')}
@@ -423,13 +483,19 @@ export function DevicesPage() {
           </span>
         </button>
         <button
-          onClick={() => setActiveTab('trackers')}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clicking Fitness Trackers tab');
+            setActiveTab('trackers');
+          }}
           className={`px-6 py-3 font-semibold transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'trackers'
               ? 'border-blue-500'
               : 'border-transparent hover:border-gray-500'
           }`}
-          style={{ color: activeTab === 'trackers' ? 'var(--accent)' : 'var(--muted)' }}
+          style={{ color: activeTab === 'trackers' ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}
         >
           <Activity className="h-4 w-4" />
           {t('devices.tabs.fitnessTrackers')}
@@ -649,6 +715,240 @@ export function DevicesPage() {
             <Button onClick={handleConnectPolar} variant="primary" className="w-full">
               <Heart className="h-4 w-4 mr-2" />
               {t('devices.trackers.devices.polar.connect')}
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Apple Health / Apple Watch */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-gray-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-gray-500/20">
+                <Watch className="h-8 w-8 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Apple Health / Watch
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  HealthKit integration
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, HRV, ECG, blood oxygen, steps, workouts from Apple Watch and iPhone Health app.
+            </p>
+            <Button onClick={handleConnectAppleHealth} variant="primary" className="w-full bg-gray-600 hover:bg-gray-700">
+              <Watch className="h-4 w-4 mr-2" />
+              Connect Apple Health
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Fitbit */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-teal-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-teal-500/20">
+                <Activity className="h-8 w-8 text-teal-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Fitbit
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Comprehensive health tracking
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, sleep, HRV, blood oxygen, steps, calories, and exercise data from Fitbit devices.
+            </p>
+            <Button onClick={handleConnectFitbit} variant="primary" className="w-full bg-teal-500 hover:bg-teal-600">
+              <Activity className="h-4 w-4 mr-2" />
+              Connect Fitbit
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Garmin Connect */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-blue-600/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-blue-600/20">
+                <Activity className="h-8 w-8 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Garmin Connect
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Advanced athletic metrics
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, HRV, stress, VO2 max, training load, sleep, and detailed workout data from Garmin devices.
+            </p>
+            <Button onClick={handleConnectGarmin} variant="primary" className="w-full bg-blue-600 hover:bg-blue-700">
+              <Activity className="h-4 w-4 mr-2" />
+              Connect Garmin
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* WHOOP */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-yellow-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Heart className="h-8 w-8 text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  WHOOP
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Recovery & strain tracking
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync HRV, recovery score, strain, sleep performance, respiratory rate, and detailed physiological data.
+            </p>
+            <Button onClick={handleConnectWHOOP} variant="primary" className="w-full bg-yellow-500 hover:bg-yellow-600">
+              <Heart className="h-4 w-4 mr-2" />
+              Connect WHOOP
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Oura Ring */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-purple-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <Activity className="h-8 w-8 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Oura Ring
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Sleep & readiness tracking
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync HRV, resting heart rate, body temperature, sleep stages, readiness score, and activity data.
+            </p>
+            <Button onClick={handleConnectOura} variant="primary" className="w-full bg-purple-500 hover:bg-purple-600">
+              <Activity className="h-4 w-4 mr-2" />
+              Connect Oura
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Google Fit */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-green-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Activity className="h-8 w-8 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Google Fit
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Android & Wear OS sync
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, steps, calories, workouts, sleep, and health data from Android phones and Wear OS devices.
+            </p>
+            <Button onClick={handleConnectGoogleFit} variant="primary" className="w-full bg-green-500 hover:bg-green-600">
+              <Activity className="h-4 w-4 mr-2" />
+              Connect Google Fit
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Withings */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-cyan-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <Heart className="h-8 w-8 text-cyan-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Withings
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Medical-grade tracking
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, ECG, blood pressure, weight, sleep, SpO2, and medical-grade health metrics from Withings devices.
+            </p>
+            <Button onClick={handleConnectWithings} variant="primary" className="w-full bg-cyan-500 hover:bg-cyan-600">
+              <Heart className="h-4 w-4 mr-2" />
+              Connect Withings
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Amazfit */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-pink-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-pink-500/20">
+                <Watch className="h-8 w-8 text-pink-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Amazfit / Zepp
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Affordable smartwatches
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, SpO2, PAI score, sleep, stress, and workout data from Amazfit smartwatches via Zepp app.
+            </p>
+            <Button onClick={handleConnectAmazfit} variant="primary" className="w-full bg-pink-500 hover:bg-pink-600">
+              <Watch className="h-4 w-4 mr-2" />
+              Connect Amazfit
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* Coros */}
+        <GlassCard className="hover:shadow-lg transition-shadow border-2 border-indigo-500/30">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-indigo-500/20">
+                <Activity className="h-8 w-8 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--ink-bright)' }}>
+                  Coros
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Endurance athlete tracking
+                </p>
+              </div>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+              Sync heart rate, training load, VO2 max, recovery metrics, and detailed workout data from Coros watches.
+            </p>
+            <Button onClick={handleConnectCoros} variant="primary" className="w-full bg-indigo-500 hover:bg-indigo-600">
+              <Activity className="h-4 w-4 mr-2" />
+              Connect Coros
             </Button>
           </div>
         </GlassCard>

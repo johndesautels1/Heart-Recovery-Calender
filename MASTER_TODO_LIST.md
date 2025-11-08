@@ -2,7 +2,7 @@
 **⚠️ THIS IS THE AUTHORITATIVE TODO LIST - USE THIS ONE ONLY**
 
 **Status:** In Progress
-**Last Updated:** November 6, 2025 - Evening Session (SESSION-VITALS-LUXURY-20251106)
+**Last Updated:** November 8, 2025 - Advanced Cardiac Metrics Session (SESSION-CARDIAC-METRICS-20251108)
 **Location:** `C:\Users\broke\Heart-Recovery-Calender\MASTER_TODO_LIST.md`
 
 **Source Files (archived for reference only):**
@@ -23,7 +23,143 @@
 
 ---
 
-## 🎉 COMPLETED TODAY (November 6, 2025)
+## 🎉 COMPLETED TODAY (November 8, 2025)
+
+### ✅ Advanced Cardiac Metrics & Chart Timeline Enhancements (SESSION-CARDIAC-METRICS-20251108)
+- **Session Reference:** `SESSION-CARDIAC-METRICS-20251108`
+- **Files Changed:** VitalsPage.tsx, VitalsSample.ts, CircularGauge.tsx, migration files
+- **Commit:** `265486d` - Add advanced cardiac metrics system with HRV, exercise capacity, and cardiac function tracking
+- **Impact:** MAJOR cardiac monitoring expansion + surgery date timeline standardization
+
+#### 1. Advanced Cardiac Metrics Database Migration ✅
+- **What:** Added 10 new advanced cardiac metrics fields to vitals tracking system
+- **Categories:**
+  - **HRV (Heart Rate Variability) Metrics:**
+    * SDNN - Standard Deviation of NN intervals (milliseconds)
+    * RMSSD - Root Mean Square of Successive Differences (milliseconds)
+    * pNN50 - Percentage of successive NN intervals differing by >50ms
+  - **Exercise Capacity Metrics:**
+    * VO2 Max - Maximum oxygen uptake during exercise (mL/kg/min)
+    * 6-Minute Walk Test distance (meters)
+    * Heart Rate Recovery - HR drop 1 minute after exercise (bpm/min)
+  - **Cardiac Function Metrics:**
+    * Ejection Fraction - Blood pumped out per heartbeat (percentage)
+    * Mean Arterial Pressure - Average arterial pressure during cardiac cycle (mmHg)
+    * Pulse Pressure - Difference between systolic and diastolic BP (mmHg)
+    * Blood Pressure Variability - Standard deviation of BP readings
+- **Files:** `backend/src/migrations/20251107000001-add-advanced-cardiac-metrics-to-vitals.js` (NEW)
+- **Impact:** Comprehensive cardiac health monitoring for heart surgery recovery patients
+
+#### 2. VitalsSample Model Updates ✅
+- **What:** Updated TypeScript model with all new cardiac metrics fields
+- **Changes:**
+  - Added HRV fields: sdnn, rmssd, pnn50 (all FLOAT, nullable)
+  - Added Exercise fields: vo2Max, sixMinWalk, hrRecovery (all FLOAT, nullable)
+  - Added Cardiac Function fields: ejectionFraction, meanArterialPressure, pulsePressure, bpVariability (all FLOAT, nullable)
+  - All fields properly typed with comments from database schema
+- **Files:** `backend/src/models/VitalsSample.ts` (lines 43-54, 100-111, 354-409)
+- **Impact:** Type safety and IntelliSense support for advanced cardiac metrics
+
+#### 3. Chart Time Range Filtering (7d, 30d, 90d, Surgery Timeline) ✅
+- **What:** Added time period filtering to vitals charts based on surgery date
+- **Features:**
+  - 4 time range options: 7 Days, 30 Days, 90 Days, Surgery Timeline
+  - All ranges calculate from patient's surgery date (not current date)
+  - "Surgery Timeline" shows 1 month before surgery → 3 months after surgery
+  - Chart data automatically filters based on selected time range
+  - Charts re-render when time range changes (using key prop)
+- **Technical:**
+  - Added `globalTimeView` state: '7d' | '30d' | '90d' | 'surgery'
+  - Modified `filteredVitals` calculation to use surgery date as anchor (lines 763-823)
+  - Added key props to force chart re-mount: `key={globalTimeView}` and `key={selectedMetric-${globalTimeView}}`
+- **Files:** `VitalsPage.tsx` (lines 763-823, 4015, 4098)
+- **Impact:** Users can analyze recovery progress at different post-surgery time windows
+
+#### 4. Surgery Date as Timeline Reference Point ✅
+- **What:** All chart timelines now start from patient's surgery date, not first data point
+- **Problem:** Charts were auto-scaling to first available data (e.g., Oct 5) instead of surgery date (Sept 18)
+- **Solution:**
+  - Time range calculations always use surgery date as Day 0:
+    * 7-day view: Surgery date → Surgery date + 7 days
+    * 30-day view: Surgery date → Surgery date + 30 days
+    * 90-day view: Surgery date → Surgery date + 90 days
+    * Surgery timeline: Surgery date - 1 month → Surgery date + 3 months
+  - Fallback to current date if no surgery date set
+- **Files:** `VitalsPage.tsx` (lines 769-810)
+- **Impact:** Consistent timeline reference for all cardiac recovery patients
+
+#### 5. Date Filling Logic for Complete Chart Timelines ✅
+- **What:** Charts now display ALL dates from surgery date forward, filling gaps with null values
+- **Problem:** Charts only showed dates with data, causing X-axis to start at first data point
+- **Solution:**
+  - Created `filledChartData` function that generates complete date array
+  - Fills in missing dates with null placeholders for all vitals
+  - Ensures X-axis always starts at surgery date and ends at target date
+  - Maintains existing data where available
+- **Technical:**
+  - Uses date-fns `addDays()` to iterate through date range
+  - Checks for existing data and merges, otherwise adds null values
+  - Console logging for debugging: shows total dates and date range
+- **Files:** `VitalsPage.tsx` (lines 1077-1145)
+- **Impact:** Charts visually show full recovery timeline from surgery date, even if data is sparse
+
+#### 6. Enhanced HISTORICAL FLIGHT DATA Table ✅
+- **What:** Added all 10 advanced cardiac metrics to vitals history table with medical-range color coding
+- **Features:**
+  - **HRV Metrics (Emerald Theme):**
+    * SDNN with color-coded ranges: <30 red alert, 30-50 orange, 50-70 yellow, 70-100 emerald, >100 green
+    * RMSSD with ranges: <15 red alert, 15-20 orange, 20-25 yellow, 25-35 emerald, >35 green
+    * pNN50 with ranges: <5% red alert, 5-10% orange, 10-15% yellow, 15-25% emerald, >25% green
+  - **Cardiac Function (Gold Theme):**
+    * Ejection Fraction with ranges: <35% critical red, 35-40% red, 40-50% orange, 50-70% green, >75% yellow warning
+    * MAP with ranges: <60 red, 60-70 orange, 70-100 green, 100-110 yellow, >110 red
+    * Pulse Pressure with ranges: <25 red, 25-30 orange, 30-50 green, 50-60 yellow, >60 red
+    * BP Variability with ranges: <10 green, 10-15 emerald, 15-25 yellow, >25 red
+  - **Exercise Capacity (Purple Theme):**
+    * VO2 Max with ranges: <20 red, 20-25 orange, 25-30 yellow, 30-40 purple, >40 deep purple
+    * 6-Minute Walk with ranges: <300m red, 300-400m orange, 400-500m yellow, 500-550m purple, >550m deep purple
+    * HR Recovery with ranges: <12 red, 12-15 orange, 15-20 yellow, 20-25 purple, >25 deep purple
+  - **Visual Enhancements:**
+    * Trend indicators (↗ up, ↘ down, → stable) comparing to previous reading
+    * Warning emojis (⚠️ 🚨) for critical values
+    * Glowing text shadows for better readability
+    * Medical-grade color coding based on clinical ranges
+- **Files:** `VitalsPage.tsx` (lines 4611-4871)
+- **Impact:** Comprehensive at-a-glance cardiac health assessment with instant risk visualization
+
+#### 7. CircularGauge Device Mode Indicators ✅
+- **What:** Added visual indicators showing data source on all vital gauges
+- **Features:**
+  - **Device Mode Badge (top-right corner):**
+    * MANUAL mode: Blue badge with ✍️ icon
+    * DEVICE mode: Green badge with 📡 icon (animated pulse effect)
+    * IMPORT mode: Yellow badge with 📥 icon
+  - **Badge Design:**
+    * Icon visible always, label appears on hover
+    * Glowing text shadow and box shadow effects
+    * Color-coded backgrounds and borders
+    * Animated pulse for device-synced data
+- **Technical:**
+  - Added `source` and `deviceId` props to CircularGauge component
+  - Created `getModeIndicator()` function returning badge styles
+  - Uses CSS animations for device mode pulse effect
+- **Files:** `CircularGauge.tsx` (lines 17-18, 35-36, 67-95, 103-128)
+- **Impact:** Users can instantly see which vitals are manually entered vs auto-synced from devices
+
+#### Statistics for November 8 Session:
+- **Files Modified:** 4 (VitalsPage.tsx, VitalsSample.ts, CircularGauge.tsx, migration)
+- **Lines Modified:** ~200 lines (chart filtering + date filling + table enhancements + gauge updates)
+- **New Database Fields:** 10 advanced cardiac metrics
+- **Chart Enhancements:** Time range filtering + surgery date anchoring + date filling
+- **Table Enhancements:** 10 new columns with color-coded medical ranges + trend indicators
+- **UI Components Enhanced:** CircularGauge with device mode badges
+- **TypeScript Compilation:** ✅ 0 errors frontend/backend
+- **Git Status:** ✅ Committed and pushed to GitHub (commit 265486d)
+- **Conversation Reference:** SESSION-CARDIAC-METRICS-20251108
+
+---
+
+## 🎉 PREVIOUSLY COMPLETED (November 6, 2025)
 
 ### ✅ EVENING SESSION: Luxury A380 Cockpit-Style Vitals Dashboard Enhancements (SESSION-VITALS-LUXURY-20251106)
 - **Session Reference:** `SESSION-VITALS-LUXURY-20251106`

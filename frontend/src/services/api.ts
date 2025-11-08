@@ -804,6 +804,21 @@ class ApiService {
     return response.data.data;
   }
 
+  async initiateFitbitAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('fitbit/auth');
+    return response.data.data;
+  }
+
+  async initiateGarminAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('garmin/auth');
+    return response.data.data;
+  }
+
+  async initiateGoogleFitAuth(): Promise<{ authUrl: string }> {
+    const response = await this.api.get<ApiResponse<{ authUrl: string }>>('googlefit/auth');
+    return response.data.data;
+  }
+
   // ==================== PROVIDERS ENDPOINTS ====================
   async getProviders(): Promise<Provider[]> {
     const response = await this.api.get<ApiResponse<Provider[]>>('providers');

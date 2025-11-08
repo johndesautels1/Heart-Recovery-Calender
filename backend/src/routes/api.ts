@@ -27,6 +27,9 @@ import * as caloriesController from '../controllers/caloriesController';
 import uploadRoutes from './upload';
 import devicesRoutes from './devices';
 import stravaRoutes from './strava';
+import fitbitRoutes from './fitbit';
+import garminRoutes from './garmin';
+import googlefitRoutes from './googlefit';
 import weatherRoutes from './weather';
 import hawkRoutes from './hawk';
 // import polarRoutes from './polar';
@@ -52,11 +55,14 @@ router.post('/auth/register', authController.register);
  * @returns { token, user }
  */
 router.post('/auth/login', authController.login);
-// ========== STRAVA OAUTH CALLBACK (PUBLIC) ==========
-// Strava routes must be registered before authenticateToken middleware
-// because Strava's OAuth callback comes from their servers (no auth token)
-// Note: /strava/auth route has its own authenticateToken middleware
+// ========== DEVICE OAUTH CALLBACKS (PUBLIC) ==========
+// Device routes must be registered before authenticateToken middleware
+// because OAuth callbacks come from external servers (no auth token)
+// Note: /device/auth routes have their own authenticateToken middleware
 router.use('/strava', stravaRoutes);
+router.use('/fitbit', fitbitRoutes);
+router.use('/garmin', garminRoutes);
+router.use('/googlefit', googlefitRoutes);
 
 // All routes below require authentication
 router.use(authenticateToken);

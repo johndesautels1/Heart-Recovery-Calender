@@ -172,7 +172,8 @@ export function VitalsPage() {
 
   // NEW: Garmin 3000 Cockpit Features
   const [selectedDevice, setSelectedDevice] = useState<'all' | 'samsung' | 'polar'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'pulse' | 'medical'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'weight' | 'glucose' | 'pulse'>('overview');
+  const [showMedicalTests, setShowMedicalTests] = useState(false);
 
   // Time period selections for Weight and Glucose journals
   const [weightTimePeriod, setWeightTimePeriod] = useState<'7d' | '30d' | 'surgery'>('7d');
@@ -185,6 +186,9 @@ export function VitalsPage() {
 
   // Historical readings collapse state
   const [isHistoricalReadingsExpanded, setIsHistoricalReadingsExpanded] = useState(false);
+
+  // Chart collapse state
+  const [isChartExpanded, setIsChartExpanded] = useState(true);
 
   const {
     register,
@@ -1143,6 +1147,39 @@ export function VitalsPage() {
 
   // Use hydration-specific chart data when hydration metric is selected
   const activeChartData = selectedMetric === 'hydration' ? hydrationChartData : filledChartData;
+
+  // Smart Label Positioning Function - Avoids Data Point Collisions
+  const getSmartLabelPosition = (yValue: number, dataKey: string | string[], threshold: number = 10): 'top' | 'bottom' => {
+    if (!activeChartData || activeChartData.length === 0) return 'top';
+
+    // Count points above and below the reference line
+    let pointsAbove = 0;
+    let pointsBelow = 0;
+
+    activeChartData.forEach(dataPoint => {
+      // Handle both single dataKey (string) and multiple dataKeys (array for BP)
+      const dataKeys = Array.isArray(dataKey) ? dataKey : [dataKey];
+
+      dataKeys.forEach(key => {
+        const value = dataPoint[key];
+        if (value !== null && value !== undefined && typeof value === 'number') {
+          // Check if data point is near the reference line
+          if (Math.abs(value - yValue) <= threshold) {
+            // Point is close to the line, count its position
+            if (value > yValue) {
+              pointsAbove++;
+            } else {
+              pointsBelow++;
+            }
+          }
+        }
+      });
+    });
+
+    // Place label where there are FEWER data points to avoid collision
+    // If equal or no nearby points, default to 'top'
+    return pointsBelow < pointsAbove ? 'bottom' : 'top';
+  };
 
   const bpStatus = getBloodPressureStatus(
     filteredLatest?.bloodPressureSystolic,
@@ -2389,7 +2426,218 @@ export function VitalsPage() {
                 );
               })()}
             </div>
+
+            {/* Advanced Cardiac Display - Primary Flight Display Toggle */}
+            <div className="col-span-2 flex justify-center my-6">
+              <button
+                onClick={() => setShowMedicalTests(!showMedicalTests)}
+                className="relative px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105"
+                style={{
+                  background: showMedicalTests
+                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))'
+                    : 'linear-gradient(135deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4))',
+                  border: showMedicalTests
+                    ? '2px solid rgba(96, 165, 250, 0.6)'
+                    : '2px solid rgba(71, 85, 105, 0.5)',
+                  boxShadow: showMedicalTests
+                    ? '0 0 40px rgba(59, 130, 246, 0.5), inset 0 0 30px rgba(59, 130, 246, 0.1)'
+                    : '0 0 10px rgba(59, 130, 246, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.3)',
+                }}>
+
+                {/* Status Indicator LED */}
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: showMedicalTests
+                    ? 'radial-gradient(circle, #22c55e 0%, #16a34a 100%)'
+                    : 'radial-gradient(circle, #64748b 0%, #475569 100%)',
+                  boxShadow: showMedicalTests
+                    ? '0 0 12px rgba(34, 197, 94, 0.8), inset 0 1px 2px rgba(255,255,255,0.3)'
+                    : '0 0 4px rgba(100, 116, 139, 0.4)',
+                  animation: showMedicalTests ? 'pulse 2s ease-in-out infinite' : 'none'
+                }} />
+
+                {/* Content */}
+                <div className="flex flex-col items-center gap-2">
+                  {/* Top Label */}
+                  <div style={{
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    fontFamily: '"Orbitron", "Rajdhani", monospace',
+                    letterSpacing: '2px',
+                    color: showMedicalTests ? '#60a5fa' : '#94a3b8',
+                    textShadow: showMedicalTests
+                      ? '0 0 12px rgba(96, 165, 250, 0.8)'
+                      : 'none',
+                    textTransform: 'uppercase'
+                  }}>
+                    Primary Flight Display
+                  </div>
+
+                  {/* Main Title with Heart Icon */}
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-6 w-6" style={{
+                      color: showMedicalTests ? '#ef4444' : '#64748b',
+                      filter: showMedicalTests
+                        ? 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))'
+                        : 'none'
+                    }} />
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: '900',
+                      fontFamily: '"Orbitron", "Rajdhani", monospace',
+                      letterSpacing: '2px',
+                      color: '#ffffff',
+                      textShadow: showMedicalTests
+                        ? '0 0 15px rgba(96, 165, 250, 0.8)'
+                        : '0 2px 4px rgba(0, 0, 0, 0.8)'
+                    }}>
+                      ACD-1000
+                    </div>
+                    <Activity className="h-6 w-6" style={{
+                      color: showMedicalTests ? '#ef4444' : '#64748b',
+                      filter: showMedicalTests
+                        ? 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))'
+                        : 'none'
+                    }} />
+                  </div>
+
+                  {/* Subtitle */}
+                  <div style={{
+                    fontSize: '9px',
+                    fontWeight: '600',
+                    fontFamily: '"Orbitron", "Rajdhani", monospace',
+                    letterSpacing: '1.5px',
+                    color: showMedicalTests ? '#93c5fd' : '#64748b',
+                    textTransform: 'uppercase'
+                  }}>
+                    Advanced Cardiac Display
+                  </div>
+
+                  {/* Status Text */}
+                  <div style={{
+                    fontSize: '8px',
+                    fontWeight: '600',
+                    fontFamily: '"Orbitron", "Rajdhani", monospace',
+                    letterSpacing: '1px',
+                    color: showMedicalTests ? '#22c55e' : '#64748b',
+                    textTransform: 'uppercase',
+                    marginTop: '4px'
+                  }}>
+                    {showMedicalTests ? '● DISPLAY ACTIVE' : '○ DISPLAY STANDBY'}
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+              }
+            `}</style>
           </div>
+
+          {/* MEDICAL TESTS SECTION */}
+          {showMedicalTests && (
+            <div className="space-y-6">
+              {/* Medical Provider Tests Section */}
+              <GlassCard className="relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 opacity-10" style={{
+                  background: 'radial-gradient(circle, rgba(99, 102, 241, 0.5) 0%, transparent 70%)'
+                }}></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold flex items-center gap-3">
+                        <Activity className="h-7 w-7" style={{
+                          color: '#ef4444',
+                          filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))'
+                        }} />
+                        <span style={{
+                          fontFamily: '"Orbitron", "Rajdhani", monospace',
+                          color: '#ffffff',
+                          textShadow: '0 0 15px rgba(96, 165, 250, 0.6)',
+                          letterSpacing: '2px'
+                        }}>
+                          Advanced Cardiac Display-ACD-1000
+                        </span>
+                      </h2>
+                      <p className="text-sm text-gray-300 mt-1">Real-time ECG, EKG & Respiratory Flight Data</p>
+                    </div>
+                    <Button onClick={() => setIsModalOpen(true)} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Test Results
+                    </Button>
+                  </div>
+
+                  {/* Coming Soon Placeholder */}
+                  <div className="p-12 text-center">
+                    <div className="inline-block p-6 rounded-2xl mb-6" style={{
+                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))',
+                      border: '2px solid rgba(99, 102, 241, 0.3)',
+                      boxShadow: '0 0 40px rgba(99, 102, 241, 0.2)'
+                    }}>
+                      <Activity className="h-16 w-16 text-purple-400 mx-auto" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3">Advanced Cardiac Metrics Section</h3>
+                    <p className="text-gray-400 max-w-2xl mx-auto mb-6">
+                      This section will display professional medical test results including:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
+                      <div className="p-4 rounded-xl" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-blue-400" />
+                          Treadmill Stress Tests
+                        </h4>
+                        <p className="text-sm text-gray-400">Exercise capacity, heart rate response, blood pressure during exercise</p>
+                      </div>
+                      <div className="p-4 rounded-xl" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                          <Wind className="h-5 w-5 text-cyan-400" />
+                          Spirometry / Breathing Tests
+                        </h4>
+                        <p className="text-sm text-gray-400">Lung function, FEV1, FVC, breathing capacity measurements</p>
+                      </div>
+                      <div className="p-4 rounded-xl" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                          <Heart className="h-5 w-5 text-red-400" />
+                          ECG / EKG Results
+                        </h4>
+                        <p className="text-sm text-gray-400">Electrical activity of the heart, rhythm analysis, QT interval</p>
+                      </div>
+                      <div className="p-4 rounded-xl" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                          <Activity className="h-5 w-5 text-purple-400" />
+                          Clinical Lab Work
+                        </h4>
+                        <p className="text-sm text-gray-400">Blood panels, cardiac biomarkers, BNP, troponin levels</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-8">
+                      Manual data entry interface for healthcare provider test results
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+          )}
 
           {/* Second Row - O2 and Respiratory Rate - Luxury Watch Style */}
           <div className="grid grid-cols-2 gap-4 mb-8 justify-items-center" style={{ paddingTop: '40px' }}>
@@ -3328,109 +3576,64 @@ export function VitalsPage() {
         </div>
       </HeartFrame>
 
-      {/* GARMIN 3000 COCKPIT HEADER */}
-      <div className="relative overflow-hidden rounded-2xl"
-        style={{
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(59, 130, 246, 0.3)',
-          boxShadow: '0 0 60px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.05)'
-        }}>
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%)',
+      {/* ADVANCED ANALYSIS JOURNALS - Luxury Spacecraft Command Panel */}
+      <div className="relative overflow-hidden rounded-2xl p-8 mb-8" style={{
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%)',
+        backdropFilter: 'blur(20px)',
+        border: '2px solid rgba(96, 165, 250, 0.3)',
+        boxShadow: '0 0 60px rgba(96, 165, 250, 0.2), inset 0 0 60px rgba(96, 165, 250, 0.05), 0 8px 32px rgba(0,0,0,0.3)'
+      }}>
+        {/* Animated background glow */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 50%)',
         }}></div>
 
-        <div className="relative p-6">
-          <div className="relative flex items-start justify-between mb-6">
-
-            {/* Center: Title (absolutely positioned to true center) */}
-            <div className="absolute left-1/2 top-0 transform -translate-x-1/2 flex items-center gap-4">
-              <div className="p-3 rounded-xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
-                  boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
-                }}>
-                <Activity className="h-8 w-8 text-blue-400" />
-              </div>
-              <div className="flex flex-col items-center">
-                <h1 className="text-3xl font-bold text-white whitespace-nowrap" style={{ textShadow: '0 0 20px rgba(59, 130, 246, 0.5)' }}>
-
-                </h1>
-                <p className="text-sm text-blue-300/80"></p>
-              </div>
-            </div>
-
+        <div className="relative">
+          {/* Header with decorative lines */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+            <h3 className="text-sm font-bold tracking-[0.2em] uppercase" style={{
+              background: 'linear-gradient(135deg, #60a5fa, #a78bfa, #60a5fa)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: '0 0 30px rgba(96, 165, 250, 0.5)',
+              filter: 'drop-shadow(0 0 10px rgba(96, 165, 250, 0.3))'
+            }}>
+              ADVANCED ANALYSIS JOURNALS
+            </h3>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
           </div>
 
-          {/* Device Filter Tabs - Garmin Style */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 text-blue-300/60 text-sm font-semibold">
-              <Filter className="h-4 w-4" />
-              <span></span>
-            </div>
-            <div className="flex gap-2">
-              {[
-                { id: 'all' as const, icon: BarChart3, label: '', color: 'blue' }
-              ].map(device => (
-                <button
-                  key={device.id}
-                  onClick={() => setSelectedDevice(device.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 ${
-                    selectedDevice === device.id
-                      ? 'text-white shadow-lg'
-                      : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                  style={{
-                    background: selectedDevice === device.id
-                      ? `linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))`
-                      : 'rgba(255, 255, 255, 0.05)',
-                    border: selectedDevice === device.id
-                      ? '1px solid rgba(59, 130, 246, 0.5)'
-                      : '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: selectedDevice === device.id
-                      ? '0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.1)'
-                      : 'none'
-                  }}>
-                  <device.icon className="h-4 w-4" />
-                  {device.label}
-                  {selectedDevice === device.id && (
-                    <Zap className="h-3 w-3 text-yellow-400 animate-pulse" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Main Navigation Tabs */}
-          <div className="flex justify-center gap-2 mt-4">
+          {/* Main Navigation Tabs - Premium Design */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {[
               { id: 'overview' as const, label: 'Overview', icon: Activity },
               { id: 'weight' as const, label: 'Weight Journal', icon: Weight },
               { id: 'glucose' as const, label: 'Glucose Journal', icon: Droplet },
-              { id: 'pulse' as const, label: 'Pulse Monitor', icon: Heart },
-              { id: 'medical' as const, label: 'Medical Tests', icon: Heart }
+              { id: 'pulse' as const, label: 'Heart Rate Journal', icon: Heart }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'text-white'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-                style={{
-                  background: activeTab === tab.id
-                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25))'
-                    : 'rgba(255, 255, 255, 0.03)',
-                  border: activeTab === tab.id
-                    ? '1px solid rgba(59, 130, 246, 0.5)'
-                    : '1px solid rgba(255, 255, 255, 0.05)',
-                  boxShadow: activeTab === tab.id
-                    ? '0 0 20px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(59, 130, 246, 0.05)'
-                    : 'none'
+                className="px-5 py-2.5 rounded-xl font-black text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                style={activeTab === tab.id ? {
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(99, 102, 241, 0.4))',
+                  border: '2px solid rgba(96, 165, 250, 0.6)',
+                  boxShadow: '0 0 30px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.15)',
+                  color: '#ffffff',
+                  textShadow: '0 0 15px rgba(96, 165, 250, 1), 0 0 30px rgba(96, 165, 250, 0.6)',
+                  fontWeight: '900'
+                } : {
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  border: '1px solid rgba(71, 85, 105, 0.5)',
+                  boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.3)',
+                  color: '#e2e8f0',
+                  fontWeight: '700'
                 }}>
-                <tab.icon className="h-5 w-5" />
-                {tab.label}
+                <div className="flex items-center gap-2">
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </div>
               </button>
             ))}
           </div>
@@ -3731,7 +3934,7 @@ export function VitalsPage() {
               <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
                 <button
                   onClick={() => setSelectedMetric('bp')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'bp' ? {
                     background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9))',
                     border: '2px solid rgba(96, 165, 250, 0.8)',
@@ -3749,7 +3952,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('hr')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'hr' ? {
                     background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9))',
                     border: '2px solid rgba(248, 113, 113, 0.8)',
@@ -3767,7 +3970,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('weight')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'weight' ? {
                     background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9))',
                     border: '2px solid rgba(52, 211, 153, 0.8)',
@@ -3785,7 +3988,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('sugar')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'sugar' ? {
                     background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9))',
                     border: '2px solid rgba(251, 146, 60, 0.8)',
@@ -3803,7 +4006,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('temp')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'temp' ? {
                     background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.9), rgba(194, 65, 12, 0.9))',
                     border: '2px solid rgba(251, 146, 60, 0.8)',
@@ -3821,7 +4024,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('hydration')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'hydration' ? {
                     background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9))',
                     border: '2px solid rgba(96, 165, 250, 0.8)',
@@ -3839,7 +4042,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('o2')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'o2' ? {
                     background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(8, 145, 178, 0.9))',
                     border: '2px solid rgba(34, 211, 238, 0.8)',
@@ -3857,7 +4060,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('peakflow')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'peakflow' ? {
                     background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.9), rgba(4, 120, 87, 0.9))',
                     border: '2px solid rgba(52, 211, 153, 0.8)',
@@ -3875,7 +4078,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('map')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'map' ? {
                     background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.9), rgba(126, 34, 206, 0.9))',
                     border: '2px solid rgba(168, 85, 247, 0.8)',
@@ -3893,7 +4096,7 @@ export function VitalsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedMetric('bpvariability')}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
+                  className="px-4.5 py-2 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 hover:scale-105"
                   style={selectedMetric === 'bpvariability' ? {
                     background: 'linear-gradient(135deg, rgba(219, 39, 119, 0.9), rgba(190, 24, 93, 0.9))',
                     border: '2px solid rgba(236, 72, 153, 0.8)',
@@ -4057,43 +4260,104 @@ export function VitalsPage() {
             </div>
           </div>
 
-          <GlassCard>
-            {/* Surgery Date Display (Day 0) - Luxury Design */}
-            {surgeryDate && globalTimeView === 'surgery' && (
-              <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-xl mb-6" style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25))',
-                border: '2px solid rgba(59, 130, 246, 0.6)',
-                boxShadow: '0 0 40px rgba(59, 130, 246, 0.4), inset 0 0 30px rgba(59, 130, 246, 0.1)',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <div className="flex items-center gap-3 px-4 py-2 rounded-lg" style={{
-                  background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.5), rgba(29, 78, 216, 0.5))',
-                  border: '2px solid rgba(96, 165, 250, 0.6)',
-                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), inset 0 0 15px rgba(96, 165, 250, 0.2)'
-                }}>
-                  <Activity className="h-6 w-6 text-blue-200 animate-pulse" />
-                  <span className="font-black text-base tracking-wider" style={{
-                    color: '#ffffff',
-                    textShadow: '0 0 20px rgba(96, 165, 250, 1), 0 0 40px rgba(59, 130, 246, 0.8), 0 2px 4px rgba(0,0,0,0.8)'
-                  }}>DAY 0</span>
+          {/* Chart Section - Collapsible */}
+          <div className="relative overflow-hidden rounded-2xl mb-8" style={{
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '2px solid rgba(96, 165, 250, 0.3)',
+            boxShadow: '0 0 60px rgba(96, 165, 250, 0.2), inset 0 0 60px rgba(96, 165, 250, 0.05), 0 8px 32px rgba(0,0,0,0.3)'
+          }}>
+            {/* Cockpit-Style Header Button */}
+            <button
+              onClick={() => setIsChartExpanded(!isChartExpanded)}
+              className="w-full p-6 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:bg-white/5"
+              style={{
+                borderBottom: isChartExpanded ? '1px solid rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))',
+                    border: '1px solid rgba(59, 130, 246, 0.5)',
+                    boxShadow: isChartExpanded
+                      ? '0 0 20px rgba(59, 130, 246, 0.6)'
+                      : '0 0 10px rgba(59, 130, 246, 0.3)'
+                  }}
+                >
+                  <TrendingUp className="h-6 w-6 text-blue-300" />
                 </div>
-                <div className="h-10 w-px bg-gradient-to-b from-transparent via-blue-400/60 to-transparent"></div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">
-                    Surgery Date
-                  </span>
-                  <span className="text-lg font-black" style={{
-                    color: '#ffffff',
-                    textShadow: '0 0 15px rgba(96, 165, 250, 0.9), 0 2px 4px rgba(0,0,0,0.8)'
-                  }}>
-                    {format(new Date(surgeryDate), 'MMM dd, yyyy')}
-                  </span>
+                <div className="text-left">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="px-2 py-0.5 rounded text-xs font-mono"
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.2)',
+                        border: '1px solid rgba(59, 130, 246, 0.4)',
+                        color: '#60a5fa'
+                      }}
+                    >
+                      CHART
+                    </div>
+                  </div>
+                  <h2
+                    className="text-2xl font-bold tracking-wide mt-1"
+                    style={{
+                      color: '#ffffff',
+                      textShadow: '0 0 20px rgba(59, 130, 246, 0.3)',
+                      fontFamily: '"Orbitron", "Rajdhani", sans-serif'
+                    }}
+                  >
+                    VITAL TRENDS VISUALIZATION
+                  </h2>
                 </div>
               </div>
-            )}
 
-            {/* Date Range Display - UNIFIED */}
-            <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
+              {/* Chevron with Aerospace Styling */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="text-xs font-mono uppercase tracking-widest"
+                  style={{
+                    color: '#60a5fa',
+                    textShadow: '0 0 8px rgba(59, 130, 246, 0.6)'
+                  }}
+                >
+                  {isChartExpanded ? 'COLLAPSE' : 'EXPAND'}
+                </div>
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    boxShadow: isChartExpanded
+                      ? '0 0 20px rgba(59, 130, 246, 0.5)'
+                      : '0 0 10px rgba(59, 130, 246, 0.3)',
+                    transform: isChartExpanded ? 'rotate(0deg)' : 'rotate(0deg)'
+                  }}
+                >
+                  {isChartExpanded ? (
+                    <ChevronUp className="h-6 w-6 text-blue-400" />
+                  ) : (
+                    <ChevronDown className="h-6 w-6 text-blue-400" />
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Collapsible Content with Smooth Animation */}
+            <div
+              style={{
+                maxHeight: isChartExpanded ? '2000px' : '0',
+                opacity: isChartExpanded ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out'
+              }}
+            >
+              <div className="p-6">
+                <GlassCard>
+                  {/* Date Range Display - UNIFIED */}
+                  <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg mb-4" style={{
               background: selectedMetric === 'hydration'
                 ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))'
                 : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
@@ -4211,9 +4475,21 @@ export function VitalsPage() {
                         activeDot={{ r: 7, strokeWidth: 3 }}
                       />
 
-                      {/* Normal Range Reference Lines for Blood Pressure */}
-                      <ReferenceLine y={120} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Systolic (120)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Diastolic (80)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                      {/* Blood Pressure Zones - International Standards (AHA Guidelines) */}
+                      {/* Systolic Zones */}
+                      <ReferenceArea y1={180} y2={200} fill="#ef4444" fillOpacity={0.15} />
+                      <ReferenceArea y1={140} y2={180} fill="#f97316" fillOpacity={0.12} />
+                      <ReferenceArea y1={130} y2={140} fill="#eab308" fillOpacity={0.1} />
+                      <ReferenceArea y1={90} y2={120} fill="#10b981" fillOpacity={0.1} />
+                      <ReferenceArea y1={60} y2={90} fill="#eab308" fillOpacity={0.1} />
+
+                      {/* Warning Lines - Smart Positioning to Avoid Data */}
+                      <ReferenceLine y={180} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Hypertensive Crisis (180)', position: getSmartLabelPosition(180, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                      <ReferenceLine y={140} stroke="#f97316" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Stage 2 HTN (140)', position: getSmartLabelPosition(140, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #f97316, 1px 1px 2px #000' } }} />
+                      <ReferenceLine y={130} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Stage 1 HTN (130)', position: getSmartLabelPosition(130, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                      <ReferenceLine y={120} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: '✓ Normal Systolic (120)', position: getSmartLabelPosition(120, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
+                      <ReferenceLine y={90} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Low Systolic (90)', position: getSmartLabelPosition(90, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: '✓ Normal Diastolic (80)', position: getSmartLabelPosition(80, ['systolic', 'diastolic'], 15), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
                     </AreaChart>
                   ) : (
                     <LineChart key={`${selectedMetric}-${globalTimeView}`} data={activeChartData}>
@@ -4401,21 +4677,59 @@ export function VitalsPage() {
                         );
                       })()}
 
-                      {/* Normal Range Reference Lines */}
+                      {/* Heart Rate - International Standards */}
                       {selectedMetric === 'hr' && (
                         <>
-                          <ReferenceLine y={60} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (60)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          {/* Heart Rate Zones */}
+                          <ReferenceArea y1={0} y2={40} fill="#ef4444" fillOpacity={0.15} />
+                          <ReferenceArea y1={40} y2={60} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={60} y2={100} fill="#10b981" fillOpacity={0.1} />
+                          <ReferenceArea y1={100} y2={120} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={120} y2={180} fill="#ef4444" fillOpacity={0.15} />
+
+                          {/* Warning Lines - Smart Positioning */}
+                          <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Severe Bradycardia (40)', position: getSmartLabelPosition(40, 'heartRate', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={60} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Bradycardia (60)', position: getSmartLabelPosition(60, 'heartRate', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={80} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: '✓ Optimal (60-100)', position: getSmartLabelPosition(80, 'heartRate', 10), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={100} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Tachycardia (100)', position: getSmartLabelPosition(100, 'heartRate', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Severe Tachycardia (120)', position: getSmartLabelPosition(120, 'heartRate', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
                         </>
                       )}
                       {selectedMetric === 'sugar' && (
                         <>
-                          <ReferenceLine y={70} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (70)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (100)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          {/* Blood Sugar Zones - International Standards */}
+                          <ReferenceArea y1={0} y2={54} fill="#ef4444" fillOpacity={0.15} />
+                          <ReferenceArea y1={54} y2={70} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={70} y2={100} fill="#10b981" fillOpacity={0.1} />
+                          <ReferenceArea y1={100} y2={125} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={126} y2={300} fill="#ef4444" fillOpacity={0.15} />
+
+                          {/* Danger Lines - Smart Positioning */}
+                          <ReferenceLine y={54} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Critical Low (54)', position: getSmartLabelPosition(54, 'bloodSugar', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={70} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Low (70)', position: getSmartLabelPosition(70, 'bloodSugar', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={100} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: '✓ Normal Max (100)', position: getSmartLabelPosition(100, 'bloodSugar', 10), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={125} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Pre-diabetic (125)', position: getSmartLabelPosition(125, 'bloodSugar', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={126} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Diabetic (126)', position: getSmartLabelPosition(126, 'bloodSugar', 10), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
                         </>
                       )}
                       {selectedMetric === 'temp' && (
-                        <ReferenceLine y={98.6} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal (98.6°F)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                        <>
+                          {/* Temperature Zones - International Standards */}
+                          <ReferenceArea y1={90} y2={95} fill="#ef4444" fillOpacity={0.15} />
+                          <ReferenceArea y1={95} y2={97} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={97} y2={99.5} fill="#10b981" fillOpacity={0.1} />
+                          <ReferenceArea y1={99.5} y2={100.4} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={100.4} y2={103} fill="#f97316" fillOpacity={0.12} />
+                          <ReferenceArea y1={103} y2={108} fill="#ef4444" fillOpacity={0.15} />
+
+                          {/* Warning Lines - Smart Positioning */}
+                          <ReferenceLine y={95} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Hypothermia (95)', position: getSmartLabelPosition(95, 'temperature', 3), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={97} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Low (97)', position: getSmartLabelPosition(97, 'temperature', 3), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={98.6} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: '✓ Normal (98.6°F)', position: getSmartLabelPosition(98.6, 'temperature', 3), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={99.5} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Elevated (99.5)', position: getSmartLabelPosition(99.5, 'temperature', 3), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={100.4} stroke="#f97316" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🔥 Fever (100.4)', position: getSmartLabelPosition(100.4, 'temperature', 3), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #f97316, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 High Fever (103)', position: getSmartLabelPosition(103, 'temperature', 3), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                        </>
                       )}
                       {selectedMetric === 'o2' && (
                         <>
@@ -4426,8 +4740,15 @@ export function VitalsPage() {
                       )}
                       {selectedMetric === 'peakflow' && (
                         <>
-                          <ReferenceLine y={400} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Min (400)', position: 'insideTopRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
-                          <ReferenceLine y={600} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Normal Max (600)', position: 'insideBottomRight', fill: '#10b981', fontSize: 11, fontWeight: 'bold' }} />
+                          {/* Peak Flow Zones - International Standards (Adult) */}
+                          <ReferenceArea y1={0} y2={250} fill="#ef4444" fillOpacity={0.15} />
+                          <ReferenceArea y1={250} y2={400} fill="#eab308" fillOpacity={0.1} />
+                          <ReferenceArea y1={400} y2={850} fill="#10b981" fillOpacity={0.1} />
+
+                          {/* Warning Lines - Smart Positioning */}
+                          <ReferenceLine y={250} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} label={{ value: '🚨 Red Zone (<250) - Medical Alert', position: getSmartLabelPosition(250, 'peakFlow', 50), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #ef4444, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={400} stroke="#eab308" strokeDasharray="3 3" strokeWidth={2} label={{ value: '⚠ Yellow Zone (250-400) - Caution', position: getSmartLabelPosition(400, 'peakFlow', 50), fill: '#ffffff', fontSize: 11, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #eab308, 1px 1px 2px #000' } }} />
+                          <ReferenceLine y={480} stroke="#10b981" strokeDasharray="5 5" strokeWidth={3} label={{ value: '✓ Green Zone (>400) - Normal', position: getSmartLabelPosition(480, 'peakFlow', 50), fill: '#ffffff', fontSize: 12, fontWeight: 'bold', style: { textShadow: '0 0 4px #000, 0 0 8px #10b981, 1px 1px 2px #000' } }} />
                         </>
                       )}
                       {selectedMetric === 'map' && (
@@ -4464,6 +4785,9 @@ export function VitalsPage() {
               )}
             </div>
           </GlassCard>
+              </div>
+            </div>
+          </div>
 
           {/* Recent Vitals Table - High-End Spacecraft Collapsible Design */}
           <div
@@ -4606,6 +4930,7 @@ export function VitalsPage() {
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Temp</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Weight</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>O₂</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>RR</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Sugar</th>
 
                         {/* HRV Metrics - Emerald Theme */}
@@ -4659,6 +4984,9 @@ export function VitalsPage() {
                           </td>
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
                             {vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#8b5cf6' }}>
+                            {vital.respiratoryRate || '--'}
                           </td>
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f59e0b' }}>
                             {vital.bloodSugar || '--'}
@@ -5622,8 +5950,8 @@ export function VitalsPage() {
               </div>
 
               {/* Glucose Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                <div className="p-4 rounded-xl" style={{
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6">
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
                   border: '1px solid rgba(239, 68, 68, 0.2)'
                 }}>
@@ -5642,7 +5970,7 @@ export function VitalsPage() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl" style={{
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1))',
                   border: '1px solid rgba(59, 130, 246, 0.2)'
                 }}>
@@ -5656,7 +5984,7 @@ export function VitalsPage() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl" style={{
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(21, 128, 61, 0.1))',
                   border: '1px solid rgba(34, 197, 94, 0.2)'
                 }}>
@@ -5671,7 +5999,7 @@ export function VitalsPage() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl" style={{
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1))',
                   border: '1px solid rgba(168, 85, 247, 0.2)'
                 }}>
@@ -5681,7 +6009,7 @@ export function VitalsPage() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl" style={{
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(249, 115, 22, 0.1))',
                   border: '1px solid rgba(251, 146, 60, 0.2)'
                 }}>
@@ -5697,7 +6025,7 @@ export function VitalsPage() {
                 </div>
 
                 {/* NEW: Estimated A1C Metric */}
-                <div className="p-4 rounded-xl" style={{
+                <div className="p-3 rounded-xl" style={{
                   background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.1))',
                   border: '1px solid rgba(236, 72, 153, 0.2)'
                 }}>
@@ -6695,92 +7023,6 @@ export function VitalsPage() {
         </div>
       )}
 
-      {/* MEDICAL TESTS TAB */}
-      {activeTab === 'medical' && (
-        <div className="space-y-6">
-          {/* Medical Provider Tests Section */}
-          <GlassCard className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 opacity-10" style={{
-              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.5) 0%, transparent 70%)'
-            }}></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <Heart className="h-7 w-7 text-purple-400" />
-                    Advanced Cardiac Metrics
-                  </h2>
-                  <p className="text-sm text-gray-400 mt-1">Medical provider test results and clinical measurements</p>
-                </div>
-                <Button onClick={() => setIsModalOpen(true)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Test Results
-                </Button>
-              </div>
-
-              {/* Coming Soon Placeholder */}
-              <div className="p-12 text-center">
-                <div className="inline-block p-6 rounded-2xl mb-6" style={{
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))',
-                  border: '2px solid rgba(99, 102, 241, 0.3)',
-                  boxShadow: '0 0 40px rgba(99, 102, 241, 0.2)'
-                }}>
-                  <Activity className="h-16 w-16 text-purple-400 mx-auto" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Advanced Cardiac Metrics Section</h3>
-                <p className="text-gray-400 max-w-2xl mx-auto mb-6">
-                  This section will display professional medical test results including:
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
-                  <div className="p-4 rounded-xl" style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-blue-400" />
-                      Treadmill Stress Tests
-                    </h4>
-                    <p className="text-sm text-gray-400">Exercise capacity, heart rate response, blood pressure during exercise</p>
-                  </div>
-                  <div className="p-4 rounded-xl" style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Wind className="h-5 w-5 text-cyan-400" />
-                      Spirometry / Breathing Tests
-                    </h4>
-                    <p className="text-sm text-gray-400">Lung function, FEV1, FVC, breathing capacity measurements</p>
-                  </div>
-                  <div className="p-4 rounded-xl" style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Heart className="h-5 w-5 text-red-400" />
-                      ECG / EKG Results
-                    </h4>
-                    <p className="text-sm text-gray-400">Electrical activity of the heart, rhythm analysis, QT interval</p>
-                  </div>
-                  <div className="p-4 rounded-xl" style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-purple-400" />
-                      Clinical Lab Work
-                    </h4>
-                    <p className="text-sm text-gray-400">Blood panels, cardiac biomarkers, BNP, troponin levels</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-8">
-                  Manual data entry interface for healthcare provider test results
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-        </div>
-      )}
 
       {/* Record Vitals Modal - Available for all tabs */}
       <Modal
@@ -6814,93 +7056,116 @@ export function VitalsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <h3 className="font-medium font-bold">Blood Pressure</h3>
-              <div className="grid grid-cols-2 gap-2">
+          {/* Reorganized to match visual layout on vitals page */}
+          <div className="space-y-6">
+            {/* Top Row - Primary Vitals (matches page layout) */}
+            <div>
+              <h3 className="font-bold text-base mb-3" style={{ color: 'var(--accent)' }}>📊 Primary Vitals</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold" style={{ color: 'var(--muted)' }}>Blood Pressure</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      label="Systolic"
+                      type="number"
+                      placeholder="120"
+                      {...register('bloodPressureSystolic', { valueAsNumber: true })}
+                    />
+                    <Input
+                      label="Diastolic"
+                      type="number"
+                      placeholder="80"
+                      {...register('bloodPressureDiastolic', { valueAsNumber: true })}
+                    />
+                  </div>
+                </div>
+
                 <Input
-                  label="Systolic"
+                  label="Heart Rate (bpm)"
                   type="number"
-                  placeholder="120"
-                  {...register('bloodPressureSystolic', { valueAsNumber: true })}
+                  placeholder="60-100"
+                  icon={<Heart className="h-5 w-5" />}
+                  {...register('heartRate', { valueAsNumber: true })}
                 />
+              </div>
+            </div>
+
+            {/* Second Row - Respiratory (matches page layout) */}
+            <div>
+              <h3 className="font-bold text-base mb-3" style={{ color: 'var(--accent)' }}>🫁 Respiratory Metrics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Diastolic"
+                  label="O₂ Saturation (%)"
                   type="number"
-                  placeholder="80"
-                  {...register('bloodPressureDiastolic', { valueAsNumber: true })}
+                  placeholder="95-100"
+                  icon={<Wind className="h-5 w-5" />}
+                  {...register('oxygenSaturation', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="Respiratory Rate (/min)"
+                  type="number"
+                  placeholder="12-20"
+                  icon={<Pulse className="h-5 w-5" />}
+                  {...register('respiratoryRate', { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+
+            {/* Third Row - Temperature & Blood Sugar (matches page layout) */}
+            <div>
+              <h3 className="font-bold text-base mb-3" style={{ color: 'var(--accent)' }}>🌡️ Metabolic Metrics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Temperature (°F)"
+                  type="number"
+                  step="0.1"
+                  placeholder="98.6"
+                  icon={<Thermometer className="h-5 w-5" />}
+                  {...register('temperature', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="Blood Sugar (mg/dL)"
+                  type="number"
+                  placeholder="70-100"
+                  icon={<Droplet className="h-5 w-5" />}
+                  {...register('bloodSugar', { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+
+            {/* Hydration, Weight, Peak Flow (matches page layout) */}
+            <div>
+              <h3 className="font-bold text-base mb-3" style={{ color: 'var(--accent)' }}>⚖️ Body Metrics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Hydration Status (%)"
+                  type="number"
+                  placeholder="0-100"
+                  icon={<Droplet className="h-5 w-5" />}
+                  {...register('hydrationStatus', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label="Weight (lbs)"
+                  type="number"
+                  step="0.1"
+                  placeholder="Enter weight"
+                  icon={<Weight className="h-5 w-5" />}
+                  {...register('weight', { valueAsNumber: true })}
                 />
               </div>
 
-              <Input
-                label="Heart Rate (bpm)"
-                type="number"
-                placeholder="60-100"
-                icon={<Heart className="h-5 w-5" />}
-                {...register('heartRate', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="Weight (lbs)"
-                type="number"
-                step="0.1"
-                placeholder="Enter weight"
-                icon={<Weight className="h-5 w-5" />}
-                {...register('weight', { valueAsNumber: true })}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="font-medium font-bold">Other Metrics</h3>
-
-              <Input
-                label="Temperature (°F)"
-                type="number"
-                step="0.1"
-                placeholder="98.6"
-                icon={<Thermometer className="h-5 w-5" />}
-                {...register('temperature', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="O₂ Saturation (%)"
-                type="number"
-                placeholder="95-100"
-                icon={<Wind className="h-5 w-5" />}
-                {...register('oxygenSaturation', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="Blood Sugar (mg/dL)"
-                type="number"
-                placeholder="70-100"
-                icon={<Droplet className="h-5 w-5" />}
-                {...register('bloodSugar', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="Hydration Status (%)"
-                type="number"
-                placeholder="0-100"
-                icon={<Droplet className="h-5 w-5" />}
-                {...register('hydrationStatus', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="Peak Flow (L/min)"
-                type="number"
-                placeholder="300-700"
-                icon={<Wind className="h-5 w-5" />}
-                {...register('peakFlow', { valueAsNumber: true })}
-              />
-
-              <Input
-                label="Respiratory Rate (/min)"
-                type="number"
-                placeholder="12-20"
-                icon={<Pulse className="h-5 w-5" />}
-                {...register('respiratoryRate', { valueAsNumber: true })}
-              />
+              <div className="mt-4">
+                <Input
+                  label="Peak Flow (L/min)"
+                  type="number"
+                  placeholder="300-700"
+                  icon={<Wind className="h-5 w-5" />}
+                  {...register('peakFlow', { valueAsNumber: true })}
+                />
+              </div>
             </div>
           </div>
 
