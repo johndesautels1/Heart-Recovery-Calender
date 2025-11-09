@@ -1018,7 +1018,8 @@ export function VitalsPage() {
   // ALWAYS use the absolute latest vitals for dashboard display (not filtered)
   // Priority: 1) WebSocket live data, 2) Most recent from database
   // This ensures "Last Vital Check" and vitals cards always show the most recent data
-  const filteredLatest = latestVitals || (vitals.length > 0 ? vitals[vitals.length - 1] : null);
+  // 🫀 CRITICAL: WebSocket sends { userId, timestamp, data }, so we need latestVitals.data
+  const filteredLatest = latestVitals?.data || (vitals.length > 0 ? vitals[vitals.length - 1] : null);
 
   // Helper function to filter vitals by time period
   const getTimePeriodFilter = (period: '7d' | '30d' | 'surgery') => {
