@@ -153,6 +153,7 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
           }
         ],
         optionalServices: [
+          'heart_rate',
           'battery_service',
           'device_information',
           PMD_SERVICE  // Add PMD service for ECG streaming
