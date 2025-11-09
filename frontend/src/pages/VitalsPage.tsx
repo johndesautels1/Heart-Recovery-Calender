@@ -553,21 +553,8 @@ export function VitalsPage() {
       );
       setVitals(sortedData);
 
-      // Handle latest vital separately - 404 is OK (means no vitals yet)
-      try {
-        const latest = await api.getLatestVital(selectedUserId || undefined);
-        setLatestVitals(latest);
-        console.log('[VitalsPage] Latest vital:', latest ? 'found' : 'none');
-      } catch (error: any) {
-        if (error?.response?.status === 404) {
-          // No vitals recorded yet - this is fine, just set to null
-          setLatestVitals(null);
-          console.log('[Vitals] No vitals data recorded yet');
-        } else {
-          // Other errors should be thrown and handled by outer catch
-          throw error;
-        }
-      }
+      // Latest vital is provided by WebSocket hook (line 160)
+      // No need to fetch separately - real-time updates handled automatically
     } catch (error) {
       console.error('Failed to load vitals:', error);
       toast.error('Failed to load vitals data');
@@ -653,7 +640,6 @@ export function VitalsPage() {
       } as CreateVitalsInput);
 
       setVitals([...vitals, newVital]);
-      setLatestVitals(newVital);
 
       // Sync to profile in real-time
       await syncVitalsToProfile(newVital);
@@ -7716,8 +7702,11 @@ export function VitalsPage() {
 
       {/* ECG/EKG Live Data Modal - Enhanced with Full Cardiac Analysis */}
       {showECGModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="max-w-7xl w-full my-8">
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={() => setShowECGModal(false)}
+        >
+          <div className="max-w-7xl w-full my-8" onClick={(e) => e.stopPropagation()}>
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-red-500/30 shadow-2xl shadow-red-500/20">
               {/* Close Button */}
               <button
