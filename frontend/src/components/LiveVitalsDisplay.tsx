@@ -85,7 +85,7 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
   }) => {
     try {
       const payload: any = {
-        userId: 2, // Your wife's user ID
+        userId: user?.id, // 🫀 CRITICAL: Use authenticated user ID
         heartRate: vitals.heartRate,
         timestamp: new Date().toISOString(),
       };
@@ -104,6 +104,7 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // 🫀 CRITICAL: Add JWT token
         },
         body: JSON.stringify(payload),
       });
