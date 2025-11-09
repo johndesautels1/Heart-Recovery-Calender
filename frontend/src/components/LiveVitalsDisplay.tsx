@@ -15,6 +15,18 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
   const [bleConnected, setBleConnected] = useState(false);
   const [bleError, setBleError] = useState<string | null>(null);
 
+  // HRV metrics state - store R-R intervals for calculation
+  const [rrIntervals, setRrIntervals] = useState<number[]>([]);
+  const [hrvMetrics, setHrvMetrics] = useState<{
+    sdnn?: number;
+    rmssd?: number;
+    pnn50?: number;
+  }>({});
+
+  // ECG waveform state
+  const [ecgWaveform, setEcgWaveform] = useState<number[]>([]);
+  const [ecgSamplingRate, setEcgSamplingRate] = useState<number>(130); // Polar H10 default: 130 Hz
+
   useEffect(() => {
     if (latestHeartRate?.data) {
       setHeartRate(latestHeartRate.data.heartRate);
@@ -24,6 +36,88 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       setLastUpdate(new Date(latestVitals.timestamp).toLocaleTimeString());
     }
   }, [latestHeartRate, latestVitals]);
+
+  // Calculate HRV metrics from R-R intervals
+  const calculateHRVMetrics = (intervals: number[]) => {
+    if (intervals.length < 5) {
+      return {}; // Need at least 5 intervals for meaningful HRV
+    }
+
+    // SDNN: Standard Deviation of NN intervals
+    const mean = intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+    const squaredDiffs = intervals.map(val => Math.pow(val - mean, 2));
+    const sdnn = Math.sqrt(squaredDiffs.reduce((sum, val) => sum + val, 0) / intervals.length);
+
+    // RMSSD: Root Mean Square of Successive Differences
+    const successiveDiffs: number[] = [];
+    for (let i = 1; i < intervals.length; i++) {
+      successiveDiffs.push(intervals[i] - intervals[i - 1]);
+    }
+    const squaredSuccessiveDiffs = successiveDiffs.map(diff => Math.pow(diff, 2));
+    const rmssd = Math.sqrt(squaredSuccessiveDiffs.reduce((sum, val) => sum + val, 0) / successiveDiffs.length);
+
+    // PNN50: Percentage of successive NN intervals that differ by more than 50ms
+    const nn50Count = successiveDiffs.filter(diff => Math.abs(diff) > 50).length;
+    const pnn50 = (nn50Count / successiveDiffs.length) * 100;
+
+    return {
+      sdnn: Math.round(sdnn * 10) / 10, // Round to 1 decimal place
+      rmssd: Math.round(rmssd * 10) / 10,
+      pnn50: Math.round(pnn50 * 10) / 10,
+    };
+  };
+
+  // Send ALL vitals to backend - THIS IS CRITICAL FOR SAVING AND BROADCASTING
+  const sendVitalsToBackend = async (vitals: {
+    heartRate: number;
+    rrInterval?: number;
+    ecgValue?: number;
+    oxygenSaturation?: number;
+    sdnn?: number;
+    rmssd?: number;
+    pnn50?: number;
+  }) => {
+    try {
+      const payload: any = {
+        userId: 2, // Your wife's user ID
+        heartRate: vitals.heartRate,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Add optional vitals if available
+      if (vitals.rrInterval !== undefined) payload.rrInterval = vitals.rrInterval;
+      if (vitals.ecgValue !== undefined) payload.ecgValue = vitals.ecgValue;
+      if (vitals.oxygenSaturation !== undefined) payload.oxygenSaturation = vitals.oxygenSaturation;
+
+      // Add HRV metrics if available
+      if (vitals.sdnn !== undefined) payload.sdnn = vitals.sdnn;
+      if (vitals.rmssd !== undefined) payload.rmssd = vitals.rmssd;
+      if (vitals.pnn50 !== undefined) payload.pnn50 = vitals.pnn50;
+
+      const response = await fetch('http://localhost:4000/api/ecg/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        console.error('[BACKEND] Failed to send vitals:', response.statusText);
+      } else {
+        const sentData = [`HR=${vitals.heartRate} BPM`];
+        if (vitals.rrInterval) sentData.push(`RR=${vitals.rrInterval}ms`);
+        if (vitals.ecgValue) sentData.push(`ECG=${vitals.ecgValue}V`);
+        if (vitals.oxygenSaturation) sentData.push(`SpO2=${vitals.oxygenSaturation}%`);
+        if (vitals.sdnn) sentData.push(`SDNN=${vitals.sdnn}ms`);
+        if (vitals.rmssd) sentData.push(`RMSSD=${vitals.rmssd}ms`);
+        if (vitals.pnn50) sentData.push(`PNN50=${vitals.pnn50}%`);
+        console.log('[BACKEND] Vitals sent successfully:', sentData.join(', '));
+      }
+    } catch (error) {
+      console.error('[BACKEND] Error sending vitals:', error);
+    }
+  };
 
   // Web Bluetooth: Connect to Polar H10 directly
   const connectToPolarH10 = async () => {
@@ -38,15 +132,24 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
 
       console.log('[BLE] Requesting Polar H10 device...');
 
-      // Request Polar H10 device with Heart Rate Service
-      // Accept ANY Bluetooth device with heart rate service (not just Polar)
+      // Polar PMD (Polar Measurement Data) Service UUIDs
+      const PMD_SERVICE = 'fb005c80-02e7-f387-1cad-8acd2d8df0c8';
+      const PMD_CONTROL = 'fb005c81-02e7-f387-1cad-8acd2d8df0c8';
+      const PMD_DATA = 'fb005c82-02e7-f387-1cad-8acd2d8df0c8';
+
+      // Request Polar H10 device with Heart Rate Service AND PMD Service for ECG
       const device = await navigator.bluetooth.requestDevice({
         filters: [
           { services: ['heart_rate'] },
           { namePrefix: 'Polar' },
           { namePrefix: 'H10' }
         ],
-        optionalServices: ['heart_rate', 'battery_service', 'device_information']
+        optionalServices: [
+          'heart_rate',
+          'battery_service',
+          'device_information',
+          PMD_SERVICE  // Add PMD service for ECG streaming
+        ]
       });
 
       console.log('[BLE] Polar H10 device selected:', device.name);
@@ -76,25 +179,197 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         const value = target.value;
 
         if (value) {
-          // Parse heart rate value
-          // First byte contains flags
+          // Parse heart rate value according to Bluetooth Heart Rate Measurement spec
+          // Byte 0: Flags
           const flags = value.getUint8(0);
-          const rate16Bits = flags & 0x1; // Check if heart rate is 16-bit
+          const rate16Bits = flags & 0x1; // Bit 0: Heart Rate Value Format (0 = uint8, 1 = uint16)
+          const contactDetected = (flags & 0x6) === 0x6; // Bits 1-2: Sensor Contact Status
+          const energyExpendedPresent = (flags & 0x8) !== 0; // Bit 3: Energy Expended Status
+          const rrIntervalsPresent = (flags & 0x10) !== 0; // Bit 4: RR-Interval present
 
+          // Parse heart rate (bytes 1-2)
+          let offset = 1;
           let heartRateValue: number;
           if (rate16Bits) {
-            heartRateValue = value.getUint16(1, /*littleEndian=*/true);
+            heartRateValue = value.getUint16(offset, /*littleEndian=*/true);
+            offset += 2;
           } else {
-            heartRateValue = value.getUint8(1);
+            heartRateValue = value.getUint8(offset);
+            offset += 1;
           }
 
-          console.log('[BLE] Heart Rate:', heartRateValue, 'BPM');
+          // Skip Energy Expended if present (2 bytes)
+          if (energyExpendedPresent) {
+            offset += 2;
+          }
+
+          // Parse R-R intervals if present (each is 2 bytes, uint16, resolution 1/1024 second)
+          let rrInterval: number | undefined;
+          if (rrIntervalsPresent && offset < value.byteLength) {
+            // R-R intervals are in units of 1/1024 seconds, convert to milliseconds
+            const rrValue = value.getUint16(offset, /*littleEndian=*/true);
+            rrInterval = Math.round((rrValue / 1024) * 1000); // Convert to milliseconds
+            console.log('[BLE] R-R Interval:', rrInterval, 'ms');
+          }
+
+          console.log('[BLE] Heart Rate:', heartRateValue, 'BPM', rrInterval ? `| RR: ${rrInterval}ms` : '');
 
           // Update display
           setHeartRate(heartRateValue);
           setLastUpdate(new Date().toLocaleTimeString());
+
+          // Store R-R interval for HRV calculation
+          if (rrInterval !== undefined) {
+            setRrIntervals(prev => {
+              // Keep last 300 R-R intervals (approximately 5 minutes of data)
+              const updated = [...prev, rrInterval];
+              if (updated.length > 300) {
+                updated.shift(); // Remove oldest
+              }
+
+              // Calculate HRV metrics every 30 intervals (approximately every 30 seconds)
+              if (updated.length >= 30 && updated.length % 30 === 0) {
+                const hrv = calculateHRVMetrics(updated);
+                setHrvMetrics(hrv);
+                console.log('[HRV] Calculated metrics:', hrv);
+
+                // Send vitals with HRV metrics
+                sendVitalsToBackend({
+                  heartRate: heartRateValue,
+                  rrInterval: rrInterval,
+                  sdnn: hrv.sdnn,
+                  rmssd: hrv.rmssd,
+                  pnn50: hrv.pnn50,
+                });
+              } else {
+                // Send just heart rate and R-R interval
+                sendVitalsToBackend({
+                  heartRate: heartRateValue,
+                  rrInterval: rrInterval,
+                });
+              }
+
+              return updated;
+            });
+          } else {
+            // No R-R interval available, just send heart rate
+            sendVitalsToBackend({
+              heartRate: heartRateValue,
+            });
+          }
         }
       });
+
+      // ========================================
+      // POLAR PMD SERVICE - RAW ECG WAVEFORM
+      // ========================================
+      try {
+        console.log('[PMD] Attempting to connect to Polar PMD service for ECG waveform...');
+
+        // Get PMD service
+        const pmdService = await server.getPrimaryService(PMD_SERVICE);
+        console.log('[PMD] Got PMD service');
+
+        // Get PMD control characteristic (for starting ECG stream)
+        const pmdControlChar = await pmdService.getCharacteristic(PMD_CONTROL);
+        console.log('[PMD] Got PMD control characteristic');
+
+        // Get PMD data characteristic (for receiving ECG data)
+        const pmdDataChar = await pmdService.getCharacteristic(PMD_DATA);
+        console.log('[PMD] Got PMD data characteristic');
+
+        // Start notifications on PMD data characteristic BEFORE sending start command
+        await pmdDataChar.startNotifications();
+        console.log('[PMD] Started notifications on PMD data characteristic');
+
+        // Listen for ECG waveform data
+        pmdDataChar.addEventListener('characteristicvaluechanged', (event: Event) => {
+          const target = event.target as BluetoothRemoteGATTCharacteristic;
+          const value = target.value;
+
+          if (value && value.byteLength > 10) {
+            try {
+              // Parse PMD data packet
+              // Byte 0: Measurement type (0x00 = ECG)
+              const measurementType = value.getUint8(0);
+
+              if (measurementType === 0x00) { // ECG data
+                // Byte 1-8: Timestamp (uint64, nanoseconds)
+                // Byte 9: Frame type
+                // Byte 10+: ECG samples (int16, microvolts)
+
+                const frameType = value.getUint8(9);
+
+                // Parse ECG samples (each sample is 2 bytes, int16, little-endian)
+                const ecgSamples: number[] = [];
+                for (let i = 10; i < value.byteLength; i += 2) {
+                  if (i + 1 < value.byteLength) {
+                    // ECG value in microvolts (µV), convert to millivolts (mV)
+                    const ecgMicrovolts = value.getInt16(i, /*littleEndian=*/true);
+                    const ecgMillivolts = ecgMicrovolts / 1000;
+                    ecgSamples.push(ecgMillivolts);
+                  }
+                }
+
+                if (ecgSamples.length > 0) {
+                  console.log(`[PMD] ECG waveform: ${ecgSamples.length} samples, avg=${(ecgSamples.reduce((a,b) => a+b, 0) / ecgSamples.length).toFixed(2)}mV`);
+
+                  // Update ECG waveform state (keep last 1300 samples = 10 seconds at 130Hz)
+                  setEcgWaveform(prev => {
+                    const updated = [...prev, ...ecgSamples];
+                    if (updated.length > 1300) {
+                      return updated.slice(updated.length - 1300); // Keep last 10 seconds
+                    }
+                    return updated;
+                  });
+
+                  // Send ECG waveform batch to backend (send every 130 samples = ~1 second)
+                  setEcgWaveform(prev => {
+                    if (prev.length >= 130) {
+                      // Get average ECG value for this batch
+                      const avgEcgValue = prev.reduce((sum, val) => sum + val, 0) / prev.length;
+
+                      // Send to backend with current heart rate
+                      if (heartRate !== null) {
+                        sendVitalsToBackend({
+                          heartRate: heartRate,
+                          ecgValue: avgEcgValue,
+                        });
+                      }
+                    }
+                    return prev;
+                  });
+                }
+              }
+            } catch (parseError: any) {
+              console.error('[PMD] Error parsing ECG data:', parseError);
+            }
+          }
+        });
+
+        // Send command to start ECG streaming at 130Hz
+        // Command format: [0x02, 0x00, settings...]
+        // 0x02 = Start measurement
+        // 0x00 = ECG measurement type
+        const startEcgCommand = new Uint8Array([
+          0x02, // Start measurement
+          0x00, // ECG measurement type
+          0x00, 0x01, // Settings (bytes 2-3)
+          0x82, 0x00, // Sample rate: 130 Hz (bytes 4-5)
+          0x01, // Resolution: 14-bit (byte 6)
+          0x01, // Range (byte 7)
+          0x0E, 0x00  // Channels (bytes 8-9)
+        ]);
+
+        await pmdControlChar.writeValue(startEcgCommand);
+        console.log('[PMD] ✅ ECG streaming started at 130Hz');
+        console.log('[PMD] 🫀 FULL ECG WAVEFORM DATA NOW STREAMING - LIFE CRITICAL MONITORING ACTIVE');
+
+      } catch (pmdError: any) {
+        console.warn('[PMD] Could not start ECG streaming:', pmdError.message);
+        console.warn('[PMD] Continuing with heart rate only (ECG waveform unavailable)');
+        // Don't fail the entire connection - heart rate still works
+      }
 
       // Handle disconnection
       device.addEventListener('gattserverdisconnected', () => {

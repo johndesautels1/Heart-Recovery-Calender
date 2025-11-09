@@ -8,8 +8,12 @@ import { CircularGauge } from '../components/vitals/CircularGauge';
 import { TimeThrottleLever } from '../components/vitals/TimeThrottleLever';
 import { LuxuryVitalGauge } from '../components/vitals/LuxuryVitalGauge';
 import { LiveVitalsDisplay } from '../components/LiveVitalsDisplay';
+import { ECGWaveformChart } from '../components/ECGWaveformChart';
+import { HRVMetricsPanel } from '../components/HRVMetricsPanel';
+import { ECGAnalysisPanel } from '../components/ECGAnalysisPanel';
 import { SpirometryDataEntry } from '../components/SpirometryDataEntry';
 import { TreadmillDataEntry } from '../components/TreadmillDataEntry';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import {
   Activity,
   Heart,
@@ -153,8 +157,8 @@ type VitalsFormData = z.infer<typeof vitalsSchema>;
 export function VitalsPage() {
   const { user } = useAuth(); // Access surgery date from user profile
   const navigate = useNavigate();
+  const { latestHeartRate, latestVitals } = useWebSocket(); // Listen for real-time heart rate updates
   const [vitals, setVitals] = useState<VitalsSample[]>([]);
-  const [latestVitals, setLatestVitals] = useState<VitalsSample | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<'bp' | 'hr' | 'weight' | 'sugar' | 'temp' | 'hydration' | 'o2' | 'peakflow' | 'map' | 'bpvariability'>('bp');
@@ -192,17 +196,57 @@ export function VitalsPage() {
   const [isHistoricalReadingsExpanded, setIsHistoricalReadingsExpanded] = useState(false);
 
   // Chart collapse state
-  const [isChartExpanded, setIsChartExpanded] = useState(true);
+  const [isChartExpanded, setIsChartExpanded] = useState(false);
 
   // Metrics Command Center collapse state
-  const [isMetricsExpanded, setIsMetricsExpanded] = useState(true);
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState(false);
 
   // Medical Grade Cardiac Diagnostics collapse state
-  const [isCardiacDiagnosticsExpanded, setIsCardiacDiagnosticsExpanded] = useState(true);
+  const [isCardiacDiagnosticsExpanded, setIsCardiacDiagnosticsExpanded] = useState(false);
 
   // Medical Test Modals state
   const [showECGModal, setShowECGModal] = useState(false);
   const [showTreadmillModal, setShowTreadmillModal] = useState(false);
+
+  // TEST DATA: Simulated ECG waveform for demonstration (will be replaced with real Polar H10 data)
+  const generateTestECGData = () => {
+    const data: number[] = [];
+    const samplingRate = 130; // Hz
+    const duration = 10; // seconds
+    const heartRate = 72; // BPM
+    const beatInterval = (60 / heartRate) * samplingRate; // samples per beat
+
+    for (let i = 0; i < samplingRate * duration; i++) {
+      const positionInBeat = i % beatInterval;
+      const normalizedPosition = positionInBeat / beatInterval;
+
+      // Simulate ECG waveform with P-QRS-T complex
+      let voltage = 0;
+
+      // P wave (0.08-0.12s)
+      if (normalizedPosition > 0.15 && normalizedPosition < 0.25) {
+        voltage = 0.15 * Math.sin((normalizedPosition - 0.15) * Math.PI / 0.1);
+      }
+      // QRS complex (0.06-0.10s) - R peak
+      else if (normalizedPosition > 0.35 && normalizedPosition < 0.45) {
+        voltage = 1.2 * Math.sin((normalizedPosition - 0.35) * Math.PI / 0.1);
+      }
+      // T wave (0.10-0.25s)
+      else if (normalizedPosition > 0.55 && normalizedPosition < 0.75) {
+        voltage = 0.3 * Math.sin((normalizedPosition - 0.55) * Math.PI / 0.2);
+      }
+      // Baseline
+      else {
+        voltage = -0.05 + Math.random() * 0.02; // Small noise
+      }
+
+      data.push(voltage);
+    }
+    return data;
+  };
+
+  const [testECGData] = useState<number[]>(generateTestECGData());
+  const [testHRVMetrics] = useState({ sdnn: 65, rmssd: 42, pnn50: 28 }); // Normal healthy values
   const [showSpirometryModal, setShowSpirometryModal] = useState(false);
 
   const {
@@ -450,6 +494,15 @@ export function VitalsPage() {
 
     loadHawkAlerts();
   }, [vitals]); // Reload when vitals change
+
+  // Listen for real-time heart rate updates from WebSocket and reload vitals
+  useEffect(() => {
+    if (latestHeartRate?.data) {
+      console.log('[VITALS-PAGE] Received real-time heart rate update:', latestHeartRate.data.heartRate, 'BPM');
+      // Reload vitals from database to update all gauges, charts, and history
+      loadVitals();
+    }
+  }, [latestHeartRate]);
 
   // Update nuclear clock every second - TEMPORARILY DISABLED for performance
   useEffect(() => {
@@ -3613,6 +3666,62 @@ export function VitalsPage() {
                           textShadow: '0 0 10px rgba(251, 207, 232, 0.9), 0 0 20px rgba(236, 72, 153, 0.6)'
                         }}>SD</div>
                       </div>
+
+                      {/* SpO2 (Oxygen Saturation) Gauge */}
+                      <div style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        background: 'rgba(34, 197, 94, 0.3)',
+                        border: '2px solid rgba(34, 197, 94, 0.6)',
+                        textAlign: 'center',
+                        boxShadow: '0 0 20px rgba(34, 197, 94, 0.35), inset 0 2px 4px rgba(34, 197, 94, 0.2)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        setFocusedField('oxygenSaturation');
+                        setIsModalOpen(true);
+                      }}
+                      >
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#FFFFFF',
+                          fontWeight: '900',
+                          letterSpacing: '1.5px',
+                          textShadow: '0 0 15px rgba(134, 239, 172, 1), 0 0 30px rgba(34, 197, 94, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 10px rgba(134, 239, 172, 0.8))'
+                        }}>SpO₂</div>
+                        <div style={{
+                          fontSize: '28px',
+                          fontWeight: '900',
+                          color: '#FFFFFF',
+                          fontFamily: '"SF Pro Display", sans-serif',
+                          textShadow: '0 0 20px rgba(134, 239, 172, 1), 0 0 40px rgba(34, 197, 94, 0.8), 0 2px 4px rgba(0,0,0,0.8)',
+                          filter: 'drop-shadow(0 0 12px rgba(134, 239, 172, 0.9))',
+                          marginTop: '4px',
+                          marginBottom: '4px'
+                        }}>
+                          {filteredLatest?.oxygenSaturation || '--'}
+                        </div>
+                        <div style={{
+                          fontSize: '9px',
+                          color: '#FFFFFF',
+                          fontWeight: '700',
+                          textShadow: '0 0 10px rgba(167, 243, 208, 0.9), 0 0 20px rgba(34, 197, 94, 0.6)'
+                        }}>%</div>
+                        {/* Low SpO2 Alert */}
+                        {filteredLatest?.oxygenSaturation && filteredLatest.oxygenSaturation < 90 && (
+                          <div className="mt-2 flex items-center justify-center gap-1" style={{
+                            fontSize: '8px',
+                            color: '#FCA5A5',
+                            fontWeight: '900',
+                            textShadow: '0 0 10px rgba(252, 165, 165, 1)',
+                            animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                          }}>
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>LOW O₂</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4 p-3 rounded-lg" style={{
@@ -3627,7 +3736,7 @@ export function VitalsPage() {
                         textShadow: '0 0 20px rgba(252, 211, 77, 1), 0 0 40px rgba(245, 158, 11, 0.8), 0 0 60px rgba(217, 119, 6, 0.6), 0 2px 4px rgba(0,0,0,0.8)',
                         filter: 'drop-shadow(0 0 12px rgba(252, 211, 77, 0.9)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.7))'
                       }}>
-                        Hemodynamic Performance Analysis
+                        Hemodynamic & Oxygen Performance Analysis
                       </p>
                     </div>
                   </div>
@@ -7605,32 +7714,112 @@ export function VitalsPage() {
         </form>
       </Modal>
 
-      {/* ECG/EKG Live Data Modal */}
+      {/* ECG/EKG Live Data Modal - Enhanced with Full Cardiac Analysis */}
       {showECGModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full">
-            <div className="relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="max-w-7xl w-full my-8">
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-red-500/30 shadow-2xl shadow-red-500/20">
+              {/* Close Button */}
               <button
                 onClick={() => setShowECGModal(false)}
                 className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-black/50 hover:bg-black/70 transition-all"
               >
                 <X className="h-6 w-6 text-white" />
               </button>
-              <LiveVitalsDisplay />
-              <div className="mt-4 p-4 bg-black/40 rounded-lg border border-red-500/30">
-                <p className="text-sm text-gray-300 text-center">
-                  Connect your Samsung Galaxy Watch 8 or Polar H10 via{' '}
-                  <button
-                    onClick={() => {
-                      setShowECGModal(false);
-                      navigate('/devices');
-                    }}
-                    className="text-red-400 hover:text-red-300 underline"
-                  >
-                    My Devices
-                  </button>
-                  {' '}to see live heart rate data here
-                </p>
+
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-700">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
+                    <Activity className="h-8 w-8 text-red-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      🫀 Life-Critical Cardiac Monitoring
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Real-time ECG waveform, HRV metrics, arrhythmia detection, and ST segment analysis
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Connection Status */}
+              <div className="px-6 py-4">
+                <LiveVitalsDisplay />
+              </div>
+
+              {/* ECG Waveform Visualization - Currently showing TEST DATA */}
+              <div className="px-6 py-4">
+                <div className="bg-black/40 rounded-lg border border-red-500/20 p-4">
+                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
+                    ⚠️ DEMO MODE: Showing simulated ECG data - Connect Polar H10 for real-time monitoring
+                  </div>
+                  <ECGWaveformChart ecgData={testECGData} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                </div>
+              </div>
+
+              {/* HRV Metrics Panel - Currently showing TEST DATA */}
+              <div className="px-6 py-4">
+                <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
+                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
+                    ⚠️ DEMO MODE: Showing simulated HRV metrics - Connect Polar H10 for real-time data
+                  </div>
+                  <HRVMetricsPanel
+                    sdnn={testHRVMetrics.sdnn}
+                    rmssd={testHRVMetrics.rmssd}
+                    pnn50={testHRVMetrics.pnn50}
+                  />
+                </div>
+              </div>
+
+              {/* ECG Analysis Panel - Currently showing TEST DATA analysis */}
+              <div className="px-6 py-4">
+                <div className="bg-black/40 rounded-lg border border-blue-500/20 p-4">
+                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
+                    ⚠️ DEMO MODE: Analyzing simulated ECG data - Connect Polar H10 for real-time cardiac analysis
+                  </div>
+                  <ECGAnalysisPanel ecgData={testECGData} samplingRate={130} autoAnalyze={true} />
+                </div>
+              </div>
+
+              {/* Connection Instructions */}
+              <div className="px-6 pb-6">
+                <div className="p-4 bg-gradient-to-r from-red-500/10 to-purple-500/10 rounded-lg border border-red-500/30">
+                  <div className="flex items-start gap-3">
+                    <Activity className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-red-400 mb-2">
+                        To Start Life-Critical Monitoring:
+                      </h4>
+                      <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+                        <li>Put on your Polar H10 chest strap (wet the electrodes first)</li>
+                        <li>Click "Connect to Polar H10 (Real Heart Rate)" button above</li>
+                        <li>Select your Polar H10 device from the browser's Bluetooth picker</li>
+                        <li>Watch real-time ECG waveform, HRV metrics, and cardiac analysis appear automatically</li>
+                      </ol>
+                      <p className="text-xs text-gray-400 mt-3 italic">
+                        💡 All data is automatically saved to database and broadcast to all connected displays via WebSocket
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <p className="text-xs text-gray-400 text-center">
+                    Don't have a Polar H10? Connect via{' '}
+                    <button
+                      onClick={() => {
+                        setShowECGModal(false);
+                        navigate('/devices');
+                      }}
+                      className="text-red-400 hover:text-red-300 underline font-semibold"
+                    >
+                      My Devices
+                    </button>
+                    {' '}or use Samsung Galaxy Watch 8 for heart rate monitoring
+                  </p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,0 +1,103 @@
+╔════════════════════════════════════════════════════════╗
+║      HTTP REQUEST SHORTCUTS - QUICK REFERENCE          ║
+╚════════════════════════════════════════════════════════╝
+
+📱 APP SETTINGS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Name: Send ECG Data
+Method: POST
+URL: http://192.168.0.182:4000/api/ecg/stream
+Content-Type: application/json
+
+Request Body (FULL ECG DATA):
+{
+  "userId": 2,
+  "heartRate": 75,
+  "rrInterval": 800,
+  "ecgValue": 0.5
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 USAGE STEPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open ECGLogger → See ECG data:
+   - Heart Rate: 82 BPM
+   - R-R Interval: 732 ms
+   - ECG Waveform (graph)
+
+2. Open HTTP Request Shortcuts app
+
+3. Tap "Send ECG Data" → Edit
+
+4. Update ALL three values from ECGLogger:
+   - "heartRate": 82
+   - "rrInterval": 732
+   - "ecgValue": 0.5 (approximate from graph)
+
+5. Save (checkmark)
+
+6. Tap widget on home screen
+
+7. Check ACD-1000 display → Full ECG data shown!
+
+8. Repeat every 5-10 seconds during exercise
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 TROUBLESHOOTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Connection Failed:
+   ➜ Check WiFi (same network?)
+   ➜ Check IP: ipconfig → 192.168.0.182
+   ➜ Check backend running (Server on port 4000)
+   ➜ Check firewall (allow port 4000)
+
+❌ Invalid JSON:
+   ➜ Check curly braces { }
+   ➜ Check comma between fields
+   ➜ Check quotes around "userId" and "heartRate"
+
+❌ No HR in ACD-1000:
+   ➜ Click ACD-1000 button on Vitals page
+   ➜ Check "Live Connection" is green
+   ➜ Press F12 → Check console for errors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SUCCESS INDICATORS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HTTP Shortcuts app: "Request sent successfully"
+Backend terminal: "[ECG-STREAM] Received from user 2: HR=82 BPM"
+ACD-1000 display: Shows 82 BPM with pulsing heart icon
+Browser console: "[BLE] Heart Rate: 82 BPM"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 TIPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+→ Create widget on home screen for one-tap sending
+→ Create multiple shortcuts for common HRs (60, 80, 100, etc.)
+→ Use Polar Beat for best Polar H10 experience
+→ Keep ACD-1000 display open during exercise
+→ Upgrade to Tasker later for full automation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 IMPORTANT INFO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Computer IP: 192.168.0.182 (check if changed: ipconfig)
+Backend Port: 4000
+User ID: 2
+Dashboard URL: http://localhost:3000
+ACD-1000: Vitals page → Click ACD-1000 button
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Print this card and keep it with your Samsung phone!

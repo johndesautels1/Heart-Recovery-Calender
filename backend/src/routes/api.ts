@@ -34,6 +34,7 @@ import weatherRoutes from './weather';
 import hawkRoutes from './hawk';
 import polarRoutes from './polar';
 import samsungRoutes from './samsung';
+import ecgRoutes from './ecg';
 
 const router = Router();
 
@@ -65,6 +66,7 @@ router.use('/garmin', garminRoutes);
 router.use('/googlefit', googlefitRoutes);
 router.use('/polar', polarRoutes);
 router.use('/samsung', samsungRoutes);
+router.use('/ecg', ecgRoutes);
 
 // All routes below require authentication
 router.use(authenticateToken);
