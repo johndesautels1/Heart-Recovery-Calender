@@ -5316,6 +5316,18 @@ export function VitalsPage() {
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>6MW</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>HRR</th>
 
+                        {/* HRV General - Emerald Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>HRV</th>
+
+                        {/* ECG Metrics - Cyan Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>ECG V</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>RR-I</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>ECG #</th>
+
+                        {/* Metadata - Blue Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Source</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Device</th>
+
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Peak Flow</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Hydration</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Notes</th>
@@ -5562,6 +5574,77 @@ export function VitalsPage() {
                                   {trend && <span className="text-xs opacity-70">{trend}</span>}
                                 </div>
                               );
+                            })()}
+                          </td>
+
+                          {/* HRV General - Emerald Theme */}
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.heartRateVariability;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].heartRateVariability : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // HRV ranges: <20 poor, 20-50 fair, 50-100 good, >100 excellent
+                              const color = value < 20 ? '#ef4444' : value < 50 ? '#f59e0b' : value < 100 ? '#34d399' : '#22c55e';
+                              const alert = value < 20 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}ms
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+
+                          {/* ECG Waveform Value - Cyan Theme */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
+                            {(() => {
+                              // Extract ECG value from notes field if present
+                              const ecgMatch = vital.notes?.match(/ECG waveform value: ([-\d.]+)V/);
+                              return ecgMatch ? `${parseFloat(ecgMatch[1]).toFixed(3)}V` : '--';
+                            })()}
+                          </td>
+
+                          {/* RR Interval - Cyan Theme */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
+                            {vital.heartRateVariability ? `${vital.heartRateVariability.toFixed(0)}ms` : '--'}
+                          </td>
+
+                          {/* ECG Sample Count - Cyan Theme */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
+                            --
+                          </td>
+
+                          {/* Source - Blue Theme */}
+                          <td className="py-3 px-3 text-sm font-mono" style={{ color: '#60a5fa' }}>
+                            {(() => {
+                              const source = vital.source || 'manual';
+                              const badgeColor = source === 'device' ? '#10b981' : source === 'import' ? '#f59e0b' : '#60a5fa';
+                              return (
+                                <span className="px-2 py-1 rounded text-xs font-semibold" style={{
+                                  background: `${badgeColor}20`,
+                                  color: badgeColor,
+                                  border: `1px solid ${badgeColor}50`
+                                }}>
+                                  {source.toUpperCase()}
+                                </span>
+                              );
+                            })()}
+                          </td>
+
+                          {/* Device ID - Blue Theme */}
+                          <td className="py-3 px-3 text-sm font-mono" style={{ color: '#60a5fa' }}>
+                            {(() => {
+                              const deviceId = vital.deviceId;
+                              if (!deviceId) return <span className="text-gray-600">--</span>;
+                              // Shorten device IDs for display
+                              if (deviceId.includes('polar')) return <span className="text-cyan-400">Polar H10</span>;
+                              if (deviceId.includes('samsung')) return <span className="text-purple-400">Samsung</span>;
+                              if (deviceId.includes('strava')) return <span className="text-orange-400">Strava</span>;
+                              return <span className="text-xs">{deviceId.substring(0, 12)}...</span>;
                             })()}
                           </td>
 
