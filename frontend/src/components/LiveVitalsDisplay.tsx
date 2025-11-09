@@ -147,12 +147,12 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       // Request Polar H10 device with Heart Rate Service AND PMD Service for ECG
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          { services: ['heart_rate'] },
-          { namePrefix: 'Polar' },
-          { namePrefix: 'H10' }
+          {
+            namePrefix: 'Polar',
+            services: ['heart_rate']
+          }
         ],
         optionalServices: [
-          'heart_rate',
           'battery_service',
           'device_information',
           PMD_SERVICE  // Add PMD service for ECG streaming
@@ -162,8 +162,11 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       console.log('[BLE] Polar H10 device selected:', device.name);
       setBleDevice(device);
 
-      // Connect to GATT server
-      const server = await device.gatt!.connect();
+      // Connect to GATT server using Microsoft's pattern with explicit error handling
+      const server = await device.gatt!.connect().catch((error: Error) => {
+        console.error('[BLE] GATT connection failed:', error);
+        throw new Error(`GATT connection failed: ${error.message}`);
+      });
       console.log('[BLE] Connected to GATT server');
 
       // Get Heart Rate service
