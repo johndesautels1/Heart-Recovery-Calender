@@ -323,30 +323,42 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                     return updated;
                   });
 
-                  // 🫀 CRITICAL: Send FULL ECG waveform samples to backend for life-critical monitoring
-                  // Backend will broadcast via WebSocket to VitalsPage ACD-1000 display
-                  fetch('http://localhost:4000/api/ecg/stream', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({
-                      userId: 2, // Your wife's user ID
-                      samples: ecgSamples, // FULL waveform array
-                      samplingRate: 130,
-                      timestamp: new Date().toISOString(),
-                      deviceId: 'polar_h10_web_bluetooth',
-                      source: 'polar_h10_live'
-                    })
-                  }).then(response => {
-                    if (!response.ok) {
-                      console.error('[ECG-STREAM] Failed to send waveform:', response.statusText);
-                    } else {
-                      console.log(`[ECG-STREAM] ✅ Sent ${ecgSamples.length} ECG samples to backend`);
+                  // 🫀 CRITICAL: Accumulate ECG samples and send in batches
+                  // Throttle to 1 batch per second to avoid overwhelming backend
+                  setEcgWaveform(prev => {
+                    const updated = [...prev, ...ecgSamples];
+
+                    // Send batch every 130 samples (approximately 1 second at 130 Hz)
+                    if (updated.length >= 130) {
+                      const batch = updated.slice(-130); // Last 130 samples
+
+                      // Send to backend with proper auth
+                      fetch('http://localhost:4000/api/ecg/stream', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                          heartRate: heartRate || 0, // Required field
+                          samples: batch, // FULL waveform array (130 samples = 1 second)
+                          samplingRate: 130,
+                          timestamp: new Date().toISOString(),
+                          deviceId: 'polar_h10_web_bluetooth',
+                          source: 'polar_h10_live'
+                        })
+                      }).then(response => {
+                        if (!response.ok) {
+                          console.error(`[ECG-STREAM] Failed to send waveform: ${response.status} ${response.statusText}`);
+                        } else {
+                          console.log(`[ECG-STREAM] ✅ Sent ${batch.length} ECG samples to backend`);
+                        }
+                      }).catch(error => {
+                        console.error('[ECG-STREAM] Error sending waveform:', error);
+                      });
                     }
-                  }).catch(error => {
-                    console.error('[ECG-STREAM] Error sending waveform:', error);
+
+                    return updated;
                   });
                 }
               }

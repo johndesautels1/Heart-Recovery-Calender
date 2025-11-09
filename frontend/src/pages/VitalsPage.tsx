@@ -535,10 +535,12 @@ export function VitalsPage() {
     if (latestECG) {
       console.log('[ECG] New ECG data received from WebSocket:', latestECG);
 
-      // Handle ECG waveform array if available
-      if (latestECG.ecgWaveform && Array.isArray(latestECG.ecgWaveform)) {
+      // 🫀 CRITICAL FIX: Backend sends "samples" not "ecgWaveform"
+      // Handle ECG waveform array if available (from Polar H10 Web Bluetooth)
+      if (latestECG.data?.samples && Array.isArray(latestECG.data.samples)) {
+        console.log(`[ECG] ✅ Received ${latestECG.data.samples.length} ECG samples from backend`);
         setEcgBuffer(prev => {
-          const newBuffer = [...prev, ...latestECG.ecgWaveform];
+          const newBuffer = [...prev, ...latestECG.data.samples];
           // Keep only last ECG_BUFFER_SIZE samples (rolling window)
           if (newBuffer.length > ECG_BUFFER_SIZE) {
             return newBuffer.slice(newBuffer.length - ECG_BUFFER_SIZE);
@@ -546,16 +548,29 @@ export function VitalsPage() {
           return newBuffer;
         });
       }
-      // Handle single ECG value if available
-      else if (latestECG.value !== undefined && latestECG.value !== null) {
+      // Fallback: Handle old format with ecgWaveform field name
+      else if (latestECG.ecgWaveform && Array.isArray(latestECG.ecgWaveform)) {
+        console.log(`[ECG] ✅ Received ${latestECG.ecgWaveform.length} ECG samples (legacy format)`);
         setEcgBuffer(prev => {
-          const newBuffer = [...prev, latestECG.value];
-          // Keep only last ECG_BUFFER_SIZE samples (rolling window)
+          const newBuffer = [...prev, ...latestECG.ecgWaveform];
           if (newBuffer.length > ECG_BUFFER_SIZE) {
             return newBuffer.slice(newBuffer.length - ECG_BUFFER_SIZE);
           }
           return newBuffer;
         });
+      }
+      // Handle single ECG value if available (backward compatibility)
+      else if (latestECG.data?.value !== undefined && latestECG.data?.value !== null) {
+        console.log(`[ECG] ✅ Received single ECG value: ${latestECG.data.value}mV`);
+        setEcgBuffer(prev => {
+          const newBuffer = [...prev, latestECG.data.value];
+          if (newBuffer.length > ECG_BUFFER_SIZE) {
+            return newBuffer.slice(newBuffer.length - ECG_BUFFER_SIZE);
+          }
+          return newBuffer;
+        });
+      } else {
+        console.warn('[ECG] ⚠️ Received ECG data but no recognizable samples/value field:', latestECG);
       }
     }
   }, [latestECG]);
