@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Calendar, MapPin, Users,
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
-  Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server, Cloud
+  Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server, Cloud, Watch
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
@@ -332,11 +332,15 @@ export function ProfilePage() {
   };
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev =>
-      prev.includes(sectionId)
+    console.log('[PROFILE] Toggling section:', sectionId);
+    console.log('[PROFILE] Current expanded sections:', expandedSections);
+    setExpandedSections(prev => {
+      const newSections = prev.includes(sectionId)
         ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
+        : [...prev, sectionId];
+      console.log('[PROFILE] New expanded sections:', newSections);
+      return newSections;
+    });
   };
 
   const handleChange = (field: string, value: any) => {
