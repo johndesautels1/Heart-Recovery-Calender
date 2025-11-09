@@ -253,13 +253,24 @@ router.post('/stream', async (req: Request, res: Response) => {
     broadcastHeartRate(userId, {
       heartRate,
       timestamp: timestamp || new Date().toISOString(),
-      source: 'ecglogger',
-      device: 'Polar H10 (ECGLogger)',
+      source: 'polar_h10_live',
+      device: 'Polar H10 (Web Bluetooth)',
       rrInterval
     });
 
-    // Broadcast ECG waveform if available
-    if (ecgValue !== undefined && ecgValue !== null) {
+    // 🫀 CRITICAL: Broadcast FULL ECG waveform array if available
+    if (req.body.samples && Array.isArray(req.body.samples) && req.body.samples.length > 0) {
+      broadcastECGData(userId, {
+        sessionId: sessionId || `session_${userId}_${Date.now()}`,
+        samples: req.body.samples, // Full waveform array from Polar H10
+        samplingRate: samplingRate || 130,
+        deviceId: req.body.deviceId || 'polar_h10_web_bluetooth',
+        leadType: 'Lead I',
+        timestamp: timestamp || new Date().toISOString()
+      });
+      console.log(`[ECG-STREAM] 🫀 Broadcasted ${req.body.samples.length} ECG samples to WebSocket for user ${userId}`);
+    } else if (ecgValue !== undefined && ecgValue !== null) {
+      // Fallback to single value for backward compatibility
       broadcastECGData(userId, {
         timestamp: timestamp || new Date().toISOString(),
         value: ecgValue,

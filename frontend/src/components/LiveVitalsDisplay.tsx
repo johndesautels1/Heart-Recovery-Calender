@@ -323,21 +323,30 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                     return updated;
                   });
 
-                  // Send ECG waveform batch to backend (send every 130 samples = ~1 second)
-                  setEcgWaveform(prev => {
-                    if (prev.length >= 130) {
-                      // Get average ECG value for this batch
-                      const avgEcgValue = prev.reduce((sum, val) => sum + val, 0) / prev.length;
-
-                      // Send to backend with current heart rate
-                      if (heartRate !== null) {
-                        sendVitalsToBackend({
-                          heartRate: heartRate,
-                          ecgValue: avgEcgValue,
-                        });
-                      }
+                  // 🫀 CRITICAL: Send FULL ECG waveform samples to backend for life-critical monitoring
+                  // Backend will broadcast via WebSocket to VitalsPage ACD-1000 display
+                  fetch('http://localhost:4000/api/ecg/stream', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                      userId: 2, // Your wife's user ID
+                      samples: ecgSamples, // FULL waveform array
+                      samplingRate: 130,
+                      timestamp: new Date().toISOString(),
+                      deviceId: 'polar_h10_web_bluetooth',
+                      source: 'polar_h10_live'
+                    })
+                  }).then(response => {
+                    if (!response.ok) {
+                      console.error('[ECG-STREAM] Failed to send waveform:', response.statusText);
+                    } else {
+                      console.log(`[ECG-STREAM] ✅ Sent ${ecgSamples.length} ECG samples to backend`);
                     }
-                    return prev;
+                  }).catch(error => {
+                    console.error('[ECG-STREAM] Error sending waveform:', error);
                   });
                 }
               }

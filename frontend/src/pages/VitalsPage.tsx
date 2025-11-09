@@ -476,6 +476,23 @@ export function VitalsPage() {
     if (latestHeartRate?.data) {
       console.log('[VITALS-PAGE] Received real-time heart rate update:', latestHeartRate.data.heartRate, 'BPM');
 
+      // 🫀 CRITICAL: Auto-detect Polar H10 and switch device filter
+      if (latestHeartRate.data.source === 'polar_h10_live' || latestHeartRate.data.device?.includes('Polar H10')) {
+        if (selectedDevice !== 'polar') {
+          console.log('[AUTO-DETECT] 🫀 Polar H10 detected - switching to Polar device filter');
+          setSelectedDevice('polar');
+          toast.success('🫀 Polar H10 detected - Display switched to Polar data', { duration: 3000 });
+        }
+      }
+      // Auto-detect Samsung
+      else if (latestHeartRate.data.source === 'samsung' || latestHeartRate.data.device?.includes('Samsung')) {
+        if (selectedDevice !== 'samsung') {
+          console.log('[AUTO-DETECT] 📱 Samsung detected - switching to Samsung device filter');
+          setSelectedDevice('samsung');
+          toast.success('📱 Samsung Watch detected - Display switched to Samsung data', { duration: 3000 });
+        }
+      }
+
       // Only reload from database every 30 seconds to prevent flickering
       const now = Date.now();
       if (now - lastReloadTime.current > 30000) { // 30 seconds
@@ -486,7 +503,7 @@ export function VitalsPage() {
         console.log('[VITALS-PAGE] Skipping reload (throttled) - displaying live data only');
       }
     }
-  }, [latestHeartRate]);
+  }, [latestHeartRate, selectedDevice]);
 
   // Update nuclear clock every second - TEMPORARILY DISABLED for performance
   useEffect(() => {
@@ -1407,7 +1424,22 @@ export function VitalsPage() {
   };
 
   const luxuryFilter = getLuxuryTimePeriodFilter();
-  const filteredForLuxury = vitals.filter(luxuryFilter);
+  const filteredForLuxury = vitals.filter(v => {
+    // Apply time period filter
+    if (!luxuryFilter(v)) return false;
+
+    // 🫀 CRITICAL: Apply device filter (same logic as charts)
+    // This ensures gauges show ONLY Polar data when Polar is selected
+    let deviceMatch = true;
+    if (selectedDevice === 'samsung') {
+      deviceMatch = v.deviceId?.toLowerCase().includes('samsung') || v.source === 'device';
+    } else if (selectedDevice === 'polar') {
+      deviceMatch = v.deviceId?.toLowerCase().includes('polar');
+    }
+    // If 'all' selected, deviceMatch stays true (show all devices)
+
+    return deviceMatch;
+  });
 
   // DEBUG: Log filtered data range
   if (filteredForLuxury.length > 0) {
