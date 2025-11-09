@@ -172,7 +172,7 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       // Store server reference at function scope to keep it alive
       let server: BluetoothRemoteGATTServer;
 
-      // Connect to GATT server
+      // Connect to GATT server with retry logic
       console.log('[BLE] Connecting to GATT server...');
 
       // 🫀 CRITICAL: Ensure device.gatt exists
@@ -180,19 +180,55 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         throw new Error('Bluetooth GATT not available on device');
       }
 
-      server = await device.gatt.connect();
-      console.log('[BLE] ✅ Connected to GATT server');
-
-      // Add disconnection handler
+      // 🫀 CRITICAL: Add disconnection handler BEFORE connecting
+      // This ensures we catch any immediate disconnections
       device.addEventListener('gattserverdisconnected', () => {
         console.log('[BLE] ⚠️ GATT server disconnected');
         setBleConnected(false);
         setBleError('Polar H10 disconnected. Please reconnect.');
       });
 
-      // Verify connection is still active
-      if (!server.connected) {
-        throw new Error('GATT server not connected after connection attempt');
+      // Retry connection up to 3 times with increasing delays
+      let connectionAttempts = 0;
+      const maxAttempts = 3;
+
+      while (connectionAttempts < maxAttempts) {
+        try {
+          connectionAttempts++;
+          console.log(`[BLE] Connection attempt ${connectionAttempts}/${maxAttempts}...`);
+
+          server = await device.gatt.connect();
+          console.log('[BLE] ✅ GATT server connected');
+
+          // 🫀 CRITICAL: Wait for connection to fully stabilize
+          const stabilizationDelay = 1000 + (connectionAttempts * 500); // Increase delay with each retry
+          console.log(`[BLE] Waiting ${stabilizationDelay}ms for connection to stabilize...`);
+          await new Promise(resolve => setTimeout(resolve, stabilizationDelay));
+
+          // Verify connection is still active after stabilization
+          if (server.connected) {
+            console.log('[BLE] ✅ Connection stable and verified');
+            break; // Success! Exit retry loop
+          } else {
+            console.warn('[BLE] ⚠️ Connection lost during stabilization');
+            if (connectionAttempts >= maxAttempts) {
+              throw new Error('Connection lost during stabilization after all retry attempts');
+            }
+            // Continue to next retry attempt
+          }
+        } catch (connectError: any) {
+          console.error(`[BLE] ❌ Connection attempt ${connectionAttempts} failed:`, connectError.message);
+          if (connectionAttempts >= maxAttempts) {
+            throw new Error(`Failed to connect after ${maxAttempts} attempts: ${connectError.message}`);
+          }
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      // Final connection verification
+      if (!server || !server.connected) {
+        throw new Error('GATT server not connected after all retry attempts');
       }
 
       // Get Heart Rate service
@@ -303,13 +339,9 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       try {
         console.log('[PMD] Attempting to connect to Polar PMD service for ECG waveform...');
 
-        // 🫀 CRITICAL: Allow connection to stabilize before accessing PMD service
-        console.log('[PMD] Waiting 500ms for connection to stabilize...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-
         // 🫀 CRITICAL: Verify GATT server is still connected before accessing PMD service
-        if (!server.connected) {
-          throw new Error('GATT server disconnected before PMD service access. Please reconnect.');
+        if (!server || !server.connected) {
+          throw new Error('GATT server disconnected before PMD service access');
         }
 
         // Get PMD service
