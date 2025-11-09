@@ -33,6 +33,7 @@ import googlefitRoutes from './googlefit';
 import weatherRoutes from './weather';
 import hawkRoutes from './hawk';
 import polarRoutes from './polar';
+import polarH10Routes from './polarH10';
 import samsungRoutes from './samsung';
 import ecgRoutes from './ecg';
 
@@ -65,6 +66,7 @@ router.use('/fitbit', fitbitRoutes);
 router.use('/garmin', garminRoutes);
 router.use('/googlefit', googlefitRoutes);
 router.use('/polar', polarRoutes);
+router.use('/polar-h10', polarH10Routes);
 router.use('/samsung', samsungRoutes);
 router.use('/ecg', ecgRoutes);
 

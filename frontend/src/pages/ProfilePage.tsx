@@ -1366,16 +1366,16 @@ export function ProfilePage() {
                       </div>
 
                       {/* Polar API */}
-                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                      <div className="p-5 rounded-lg border-2 border-blue-500" style={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <Activity className="h-5 w-5 text-blue-400" />
+                            <Activity className="h-5 w-5 text-blue-500" />
                             <div>
                               <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
                                 Polar API
                               </h4>
-                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
-                                READY
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500 text-white">
+                                CONFIGURED
                               </span>
                             </div>
                           </div>
@@ -1383,22 +1383,60 @@ export function ProfilePage() {
                             href="https://admin.polaraccesslink.com/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                            className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors"
                           >
-                            Get Credentials →
+                            Manage Account →
                           </a>
                         </div>
                         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-                          Heart rate data sync from Polar devices. Optional but useful for patients with Polar fitness trackers.
+                          Live heart rate and HRV data from Polar H10. Real-time ECG streaming enabled.
                         </p>
                         <div className="space-y-3">
-                          <Input label="Client ID" placeholder="Enter Polar client ID" className="bg-white/5" />
-                          <Input label="Client Secret" placeholder="Enter Polar client secret" type="password" className="bg-white/5" />
-                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/polar/callback" className="bg-white/5" />
+                          <Input
+                            label="Polar Account Email"
+                            value="brokerpinellas@gmail.com"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Polar Account Password"
+                            type="password"
+                            value="6922FargoTrail1!"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Client ID"
+                            value="4e6d92e4-f988-4ebb-a0d0-8baa5a79c452"
+                            readOnly
+                            className="bg-white/5 font-mono text-sm"
+                          />
+                          <Input
+                            label="Client Secret"
+                            type="password"
+                            value="8a782e02-ce7e-4ff1-a0ed-1f832c1752eb"
+                            readOnly
+                            className="bg-white/5 font-mono text-sm"
+                          />
+                          <Input
+                            label="Redirect URI"
+                            value="http://localhost:4000/api/polar/callback"
+                            readOnly
+                            className="bg-white/5"
+                          />
                         </div>
-                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: 'var(--muted)' }}>
                           ENV Variables: POLAR_CLIENT_ID, POLAR_CLIENT_SECRET, POLAR_REDIRECT_URI
                         </p>
+                        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                          <div className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                              <p className="font-semibold text-green-400 mb-1">Polar H10 Ready for Live Streaming</p>
+                              <p>Connect your Polar H10 via Bluetooth to stream real-time ECG, heart rate, and HRV data directly to the ACD-1000 display.</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* PostgreSQL */}
@@ -1432,39 +1470,54 @@ export function ProfilePage() {
                       </div>
 
                       {/* Samsung Health */}
-                      <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                      <div className="p-5 rounded-lg border-2 border-purple-500" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)' }}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <Smartphone className="h-5 w-5 text-blue-400" />
+                            <Watch className="h-5 w-5 text-purple-500" />
                             <div>
                               <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
                                 Samsung Health API
                               </h4>
-                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
-                                READY
-                              </span>
+                              <div className="flex gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                  READY
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-500 text-white">
+                                  Galaxy Watch 8
+                                </span>
+                              </div>
                             </div>
                           </div>
                           <a
                             href="https://developer.samsung.com/health"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                            className="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-sm font-semibold hover:bg-purple-600 transition-colors"
                           >
                             Get Credentials →
                           </a>
                         </div>
                         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-                          Comprehensive health data sync from Samsung devices. Optional but useful for Samsung users.
+                          Comprehensive health data from Samsung Galaxy Watch: ECG, Heart Rate, HRV, Blood Pressure, SpO2, Respiratory Rate, Sleep, and Exercise.
                         </p>
                         <div className="space-y-3">
-                          <Input label="Client ID" placeholder="Enter Samsung Health client ID" className="bg-white/5" />
-                          <Input label="Client Secret" placeholder="Enter Samsung Health client secret" type="password" className="bg-white/5" />
-                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/samsung/callback" className="bg-white/5" />
+                          <Input label="Samsung Account Email" placeholder="Your Samsung account email" className="bg-white/5" />
+                          <Input label="Client ID" placeholder="Enter Samsung Health client ID" className="bg-white/5 font-mono text-sm" />
+                          <Input label="Client Secret" placeholder="Enter Samsung Health client secret" type="password" className="bg-white/5 font-mono text-sm" />
+                          <Input label="Redirect URI" value="http://localhost:4000/api/samsung/callback" readOnly className="bg-white/5" />
                         </div>
-                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--muted)' }}>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: 'var(--muted)' }}>
                           ENV Variables: SAMSUNG_CLIENT_ID, SAMSUNG_CLIENT_SECRET, SAMSUNG_REDIRECT_URI
                         </p>
+                        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5" />
+                            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                              <p className="font-semibold text-blue-400 mb-1">Samsung Galaxy Watch Integration</p>
+                              <p>Once configured, your Galaxy Watch 8 will stream real-time vitals including ECG waveforms directly to the ACD-1000 display on the Vitals page.</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* SMTP Email */}
@@ -1511,7 +1564,7 @@ export function ProfilePage() {
                       </div>
 
                       {/* Strava API */}
-                      <div className="p-5 rounded-lg border border-green-600" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}>
+                      <div className="p-5 rounded-lg border-2 border-orange-500" style={{ backgroundColor: 'rgba(249, 115, 22, 0.05)' }}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <Activity className="h-5 w-5 text-orange-500" />
@@ -1528,22 +1581,109 @@ export function ProfilePage() {
                             href="https://www.strava.com/settings/api"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-500 transition-colors"
+                            className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
                           >
-                            Get Credentials →
+                            Manage Account →
                           </a>
                         </div>
                         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-                          Heart rate and exercise data sync. Optional but useful for patients using Strava to track workouts.
+                          Exercise tracking with heart rate zones, pace, distance, elevation. Syncs workouts and treadmill sessions automatically.
                         </p>
                         <div className="space-y-3">
-                          <Input label="Client ID" placeholder="Enter Strava client ID" className="bg-white/5" />
-                          <Input label="Client Secret" placeholder="Enter Strava client secret" type="password" className="bg-white/5" />
-                          <Input label="Redirect URI" placeholder="http://localhost:4000/api/strava/callback" className="bg-white/5" />
+                          <Input
+                            label="Client ID"
+                            value="183361"
+                            readOnly
+                            className="bg-white/5 font-mono text-sm"
+                          />
+                          <Input
+                            label="Client Secret"
+                            type="password"
+                            value="c3f614787ac74ebb9a70f013a7850d32fef82f98"
+                            readOnly
+                            className="bg-white/5 font-mono text-sm"
+                          />
+                          <Input
+                            label="Redirect URI"
+                            value="http://localhost:4000/api/strava/callback"
+                            readOnly
+                            className="bg-white/5"
+                          />
                         </div>
-                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--muted)' }}>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)', color: 'var(--muted)' }}>
                           ENV Variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REDIRECT_URI
                         </p>
+                        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                          <div className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                              <p className="font-semibold text-green-400 mb-1">Strava Treadmill & Exercise Sync Active</p>
+                              <p>All runs, walks, and cycling activities will automatically sync to your exercise logs with real-time heart rate data.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* MIR Spirometry */}
+                      <div className="p-5 rounded-lg border-2 border-cyan-500" style={{ backgroundColor: 'rgba(6, 182, 212, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Activity className="h-5 w-5 text-cyan-500" />
+                            <div>
+                              <h4 className="font-semibold" style={{ color: 'var(--ink-bright)' }}>
+                                MIR Spirometry (Smart One / Spirobank Smart)
+                              </h4>
+                              <div className="flex gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                  READY
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-cyan-500 text-white">
+                                  Bluetooth SDK
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <a
+                            href="https://spirometry.com/oem-api"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-cyan-500 text-white text-sm font-semibold hover:bg-cyan-600 transition-colors"
+                          >
+                            Get SDK →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Professional spirometry with FEV1, FVC, PEF measurements. Bluetooth Smart BLE 4.0 for real-time lung function monitoring.
+                        </p>
+                        <div className="space-y-3">
+                          <Input
+                            label="SDK License Key"
+                            placeholder="Enter MIR SDK license key (optional for personal use)"
+                            className="bg-white/5 font-mono text-sm"
+                          />
+                          <Input
+                            label="Device Serial Number"
+                            placeholder="Enter spirometer serial number"
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Bluetooth Device Name"
+                            placeholder="MIR SmartOne or Spirobank"
+                            className="bg-white/5"
+                          />
+                        </div>
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)', color: 'var(--muted)' }}>
+                          SDK Available: Android, iOS, Windows | Connection: Bluetooth Smart 5.0
+                        </p>
+                        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5" />
+                            <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                              <p className="font-semibold text-blue-400 mb-1">Live Spirometry Display Integration</p>
+                              <p>Once paired, test results (FEV1, FVC, PEF) stream in real-time to the Vitals page spirometry display with flow-volume curves and trend charts.</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* OpenWeather API */}

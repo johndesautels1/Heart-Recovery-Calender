@@ -19,28 +19,30 @@ interface PolarTokenResponse {
 
 interface PolarExercise {
   id: string;
-  'upload-time': string;
-  'polar-user': string;
+  upload_time: string;
+  polar_user: string;
   device: string;
-  'device-id': string;
-  'start-time': string;
-  'stop-time': string;
+  device_id?: string;
+  start_time: string;
+  start_time_utc_offset: number;
+  stop_time?: string;
   duration: string;
   calories: number;
   distance: number;
-  'heart-rate': {
+  heart_rate: {
     average: number;
     maximum: number;
   };
-  'training-load': number;
+  training_load?: number;
+  training_load_pro?: any;
   sport: string;
-  'has-route': boolean;
-  'club-id'?: number;
-  'club-name'?: string;
-  'detailed-sport-info'?: string;
-  'fat-percentage'?: number;
-  'carbohydrate-percentage'?: number;
-  'protein-percentage'?: number;
+  has_route: boolean;
+  club_id?: number;
+  club_name?: string;
+  detailed_sport_info?: string;
+  fat_percentage?: number;
+  carbohydrate_percentage?: number;
+  protein_percentage?: number;
 }
 
 export const polarService = {
@@ -139,7 +141,8 @@ export const polarService = {
   },
 
   // Get available exercises
-  async getAvailableExercises(accessToken: string): Promise<string[]> {
+  // NOTE: Polar API now returns full exercise objects, not URLs
+  async getAvailableExercises(accessToken: string): Promise<PolarExercise[]> {
     try {
       console.log('[POLAR-API] Fetching available exercises from Polar AccessLink...');
       console.log('[POLAR-API] Using access token:', accessToken.substring(0, 20) + '...');
@@ -150,10 +153,11 @@ export const polarService = {
       });
 
       console.log('[POLAR-API] Full response data:', JSON.stringify(response.data, null, 2));
-      const exercises = response.data.exercises || [];
+      // Polar API returns array of exercise objects directly
+      const exercises = Array.isArray(response.data) ? response.data : (response.data.exercises || []);
       console.log(`[POLAR-API] Response: ${exercises.length} exercises available`);
       if (exercises.length > 0) {
-        console.log('[POLAR-API] Exercise URLs:', exercises);
+        console.log('[POLAR-API] First exercise ID:', exercises[0].id);
       }
       return exercises;
     } catch (error: any) {
@@ -270,13 +274,13 @@ export async function syncPolarData(
       throw new Error('No access token available');
     }
 
-    // Get available exercises
-    const exerciseUrls = await polarService.getAvailableExercises(device.accessToken);
-    recordsProcessed = exerciseUrls.length;
+    // Get available exercises (now returns full exercise objects)
+    const exercises = await polarService.getAvailableExercises(device.accessToken);
+    recordsProcessed = exercises.length;
 
-    console.log(`[POLAR-SYNC] Polar API returned ${exerciseUrls.length} available exercises`);
-    if (exerciseUrls.length > 0) {
-      console.log('[POLAR-SYNC] Exercise URLs:', exerciseUrls);
+    console.log(`[POLAR-SYNC] Polar API returned ${exercises.length} available exercises`);
+    if (exercises.length > 0) {
+      console.log('[POLAR-SYNC] Exercise IDs:', exercises.map(e => e.id).join(', '));
     }
 
     // Get patient for this user
@@ -285,15 +289,15 @@ export async function syncPolarData(
       throw new Error('No patient profile found for user');
     }
 
-    // Process each exercise
-    for (const exerciseUrl of exerciseUrls) {
+    // Process each exercise (already have full data, no need to fetch again)
+    for (const exercise of exercises) {
       try {
-        const exercise = await polarService.getExercise(device.accessToken, exerciseUrl);
-
-        if (!exercise) {
+        if (!exercise || !exercise.id) {
           recordsSkipped++;
           continue;
         }
+
+        console.log(`[POLAR-SYNC] Processing exercise ${exercise.id}:`, JSON.stringify(exercise, null, 2));
 
         // Check if already synced
         const existing = await ExerciseLog.findOne({
@@ -315,12 +319,27 @@ export async function syncPolarData(
         const seconds = parseInt(durationMatch?.[3] || '0');
         const totalMinutes = hours * 60 + minutes + Math.round(seconds / 60);
 
+        // Parse Polar timestamps (format: "2025-11-08T19:50:19" without Z suffix)
+        // Add Z to indicate UTC time
+        if (!exercise['start-time'] || !exercise['stop-time']) {
+          console.error(`[POLAR-SYNC] Missing timestamps for exercise ${exercise.id}`);
+          recordsSkipped++;
+          continue;
+        }
+
+        const startTime = exercise['start-time'].includes('Z')
+          ? exercise['start-time']
+          : exercise['start-time'] + 'Z';
+        const stopTime = exercise['stop-time'].includes('Z')
+          ? exercise['stop-time']
+          : exercise['stop-time'] + 'Z';
+
         // Create exercise log entry
         await ExerciseLog.create({
           prescriptionId: 0, // Will need to be linked manually or via smart matching
           patientId: patient.id,
-          completedAt: new Date(exercise['stop-time']),
-          startedAt: new Date(exercise['start-time']),
+          completedAt: new Date(stopTime),
+          startedAt: new Date(startTime),
           actualDuration: totalMinutes,
           duringHeartRateAvg: exercise['heart-rate']?.average,
           duringHeartRateMax: exercise['heart-rate']?.maximum,
@@ -342,7 +361,7 @@ export async function syncPolarData(
           try {
             await VitalsSample.create({
               userId: device.userId,
-              timestamp: new Date(exercise['stop-time']),
+              timestamp: new Date(stopTime),
               heartRate: exercise['heart-rate'].average,
               heartRateVariability: null, // HRV requires R-R interval data from Polar's dedicated HRV endpoint, not available in exercise summary
               source: 'device',
@@ -360,11 +379,8 @@ export async function syncPolarData(
         recordsCreated++;
 
         // Commit transaction to mark as processed
-        if (device.accessToken) {
-          const transactionId = exerciseUrl.split('/').pop();
-          if (transactionId) {
-            await polarService.commitTransaction(device.accessToken, transactionId);
-          }
+        if (device.accessToken && exercise.id) {
+          await polarService.commitTransaction(device.accessToken, exercise.id);
         }
       } catch (error: any) {
         console.error('Error processing Polar exercise:', error);

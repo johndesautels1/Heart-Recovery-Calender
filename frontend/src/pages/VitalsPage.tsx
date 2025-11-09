@@ -1,5 +1,5 @@
 // Vitals Page - Tracks heart rate, blood pressure, hydration, and personalized targets
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard, Button, Modal, Input } from '../components/ui';
 import { WaterButton } from '../components/WaterButton';
@@ -19,6 +19,7 @@ import {
   Heart,
   Plus,
   TrendingUp,
+  TrendingDown,
   Droplet,
   Thermometer,
   Wind,
@@ -157,7 +158,7 @@ type VitalsFormData = z.infer<typeof vitalsSchema>;
 export function VitalsPage() {
   const { user } = useAuth(); // Access surgery date from user profile
   const navigate = useNavigate();
-  const { latestHeartRate, latestVitals } = useWebSocket(); // Listen for real-time heart rate updates
+  const { latestHeartRate, latestVitals, latestECG, exerciseData, spirometryData } = useWebSocket(); // Listen for real-time heart rate updates, ECG, exercise, and spirometry data
   const [vitals, setVitals] = useState<VitalsSample[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -208,46 +209,19 @@ export function VitalsPage() {
   const [showECGModal, setShowECGModal] = useState(false);
   const [showTreadmillModal, setShowTreadmillModal] = useState(false);
 
-  // TEST DATA: Simulated ECG waveform for demonstration (will be replaced with real Polar H10 data)
-  const generateTestECGData = () => {
-    const data: number[] = [];
-    const samplingRate = 130; // Hz
-    const duration = 10; // seconds
-    const heartRate = 72; // BPM
-    const beatInterval = (60 / heartRate) * samplingRate; // samples per beat
+  // Active test display within ACD-1000 (null = none, 'ecg', 'treadmill', 'spirometry')
+  const [activeACD1000Test, setActiveACD1000Test] = useState<string | null>(null);
 
-    for (let i = 0; i < samplingRate * duration; i++) {
-      const positionInBeat = i % beatInterval;
-      const normalizedPosition = positionInBeat / beatInterval;
-
-      // Simulate ECG waveform with P-QRS-T complex
-      let voltage = 0;
-
-      // P wave (0.08-0.12s)
-      if (normalizedPosition > 0.15 && normalizedPosition < 0.25) {
-        voltage = 0.15 * Math.sin((normalizedPosition - 0.15) * Math.PI / 0.1);
-      }
-      // QRS complex (0.06-0.10s) - R peak
-      else if (normalizedPosition > 0.35 && normalizedPosition < 0.45) {
-        voltage = 1.2 * Math.sin((normalizedPosition - 0.35) * Math.PI / 0.1);
-      }
-      // T wave (0.10-0.25s)
-      else if (normalizedPosition > 0.55 && normalizedPosition < 0.75) {
-        voltage = 0.3 * Math.sin((normalizedPosition - 0.55) * Math.PI / 0.2);
-      }
-      // Baseline
-      else {
-        voltage = -0.05 + Math.random() * 0.02; // Small noise
-      }
-
-      data.push(voltage);
-    }
-    return data;
-  };
-
-  const [testECGData] = useState<number[]>(generateTestECGData());
-  const [testHRVMetrics] = useState({ sdnn: 65, rmssd: 42, pnn50: 28 }); // Normal healthy values
+  // Real-time ECG buffer (accumulates waveform samples from Polar H10)
+  const [ecgBuffer, setEcgBuffer] = useState<number[]>([]);
+  const ECG_BUFFER_SIZE = 1300; // 10 seconds at 130 Hz
   const [showSpirometryModal, setShowSpirometryModal] = useState(false);
+
+  // Polar H10 Live Streaming State
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingStatus, setStreamingStatus] = useState<'idle' | 'connecting' | 'streaming' | 'error'>('idle');
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const {
     register,
@@ -495,12 +469,22 @@ export function VitalsPage() {
     loadHawkAlerts();
   }, [vitals]); // Reload when vitals change
 
-  // Listen for real-time heart rate updates from WebSocket and reload vitals
+  // Listen for real-time heart rate updates from WebSocket
+  // Throttle database reloads to every 30 seconds to prevent flickering and too many logs
+  const lastReloadTime = useRef<number>(0);
   useEffect(() => {
     if (latestHeartRate?.data) {
       console.log('[VITALS-PAGE] Received real-time heart rate update:', latestHeartRate.data.heartRate, 'BPM');
-      // Reload vitals from database to update all gauges, charts, and history
-      loadVitals();
+
+      // Only reload from database every 30 seconds to prevent flickering
+      const now = Date.now();
+      if (now - lastReloadTime.current > 30000) { // 30 seconds
+        console.log('[VITALS-PAGE] Reloading vitals from database (30s throttle)');
+        loadVitals();
+        lastReloadTime.current = now;
+      } else {
+        console.log('[VITALS-PAGE] Skipping reload (throttled) - displaying live data only');
+      }
     }
   }, [latestHeartRate]);
 
@@ -528,6 +512,36 @@ export function VitalsPage() {
     window.addEventListener('hydration-updated', handleHydrationUpdate);
     return () => window.removeEventListener('hydration-updated', handleHydrationUpdate);
   }, [surgeryDate, selectedUserId, globalTimeView]);
+
+  // Accumulate real-time ECG waveform data from WebSocket
+  useEffect(() => {
+    if (latestECG) {
+      console.log('[ECG] New ECG data received from WebSocket:', latestECG);
+
+      // Handle ECG waveform array if available
+      if (latestECG.ecgWaveform && Array.isArray(latestECG.ecgWaveform)) {
+        setEcgBuffer(prev => {
+          const newBuffer = [...prev, ...latestECG.ecgWaveform];
+          // Keep only last ECG_BUFFER_SIZE samples (rolling window)
+          if (newBuffer.length > ECG_BUFFER_SIZE) {
+            return newBuffer.slice(newBuffer.length - ECG_BUFFER_SIZE);
+          }
+          return newBuffer;
+        });
+      }
+      // Handle single ECG value if available
+      else if (latestECG.value !== undefined && latestECG.value !== null) {
+        setEcgBuffer(prev => {
+          const newBuffer = [...prev, latestECG.value];
+          // Keep only last ECG_BUFFER_SIZE samples (rolling window)
+          if (newBuffer.length > ECG_BUFFER_SIZE) {
+            return newBuffer.slice(newBuffer.length - ECG_BUFFER_SIZE);
+          }
+          return newBuffer;
+        });
+      }
+    }
+  }, [latestECG]);
 
   const loadVitals = async () => {
     try {
@@ -693,6 +707,94 @@ export function VitalsPage() {
     } catch (error) {
       console.error('[HYDRATION] Failed to load hydration logs:', error);
       setHydrationLogs([]);
+    }
+  };
+
+  // Polar H10 Live Streaming Handlers
+  const handleStartECGStream = async () => {
+    try {
+      setStreamingStatus('connecting');
+      setStreamError(null);
+
+      const response = await fetch('http://localhost:4000/api/polar-h10/start-stream', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsStreaming(true);
+        setStreamingStatus('streaming');
+        toast.success('🫀 Live ECG streaming started!');
+      } else {
+        setStreamingStatus('error');
+        setStreamError(data.error || 'Failed to start streaming');
+        toast.error('Failed to start ECG streaming');
+      }
+    } catch (error: any) {
+      console.error('Error starting ECG stream:', error);
+      setStreamingStatus('error');
+      setStreamError(error.message);
+      toast.error('Error starting ECG streaming');
+    }
+  };
+
+  const handleStopECGStream = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/polar-h10/stop-stream', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsStreaming(false);
+        setStreamingStatus('idle');
+        toast.success('ECG streaming stopped');
+      }
+    } catch (error: any) {
+      console.error('Error stopping ECG stream:', error);
+      toast.error('Error stopping ECG streaming');
+    }
+  };
+
+  const handleECGFileUpload = async (file: File) => {
+    try {
+      setUploadingFile(true);
+
+      const formData = new FormData();
+      formData.append('ecgFile', file);
+
+      const response = await fetch('http://localhost:4000/api/ecg/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`✅ Imported ${data.samplesCount} ECG samples!`);
+        // Refresh vitals display
+        loadVitals();
+      } else {
+        toast.error('Failed to import ECG file');
+      }
+    } catch (error: any) {
+      console.error('Error uploading ECG file:', error);
+      toast.error('Error importing ECG file');
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -1327,7 +1429,9 @@ export function VitalsPage() {
 
   const hrVitalsForRecent = filteredForLuxury.filter(v => v.heartRate)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  const recentHR = hrVitalsForRecent.length > 0 ? hrVitalsForRecent[0].heartRate! : null;
+  // Use live WebSocket data if available, otherwise use most recent database value
+  const recentHR = latestHeartRate?.data?.heartRate ||
+    (hrVitalsForRecent.length > 0 ? hrVitalsForRecent[0].heartRate! : null);
 
   const o2VitalsForRecent = filteredForLuxury.filter(v => v.oxygenSaturation)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -2600,9 +2704,9 @@ export function VitalsPage() {
           {/* MEDICAL TESTS SECTION */}
           {showMedicalTests && (
             <div className="space-y-6" style={{
-              transform: 'scale(0.7)',
+              transform: 'scale(0.9)',
               transformOrigin: 'top center',
-              marginBottom: '-200px'
+              marginBottom: '-50px'
             }}>
               {/* Medical Provider Tests Section */}
               <GlassCard className="relative overflow-hidden">
@@ -2634,17 +2738,19 @@ export function VitalsPage() {
                     </Button>
                   </div>
 
-                  {/* Real-Time Heart Rate Display - Polar H10 / Samsung Watch */}
-                  <div className="mb-8">
-                    <LiveVitalsDisplay deviceType="polar" />
-                  </div>
+                  {/* Real-Time Heart Rate Display - Polar H10 / Samsung Watch - Hidden when test active */}
+                  {!activeACD1000Test && (
+                    <div className="mb-8">
+                      <LiveVitalsDisplay deviceType="polar" />
+                    </div>
+                  )}
 
                   {/* Medical-Grade Display Tabs - Ultra Premium */}
                   <div className="p-12 text-center">
                     <div className="flex justify-center items-center gap-6 mb-8">
                       {/* ECG/EKG Tab - Left */}
                       <div
-                        onClick={() => setShowECGModal(true)}
+                        onClick={() => setActiveACD1000Test(activeACD1000Test === 'ecg' ? null : 'ecg')}
                         className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
                         width: '280px',
                         height: '140px',
@@ -2699,7 +2805,7 @@ export function VitalsPage() {
 
                       {/* Treadmill/Stress Tab - Middle (Larger/Featured) */}
                       <div
-                        onClick={() => setShowTreadmillModal(true)}
+                        onClick={() => setActiveACD1000Test(activeACD1000Test === 'treadmill' ? null : 'treadmill')}
                         className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
                         width: '320px',
                         height: '160px',
@@ -2770,7 +2876,7 @@ export function VitalsPage() {
 
                       {/* Spirometry/Breathing Tab - Right */}
                       <div
-                        onClick={() => setShowSpirometryModal(true)}
+                        onClick={() => setActiveACD1000Test(activeACD1000Test === 'spirometry' ? null : 'spirometry')}
                         className="relative group cursor-pointer transition-all duration-500 hover:scale-105" style={{
                         width: '280px',
                         height: '140px',
@@ -2838,6 +2944,379 @@ export function VitalsPage() {
                     }}>
                       Professional Medical Test Results Interface • Pulse Technology Precision
                     </p>
+
+                    {/* ECG Test Display - Embedded in ACD-1000 */}
+                    {activeACD1000Test === 'ecg' && (
+                      <div className="mt-8 p-6 rounded-xl" style={{
+                        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
+                        border: '2px solid rgba(239, 68, 68, 0.3)',
+                        boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+                      }}>
+                        <div className="mb-4">
+                          <h3 className="text-xl font-bold text-red-400 mb-2">ECG/EKG Live Monitor</h3>
+                          <p className="text-sm text-gray-400">Real-time cardiac waveform analysis from Polar H10</p>
+                        </div>
+
+                        {/* ECG Waveform */}
+                        <div className="bg-black/40 rounded-lg border border-red-500/20 p-4 mb-4">
+                          {ecgBuffer.length === 0 ? (
+                            <div className="text-center py-8">
+                              <div className="mb-2 text-xs text-yellow-400 font-bold">
+                                ⚠️ Waiting for ECG data...
+                              </div>
+                              <p className="text-sm text-gray-400">Connect Polar H10 and start streaming to see real-time ECG waveform</p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mb-2 text-xs text-green-400 text-center font-bold">
+                                ✅ LIVE: Displaying real-time ECG from Polar H10 ({ecgBuffer.length} samples)
+                              </div>
+                              <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                            </>
+                          )}
+                        </div>
+
+                        {/* HRV Metrics */}
+                        <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
+                          <HRVMetricsPanel
+                            sdnn={filteredLatest?.sdnn || undefined}
+                            rmssd={filteredLatest?.rmssd || undefined}
+                            pnn50={filteredLatest?.pnn50 || undefined}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Treadmill Test Display - Embedded in ACD-1000 */}
+                    {activeACD1000Test === 'treadmill' && (
+                      <div className="mt-8 p-6 rounded-xl" style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1))',
+                        border: '2px solid rgba(59, 130, 246, 0.3)',
+                        boxShadow: '0 0 30px rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold text-blue-400 mb-2 flex items-center gap-2">
+                              🏃 Live Exercise Session
+                              {exerciseData && (
+                                <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500 text-white animate-pulse">
+                                  LIVE
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-sm text-gray-400">Real-time treadmill & exercise monitoring from Strava, Polar & Samsung</p>
+                          </div>
+                          <button
+                            onClick={() => setActiveACD1000Test(null)}
+                            className="px-3 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-sm"
+                          >
+                            Close
+                          </button>
+                        </div>
+
+                        {!exerciseData ? (
+                          <div className="text-center py-12">
+                            <Activity className="h-16 w-16 text-blue-400/30 mx-auto mb-4" />
+                            <p className="text-gray-400 mb-2">No active exercise session</p>
+                            <p className="text-sm text-gray-500">Start an activity on Strava, Polar, or Samsung Health to see live data</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {/* Exercise Session Header */}
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="p-4 rounded-lg bg-white/5 border border-blue-500/30">
+                                <div className="text-xs text-gray-400 mb-1">Duration</div>
+                                <div className="text-2xl font-bold text-blue-400">
+                                  {exerciseData.duration || '00:00'}
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-blue-500/30">
+                                <div className="text-xs text-gray-400 mb-1">Distance</div>
+                                <div className="text-2xl font-bold text-blue-400">
+                                  {exerciseData.distance ? `${exerciseData.distance.toFixed(2)} mi` : '0.00 mi'}
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-blue-500/30">
+                                <div className="text-xs text-gray-400 mb-1">Calories</div>
+                                <div className="text-2xl font-bold text-blue-400">
+                                  {exerciseData.calories || 0} kcal
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Heart Rate Display */}
+                            <div className="p-4 rounded-lg bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-sm font-semibold text-red-400">❤️ Heart Rate</div>
+                                <div className="text-3xl font-bold text-red-400">
+                                  {exerciseData.heartRate || filteredLatest?.heartRate || '--'} BPM
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-3 text-sm">
+                                <div>
+                                  <div className="text-xs text-gray-400">Avg HR</div>
+                                  <div className="text-lg font-semibold text-orange-400">{exerciseData.avgHeartRate || '--'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400">Max HR</div>
+                                  <div className="text-lg font-semibold text-red-400">{exerciseData.maxHeartRate || '--'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400">HR Zone</div>
+                                  <div className="text-lg font-semibold text-yellow-400">
+                                    {exerciseData.hrZone || 'Zone 3'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Pace & Speed */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 rounded-lg bg-white/5 border border-blue-500/20">
+                                <div className="text-xs text-gray-400 mb-2">🏃 Pace</div>
+                                <div className="text-xl font-bold text-blue-300">
+                                  {exerciseData.pace || '--:--'} /mi
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-blue-500/20">
+                                <div className="text-xs text-gray-400 mb-2">⚡ Speed</div>
+                                <div className="text-xl font-bold text-blue-300">
+                                  {exerciseData.speed ? `${exerciseData.speed.toFixed(1)} mph` : '--'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Additional Metrics */}
+                            {(exerciseData.elevation || exerciseData.incline || exerciseData.cadence) && (
+                              <div className="grid grid-cols-3 gap-3 text-sm">
+                                {exerciseData.elevation && (
+                                  <div className="p-3 rounded bg-white/5">
+                                    <div className="text-xs text-gray-400">Elevation</div>
+                                    <div className="text-lg font-semibold text-green-400">{exerciseData.elevation} ft</div>
+                                  </div>
+                                )}
+                                {exerciseData.incline && (
+                                  <div className="p-3 rounded bg-white/5">
+                                    <div className="text-xs text-gray-400">Incline</div>
+                                    <div className="text-lg font-semibold text-purple-400">{exerciseData.incline}%</div>
+                                  </div>
+                                )}
+                                {exerciseData.cadence && (
+                                  <div className="p-3 rounded bg-white/5">
+                                    <div className="text-xs text-gray-400">Cadence</div>
+                                    <div className="text-lg font-semibold text-cyan-400">{exerciseData.cadence} spm</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* VO2 & Recovery Status */}
+                            <div className="p-4 rounded-lg bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">VO₂ Estimate</div>
+                                  <div className="text-xl font-bold text-purple-400">
+                                    {exerciseData.vo2 ? `${exerciseData.vo2.toFixed(1)} ml/kg/min` : '--'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Recovery Status</div>
+                                  <div className="text-xl font-bold text-green-400">
+                                    {exerciseData.recoveryStatus || 'Good ✓'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Data Source Indicator */}
+                            <div className="text-center pt-4 border-t border-white/10">
+                              <div className="text-xs text-gray-500">
+                                Data source: {exerciseData.source || 'Strava/Polar/Samsung'} • Last updated: {new Date().toLocaleTimeString()}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Spirometry Test Display - Embedded in ACD-1000 */}
+                    {activeACD1000Test === 'spirometry' && (
+                      <div className="mt-8 p-6 rounded-xl" style={{
+                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(8, 145, 178, 0.1))',
+                        border: '2px solid rgba(6, 182, 212, 0.3)',
+                        boxShadow: '0 0 30px rgba(6, 182, 212, 0.2)'
+                      }}>
+                        <div className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                              🫁 Live Spirometry Test
+                              {spirometryData && (
+                                <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500 text-white animate-pulse">
+                                  LIVE
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-sm text-gray-400">Real-time lung function monitoring from MIR SmartOne / Spirobank Smart</p>
+                          </div>
+                          <button
+                            onClick={() => setActiveACD1000Test(null)}
+                            className="px-3 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-sm"
+                          >
+                            Close
+                          </button>
+                        </div>
+
+                        {!spirometryData ? (
+                          <div className="text-center py-12">
+                            <Wind className="h-16 w-16 text-cyan-400/30 mx-auto mb-4" />
+                            <p className="text-gray-400 mb-2">No active spirometry test</p>
+                            <p className="text-sm text-gray-500">Connect MIR spirometer via Bluetooth to start streaming real-time test results</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {/* Test Results Header */}
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/30">
+                                <div className="text-xs text-gray-400 mb-1">FEV1</div>
+                                <div className="text-xs text-gray-500 mb-2">Forced Expiratory Vol @ 1s</div>
+                                <div className="text-2xl font-bold text-cyan-400">
+                                  {spirometryData.fev1 ? `${spirometryData.fev1.toFixed(2)} L` : '--'}
+                                </div>
+                                <div className="text-xs mt-1">
+                                  <span className={spirometryData.fev1Percent >= 80 ? 'text-green-400' : 'text-yellow-400'}>
+                                    {spirometryData.fev1Percent || '--'}% predicted
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/30">
+                                <div className="text-xs text-gray-400 mb-1">FVC</div>
+                                <div className="text-xs text-gray-500 mb-2">Forced Vital Capacity</div>
+                                <div className="text-2xl font-bold text-cyan-400">
+                                  {spirometryData.fvc ? `${spirometryData.fvc.toFixed(2)} L` : '--'}
+                                </div>
+                                <div className="text-xs mt-1">
+                                  <span className={spirometryData.fvcPercent >= 80 ? 'text-green-400' : 'text-yellow-400'}>
+                                    {spirometryData.fvcPercent || '--'}% predicted
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/30">
+                                <div className="text-xs text-gray-400 mb-1">FEV1/FVC</div>
+                                <div className="text-xs text-gray-500 mb-2">Ratio</div>
+                                <div className="text-2xl font-bold text-cyan-400">
+                                  {spirometryData.fev1FvcRatio ? `${(spirometryData.fev1FvcRatio * 100).toFixed(0)}%` : '--'}
+                                </div>
+                                <div className="text-xs mt-1">
+                                  <span className={spirometryData.fev1FvcRatio >= 0.70 ? 'text-green-400' : 'text-yellow-400'}>
+                                    {spirometryData.fev1FvcRatio >= 0.70 ? 'Normal ✓' : 'Below normal'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* PEF - Peak Expiratory Flow */}
+                            <div className="p-4 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-sm font-semibold text-cyan-400">Peak Expiratory Flow (PEF)</div>
+                                <div className="text-3xl font-bold text-cyan-400">
+                                  {spirometryData.pef || '--'} L/min
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-400">Predicted: </span>
+                                  <span className="text-gray-300">{spirometryData.pefPredicted || '--'} L/min</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Best: </span>
+                                  <span className="text-green-400">{spirometryData.pefBest || spirometryData.pef || '--'} L/min</span>
+                                </div>
+                                <div>
+                                  <span className={spirometryData.pefPercent >= 80 ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
+                                    {spirometryData.pefPercent || '--'}% {spirometryData.pefPercent >= 80 ? '🟢 GOOD' : '🟡 MODERATE'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status Indicators */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/20">
+                                <div className="text-xs text-gray-400 mb-2">📊 Test Quality</div>
+                                <div className="text-lg font-semibold">
+                                  <span className={
+                                    spirometryData.quality === 'A' || spirometryData.quality === 'B'
+                                      ? 'text-green-400'
+                                      : 'text-yellow-400'
+                                  }>
+                                    Grade {spirometryData.quality || 'A'} - {
+                                      spirometryData.quality === 'A' ? 'Excellent' :
+                                      spirometryData.quality === 'B' ? 'Good' :
+                                      spirometryData.quality === 'C' ? 'Acceptable' : 'Fair'
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/20">
+                                <div className="text-xs text-gray-400 mb-2">🔄 Test Number</div>
+                                <div className="text-lg font-semibold text-cyan-400">
+                                  Attempt #{spirometryData.attemptNumber || 3}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Overall Interpretation */}
+                            <div className="p-4 rounded-lg bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30">
+                              <div className="text-sm font-semibold text-purple-400 mb-2">Clinical Interpretation</div>
+                              <div className="text-white">
+                                {spirometryData.interpretation ||
+                                  (spirometryData.fev1Percent >= 80 && spirometryData.fvcPercent >= 80 && spirometryData.fev1FvcRatio >= 0.70
+                                    ? '✅ Normal spirometry - No obstruction or restriction detected'
+                                    : spirometryData.fev1FvcRatio < 0.70
+                                    ? '⚠️ Obstructive pattern detected - Consider bronchodilator response test'
+                                    : '⚠️ Abnormal values detected - Clinical correlation recommended'
+                                  )
+                                }
+                              </div>
+                            </div>
+
+                            {/* 7-Day Trend */}
+                            {spirometryData.trend && (
+                              <div className="p-4 rounded-lg bg-white/5 border border-cyan-500/20">
+                                <div className="text-sm font-semibold text-cyan-400 mb-2">📈 7-Day Trend (FEV1)</div>
+                                <div className="flex items-center gap-2">
+                                  {spirometryData.trendDirection === 'improving' ? (
+                                    <>
+                                      <TrendingUp className="h-5 w-5 text-green-400" />
+                                      <span className="text-green-400 font-semibold">Improving</span>
+                                      <span className="text-gray-400">+{spirometryData.trendChange}% vs last week</span>
+                                    </>
+                                  ) : spirometryData.trendDirection === 'declining' ? (
+                                    <>
+                                      <TrendingDown className="h-5 w-5 text-red-400" />
+                                      <span className="text-red-400 font-semibold">Declining</span>
+                                      <span className="text-gray-400">{spirometryData.trendChange}% vs last week</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-gray-400">●</span>
+                                      <span className="text-gray-400 font-semibold">Stable</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Device Info */}
+                            <div className="text-center pt-4 border-t border-white/10">
+                              <div className="text-xs text-gray-500">
+                                Device: {spirometryData.device || 'MIR Smart One'} • Test completed: {new Date().toLocaleTimeString()}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </GlassCard>
@@ -3134,6 +3613,32 @@ export function VitalsPage() {
                         textShadow: '0 0 8px rgba(134, 239, 172, 0.8)'
                       }}>LIVE</span>
                     </div>
+
+                    {/* Streaming Device Indicator - Very Small Widget */}
+                    {filteredLatest?.source === 'device' && filteredLatest?.deviceId && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded" style={{
+                        background: 'rgba(6, 182, 212, 0.2)',
+                        border: '1px solid rgba(6, 182, 212, 0.4)',
+                        boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)'
+                      }}>
+                        <span style={{
+                          fontSize: '8px',
+                          color: '#67E8F9',
+                          fontWeight: '600',
+                          fontFamily: 'monospace',
+                          textShadow: '0 0 4px rgba(103, 232, 249, 0.6)',
+                          letterSpacing: '0.3px'
+                        }}>
+                          {(() => {
+                            const deviceId = filteredLatest.deviceId;
+                            if (deviceId.includes('polar')) return '📡 Polar H10';
+                            if (deviceId.includes('samsung')) return '📱 Samsung';
+                            if (deviceId.includes('strava')) return '⌚ Strava';
+                            return `📡 ${deviceId.split('_')[0].toUpperCase()}`;
+                          })()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <h2 className="text-3xl font-bold tracking-wide" style={{
                     color: '#FCD34D',
@@ -5283,55 +5788,69 @@ export function VitalsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr
-                        className="border-b"
-                        style={{
-                          borderColor: 'rgba(59, 130, 246, 0.3)'
-                        }}
-                      >
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Timestamp</th>
+                      {/* Category Header Row */}
+                      <tr style={{ borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                        <th className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#60a5fa', opacity: 0.7, borderRight: '1px solid rgba(59, 130, 246, 0.15)' }}>TIME</th>
+                        <th colSpan={5} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#60a5fa', opacity: 0.7, borderRight: '1px solid rgba(59, 130, 246, 0.15)' }}>VITAL SIGNS</th>
+                        <th colSpan={2} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#10b981', opacity: 0.7, borderRight: '1px solid rgba(16, 185, 129, 0.15)' }}>METABOLIC</th>
+                        <th className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#22c55e', opacity: 0.7, borderRight: '1px solid rgba(34, 197, 94, 0.15)' }}>PULMONARY</th>
+                        <th colSpan={5} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#34d399', opacity: 0.7, borderRight: '1px solid rgba(52, 211, 153, 0.15)' }}>HRV</th>
+                        <th colSpan={4} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#fbbf24', opacity: 0.7, borderRight: '1px solid rgba(251, 191, 36, 0.15)' }}>CARDIAC</th>
+                        <th colSpan={3} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#a78bfa', opacity: 0.7, borderRight: '1px solid rgba(167, 139, 250, 0.15)' }}>EXERCISE</th>
+                        <th colSpan={2} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#06b6d4', opacity: 0.7, borderRight: '1px solid rgba(6, 182, 212, 0.15)' }}>ECG</th>
+                        <th colSpan={4} className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#60a5fa', opacity: 0.7, borderRight: '1px solid rgba(59, 130, 246, 0.15)' }}>METADATA</th>
+                        <th className="text-center py-2 px-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: '#60a5fa', opacity: 0.7 }}>⚙</th>
+                      </tr>
 
-                        {/* Basic Vitals */}
+                      {/* Column Headers */}
+                      <tr className="border-b" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+                        {/* TIME */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>Date</th>
+
+                        {/* VITAL SIGNS - Blue Theme */}
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>BP</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>HR</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Temp</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Weight</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>O₂</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>RR</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Sugar</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>RR</th>
 
-                        {/* HRV Metrics - Emerald Theme */}
+                        {/* METABOLIC - Green Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#10b981' }}>Weight</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#10b981', borderRight: '1px solid rgba(16, 185, 129, 0.1)' }}>Sugar</th>
+
+                        {/* PULMONARY - Green Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#22c55e', borderRight: '1px solid rgba(34, 197, 94, 0.1)' }}>Peak</th>
+
+                        {/* HRV - Emerald Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>HRV</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>SDNN</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>RMSSD</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>pNN50</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)', borderRight: '1px solid rgba(52, 211, 153, 0.1)' }}>RR-I</th>
 
-                        {/* Cardiac Function - Gold Theme */}
+                        {/* CARDIAC - Gold Theme */}
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>EF%</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>MAP</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>PP</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)' }}>BP VAR</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#fbbf24', textShadow: '0 0 8px rgba(251, 191, 36, 0.5)', borderRight: '1px solid rgba(251, 191, 36, 0.1)' }}>BP-V</th>
 
-                        {/* Exercise Capacity - Purple Theme */}
+                        {/* EXERCISE - Purple Theme */}
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>VO₂</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>6MW</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)' }}>HRR</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#a78bfa', textShadow: '0 0 8px rgba(167, 139, 250, 0.5)', borderRight: '1px solid rgba(167, 139, 250, 0.1)' }}>HRR</th>
 
-                        {/* HRV General - Emerald Theme */}
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#34d399', textShadow: '0 0 8px rgba(52, 211, 153, 0.5)' }}>HRV</th>
+                        {/* ECG - Cyan Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>ECG-V</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)', borderRight: '1px solid rgba(6, 182, 212, 0.1)' }}>ECG#</th>
 
-                        {/* ECG Metrics - Cyan Theme */}
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>ECG V</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>RR-I</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#06b6d4', textShadow: '0 0 8px rgba(6, 182, 212, 0.5)' }}>ECG #</th>
-
-                        {/* Metadata - Blue Theme */}
+                        {/* METADATA - Blue/Gray Theme */}
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>H₂O</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Source</th>
                         <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Device</th>
+                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>Notes</th>
 
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Peak Flow</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Hydration</th>
-                        <th className="text-left py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Notes</th>
-                        <th className="text-center py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>Actions</th>
+                        {/* ACTIONS */}
+                        <th className="text-center py-3 px-3 text-xs font-mono uppercase tracking-wider" style={{ color: '#60a5fa' }}>⚙</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -5344,9 +5863,12 @@ export function VitalsPage() {
                             animation: isHistoricalReadingsExpanded ? `fadeInRow 0.3s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
-                          <td className="py-3 px-3 text-sm font-mono" style={{ color: '#e2e8f0' }}>
+                          {/* TIME CATEGORY */}
+                          <td className="py-3 px-3 text-sm font-mono" style={{ color: '#e2e8f0', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>
                             {format(new Date(vital.timestamp), 'MMM d, h:mm a')}
                           </td>
+
+                          {/* VITAL SIGNS CATEGORY */}
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
                             {vital.bloodPressureSystolic && vital.bloodPressureDiastolic
                               ? `${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}`
@@ -5358,20 +5880,50 @@ export function VitalsPage() {
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f97316' }}>
                             {vital.temperature ? `${vital.temperature.toFixed(1)}°F` : '--'}
                           </td>
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#10b981' }}>
-                            {vital.weight || '--'}
-                          </td>
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
                             {vital.oxygenSaturation ? `${vital.oxygenSaturation}%` : '--'}
                           </td>
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#8b5cf6' }}>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#8b5cf6', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>
                             {vital.respiratoryRate || '--'}
                           </td>
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f59e0b' }}>
+
+                          {/* METABOLIC CATEGORY */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#10b981' }}>
+                            {vital.weight || '--'}
+                          </td>
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#f59e0b', borderRight: '1px solid rgba(16, 185, 129, 0.1)' }}>
                             {vital.bloodSugar || '--'}
                           </td>
 
-                          {/* HRV Metrics - Emerald Theme with Medical Ranges */}
+                          {/* PULMONARY CATEGORY */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#22c55e', borderRight: '1px solid rgba(34, 197, 94, 0.1)' }}>
+                            {vital.peakFlow ? `${vital.peakFlow}` : '--'}
+                          </td>
+
+                          {/* HRV CATEGORY - Emerald Theme with Medical Ranges */}
+                          {/* HRV General */}
+                          <td className="py-3 px-3">
+                            {(() => {
+                              const value = vital.heartRateVariability;
+                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
+                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].heartRateVariability : null;
+                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
+                              // HRV ranges: <20 poor, 20-50 fair, 50-100 good, >100 excellent
+                              const color = value < 20 ? '#ef4444' : value < 50 ? '#f59e0b' : value < 100 ? '#34d399' : '#22c55e';
+                              const alert = value < 20 ? '⚠️' : '';
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
+                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
+                                    {value.toFixed(1)}ms
+                                  </span>
+                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
+
+                          {/* SDNN */}
                           <td className="py-3 px-3">
                             {(() => {
                               const value = vital.sdnn;
@@ -5433,7 +5985,12 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          {/* Cardiac Function - Gold Theme with Medical Ranges */}
+                          {/* RR Interval (last HRV metric) */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4', borderRight: '1px solid rgba(52, 211, 153, 0.1)' }}>
+                            {vital.heartRateVariability ? `${vital.heartRateVariability.toFixed(0)}ms` : '--'}
+                          </td>
+
+                          {/* CARDIAC CATEGORY - Gold Theme with Medical Ranges */}
                           <td className="py-3 px-3">
                             {(() => {
                               const value = vital.ejectionFraction;
@@ -5494,7 +6051,7 @@ export function VitalsPage() {
                               );
                             })()}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-3 px-3" style={{ borderRight: '1px solid rgba(251, 191, 36, 0.1)' }}>
                             {(() => {
                               const value = vital.bpVariability;
                               if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
@@ -5515,7 +6072,7 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          {/* Exercise Capacity - Purple Theme with Medical Ranges */}
+                          {/* EXERCISE CATEGORY - Purple Theme with Medical Ranges */}
                           <td className="py-3 px-3">
                             {(() => {
                               const value = vital.vo2Max;
@@ -5556,7 +6113,7 @@ export function VitalsPage() {
                               );
                             })()}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-3 px-3" style={{ borderRight: '1px solid rgba(167, 139, 250, 0.1)' }}>
                             {(() => {
                               const value = vital.hrRecovery;
                               if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
@@ -5577,29 +6134,8 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          {/* HRV General - Emerald Theme */}
-                          <td className="py-3 px-3">
-                            {(() => {
-                              const value = vital.heartRateVariability;
-                              if (!value) return <span className="text-gray-600 font-mono text-sm">--</span>;
-                              const prev = index < vitals.slice(-10).reverse().length - 1 ? vitals.slice(-10).reverse()[index + 1].heartRateVariability : null;
-                              const trend = prev ? (value > prev ? '↗' : value < prev ? '↘' : '→') : '';
-                              // HRV ranges: <20 poor, 20-50 fair, 50-100 good, >100 excellent
-                              const color = value < 20 ? '#ef4444' : value < 50 ? '#f59e0b' : value < 100 ? '#34d399' : '#22c55e';
-                              const alert = value < 20 ? '⚠️' : '';
-                              return (
-                                <div className="flex items-center gap-1.5">
-                                  {alert && <span className="text-red-500 animate-pulse">{alert}</span>}
-                                  <span className="font-mono font-bold text-sm" style={{ color, textShadow: `0 0 8px ${color}80` }}>
-                                    {value.toFixed(1)}ms
-                                  </span>
-                                  {trend && <span className="text-xs opacity-70">{trend}</span>}
-                                </div>
-                              );
-                            })()}
-                          </td>
-
-                          {/* ECG Waveform Value - Cyan Theme */}
+                          {/* ECG CATEGORY - Cyan Theme */}
+                          {/* ECG Waveform Value */}
                           <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
                             {(() => {
                               // Extract ECG value from notes field if present
@@ -5608,21 +6144,23 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          {/* RR Interval - Cyan Theme */}
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
-                            {vital.heartRateVariability ? `${vital.heartRateVariability.toFixed(0)}ms` : '--'}
-                          </td>
-
-                          {/* ECG Sample Count - Cyan Theme */}
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4' }}>
+                          {/* ECG Sample Count */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#06b6d4', borderRight: '1px solid rgba(6, 182, 212, 0.1)' }}>
                             --
                           </td>
 
-                          {/* Source - Blue Theme */}
+                          {/* METADATA CATEGORY - Blue Theme */}
+                          {/* Hydration */}
+                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
+                            {vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}
+                          </td>
+
+                          {/* Source */}
                           <td className="py-3 px-3 text-sm font-mono" style={{ color: '#60a5fa' }}>
                             {(() => {
                               const source = vital.source || 'manual';
-                              const badgeColor = source === 'device' ? '#10b981' : source === 'import' ? '#f59e0b' : '#60a5fa';
+                              // Unified colors matching gauge display: device=#22c55e, import=#fbbf24, manual=#60a5fa
+                              const badgeColor = source === 'device' ? '#22c55e' : source === 'import' ? '#fbbf24' : '#60a5fa';
                               return (
                                 <span className="px-2 py-1 rounded text-xs font-semibold" style={{
                                   background: `${badgeColor}20`,
@@ -5635,7 +6173,7 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          {/* Device ID - Blue Theme */}
+                          {/* Device ID */}
                           <td className="py-3 px-3 text-sm font-mono" style={{ color: '#60a5fa' }}>
                             {(() => {
                               const deviceId = vital.deviceId;
@@ -5648,13 +6186,8 @@ export function VitalsPage() {
                             })()}
                           </td>
 
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#22c55e' }}>
-                            {vital.peakFlow ? `${vital.peakFlow}` : '--'}
-                          </td>
-                          <td className="py-3 px-3 text-sm font-mono font-semibold" style={{ color: '#3b82f6' }}>
-                            {vital.hydrationStatus ? `${vital.hydrationStatus}%` : '--'}
-                          </td>
-                          <td className="py-3 px-3 text-sm" style={{ color: '#cbd5e1' }}>
+                          {/* Notes */}
+                          <td className="py-3 px-3 text-sm" style={{ color: '#cbd5e1', borderRight: '1px solid rgba(59, 130, 246, 0.1)' }}>
                             {vital.notes || '--'}
                           </td>
                           <td className="py-3 px-3 text-center">
@@ -7789,12 +8322,13 @@ export function VitalsPage() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
           onClick={() => setShowECGModal(false)}
         >
-          <div className="max-w-7xl w-full my-8" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-5xl w-full my-8" onClick={(e) => e.stopPropagation()}>
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-red-500/30 shadow-2xl shadow-red-500/20">
-              {/* Close Button */}
+              {/* Close Button - Enhanced visibility */}
               <button
                 onClick={() => setShowECGModal(false)}
-                className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-black/50 hover:bg-black/70 transition-all"
+                className="absolute top-4 right-4 z-10 p-3 rounded-lg bg-red-500/80 hover:bg-red-600 transition-all border-2 border-white/30 shadow-lg shadow-red-500/50"
+                title="Close ECG Monitor"
               >
                 <X className="h-6 w-6 text-white" />
               </button>
@@ -7816,42 +8350,158 @@ export function VitalsPage() {
                 </div>
               </div>
 
-              {/* Live Connection Status */}
-              <div className="px-6 py-4">
+              {/* Live Connection Status & Streaming Controls */}
+              <div className="px-6 py-4 space-y-4">
                 <LiveVitalsDisplay />
+
+                {/* Streaming Control Panel */}
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/30 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-blue-400">Polar H10 Live Streaming</h4>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Stream ECG directly from your Polar H10 via Bluetooth
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {streamingStatus === 'streaming' && (
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30">
+                          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                          <span className="text-xs text-green-400 font-bold">LIVE</span>
+                        </div>
+                      )}
+                      {!isStreaming ? (
+                        <button
+                          onClick={handleStartECGStream}
+                          disabled={streamingStatus === 'connecting'}
+                          className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <Activity className="h-4 w-4" />
+                          {streamingStatus === 'connecting' ? 'Connecting...' : 'Start Live Stream'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleStopECGStream}
+                          className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-all flex items-center gap-2"
+                        >
+                          <X className="h-4 w-4" />
+                          Stop Stream
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {streamError && (
+                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                      <p className="text-xs text-red-400">❌ {streamError}</p>
+                    </div>
+                  )}
+
+                  {/* File Upload Zone */}
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <p className="text-xs text-gray-400 mb-2">Or import ECG file from third-party app:</p>
+                    <div
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) handleECGFileUpload(file);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      className="border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-lg p-6 text-center cursor-pointer transition-all"
+                    >
+                      <input
+                        type="file"
+                        id="ecgFileInput"
+                        accept=".hrv,.csv,.txt"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleECGFileUpload(file);
+                        }}
+                        className="hidden"
+                      />
+                      <label htmlFor="ecgFileInput" className="cursor-pointer">
+                        {uploadingFile ? (
+                          <div className="text-blue-400">
+                            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                            <p className="text-sm font-bold">Uploading...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm font-bold text-gray-300">Drop ECG file here or click to browse</p>
+                            <p className="text-xs text-gray-500 mt-1">Supports .HRV, .CSV, .TXT files</p>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* ECG Waveform Visualization - Currently showing TEST DATA */}
+              {/* ECG Waveform Visualization - Real-time from Polar H10 */}
               <div className="px-6 py-4">
                 <div className="bg-black/40 rounded-lg border border-red-500/20 p-4">
-                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
-                    ⚠️ DEMO MODE: Showing simulated ECG data - Connect Polar H10 for real-time monitoring
-                  </div>
-                  <ECGWaveformChart ecgData={testECGData} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                  {ecgBuffer.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="mb-2 text-xs text-yellow-400 font-bold">
+                        ⚠️ Waiting for ECG data...
+                      </div>
+                      <p className="text-sm text-gray-400">Connect Polar H10 and start streaming to see real-time ECG waveform</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-2 text-xs text-green-400 text-center font-bold">
+                        ✅ LIVE: Displaying real-time ECG from Polar H10 ({ecgBuffer.length} samples)
+                      </div>
+                      <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* HRV Metrics Panel - Currently showing TEST DATA */}
+              {/* HRV Metrics Panel - Real-time data */}
               <div className="px-6 py-4">
                 <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
-                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
-                    ⚠️ DEMO MODE: Showing simulated HRV metrics - Connect Polar H10 for real-time data
-                  </div>
-                  <HRVMetricsPanel
-                    sdnn={testHRVMetrics.sdnn}
-                    rmssd={testHRVMetrics.rmssd}
-                    pnn50={testHRVMetrics.pnn50}
-                  />
+                  {filteredLatest?.sdnn || filteredLatest?.rmssd || filteredLatest?.pnn50 ? (
+                    <>
+                      <div className="mb-2 text-xs text-green-400 text-center font-bold">
+                        ✅ LIVE: Real-time HRV metrics from Polar H10
+                      </div>
+                      <HRVMetricsPanel
+                        sdnn={filteredLatest?.sdnn || undefined}
+                        rmssd={filteredLatest?.rmssd || undefined}
+                        pnn50={filteredLatest?.pnn50 || undefined}
+                      />
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="mb-2 text-xs text-yellow-400 font-bold">
+                        ⚠️ Waiting for HRV data...
+                      </div>
+                      <p className="text-sm text-gray-400">Connect Polar H10 to see real-time HRV metrics</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* ECG Analysis Panel - Currently showing TEST DATA analysis */}
+              {/* ECG Analysis Panel - Real-time analysis */}
               <div className="px-6 py-4">
                 <div className="bg-black/40 rounded-lg border border-blue-500/20 p-4">
-                  <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
-                    ⚠️ DEMO MODE: Analyzing simulated ECG data - Connect Polar H10 for real-time cardiac analysis
-                  </div>
-                  <ECGAnalysisPanel ecgData={testECGData} samplingRate={130} autoAnalyze={true} />
+                  {ecgBuffer.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="mb-2 text-xs text-yellow-400 font-bold">
+                        ⚠️ Waiting for ECG data for analysis...
+                      </div>
+                      <p className="text-sm text-gray-400">Connect Polar H10 to see real-time cardiac analysis</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-2 text-xs text-green-400 text-center font-bold">
+                        ✅ LIVE: Analyzing real-time ECG from Polar H10
+                      </div>
+                      <ECGAnalysisPanel ecgData={ecgBuffer} samplingRate={130} autoAnalyze={true} />
+                    </>
+                  )}
                 </div>
               </div>
 

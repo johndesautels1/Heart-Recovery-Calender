@@ -121,19 +121,15 @@ class ECGSample extends Model<ECGSampleAttributes, ECGSampleCreationAttributes> 
         indexes: [
           {
             fields: ['userId', 'timestamp'],
-            comment: 'Index for querying ECG samples by user and time range',
           },
           {
             fields: ['sessionId'],
-            comment: 'Index for querying all samples from a recording session',
           },
           {
             fields: ['vitalsSampleId'],
-            comment: 'Index for linking ECG samples to vitals samples',
           },
           {
             fields: ['rPeak'],
-            comment: 'Index for quickly finding R-peaks',
           },
         ],
       }

@@ -14,7 +14,11 @@ export const getVitals = async (req: Request, res: Response) => {
     // Check query param first (for admin/therapist viewing other patients), fall back to logged-in user
     const userId = req.query.userId || req.user?.id;
     console.log('[vitalsController] getVitals - userId from query:', req.query.userId, 'user.id:', req.user?.id, 'using:', userId);
-    const { start, end, limit = 50 } = req.query;
+
+    // Support both start/end and startDate/endDate for compatibility
+    const start = req.query.start || req.query.startDate;
+    const end = req.query.end || req.query.endDate;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10000; // Increased default to 10000
 
     const where: any = { userId };
 
@@ -27,7 +31,7 @@ export const getVitals = async (req: Request, res: Response) => {
     const vitals = await VitalsSample.findAll({
       where,
       order: [['timestamp', 'DESC']],
-      limit: parseInt(limit as string)
+      limit
     });
 
     res.json({ data: vitals });
