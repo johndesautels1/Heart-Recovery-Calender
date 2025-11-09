@@ -144,27 +144,43 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       const PMD_CONTROL = 'fb005c81-02e7-f387-1cad-8acd2d8df0c8';
       const PMD_DATA = 'fb005c82-02e7-f387-1cad-8acd2d8df0c8';
 
-      // Request Polar H10 device with Heart Rate Service AND PMD Service for ECG
+      // 🫀 CRITICAL: Request Polar H10 device with correct filter syntax
+      // filters array uses OR logic between objects, but AND logic within each object
+      // We want devices that have 'heart_rate' service OR name starts with 'Polar'
+      console.log('[BLE] 📡 Requesting Polar H10 device with heart_rate service...');
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          { services: ['heart_rate'] },
-          { namePrefix: 'Polar' },
-          { namePrefix: 'H10' }
+          {
+            services: ['heart_rate']  // Must have heart_rate service
+          },
+          {
+            namePrefix: 'Polar'  // OR name starts with 'Polar'
+          }
         ],
         optionalServices: [
-          'heart_rate',
           'battery_service',
           'device_information',
-          PMD_SERVICE  // Add PMD service for ECG streaming
+          PMD_SERVICE  // 🫀 PMD service for ECG waveform streaming
         ]
       });
 
-      console.log('[BLE] Polar H10 device selected:', device.name);
+      console.log('[BLE] ✅ Polar H10 device selected:', device.name);
+
+      // 🫀 CRITICAL: Store device BEFORE connecting to prevent garbage collection
       setBleDevice(device);
+
+      // Store server reference at function scope to keep it alive
+      let server: BluetoothRemoteGATTServer;
 
       // Connect to GATT server
       console.log('[BLE] Connecting to GATT server...');
-      const server = await device.gatt!.connect();
+
+      // 🫀 CRITICAL: Ensure device.gatt exists
+      if (!device.gatt) {
+        throw new Error('Bluetooth GATT not available on device');
+      }
+
+      server = await device.gatt.connect();
       console.log('[BLE] ✅ Connected to GATT server');
 
       // Add disconnection handler
