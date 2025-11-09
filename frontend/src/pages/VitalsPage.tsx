@@ -5894,7 +5894,21 @@ export function VitalsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {vitals.slice(-10).reverse().map((vital, index) => (
+                      {(() => {
+                        // 🫀 CRITICAL: Show comprehensive vitals first (with BP, weight, O2, temp, etc.)
+                        // Don't show heartbeat-only records that flood the table
+                        const comprehensiveVitals = vitals.filter(v =>
+                          v.bloodPressureSystolic || v.weight || v.oxygenSaturation ||
+                          v.temperature || v.bloodSugar || v.sdnn || v.rmssd || v.pnn50
+                        );
+
+                        // Show last 10 comprehensive vitals, or all vitals if < 10 comprehensive
+                        const displayVitals = comprehensiveVitals.length >= 10
+                          ? comprehensiveVitals.slice(-10)
+                          : vitals.slice(-10);
+
+                        return displayVitals.reverse();
+                      })().map((vital, index) => (
                         <tr
                           key={vital.id}
                           className="border-b transition-all duration-200 hover:bg-blue-500/10"
