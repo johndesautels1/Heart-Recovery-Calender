@@ -1441,20 +1441,12 @@ export function VitalsPage() {
 
   const luxuryFilter = getLuxuryTimePeriodFilter();
   const filteredForLuxury = vitals.filter(v => {
-    // Apply time period filter
+    // Apply time period filter ONLY
+    // 🫀 CRITICAL: Gauges should show data from ALL devices, not filtered by selectedDevice
+    // This ensures gauges always display the most recent vitals regardless of chart filter
     if (!luxuryFilter(v)) return false;
 
-    // 🫀 CRITICAL: Apply device filter (same logic as charts)
-    // This ensures gauges show ONLY Polar data when Polar is selected
-    let deviceMatch = true;
-    if (selectedDevice === 'samsung') {
-      deviceMatch = v.deviceId?.toLowerCase().includes('samsung') || v.source === 'device';
-    } else if (selectedDevice === 'polar') {
-      deviceMatch = v.deviceId?.toLowerCase().includes('polar');
-    }
-    // If 'all' selected, deviceMatch stays true (show all devices)
-
-    return deviceMatch;
+    return true; // Show all devices for gauges
   });
 
   // DEBUG: Log filtered data range
