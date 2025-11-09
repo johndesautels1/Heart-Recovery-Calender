@@ -137,6 +137,15 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         return;
       }
 
+      // Disconnect existing connection if any
+      if (bleDevice && bleDevice.gatt?.connected) {
+        console.log('[BLE] Disconnecting existing connection first...');
+        bleDevice.gatt.disconnect();
+        setBleConnected(false);
+        // Wait a moment for disconnection to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       console.log('[BLE] Requesting Polar H10 device...');
 
       // Polar PMD (Polar Measurement Data) Service UUIDs
@@ -163,12 +172,36 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       console.log('[BLE] Polar H10 device selected:', device.name);
       setBleDevice(device);
 
+      // Clear old ECG data before connecting (but keep heart rate to prevent false disconnection)
+      setEcgWaveform([]);
+      ecgBatchBuffer.current = [];
+      setRrIntervals([]);
+      console.log('[BLE] Cleared ECG buffers before new connection');
+
       // Connect to GATT server using Microsoft's pattern with explicit error handling
-      const server = await device.gatt!.connect().catch((error: Error) => {
+      console.log('[BLE] Connecting to GATT server...');
+      let server = await device.gatt!.connect().catch((error: Error) => {
         console.error('[BLE] GATT connection failed:', error);
         throw new Error(`GATT connection failed: ${error.message}`);
       });
       console.log('[BLE] Connected to GATT server');
+
+      // Check if still connected before waiting
+      console.log('[BLE] Connection status before wait:', server.connected);
+
+      // Wait 1 second for connection to stabilize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check if still connected after waiting
+      console.log('[BLE] Connection status after wait:', server.connected);
+      console.log('[BLE] Connection stabilized, getting heart_rate service...');
+
+      // Reconnect if needed
+      if (!server.connected) {
+        console.log('[BLE] Reconnecting because connection was lost during wait...');
+        server = await device.gatt!.connect();
+        console.log('[BLE] Reconnected');
+      }
 
       // Get Heart Rate service
       const service = await server.getPrimaryService('heart_rate');
@@ -348,30 +381,35 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                     lastBatchSentTime.current = now;
 
                     // Send to backend with proper auth
-                    fetch('http://localhost:4000/api/ecg/stream', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                      },
-                      body: JSON.stringify({
-                        userId: user?.id, // 🫀 CRITICAL: Required by backend
-                        heartRate: heartRate || 0, // Required field
-                        samples: batch, // FULL waveform array
-                        samplingRate: 130,
-                        timestamp: new Date().toISOString(),
-                        deviceId: 'polar_h10_web_bluetooth',
-                        source: 'polar_h10_live'
-                      })
-                    }).then(response => {
-                      if (!response.ok) {
-                        console.error(`[ECG-STREAM] Failed to send waveform: ${response.status} ${response.statusText}`);
-                      } else {
-                        console.log(`[ECG-STREAM] ✅ Sent ${batch.length} ECG samples to backend`);
-                      }
-                    }).catch(error => {
-                      console.error('[ECG-STREAM] Error sending waveform:', error);
-                    });
+                    // Only send if we have a valid heart rate (use state, not local var)
+                    if (heartRate && heartRate >= 30 && heartRate <= 250) {
+                      fetch('http://localhost:4000/api/ecg/stream', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                          userId: user?.id, // 🫀 CRITICAL: Required by backend
+                          heartRate: heartRate, // Use state value (in scope for ECG listener)
+                          ecgWaveform: batch, // For database storage (ECGSample table)
+                          samples: batch, // 🫀 CRITICAL: For WebSocket broadcast to VitalsPage
+                          samplingRate: 130,
+                          timestamp: new Date().toISOString(),
+                          deviceId: 'polar_h10_web_bluetooth',
+                          sessionId: `polar_h10_session_${user?.id}_${Date.now()}`,
+                          source: 'polar_h10_live'
+                        })
+                      }).then(response => {
+                        if (!response.ok) {
+                          console.error(`[ECG-STREAM] Failed to send waveform: ${response.status} ${response.statusText}`);
+                        } else {
+                          console.log(`[ECG-STREAM] ✅ Sent ${batch.length} ECG samples to backend (DB + WebSocket)`);
+                        }
+                      }).catch(error => {
+                        console.error('[ECG-STREAM] Error sending waveform:', error);
+                      });
+                    }
                   }
                 }
               }
@@ -425,6 +463,10 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       setBleConnected(false);
       console.log('[BLE] Disconnected from Polar H10');
     }
+    // Clear ECG waveform buffer on disconnect
+    setEcgWaveform([]);
+    ecgBatchBuffer.current = [];
+    console.log('[BLE] Cleared ECG buffers');
   };
 
   return (
