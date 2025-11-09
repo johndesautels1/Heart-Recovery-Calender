@@ -159,15 +159,15 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       const PMD_CONTROL = 'fb005c81-02e7-f387-1cad-8acd2d8df0c8';
       const PMD_DATA = 'fb005c82-02e7-f387-1cad-8acd2d8df0c8';
 
-      // Request Polar H10 device with Heart Rate Service AND PMD Service for ECG
+      // Request Polar H10 device - ONLY show devices with name starting with "Polar"
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          { services: ['heart_rate'] },
-          { namePrefix: 'Polar' },
-          { namePrefix: 'H10' }
+          {
+            namePrefix: 'Polar',
+            services: ['heart_rate']  // Must have BOTH Polar name AND heart_rate service
+          }
         ],
         optionalServices: [
-          'heart_rate',
           'battery_service',
           'device_information',
           PMD_SERVICE  // Add PMD service for ECG streaming
