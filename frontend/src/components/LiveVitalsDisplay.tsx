@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Heart, Activity, Wifi, WifiOff, Bluetooth } from 'lucide-react';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { useAuth } from '../contexts/AuthContext';
 import { GlassCard, Button } from './ui';
 
 interface LiveVitalsDisplayProps {
@@ -9,6 +10,7 @@ interface LiveVitalsDisplayProps {
 
 export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType = 'all' }) => {
   const { isConnected, latestHeartRate, latestVitals, latestECG } = useWebSocket();
+  const { user } = useAuth();
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('Never');
   const [bleDevice, setBleDevice] = useState<BluetoothDevice | null>(null);
@@ -26,6 +28,10 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
   // ECG waveform state
   const [ecgWaveform, setEcgWaveform] = useState<number[]>([]);
   const [ecgSamplingRate, setEcgSamplingRate] = useState<number>(130); // Polar H10 default: 130 Hz
+
+  // 🫀 CRITICAL: Separate batch accumulator for backend transmission
+  const ecgBatchBuffer = useRef<number[]>([]);
+  const lastBatchSentTime = useRef<number>(Date.now());
 
   useEffect(() => {
     if (latestHeartRate?.data) {
@@ -314,7 +320,7 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                 if (ecgSamples.length > 0) {
                   console.log(`[PMD] ECG waveform: ${ecgSamples.length} samples, avg=${(ecgSamples.reduce((a,b) => a+b, 0) / ecgSamples.length).toFixed(2)}mV`);
 
-                  // Update ECG waveform state (keep last 1300 samples = 10 seconds at 130Hz)
+                  // Update ECG waveform display buffer (keep last 1300 samples = 10 seconds at 130Hz)
                   setEcgWaveform(prev => {
                     const updated = [...prev, ...ecgSamples];
                     if (updated.length > 1300) {
@@ -323,43 +329,45 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                     return updated;
                   });
 
-                  // 🫀 CRITICAL: Accumulate ECG samples and send in batches
-                  // Throttle to 1 batch per second to avoid overwhelming backend
-                  setEcgWaveform(prev => {
-                    const updated = [...prev, ...ecgSamples];
+                  // 🫀 CRITICAL: Accumulate samples in batch buffer for backend transmission
+                  ecgBatchBuffer.current.push(...ecgSamples);
 
-                    // Send batch every 130 samples (approximately 1 second at 130 Hz)
-                    if (updated.length >= 130) {
-                      const batch = updated.slice(-130); // Last 130 samples
+                  // Send batch every 130 samples (approximately 1 second at 130 Hz)
+                  // OR every 1 second (whichever comes first)
+                  const now = Date.now();
+                  const timeSinceLastSend = now - lastBatchSentTime.current;
 
-                      // Send to backend with proper auth
-                      fetch('http://localhost:4000/api/ecg/stream', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify({
-                          heartRate: heartRate || 0, // Required field
-                          samples: batch, // FULL waveform array (130 samples = 1 second)
-                          samplingRate: 130,
-                          timestamp: new Date().toISOString(),
-                          deviceId: 'polar_h10_web_bluetooth',
-                          source: 'polar_h10_live'
-                        })
-                      }).then(response => {
-                        if (!response.ok) {
-                          console.error(`[ECG-STREAM] Failed to send waveform: ${response.status} ${response.statusText}`);
-                        } else {
-                          console.log(`[ECG-STREAM] ✅ Sent ${batch.length} ECG samples to backend`);
-                        }
-                      }).catch(error => {
-                        console.error('[ECG-STREAM] Error sending waveform:', error);
-                      });
-                    }
+                  if (ecgBatchBuffer.current.length >= 130 || timeSinceLastSend >= 1000) {
+                    const batch = [...ecgBatchBuffer.current]; // Copy the batch
+                    ecgBatchBuffer.current = []; // Clear the buffer
+                    lastBatchSentTime.current = now;
 
-                    return updated;
-                  });
+                    // Send to backend with proper auth
+                    fetch('http://localhost:4000/api/ecg/stream', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                      },
+                      body: JSON.stringify({
+                        userId: user?.id, // 🫀 CRITICAL: Required by backend
+                        heartRate: heartRate || 0, // Required field
+                        samples: batch, // FULL waveform array
+                        samplingRate: 130,
+                        timestamp: new Date().toISOString(),
+                        deviceId: 'polar_h10_web_bluetooth',
+                        source: 'polar_h10_live'
+                      })
+                    }).then(response => {
+                      if (!response.ok) {
+                        console.error(`[ECG-STREAM] Failed to send waveform: ${response.status} ${response.statusText}`);
+                      } else {
+                        console.log(`[ECG-STREAM] ✅ Sent ${batch.length} ECG samples to backend`);
+                      }
+                    }).catch(error => {
+                      console.error('[ECG-STREAM] Error sending waveform:', error);
+                    });
+                  }
                 }
               }
             } catch (parseError: any) {
