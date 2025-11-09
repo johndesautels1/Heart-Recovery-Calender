@@ -137,6 +137,21 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         return;
       }
 
+      // 🫀 CRITICAL: Disconnect any existing GATT connection FIRST
+      if (bleDevice && bleDevice.gatt) {
+        console.log('[BLE] Cleaning up existing connection...');
+        try {
+          if (bleDevice.gatt.connected) {
+            bleDevice.gatt.disconnect();
+            console.log('[BLE] Disconnected existing connection');
+          }
+        } catch (e) {
+          console.log('[BLE] No existing connection to clean up');
+        }
+        // Wait a moment for cleanup
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       console.log('[BLE] Requesting Polar H10 device...');
 
       // Polar PMD (Polar Measurement Data) Service UUIDs
@@ -162,13 +177,27 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       console.log('[BLE] Polar H10 device selected:', device.name);
       setBleDevice(device);
 
+      // Add disconnection handler FIRST before connecting
+      device.addEventListener('gattserverdisconnected', () => {
+        console.log('[BLE] GATT server disconnected');
+        setBleConnected(false);
+        setBleError('Polar H10 disconnected');
+      });
+
       // Connect to GATT server
+      console.log('[BLE] Connecting to GATT server...');
       const server = await device.gatt!.connect();
-      console.log('[BLE] Connected to GATT server');
+      console.log('[BLE] ✅ GATT server connected');
+
+      // Verify connection is active
+      if (!server.connected) {
+        throw new Error('GATT server not connected after connect()');
+      }
 
       // Get Heart Rate service
+      console.log('[BLE] Getting heart_rate service...');
       const service = await server.getPrimaryService('heart_rate');
-      console.log('[BLE] Got Heart Rate service');
+      console.log('[BLE] ✅ Got Heart Rate service');
 
       // Get Heart Rate Measurement characteristic
       const characteristic = await service.getCharacteristic('heart_rate_measurement');
@@ -400,12 +429,6 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         console.warn('[PMD] Continuing with heart rate only (ECG waveform unavailable)');
         // Don't fail the entire connection - heart rate still works
       }
-
-      // Handle disconnection
-      device.addEventListener('gattserverdisconnected', () => {
-        console.log('[BLE] Polar H10 disconnected');
-        setBleConnected(false);
-      });
 
     } catch (error: any) {
       console.error('[BLE] Error connecting to Polar H10:', error);
