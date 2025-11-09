@@ -208,6 +208,10 @@ router.post('/stream', async (req: Request, res: Response) => {
       if (pnn50 !== undefined) savedFields.push(`PNN50=${pnn50}%`);
 
       console.log(`[ECG-STREAM] ✅ Saved to database: ${savedFields.join(', ')} for user ${userId}`);
+
+      // 🫀 CRITICAL: Broadcast vitals update so HRV metrics display on LCD
+      const { broadcastVitalsUpdate } = await import('../services/websocketService');
+      broadcastVitalsUpdate(userId, savedVitalsSample.toJSON());
     } catch (dbError: any) {
       console.error('[ECG-STREAM] ❌ Failed to save to database:', dbError.message);
       // Continue with broadcast even if database save fails
