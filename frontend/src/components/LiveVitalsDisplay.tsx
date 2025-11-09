@@ -144,97 +144,31 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       const PMD_CONTROL = 'fb005c81-02e7-f387-1cad-8acd2d8df0c8';
       const PMD_DATA = 'fb005c82-02e7-f387-1cad-8acd2d8df0c8';
 
-      // 🫀 CRITICAL: Request Polar H10 device with correct filter syntax
-      // filters array uses OR logic between objects, but AND logic within each object
-      // We want devices that have 'heart_rate' service OR name starts with 'Polar'
-      console.log('[BLE] 📡 Requesting Polar H10 device with heart_rate service...');
+      // Request Polar H10 device with Heart Rate Service AND PMD Service for ECG
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          {
-            services: ['heart_rate']  // Must have heart_rate service
-          },
-          {
-            namePrefix: 'Polar'  // OR name starts with 'Polar'
-          }
+          { services: ['heart_rate'] },
+          { namePrefix: 'Polar' },
+          { namePrefix: 'H10' }
         ],
         optionalServices: [
+          'heart_rate',
           'battery_service',
           'device_information',
-          PMD_SERVICE  // 🫀 PMD service for ECG waveform streaming
+          PMD_SERVICE  // Add PMD service for ECG streaming
         ]
       });
 
-      console.log('[BLE] ✅ Polar H10 device selected:', device.name);
-
-      // 🫀 CRITICAL: Store device BEFORE connecting to prevent garbage collection
+      console.log('[BLE] Polar H10 device selected:', device.name);
       setBleDevice(device);
 
-      // Store server reference at function scope to keep it alive
-      let server: BluetoothRemoteGATTServer;
-
-      // Connect to GATT server with retry logic
-      console.log('[BLE] Connecting to GATT server...');
-
-      // 🫀 CRITICAL: Ensure device.gatt exists
-      if (!device.gatt) {
-        throw new Error('Bluetooth GATT not available on device');
-      }
-
-      // 🫀 CRITICAL: Add disconnection handler BEFORE connecting
-      // This ensures we catch any immediate disconnections
-      device.addEventListener('gattserverdisconnected', () => {
-        console.log('[BLE] ⚠️ GATT server disconnected');
-        setBleConnected(false);
-        setBleError('Polar H10 disconnected. Please reconnect.');
-      });
-
-      // Retry connection up to 3 times with increasing delays
-      let connectionAttempts = 0;
-      const maxAttempts = 3;
-
-      while (connectionAttempts < maxAttempts) {
-        try {
-          connectionAttempts++;
-          console.log(`[BLE] Connection attempt ${connectionAttempts}/${maxAttempts}...`);
-
-          server = await device.gatt.connect();
-          console.log('[BLE] ✅ GATT server connected');
-
-          // 🫀 CRITICAL: Wait for connection to fully stabilize
-          const stabilizationDelay = 1000 + (connectionAttempts * 500); // Increase delay with each retry
-          console.log(`[BLE] Waiting ${stabilizationDelay}ms for connection to stabilize...`);
-          await new Promise(resolve => setTimeout(resolve, stabilizationDelay));
-
-          // Verify connection is still active after stabilization
-          if (server.connected) {
-            console.log('[BLE] ✅ Connection stable and verified');
-            break; // Success! Exit retry loop
-          } else {
-            console.warn('[BLE] ⚠️ Connection lost during stabilization');
-            if (connectionAttempts >= maxAttempts) {
-              throw new Error('Connection lost during stabilization after all retry attempts');
-            }
-            // Continue to next retry attempt
-          }
-        } catch (connectError: any) {
-          console.error(`[BLE] ❌ Connection attempt ${connectionAttempts} failed:`, connectError.message);
-          if (connectionAttempts >= maxAttempts) {
-            throw new Error(`Failed to connect after ${maxAttempts} attempts: ${connectError.message}`);
-          }
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      // Final connection verification
-      if (!server || !server.connected) {
-        throw new Error('GATT server not connected after all retry attempts');
-      }
+      // Connect to GATT server
+      const server = await device.gatt!.connect();
+      console.log('[BLE] Connected to GATT server');
 
       // Get Heart Rate service
-      console.log('[BLE] Getting Heart Rate service...');
       const service = await server.getPrimaryService('heart_rate');
-      console.log('[BLE] ✅ Got Heart Rate service');
+      console.log('[BLE] Got Heart Rate service');
 
       // Get Heart Rate Measurement characteristic
       const characteristic = await service.getCharacteristic('heart_rate_measurement');
@@ -339,15 +273,9 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
       try {
         console.log('[PMD] Attempting to connect to Polar PMD service for ECG waveform...');
 
-        // 🫀 CRITICAL: Verify GATT server is still connected before accessing PMD service
-        if (!server || !server.connected) {
-          throw new Error('GATT server disconnected before PMD service access');
-        }
-
         // Get PMD service
-        console.log('[PMD] Requesting PMD service...');
         const pmdService = await server.getPrimaryService(PMD_SERVICE);
-        console.log('[PMD] ✅ Got PMD service');
+        console.log('[PMD] Got PMD service');
 
         // Get PMD control characteristic (for starting ECG stream)
         const pmdControlChar = await pmdService.getCharacteristic(PMD_CONTROL);
@@ -468,16 +396,16 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
         console.log('[PMD] 🫀 FULL ECG WAVEFORM DATA NOW STREAMING - LIFE CRITICAL MONITORING ACTIVE');
 
       } catch (pmdError: any) {
-        console.error('[PMD] ❌ Could not start ECG streaming:', pmdError.message);
-        console.error('[PMD] Error details:', pmdError);
-        console.warn('[PMD] ⚠️ Continuing with heart rate only (ECG waveform unavailable)');
-
-        // Check if it's a GATT disconnection error
-        if (pmdError.message && pmdError.message.includes('GATT')) {
-          setBleError('⚠️ Polar H10 connection unstable. ECG waveform disabled. Heart rate still available.');
-        }
+        console.warn('[PMD] Could not start ECG streaming:', pmdError.message);
+        console.warn('[PMD] Continuing with heart rate only (ECG waveform unavailable)');
         // Don't fail the entire connection - heart rate still works
       }
+
+      // Handle disconnection
+      device.addEventListener('gattserverdisconnected', () => {
+        console.log('[BLE] Polar H10 disconnected');
+        setBleConnected(false);
+      });
 
     } catch (error: any) {
       console.error('[BLE] Error connecting to Polar H10:', error);
