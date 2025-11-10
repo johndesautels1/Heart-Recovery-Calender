@@ -5,7 +5,7 @@ interface MealEntryAttributes {
   id: number;
   userId: number;
   timestamp: Date;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage';
   foodItems: string;
   calories?: number;
   sodium?: number;
@@ -27,11 +27,39 @@ interface MealEntryAttributes {
 
 interface MealEntryCreationAttributes extends Optional<MealEntryAttributes, 'id' | 'withinSpec'> {}
 
+/**
+ * MealEntry Model - Single Source of Truth for All Meal Data
+ *
+ * ARCHITECTURE NOTES:
+ * - This table serves as the ONLY storage for meal data across the entire application
+ * - All three pages (MealsPage, CalendarPage, FoodDiaryPage) read from this table
+ * - The 'status' field serves dual purpose:
+ *   * 'planned' = Future meals shown in MealsPage calendar
+ *   * 'completed' = Logged meals shown in FoodDiaryPage history
+ *   * 'missed' = Planned meals that were not consumed
+ *
+ * DATA FLOW:
+ * - MealsPage: Shows planned meals (status='planned'), allows users to plan future meals
+ * - CalendarPage: Shows all meals with visual indicators by date
+ * - FoodDiaryPage: Shows completed meals (status='completed'), tracks daily nutrition
+ * - Dashboard: Aggregates data from this table for summary statistics
+ *
+ * IMPORTANT FIELDS:
+ * - foodItems: Intentionally TEXT field for flexibility (comma-separated or free-form)
+ * - timestamp: Used for date filtering across all views (daily/weekly/monthly)
+ * - withinSpec: Auto-calculated compliance flag based on dietary limits
+ * - postSurgeryDay: Auto-calculated via database trigger based on user's surgery date
+ *
+ * DIETARY LIMITS (see mealController.ts):
+ * - Per-meal limits: sodium ≤575mg, cholesterol ≤75mg, saturatedFat ≤5g (1/4 of daily)
+ * - Daily limits: sodium ≤2300mg, cholesterol ≤300mg, saturatedFat ≤20g
+ * - Alerts sent at 80%, 90%, and 100% of daily limits
+ */
 class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> implements MealEntryAttributes {
   public id!: number;
   public userId!: number;
   public timestamp!: Date;
-  public mealType!: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  public mealType!: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'beverage';
   public foodItems!: string;
   public calories?: number;
   public sodium?: number;
@@ -72,7 +100,7 @@ class MealEntry extends Model<MealEntryAttributes, MealEntryCreationAttributes> 
           defaultValue: DataTypes.NOW,
         },
         mealType: {
-          type: DataTypes.ENUM('breakfast', 'lunch', 'dinner', 'snack'),
+          type: DataTypes.ENUM('breakfast', 'lunch', 'dinner', 'snack', 'beverage'),
           allowNull: false,
         },
         foodItems: {

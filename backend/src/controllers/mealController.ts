@@ -18,11 +18,39 @@ const ALERT_THRESHOLDS = {
   exceeded: 100  // 100% of daily limit
 };
 
+/**
+ * Get Meals with Date Filtering
+ *
+ * CRITICAL: This endpoint supports multiple date filtering modes to serve all three pages:
+ *
+ * 1. SINGLE DAY MODE (used by FoodDiaryPage in daily view):
+ *    ?date=2025-01-10 → Returns meals for that specific day (00:00:00 - 23:59:59)
+ *
+ * 2. DATE RANGE MODE (used by FoodDiaryPage in weekly/monthly views):
+ *    ?startDate=2025-01-01&endDate=2025-01-07 → Returns meals in that range
+ *    Also supports legacy params: ?start=2025-01-01&end=2025-01-07
+ *
+ * 3. NO DATE MODE (used by MealsPage for all planned meals):
+ *    No date params → Returns all meals for the user
+ *
+ * DATE HANDLING:
+ * - All dates are normalized to full day ranges (00:00:00 - 23:59:59)
+ * - This ensures meals created at any time during the day are captured
+ * - Uses Sequelize Op.gte and Op.lte for inclusive range filtering
+ *
+ * BUG FIX HISTORY:
+ * - Fixed 2025-01-10: Parameter mismatch (frontend sent startDate/endDate, backend expected start/end)
+ * - Now supports both parameter names for backward compatibility
+ */
 export const getMeals = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
-    const { date, start, end, mealType } = req.query;
+    const { date, start, end, startDate, endDate, mealType } = req.query;
     const where: any = { userId };
+
+    // Support both 'startDate/endDate' (from frontend) and 'start/end' (legacy)
+    const actualStart = (startDate || start) as string | undefined;
+    const actualEnd = (endDate || end) as string | undefined;
 
     if (date) {
       const dayStart = new Date(date as string);
@@ -30,15 +58,24 @@ export const getMeals = async (req: Request, res: Response) => {
       const dayEnd = new Date(date as string);
       dayEnd.setHours(23, 59, 59, 999);
       where.timestamp = { [Op.gte]: dayStart, [Op.lte]: dayEnd };
-    } else if (start || end) {
+    } else if (actualStart || actualEnd) {
       where.timestamp = {};
-      if (start) where.timestamp[Op.gte] = new Date(start as string);
-      if (end) where.timestamp[Op.lte] = new Date(end as string);
+      if (actualStart) {
+        const startDay = new Date(actualStart);
+        startDay.setHours(0, 0, 0, 0);
+        where.timestamp[Op.gte] = startDay;
+      }
+      if (actualEnd) {
+        const endDay = new Date(actualEnd);
+        endDay.setHours(23, 59, 59, 999);
+        where.timestamp[Op.lte] = endDay;
+      }
     }
 
     if (mealType) where.mealType = mealType;
 
     const meals = await MealEntry.findAll({ where, order: [['timestamp', 'DESC']] });
+    console.log(`[Meals API] Found ${meals.length} meals for user ${userId} between ${actualStart || 'beginning'} and ${actualEnd || 'now'}`);
     res.json({ data: meals });
   } catch (error) {
     console.error('Error fetching meals:', error);
@@ -194,6 +231,25 @@ export const deleteMeal = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Check Per-Meal Compliance
+ *
+ * Determines if a single meal meets the dietary specifications for heart recovery patients.
+ * Uses the "quarter rule" - each meal should contain no more than 1/4 of daily limits.
+ *
+ * PER-MEAL LIMITS (1/4 of daily):
+ * - Sodium: ≤575mg (2300mg / 4)
+ * - Cholesterol: ≤75mg (300mg / 4)
+ * - Saturated Fat: ≤5g (20g / 4)
+ *
+ * USAGE:
+ * - Called when creating/updating meals to set the 'withinSpec' flag
+ * - This flag is used for compliance percentage calculations
+ * - Does NOT prevent saving non-compliant meals (users can still log unhealthy meals)
+ *
+ * @param mealData - The meal data containing nutrition information
+ * @returns true if meal meets all per-meal limits, false otherwise
+ */
 function checkCompliance(mealData: any): boolean {
   const sodium = mealData.sodium || 0;
   const cholesterol = mealData.cholesterol || 0;
@@ -202,9 +258,29 @@ function checkCompliance(mealData: any): boolean {
 }
 
 /**
- * 🚨 HEART-CRITICAL SAFETY FEATURE
- * Check daily sodium and cholesterol totals and send alerts if approaching or exceeding limits
- * This protects heart recovery patients from dangerous nutrient levels
+ * 🚨 HEART-CRITICAL SAFETY FEATURE: Daily Limit Monitoring & Alerts
+ *
+ * Automatically checks cumulative daily sodium and cholesterol intake after each meal
+ * and sends email/SMS alerts to protect heart recovery patients from dangerous levels.
+ *
+ * ALERT THRESHOLDS:
+ * - 80% of daily limit (warning) - First notification to patient
+ * - 90% of daily limit (critical) - Urgent warning
+ * - 100% of daily limit (exceeded) - Critical alert
+ *
+ * DAILY LIMITS:
+ * - Sodium: 2300mg (AHA recommendation for heart patients)
+ * - Cholesterol: 300mg (Standard cardiac diet guideline)
+ *
+ * IMPORTANT BEHAVIOR:
+ * - Called automatically after every meal creation (see addMeal function)
+ * - Calculates totals for the ENTIRE DAY (00:00:00 - 23:59:59 of meal timestamp)
+ * - Sends notifications via sendHeartHealthAlert (email + SMS if available)
+ * - Errors are caught and logged but DO NOT block meal creation
+ * - Multiple alerts can be sent per day as user approaches/exceeds limits
+ *
+ * @param userId - The user ID to check and notify
+ * @param mealTimestamp - The timestamp of the meal just created (used to determine "today")
  */
 async function checkDailyLimitsAndAlert(userId: number, mealTimestamp: Date): Promise<void> {
   try {

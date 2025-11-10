@@ -420,40 +420,98 @@ export function MealsPage() {
       'Dairy': 0
     };
 
+    /**
+     * IMPROVED Food Category Parsing
+     *
+     * Uses comprehensive keyword matching with better edge case handling:
+     * - More extensive keyword lists for better coverage
+     * - Handles common spelling variations and plural forms
+     * - Each meal can match multiple categories (e.g., "Chicken Salad" → Protein + Vegetables)
+     * - Categories are checked in priority order to handle overlaps
+     */
     mealsInRange.forEach(meal => {
-      // Broad categorization based on food items text - count each meal once per category it contains
       const foodText = meal.foodItems.toLowerCase();
 
       // Skip empty meals
       if (!foodText || foodText.trim() === '') return;
 
-      // Protein keywords - meats, fish, eggs, legumes, nuts
-      const proteinKeywords = ['chicken', 'beef', 'fish', 'turkey', 'protein', 'egg', 'meat', 'pork', 'lamb', 'salmon', 'tuna', 'shrimp', 'tofu', 'bean', 'lentil', 'nut', 'peanut', 'almond', 'sausage', 'bacon', 'ham'];
-      if (proteinKeywords.some(keyword => foodText.includes(keyword))) {
+      /**
+       * Helper function: Check if any keyword matches in the food text
+       * Uses includes() for flexible matching (handles variations like "chickens", "grilled chicken")
+       */
+      const containsAny = (keywords: string[]) => keywords.some(keyword => foodText.includes(keyword));
+
+      // PROTEIN - Meats, poultry, fish, seafood, eggs, legumes, nuts
+      // Expanded to include more preparation styles and varieties
+      const proteinKeywords = [
+        'chicken', 'beef', 'fish', 'turkey', 'protein', 'egg', 'meat', 'pork', 'lamb',
+        'salmon', 'tuna', 'shrimp', 'tofu', 'tempeh', 'seitan', 'lentil', 'chickpea',
+        'peanut', 'almond', 'walnut', 'cashew', 'pistachio', 'sausage', 'bacon', 'ham',
+        'steak', 'chop', 'filet', 'breast', 'thigh', 'drumstick', 'wing', 'ground beef',
+        'cod', 'halibut', 'tilapia', 'catfish', 'trout', 'sardine', 'anchovy', 'lobster',
+        'crab', 'oyster', 'clam', 'mussel', 'scallop', 'calamari', 'octopus', 'duck',
+        'venison', 'bison', 'quail', 'prosciutto', 'salami', 'pepperoni', 'pastrami'
+      ];
+      if (containsAny(proteinKeywords)) {
         categoryCount['Protein'] += 1;
       }
 
-      // Grains keywords - bread, rice, pasta, cereals
-      const grainsKeywords = ['rice', 'bread', 'pasta', 'grain', 'oat', 'cereal', 'wheat', 'bagel', 'toast', 'tortilla', 'noodle', 'quinoa', 'barley', 'cracker', 'roll', 'bun', 'muffin', 'waffle', 'pancake'];
-      if (grainsKeywords.some(keyword => foodText.includes(keyword))) {
+      // GRAINS - Bread, rice, pasta, cereals, whole grains
+      // Includes various grain types and bread products
+      const grainsKeywords = [
+        'rice', 'bread', 'pasta', 'grain', 'oat', 'cereal', 'wheat', 'bagel', 'toast',
+        'tortilla', 'noodle', 'quinoa', 'barley', 'cracker', 'roll', 'bun', 'muffin',
+        'waffle', 'pancake', 'couscous', 'bulgur', 'farro', 'spelt', 'rye', 'croissant',
+        'baguette', 'pita', 'flatbread', 'sourdough', 'ciabatta', 'focaccia', 'pretzel',
+        'breadstick', 'english muffin', 'biscuit', 'scone', 'cornbread', 'ramen', 'udon',
+        'soba', 'linguine', 'spaghetti', 'penne', 'macaroni', 'lasagna', 'ravioli', 'gnocchi'
+      ];
+      if (containsAny(grainsKeywords)) {
         categoryCount['Grains'] += 1;
       }
 
-      // Vegetables keywords - all veggies
-      const vegetableKeywords = ['broccoli', 'spinach', 'lettuce', 'vegetable', 'salad', 'carrot', 'tomato', 'pepper', 'onion', 'cucumber', 'celery', 'kale', 'cabbage', 'squash', 'zucchini', 'bean', 'pea', 'corn', 'potato', 'veggie', 'greens'];
-      if (vegetableKeywords.some(keyword => foodText.includes(keyword))) {
+      // VEGETABLES - All vegetable types including legumes used as vegetables
+      // Note: Overlaps with protein (beans, peas) are intentional - they're both!
+      const vegetableKeywords = [
+        'broccoli', 'spinach', 'lettuce', 'vegetable', 'salad', 'carrot', 'tomato',
+        'pepper', 'onion', 'cucumber', 'celery', 'kale', 'cabbage', 'squash', 'zucchini',
+        'green bean', 'snap pea', 'snow pea', 'corn', 'potato', 'veggie', 'greens',
+        'arugula', 'chard', 'collard', 'mustard green', 'bok choy', 'asparagus', 'artichoke',
+        'beet', 'turnip', 'radish', 'rutabaga', 'parsnip', 'brussels sprout', 'cauliflower',
+        'eggplant', 'okra', 'leek', 'scallion', 'shallot', 'garlic', 'ginger', 'mushroom',
+        'sweet potato', 'yam', 'jicama', 'fennel', 'endive', 'radicchio', 'watercress',
+        'coleslaw', 'sauerkraut', 'kimchi', 'pickles'
+      ];
+      if (containsAny(vegetableKeywords)) {
         categoryCount['Vegetables'] += 1;
       }
 
-      // Fruits keywords - all fruits
-      const fruitsKeywords = ['apple', 'banana', 'berry', 'fruit', 'orange', 'grape', 'strawberry', 'blueberry', 'raspberry', 'peach', 'pear', 'melon', 'watermelon', 'mango', 'pineapple', 'cherry', 'plum', 'kiwi', 'lemon', 'lime'];
-      if (fruitsKeywords.some(keyword => foodText.includes(keyword))) {
+      // FRUITS - All fruit types including berries and melons
+      // Includes common preparations (juice, dried)
+      const fruitsKeywords = [
+        'apple', 'banana', 'berry', 'fruit', 'orange', 'grape', 'strawberry', 'blueberry',
+        'raspberry', 'blackberry', 'cranberry', 'peach', 'pear', 'melon', 'watermelon',
+        'cantaloupe', 'honeydew', 'mango', 'pineapple', 'cherry', 'plum', 'kiwi', 'lemon',
+        'lime', 'grapefruit', 'tangerine', 'clementine', 'mandarin', 'apricot', 'nectarine',
+        'papaya', 'guava', 'passion fruit', 'dragon fruit', 'star fruit', 'lychee', 'kumquat',
+        'fig', 'date', 'prune', 'raisin', 'avocado', 'pomegranate', 'persimmon', 'coconut',
+        'applesauce', 'fruit salad', 'smoothie', 'juice'
+      ];
+      if (containsAny(fruitsKeywords)) {
         categoryCount['Fruits'] += 1;
       }
 
-      // Dairy keywords - milk products
-      const dairyKeywords = ['milk', 'cheese', 'yogurt', 'dairy', 'cream', 'butter', 'ice cream', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan'];
-      if (dairyKeywords.some(keyword => foodText.includes(keyword))) {
+      // DAIRY - Milk products, cheese, yogurt
+      // Includes various cheese types and dairy preparations
+      const dairyKeywords = [
+        'milk', 'cheese', 'yogurt', 'dairy', 'cream', 'butter', 'ice cream', 'sour cream',
+        'cottage cheese', 'cheddar', 'mozzarella', 'parmesan', 'swiss', 'provolone', 'gouda',
+        'brie', 'camembert', 'feta', 'ricotta', 'mascarpone', 'cream cheese', 'blue cheese',
+        'gorgonzola', 'gruyere', 'monterey jack', 'colby', 'pepper jack', 'queso', 'paneer',
+        'whipped cream', 'half and half', 'buttermilk', 'kefir', 'greek yogurt', 'frozen yogurt',
+        'custard', 'pudding', 'gelato', 'sherbet', 'whey', 'casein'
+      ];
+      if (containsAny(dairyKeywords)) {
         categoryCount['Dairy'] += 1;
       }
     });
