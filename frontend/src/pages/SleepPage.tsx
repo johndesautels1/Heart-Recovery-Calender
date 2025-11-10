@@ -20,7 +20,7 @@ import {
   Activity,
   Sun
 } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,7 +51,7 @@ export function SleepPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingLog, setEditingLog] = useState<SleepLog | null>(null);
-  const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [dateRange, setDateRange] = useState<'daily' | 'weekly' | 'monthly' | 'surgery'>('surgery');
 
   const {
     register,
@@ -112,10 +112,32 @@ export function SleepPage() {
   const loadSleepLogs = async () => {
     try {
       setIsLoading(true);
-      const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
-      const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
-      const endDate = format(new Date(), 'yyyy-MM-dd');
       const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+
+      // Calculate date range based on selection
+      let startDate: string;
+      const endDate = format(new Date(), 'yyyy-MM-dd');
+
+      if (dateRange === 'surgery') {
+        // From surgery date to now (max 90 days)
+        const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
+          ? selectedPatient.surgeryDate
+          : user?.surgeryDate;
+
+        if (surgeryDate) {
+          const surgeryDateObj = parseISO(surgeryDate);
+          const maxStartDate = subDays(new Date(), 90); // Cap at 90 days
+          const actualStartDate = surgeryDateObj < maxStartDate ? maxStartDate : surgeryDateObj;
+          startDate = format(actualStartDate, 'yyyy-MM-dd');
+        } else {
+          // Fallback to 30 days if no surgery date
+          startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+        }
+      } else {
+        // Daily/Weekly/Monthly
+        const days = dateRange === 'daily' ? 1 : dateRange === 'weekly' ? 7 : 30;
+        startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+      }
 
       const data = await api.getSleepLogs({
         startDate,
@@ -134,10 +156,29 @@ export function SleepPage() {
 
   const loadStats = async () => {
     try {
-      const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
-      const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
-      const endDate = format(new Date(), 'yyyy-MM-dd');
       const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+
+      // Calculate date range based on selection (same logic as loadSleepLogs)
+      let startDate: string;
+      const endDate = format(new Date(), 'yyyy-MM-dd');
+
+      if (dateRange === 'surgery') {
+        const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
+          ? selectedPatient.surgeryDate
+          : user?.surgeryDate;
+
+        if (surgeryDate) {
+          const surgeryDateObj = parseISO(surgeryDate);
+          const maxStartDate = subDays(new Date(), 90);
+          const actualStartDate = surgeryDateObj < maxStartDate ? maxStartDate : surgeryDateObj;
+          startDate = format(actualStartDate, 'yyyy-MM-dd');
+        } else {
+          startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+        }
+      } else {
+        const days = dateRange === 'daily' ? 1 : dateRange === 'weekly' ? 7 : 30;
+        startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+      }
 
       const data = await api.getSleepStats(startDate, endDate, userId);
       setStats(data);
@@ -176,7 +217,8 @@ export function SleepPage() {
       setIsModalOpen(false);
       setEditingLog(null);
       reset({ date: format(new Date(), 'yyyy-MM-dd') });
-      loadStats();
+      // FIXED: Await stats reload so UI shows updated calculations
+      await loadStats();
     } catch (error: any) {
       console.error('Failed to save sleep log:', error);
       if (error.response?.status === 409) {
@@ -450,47 +492,110 @@ export function SleepPage() {
     ? (nightsInTarget / sleepLogs.length) * 100
     : 0;
 
-  // 5. Bed/Wake Time Scatter Data
-  const bedWakeScatterData = sleepLogs
-    .filter(log => log.bedTime && log.wakeTime)
-    .map(log => {
-      const bedHour = parseInt(log.bedTime!.split(':')[0]) + parseInt(log.bedTime!.split(':')[1]) / 60;
-      const wakeHour = parseInt(log.wakeTime!.split(':')[0]) + parseInt(log.wakeTime!.split(':')[1]) / 60;
-      const hours = parseFloat(log.hoursSlept.toString());
+  // 5. Bed/Wake Time Data - Chart over Days Since Surgery
+  const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
+    ? selectedPatient.surgeryDate
+    : user?.surgeryDate;
 
-      return {
-        bedHour: bedHour >= 18 ? bedHour : bedHour + 24, // Normalize PM times
-        wakeHour: wakeHour,
-        hours,
-        quality: log.sleepQuality || 'unknown',
-        date: format(parseISO(log.date), 'MMM d'),
-      };
-    });
+  const bedWakeScatterData = (() => {
+    // sleepLogs is already filtered by loadSleepLogs based on dateRange
+    // No need to filter again - just process the data
+    return sleepLogs
+      .filter(log => log.bedTime && log.wakeTime)
+      .map(log => {
+        try {
+          // Parse full ISO timestamps
+          const bedDate = new Date(log.bedTime!);
+          const wakeDate = new Date(log.wakeTime!);
+          const logDate = parseISO(log.date);
 
-  // 6. Sleep Streak Data (already calculated in JSX, extract here)
+          // Validate dates
+          if (isNaN(bedDate.getTime()) || isNaN(wakeDate.getTime()) || isNaN(logDate.getTime())) {
+            return null;
+          }
+
+          // Calculate days since surgery
+          let daysSinceSurgery = 0;
+          if (surgeryDate) {
+            const surgeryDateParsed = parseISO(surgeryDate);
+            if (!isNaN(surgeryDateParsed.getTime())) {
+              daysSinceSurgery = differenceInDays(logDate, surgeryDateParsed);
+            }
+          } else {
+            // If no surgery date, use days from earliest log date in the filtered set
+            const allDates = sleepLogs.map(l => parseISO(l.date)).filter(d => !isNaN(d.getTime()));
+            if (allDates.length > 0) {
+              const earliestDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+              daysSinceSurgery = differenceInDays(logDate, earliestDate);
+            }
+          }
+
+          // Only show data from Day 0 to Day 90
+          if (daysSinceSurgery < 0 || daysSinceSurgery > 90) {
+            return null;
+          }
+
+          // Extract hour as decimal (e.g., 22.5 for 10:30 PM)
+          const bedHour = bedDate.getHours() + bedDate.getMinutes() / 60;
+          const wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+          const hours = parseFloat(log.hoursSlept.toString());
+
+          return {
+            day: daysSinceSurgery,
+            bedTime: bedHour,
+            wakeTime: wakeHour,
+            hours,
+            quality: log.sleepQuality || 'unknown',
+            date: format(logDate, 'MMM d'),
+            fullDate: format(logDate, 'MMM d, yyyy'),
+            timestamp: logDate.getTime(), // For sorting and axis
+          };
+        } catch (error) {
+          console.error('Error processing sleep log:', error, log);
+          return null; // Skip logs with parsing errors
+        }
+      })
+      .filter(data => data !== null)
+      .sort((a, b) => a!.day - b!.day); // Sort by day since surgery
+  })();
+
+  // 6. Sleep Streak Data - Count consecutive days from today backwards
   const calculateStreak = () => {
+    if (sleepLogs.length === 0) {
+      console.log('No sleep logs for streak calculation');
+      return 0;
+    }
+
     const sortedLogs = [...sleepLogs].sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
+      parseISO(b.date).getTime() - parseISO(a.date).getTime()
     );
 
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    console.log('Calculating streak. Today:', todayStr);
+    console.log('Most recent log date:', sortedLogs[0]?.date);
 
     for (let i = 0; i < sortedLogs.length; i++) {
-      const logDate = new Date(sortedLogs[i].date);
-      logDate.setHours(0, 0, 0, 0);
+      const logDate = parseISO(sortedLogs[i].date);
+      const expectedDate = subDays(today, i);
 
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - i);
-      expectedDate.setHours(0, 0, 0, 0);
+      // Use yyyy-MM-dd string comparison
+      const logDateStr = format(logDate, 'yyyy-MM-dd');
+      const expectedDateStr = format(expectedDate, 'yyyy-MM-dd');
 
-      if (logDate.getTime() === expectedDate.getTime()) {
+      console.log(`Day ${i}: Expected ${expectedDateStr}, Got ${logDateStr}, Match: ${logDateStr === expectedDateStr}`);
+
+      if (logDateStr === expectedDateStr) {
         streak++;
       } else {
         break;
       }
     }
+
+    console.log('Final streak:', streak);
     return streak;
   };
   const currentStreak = calculateStreak();
@@ -582,24 +687,30 @@ export function SleepPage() {
       </div>
 
       {/* Date Range Selector */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
-          variant={dateRange === '7d' ? 'primary' : 'secondary'}
-          onClick={() => setDateRange('7d')}
+          variant={dateRange === 'daily' ? 'primary' : 'secondary'}
+          onClick={() => setDateRange('daily')}
         >
-          7 Days
+          Daily (24h)
         </Button>
         <Button
-          variant={dateRange === '30d' ? 'primary' : 'secondary'}
-          onClick={() => setDateRange('30d')}
+          variant={dateRange === 'weekly' ? 'primary' : 'secondary'}
+          onClick={() => setDateRange('weekly')}
         >
-          30 Days
+          Weekly (7d)
         </Button>
         <Button
-          variant={dateRange === '90d' ? 'primary' : 'secondary'}
-          onClick={() => setDateRange('90d')}
+          variant={dateRange === 'monthly' ? 'primary' : 'secondary'}
+          onClick={() => setDateRange('monthly')}
         >
-          90 Days
+          Monthly (30d)
+        </Button>
+        <Button
+          variant={dateRange === 'surgery' ? 'primary' : 'secondary'}
+          onClick={() => setDateRange('surgery')}
+        >
+          Since Surgery (0-90d)
         </Button>
       </div>
 
@@ -679,16 +790,23 @@ export function SleepPage() {
                   <p className="text-sm text-white font-bold mb-1">Sleep Debt</p>
                   <p className={`text-2xl font-bold ${(() => {
                     const TARGET_HOURS = 8;
-                    const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                    // FIXED: Use consistent data source (sleepLogs) instead of mixing with stats.totalLogs
+                    const totalHoursSlept = sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                    const targetHours = TARGET_HOURS * sleepLogs.length;
+                    const debt = targetHours - totalHoursSlept;
                     return debt > 10 ? 'text-red-400' : debt > 5 ? 'text-yellow-400' : 'text-green-400';
                   })()}`}>
                     {(() => {
                       const TARGET_HOURS = 8;
-                      const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      const totalHoursSlept = sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      const targetHours = TARGET_HOURS * sleepLogs.length;
+                      const debt = targetHours - totalHoursSlept;
                       return Math.abs(debt).toFixed(1);
                     })()} hrs {(() => {
                       const TARGET_HOURS = 8;
-                      const debt = (TARGET_HOURS * stats.totalLogs) - sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      const totalHoursSlept = sleepLogs.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0);
+                      const targetHours = TARGET_HOURS * sleepLogs.length;
+                      const debt = targetHours - totalHoursSlept;
                       return debt > 0 ? 'deficit' : 'surplus';
                     })()}
                   </p>
@@ -709,22 +827,35 @@ export function SleepPage() {
                       if (logsWithTimes.length === 0) return 'N/A';
 
                       const avgEfficiency = logsWithTimes.reduce((sum, log) => {
-                        const bedTime = new Date(`2000-01-01T${log.bedTime}`);
-                        let wakeTime = new Date(`2000-01-01T${log.wakeTime}`);
+                        try {
+                          // Parse full ISO timestamps
+                          const bedTime = new Date(log.bedTime!);
+                          const wakeTime = new Date(log.wakeTime!);
 
-                        // Handle wake time next day
-                        if (wakeTime < bedTime) {
-                          wakeTime = new Date(`2000-01-02T${log.wakeTime}`);
+                          // Validate dates
+                          if (isNaN(bedTime.getTime()) || isNaN(wakeTime.getTime())) {
+                            return sum; // Skip invalid dates
+                          }
+
+                          // Calculate time in bed (in hours)
+                          const timeInBed = (wakeTime.getTime() - bedTime.getTime()) / (1000 * 60 * 60);
+
+                          // Skip if time in bed is invalid (negative or too large)
+                          if (timeInBed <= 0 || timeInBed > 24) {
+                            return sum;
+                          }
+
+                          const hoursSlept = parseFloat(log.hoursSlept.toString());
+                          // Efficiency should never exceed 100% (can't sleep more than time in bed)
+                          const efficiency = Math.min(100, (hoursSlept / timeInBed) * 100);
+
+                          return sum + efficiency;
+                        } catch (error) {
+                          return sum; // Skip logs with parsing errors
                         }
-
-                        const timeInBed = (wakeTime.getTime() - bedTime.getTime()) / (1000 * 60 * 60); // hours
-                        const hoursSlept = parseFloat(log.hoursSlept.toString());
-                        const efficiency = (hoursSlept / timeInBed) * 100;
-
-                        return sum + efficiency;
                       }, 0) / logsWithTimes.length;
 
-                      return `${avgEfficiency.toFixed(0)}%`;
+                      return isNaN(avgEfficiency) ? 'N/A' : `${avgEfficiency.toFixed(0)}%`;
                     })()}
                   </p>
                   <p className="text-xs text-white opacity-70 mt-1">time asleep / time in bed</p>
@@ -834,116 +965,14 @@ export function SleepPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white font-bold mb-1">Logging Streak</p>
-                  <p className={`text-3xl font-bold ${(() => {
-                    const sortedLogs = [...sleepLogs].sort((a, b) =>
-                      new Date(b.date).getTime() - new Date(a.date).getTime()
-                    );
-
-                    let streak = 0;
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    for (let i = 0; i < sortedLogs.length; i++) {
-                      const logDate = new Date(sortedLogs[i].date);
-                      logDate.setHours(0, 0, 0, 0);
-
-                      const expectedDate = new Date(today);
-                      expectedDate.setDate(today.getDate() - i);
-                      expectedDate.setHours(0, 0, 0, 0);
-
-                      if (logDate.getTime() === expectedDate.getTime()) {
-                        streak++;
-                      } else {
-                        break;
-                      }
-                    }
-
-                    return streak >= 7 ? 'text-green-400' : streak >= 3 ? 'text-yellow-400' : 'text-red-400';
-                  })()}`}>
-                    {(() => {
-                      const sortedLogs = [...sleepLogs].sort((a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                      );
-
-                      let streak = 0;
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-
-                      for (let i = 0; i < sortedLogs.length; i++) {
-                        const logDate = new Date(sortedLogs[i].date);
-                        logDate.setHours(0, 0, 0, 0);
-
-                        const expectedDate = new Date(today);
-                        expectedDate.setDate(today.getDate() - i);
-                        expectedDate.setHours(0, 0, 0, 0);
-
-                        if (logDate.getTime() === expectedDate.getTime()) {
-                          streak++;
-                        } else {
-                          break;
-                        }
-                      }
-
-                      return streak;
-                    })()}
+                  <p className={`text-3xl font-bold ${currentStreak >= 7 ? 'text-green-400' : currentStreak >= 3 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {currentStreak}
                   </p>
                   <p className="text-xs text-white opacity-70 mt-1">
-                    {(() => {
-                      const sortedLogs = [...sleepLogs].sort((a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                      );
-
-                      let streak = 0;
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-
-                      for (let i = 0; i < sortedLogs.length; i++) {
-                        const logDate = new Date(sortedLogs[i].date);
-                        logDate.setHours(0, 0, 0, 0);
-
-                        const expectedDate = new Date(today);
-                        expectedDate.setDate(today.getDate() - i);
-                        expectedDate.setHours(0, 0, 0, 0);
-
-                        if (logDate.getTime() === expectedDate.getTime()) {
-                          streak++;
-                        } else {
-                          break;
-                        }
-                      }
-
-                      if (streak === 0) return 'No current streak';
-                      if (streak === 1) return 'consecutive day';
-                      return 'consecutive days';
-                    })()}
+                    {currentStreak === 0 ? 'No current streak' : currentStreak === 1 ? 'consecutive day' : 'consecutive days'}
                   </p>
                 </div>
-                <Flame className={`h-8 w-8 ${(() => {
-                  const sortedLogs = [...sleepLogs].sort((a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                  );
-
-                  let streak = 0;
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-
-                  for (let i = 0; i < sortedLogs.length; i++) {
-                    const logDate = new Date(sortedLogs[i].date);
-                    logDate.setHours(0, 0, 0, 0);
-
-                    const expectedDate = new Date(today);
-                    expectedDate.setDate(today.getDate() - i);
-                    expectedDate.setHours(0, 0, 0, 0);
-
-                    if (logDate.getTime() === expectedDate.getTime()) {
-                      streak++;
-                    } else {
-                      break;
-                    }
-                  }
-
-                  return streak >= 7 ? 'text-orange-500' : streak >= 3 ? 'text-yellow-400' : 'text-gray-400';
-                })()}`} />
+                <Flame className={`h-8 w-8 ${currentStreak >= 7 ? 'text-orange-500' : currentStreak >= 3 ? 'text-yellow-400' : 'text-gray-400'}`} />
               </div>
             </GlassCard>
           )}
@@ -1126,7 +1155,8 @@ export function SleepPage() {
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
                     backdropFilter: 'blur(10px)'
                   }}
-                  labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '14px' }}
+                  itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '13px' }}
                   cursor={{ fill: 'rgba(96, 165, 250, 0.1)' }}
                 />
                 <Bar dataKey="hours" name="Hours" radius={[8, 8, 0, 0]} barSize={35} filter="url(#sleepBarShadow)">
@@ -1226,7 +1256,8 @@ export function SleepPage() {
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(96, 165, 250, 0.3)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '14px' }}
+                    itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '13px' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -1480,7 +1511,8 @@ export function SleepPage() {
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '14px' }}
+                    itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '13px' }}
                   />
                   <ReferenceLine y={0} stroke="#10b981" strokeDasharray="3 3" strokeWidth={2} />
                   <Area type="monotone" dataKey="debt" stroke="#f59e0b" strokeWidth={3}
@@ -1493,64 +1525,117 @@ export function SleepPage() {
             </GlassCard>
           )}
 
-          {/* 5. Bed/Wake Time Scatter Plot */}
+          {/* 5. Sleep Schedule Over Time (Days Since Surgery) */}
           {bedWakeScatterData.length > 0 && (
             <GlassCard>
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Sun className="h-5 w-5 text-yellow-400" />
-                Bed Time vs Wake Time
+                <Clock className="h-5 w-5 text-yellow-400" />
+                Sleep Schedule Timeline
               </h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <ScatterChart>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={bedWakeScatterData}>
                   <defs>
-                    <linearGradient id="scatterGradient" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
-                      <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.8}/>
+                    <linearGradient id="bedTimeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0.3}/>
                     </linearGradient>
-                    <filter id="scatterGlow">
-                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
+                    <linearGradient id="wakeTimeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                    </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                  <XAxis type="number" dataKey="bedHour" domain={[20, 32]}
-                         ticks={[20, 22, 24, 26, 28, 30, 32]}
-                         tickFormatter={(value) => {
-                           const hour = value % 24;
-                           return `${hour}:00`;
-                         }}
-                         stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
-                         label={{ value: 'Bed Time', position: 'insideBottom', offset: -5, fill: '#d1d5db', fontSize: 12 }} />
-                  <YAxis type="number" dataKey="wakeHour" domain={[5, 12]}
-                         stroke="#9ca3af" tick={{ fill: '#d1d5db', fontSize: 11 }}
-                         label={{ value: 'Wake Time', angle: -90, position: 'insideLeft', fill: '#d1d5db', fontSize: 12 }} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#9ca3af"
+                    tick={{ fill: '#d1d5db', fontSize: 10, fontWeight: 'bold' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    label={{ value: 'Date (Since Surgery)', position: 'insideBottom', offset: -15, fill: '#e5e7eb', fontSize: 13, fontWeight: 'bold' }}
+                  />
+                  <YAxis
+                    domain={[0, 24]}
+                    ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24]}
+                    tickFormatter={(value) => {
+                      if (value === 0) return '12 AM';
+                      if (value === 12) return '12 PM';
+                      if (value < 12) return `${value} AM`;
+                      return `${value - 12} PM`;
+                    }}
+                    stroke="#9ca3af"
+                    tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 'bold' }}
+                    label={{ value: 'Time of Day', angle: -90, position: 'insideLeft', fill: '#e5e7eb', fontSize: 13, fontWeight: 'bold' }}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(17, 24, 39, 0.98))',
                       border: '2px solid #60a5fa',
                       borderRadius: '12px',
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                      backdropFilter: 'blur(10px)'
+                      backdropFilter: 'blur(10px)',
+                      padding: '12px'
                     }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
-                    formatter={(value: any, name: any, props: any) => {
-                      if (name === 'bedHour') {
-                        const hour = value % 24;
-                        return [`${hour}:00`, 'Bed Time'];
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}
+                    labelFormatter={(value, payload) => {
+                      if (payload && payload[0] && payload[0].payload) {
+                        const data = payload[0].payload;
+                        return `${data.fullDate} (Day ${data.day})`;
                       }
-                      if (name === 'wakeHour') {
-                        return [`${value}:00`, 'Wake Time'];
-                      }
-                      return [value, name];
+                      return value;
                     }}
+                    formatter={(value: any, name: string) => {
+                      const hour = Math.floor(value);
+                      const minutes = Math.round((value - hour) * 60);
+                      const timeStr = `${hour % 12 || 12}:${minutes.toString().padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+
+                      const label = name === 'bedTime' ? '🌙 Bed Time' : '☀️ Wake Time';
+                      return [timeStr, label];
+                    }}
+                    itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '13px' }}
                   />
-                  <Scatter name="Sleep Sessions" data={bedWakeScatterData} fill="url(#scatterGradient)"
-                           filter="url(#scatterGlow)" />
-                </ScatterChart>
+                  <Legend
+                    wrapperStyle={{
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      paddingTop: '20px'
+                    }}
+                    iconType="line"
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
+                    formatter={(value) => value === 'bedTime' ? '🌙 Bed Time' : '☀️ Wake Time'}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="bedTime"
+                    stroke="#8b5cf6"
+                    strokeWidth={3}
+                    dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#a78bfa' }}
+                    name="bedTime"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="wakeTime"
+                    stroke="#fbbf24"
+                    strokeWidth={3}
+                    dot={{ fill: '#fbbf24', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#fcd34d' }}
+                    name="wakeTime"
+                  />
+                </LineChart>
               </ResponsiveContainer>
+              <div className="text-xs text-center text-white opacity-70 mt-2">
+                {surgeryDate
+                  ? `Showing ${
+                      dateRange === 'daily' ? 'last 24 hours' :
+                      dateRange === 'weekly' ? 'last 7 days' :
+                      dateRange === 'monthly' ? 'last 30 days' :
+                      'since surgery (max 90 days)'
+                    } • X-axis: Calendar date • Y-axis: Time of day • Hover for day count since surgery`
+                  : 'Set surgery date in profile to track days since surgery (currently showing days from first log)'}
+              </div>
             </GlassCard>
           )}
 
@@ -1561,42 +1646,84 @@ export function SleepPage() {
               Logging Streak
             </h3>
             <div className="flex items-center justify-center py-6">
-              <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
-                <svg className="absolute inset-0" width="160" height="160">
+              <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
+                {/* Background glow effect */}
+                <div className={`absolute inset-0 rounded-full blur-2xl opacity-30 ${
+                  currentStreak >= 30 ? 'bg-yellow-500' :
+                  currentStreak >= 14 ? 'bg-orange-500' :
+                  currentStreak >= 7 ? 'bg-red-500' :
+                  currentStreak >= 3 ? 'bg-blue-500' :
+                  'bg-gray-500'
+                }`}></div>
+
+                <svg className="absolute inset-0" width="180" height="180">
                   <defs>
                     <linearGradient id="streakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor={currentStreak >= 30 ? '#fbbf24' : currentStreak >= 14 ? '#f59e0b' : currentStreak >= 7 ? '#f97316' : '#6b7280'} />
-                      <stop offset="100%" stopColor={currentStreak >= 30 ? '#d97706' : currentStreak >= 14 ? '#ea580c' : currentStreak >= 7 ? '#dc2626' : '#374151'} />
+                      <stop offset="0%" stopColor={
+                        currentStreak >= 30 ? '#fbbf24' :
+                        currentStreak >= 14 ? '#f59e0b' :
+                        currentStreak >= 7 ? '#f97316' :
+                        currentStreak >= 3 ? '#60a5fa' :
+                        '#9ca3af'
+                      } />
+                      <stop offset="100%" stopColor={
+                        currentStreak >= 30 ? '#d97706' :
+                        currentStreak >= 14 ? '#ea580c' :
+                        currentStreak >= 7 ? '#dc2626' :
+                        currentStreak >= 3 ? '#3b82f6' :
+                        '#6b7280'
+                      } />
                     </linearGradient>
                     <filter id="streakFlameGlow">
-                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
                       <feMerge>
                         <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="SourceGraphic"/>
                       </feMerge>
                     </filter>
                   </defs>
-                  <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="10" />
-                  <circle cx="80" cy="80" r="70" fill="none"
+                  <circle cx="90" cy="90" r="75" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="12" />
+                  <circle cx="90" cy="90" r="75" fill="none"
                           stroke="url(#streakGradient)"
-                          strokeWidth="10"
+                          strokeWidth="12"
                           strokeLinecap="round"
-                          strokeDasharray={`${2 * Math.PI * 70}`}
-                          strokeDashoffset={`${2 * Math.PI * 70 * (1 - Math.min(currentStreak / 30, 1))}`}
-                          transform="rotate(-90 80 80)"
+                          strokeDasharray={`${2 * Math.PI * 75}`}
+                          strokeDashoffset={`${2 * Math.PI * 75 * (1 - Math.min(currentStreak / 30, 1))}`}
+                          transform="rotate(-90 90 90)"
                           filter="url(#streakFlameGlow)" />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
-                  <Flame className={`h-8 w-8 mb-1 ${currentStreak >= 7 ? 'text-orange-500 animate-pulse' : 'text-gray-400'}`} />
-                  <div className="text-3xl font-bold text-white">{currentStreak}</div>
-                  <div className="text-xs text-white opacity-70">{currentStreak === 1 ? 'day' : 'days'}</div>
+                  <Flame className={`h-10 w-10 mb-1 ${
+                    currentStreak >= 30 ? 'text-yellow-400 animate-bounce' :
+                    currentStreak >= 14 ? 'text-orange-500 animate-pulse' :
+                    currentStreak >= 7 ? 'text-red-500 animate-pulse' :
+                    currentStreak >= 3 ? 'text-blue-400' :
+                    'text-gray-400'
+                  }`} />
+                  <div className={`text-4xl font-bold ${
+                    currentStreak >= 30 ? 'text-yellow-300' :
+                    currentStreak >= 14 ? 'text-orange-300' :
+                    currentStreak >= 7 ? 'text-red-300' :
+                    currentStreak >= 3 ? 'text-blue-300' :
+                    'text-white'
+                  }`}>{currentStreak}</div>
+                  <div className="text-xs text-white opacity-90 font-semibold">
+                    {currentStreak === 1 ? 'day' : 'days'}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="text-center text-xs text-white opacity-70">
-              {currentStreak >= 30 ? '🏆 Master Logger!' :
-               currentStreak >= 14 ? '🔥 On Fire!' :
-               currentStreak >= 7 ? '💪 Keep Going!' :
+            <div className={`text-center text-sm font-bold ${
+              currentStreak >= 30 ? 'text-yellow-300' :
+              currentStreak >= 14 ? 'text-orange-300' :
+              currentStreak >= 7 ? 'text-red-300' :
+              currentStreak >= 3 ? 'text-blue-300' :
+              'text-white opacity-70'
+            }`}>
+              {currentStreak >= 30 ? '🏆 MASTER LOGGER! 🏆' :
+               currentStreak >= 14 ? '🔥 ON FIRE! 🔥' :
+               currentStreak >= 7 ? '💪 KEEP GOING! 💪' :
+               currentStreak >= 3 ? '⭐ Getting Started!' :
                '📅 Start your streak!'}
             </div>
           </GlassCard>

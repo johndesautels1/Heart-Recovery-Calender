@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import MealEntry from '../models/MealEntry';
 import User from '../models/User';
+import Medication from '../models/Medication';
 import { Op } from 'sequelize';
-import { sendHeartHealthAlert } from '../services/notificationService';
+import { sendHeartHealthAlert, sendHawkAlert } from '../services/notificationService';
+import { checkFoodAgainstMedications, MedicationInteractionResult } from '../data/cardiacMedicationInteractions';
 
 const DIETARY_LIMITS = {
   calories: 2000,
@@ -17,6 +19,146 @@ const ALERT_THRESHOLDS = {
   critical: 90,  // 90% of daily limit
   exceeded: 100  // 100% of daily limit
 };
+
+/**
+ * 🚨 FOOD-MEDICATION INTERACTION CHECKER
+ *
+ * Checks if foods in the meal interact with the user's active cardiac medications.
+ * Returns warnings for frontend display and sends Hawk Alerts for severe/critical interactions.
+ *
+ * PROCESS:
+ * 1. Load user's active medications from database
+ * 2. Check food items against medication interaction database
+ * 3. Format warnings for frontend UI display
+ * 4. Send Hawk Alert for critical/severe interactions
+ * 5. Return structured warnings (non-blocking - meal can still be saved)
+ *
+ * SEVERITY HANDLING:
+ * - critical: Hawk Alert + detailed email/SMS + frontend red banner
+ * - severe: Hawk Alert + email/SMS + frontend orange warning
+ * - moderate: Frontend orange warning only
+ * - mild: Frontend info message only
+ *
+ * @param userId - User ID to check medications for
+ * @param foodItemsText - Comma-separated food items from meal
+ * @returns Array of interaction warnings for frontend display
+ */
+interface MedicationWarning {
+  medicationName: string;
+  medicationCategory: string;
+  severity: 'critical' | 'severe' | 'moderate' | 'mild';
+  interaction: string;
+  recommendation: string;
+  mechanism: string;
+  matchedFoods: string[];
+}
+
+async function checkMedicationInteractions(userId: number, foodItemsText: string): Promise<MedicationWarning[]> {
+  try {
+    if (!foodItemsText || foodItemsText.trim() === '') {
+      return []; // No food items to check
+    }
+
+    // Load user's active medications
+    const userMedications = await Medication.findAll({
+      where: {
+        userId,
+        isActive: true
+      }
+    });
+
+    if (userMedications.length === 0) {
+      console.log('[MEDICATION-CHECK] User has no active medications');
+      return []; // No medications to check against
+    }
+
+    // Get medication names for checking
+    const medicationNames = userMedications.map(med => med.name);
+    console.log(`[MEDICATION-CHECK] Checking food "${foodItemsText}" against ${medicationNames.length} medications: ${medicationNames.join(', ')}`);
+
+    // Check interactions using our database
+    const interactionResults = checkFoodAgainstMedications(foodItemsText, medicationNames);
+
+    if (interactionResults.length === 0) {
+      console.log('[MEDICATION-CHECK] No interactions found');
+      return [];
+    }
+
+    // Format warnings for frontend
+    const warnings: MedicationWarning[] = [];
+    let criticalInteractions = 0;
+    let severeInteractions = 0;
+
+    for (const result of interactionResults) {
+      for (const interaction of result.triggeredInteractions) {
+        // Find which specific foods triggered this interaction
+        const matchedFoods: string[] = [];
+        const foodLower = foodItemsText.toLowerCase();
+        for (const keyword of interaction.foodKeywords) {
+          if (foodLower.includes(keyword)) {
+            matchedFoods.push(keyword);
+          }
+        }
+
+        warnings.push({
+          medicationName: result.medication.genericName,
+          medicationCategory: result.medication.category,
+          severity: interaction.severity,
+          interaction: interaction.interaction,
+          recommendation: interaction.recommendation,
+          mechanism: interaction.mechanism,
+          matchedFoods: matchedFoods
+        });
+
+        // Count severity for Hawk Alert
+        if (interaction.severity === 'critical') criticalInteractions++;
+        if (interaction.severity === 'severe') severeInteractions++;
+      }
+    }
+
+    console.log(`[MEDICATION-CHECK] Found ${warnings.length} interaction(s): ${criticalInteractions} critical, ${severeInteractions} severe`);
+
+    // Send Hawk Alert for critical or severe interactions
+    if (criticalInteractions > 0 || severeInteractions > 0) {
+      // Load user details for alert
+      const user = await User.findByPk(userId);
+      if (user && user.email) {
+        const severity = criticalInteractions > 0 ? 'danger' : 'warning';
+        const medicationNamesList = [...new Set(warnings.map(w => `${w.medicationName} (${w.medicationCategory})`))];
+        const topInteraction = warnings[0]; // Highest severity (already sorted)
+
+        const message = criticalInteractions > 0
+          ? `CRITICAL: You consumed ${topInteraction.matchedFoods.join(', ')} which has a life-threatening interaction with ${topInteraction.medicationName}.`
+          : `You consumed ${topInteraction.matchedFoods.join(', ')} which interacts with ${topInteraction.medicationName}.`;
+
+        const recommendation = topInteraction.recommendation + ' Contact your doctor immediately if you experience any unusual symptoms.';
+
+        // Send Hawk Alert (async, non-blocking)
+        sendHawkAlert(
+          user.email,
+          user.phoneNumber,
+          'food_medication_interaction',
+          severity,
+          medicationNamesList,
+          message,
+          recommendation,
+          [], // Care team emails - could be loaded from user profile
+          warnings.map(w => w.matchedFoods).flat()
+        ).catch(error => {
+          console.error('[MEDICATION-CHECK] Error sending Hawk Alert:', error);
+        });
+
+        console.log(`[MEDICATION-CHECK] Hawk Alert sent for ${severity} food-medication interaction`);
+      }
+    }
+
+    return warnings;
+  } catch (error) {
+    // Don't throw - we don't want interaction checks to break meal creation
+    console.error('[MEDICATION-CHECK] Error checking medication interactions:', error);
+    return [];
+  }
+}
 
 /**
  * Get Meals with Date Filtering
@@ -91,12 +233,20 @@ export const addMeal = async (req: Request, res: Response) => {
 
     const withinSpec = checkCompliance(bodyWithoutUserId);
     const mealData = { userId, ...bodyWithoutUserId, withinSpec, timestamp: bodyWithoutUserId.timestamp || new Date() };
+
+    // 🚨 NEW: Check for food-medication interactions BEFORE creating meal
+    const medicationWarnings = await checkMedicationInteractions(userId, mealData.foodItems);
+
     const meal = await MealEntry.create(mealData);
 
     // 🚨 HEART-CRITICAL: Check daily sodium and cholesterol limits after meal creation
     await checkDailyLimitsAndAlert(userId, meal.timestamp);
 
-    res.status(201).json(meal);
+    // Return meal data WITH medication warnings for frontend to display
+    res.status(201).json({
+      ...meal.toJSON(),
+      medicationWarnings: medicationWarnings.length > 0 ? medicationWarnings : undefined
+    });
   } catch (error) {
     console.error('Error adding meal:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard, Input } from '../components/ui';
 import { UtensilsCrossed, Search, TrendingUp, Filter, Heart, Plus, User, Trophy, Award, BarChart3, PieChart as PieChartIcon, Scale, Target, Flame, Activity, Clock, Calendar } from 'lucide-react';
 import { api } from '../services/api';
-import { FoodCategory, FoodItem, FoodStats, MealEntry } from '../types';
+import { FoodCategory, FoodItem, FoodStats, MealEntry, MedicationWarning } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
+import { MedicationInteractionAlert } from '../components/MedicationInteractionAlert';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
@@ -24,6 +25,7 @@ export function MealsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [medicationWarnings, setMedicationWarnings] = useState<MedicationWarning[]>([]);
 
   // For visuals tab
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -177,7 +179,7 @@ export function MealsPage() {
     try {
       const multiplier = mealData.quantity;
 
-      await api.createMeal({
+      const result = await api.createMeal({
         timestamp: mealData.timestamp,
         mealType: mealData.mealType,
         foodItems: `${mealData.foodItem.name} (${mealData.portionSize}, ${mealData.quantity}x)`,
@@ -193,7 +195,13 @@ export function MealsPage() {
 
       setShowAddDialog(false);
       setSelectedFood(null);
-      alert(`${mealData.foodItem.name} added to ${mealData.mealType}!`);
+
+      // Check for medication warnings in response
+      if (result.medicationWarnings && result.medicationWarnings.length > 0) {
+        setMedicationWarnings(result.medicationWarnings);
+      } else {
+        alert(`${mealData.foodItem.name} added to ${mealData.mealType}!`);
+      }
     } catch (err: any) {
       console.error('Error adding to meal:', err);
       alert('Failed to add to meal: ' + err.message);
@@ -2614,6 +2622,29 @@ export function MealsPage() {
           }}
           onAdd={handleAddToMeal}
         />
+      )}
+
+      {/* Medication Interaction Warning Alert */}
+      {medicationWarnings.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <h2 className="text-2xl font-bold mb-4 text-red-900">
+              Food-Medication Interaction Detected
+            </h2>
+            <MedicationInteractionAlert
+              warnings={medicationWarnings}
+              onDismiss={() => setMedicationWarnings([])}
+            />
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setMedicationWarnings([])}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

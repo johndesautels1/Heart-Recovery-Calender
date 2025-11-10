@@ -73,6 +73,16 @@ export interface CalendarEvent {
   prescriptionId?: number; // Used in some components for exercise prescriptions
 }
 
+export interface MedicationWarning {
+  medicationName: string;
+  medicationCategory: string;
+  severity: 'critical' | 'severe' | 'moderate' | 'mild';
+  interaction: string;
+  recommendation: string;
+  mechanism: string;
+  matchedFoods: string[];
+}
+
 export interface MealEntry {
   id: number;
   userId: number;
@@ -92,6 +102,7 @@ export interface MealEntry {
   notes?: string;
   satisfactionRating?: number; // NEW: 1-5 scale for how satisfying the meal was
   status?: 'planned' | 'completed' | 'missed';
+  medicationWarnings?: MedicationWarning[]; // Food-medication interaction warnings
   createdAt: string;
   updatedAt: string;
 }

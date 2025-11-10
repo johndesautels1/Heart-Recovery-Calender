@@ -183,16 +183,32 @@ export const getSleepStats = async (req: Request, res: Response) => {
       poor: sleepLogs.filter(log => log.sleepQuality === 'poor').length
     };
 
-    // Calculate trend (simple: comparing first half vs second half)
+    // Calculate trend (comparing recent logs vs older logs)
+    // sleepLogs is sorted DESC (newest first), so:
+    // - first half = newer logs
+    // - second half = older logs
     const midpoint = Math.floor(totalLogs / 2);
-    const firstHalfAvg = sleepLogs.slice(0, midpoint)
-      .reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / midpoint || 0;
-    const secondHalfAvg = sleepLogs.slice(midpoint)
-      .reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / (totalLogs - midpoint) || 0;
+    if (midpoint === 0) {
+      // Not enough data for trend calculation
+      return res.json({
+        totalLogs,
+        averageHours: Math.round(averageHours * 100) / 100,
+        qualityDistribution,
+        trend: 'insufficient_data',
+        startDate,
+        endDate
+      });
+    }
 
-    const trend = secondHalfAvg > firstHalfAvg + 0.5
+    const newerLogsAvg = sleepLogs.slice(0, midpoint)
+      .reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / midpoint;
+    const olderLogsAvg = sleepLogs.slice(midpoint)
+      .reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / (totalLogs - midpoint);
+
+    // FIXED: Compare newer vs older (was backwards before)
+    const trend = newerLogsAvg > olderLogsAvg + 0.5
       ? 'improving'
-      : secondHalfAvg < firstHalfAvg - 0.5
+      : newerLogsAvg < olderLogsAvg - 0.5
         ? 'declining'
         : 'stable';
 
