@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GlassCard, Button, Modal, Input } from '../components/ui';
+import { PatientSelector } from '../components/PatientSelector';
 import {
   Moon,
   Plus,
@@ -18,7 +19,11 @@ import {
   Target,
   Zap,
   Activity,
-  Sun
+  Sun,
+  Sparkles,
+  Smartphone,
+  RefreshCw,
+  Check
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine, RadialBarChart, RadialBar } from 'recharts';
 import { useForm } from 'react-hook-form';
@@ -29,12 +34,13 @@ import { SleepLog, CreateSleepLogInput, SleepStats } from '../types';
 import toast from 'react-hot-toast';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
-import { usePatientSelection } from '../contexts/PatientSelectionContext';
 
 const sleepSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   hoursSlept: z.number().min(0).max(24, 'Hours must be between 0 and 24'),
   sleepQuality: z.enum(['poor', 'fair', 'good', 'excellent']).optional(),
+  dreamQuality: z.enum(['nightmare', 'cannot_remember', 'sporadic', 'vivid_positive']).optional(),
+  dreamNotes: z.string().optional(),
   bedTime: z.string().optional(),
   wakeTime: z.string().optional(),
   notes: z.string().optional(),
@@ -44,7 +50,6 @@ type SleepFormData = z.infer<typeof sleepSchema>;
 
 export function SleepPage() {
   const { user } = useAuth();
-  const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const location = useLocation();
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [stats, setStats] = useState<SleepStats | null>(null);
@@ -52,6 +57,31 @@ export function SleepPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingLog, setEditingLog] = useState<SleepLog | null>(null);
   const [dateRange, setDateRange] = useState<'daily' | 'weekly' | 'monthly' | 'surgery'>('surgery');
+
+  // 🔄 Patient Selection: Track which user's data to view
+  // - null = viewing own data (default for patients, therapist viewing self)
+  // - number = therapist viewing specific patient's data
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  // Heatmap toggle: sleep hours vs dream quality
+  const [heatmapMode, setHeatmapMode] = useState<'sleep' | 'dreams'>('sleep');
+
+  // Samsung device sync state
+  const [deviceStatus, setDeviceStatus] = useState<{
+    connected: boolean;
+    deviceName?: string;
+    syncStatus?: 'active' | 'error' | 'disconnected';
+    lastSyncedAt?: string;
+    syncError?: string;
+    autoSync?: boolean;
+    syncSleep?: boolean;
+  }>({ connected: false });
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Debug: Log when selectedUserId changes
+  useEffect(() => {
+    console.log('🎯 [SLEEP DEBUG] selectedUserId state changed to:', selectedUserId);
+  }, [selectedUserId]);
 
   const {
     register,
@@ -97,22 +127,27 @@ export function SleepPage() {
   }, [location]);
 
   useEffect(() => {
+    console.log(`🔄 [SLEEP DEBUG] useEffect triggered - selectedUserId: ${selectedUserId}, dateRange: ${dateRange}, currentUser: ${user?.id}`);
     loadSleepLogs();
     loadStats();
-  }, [dateRange, selectedPatient]); // Reload when selected patient changes
+    loadDeviceStatus();
+  }, [dateRange, selectedUserId]); // Reload when selected user changes
 
   // Reload data when navigating back to sleep page
   useEffect(() => {
     if (location.pathname === '/sleep') {
       loadSleepLogs();
       loadStats();
+      loadDeviceStatus();
     }
   }, [location.pathname]);
 
   const loadSleepLogs = async () => {
     try {
       setIsLoading(true);
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+      const userId = selectedUserId || user?.id;
+
+      console.log(`🔍 [SLEEP DEBUG] loadSleepLogs called - selectedUserId: ${selectedUserId}, currentUserId: ${user?.id}, effectiveUserId: ${userId}, dateRange: ${dateRange}`);
 
       // Calculate date range based on selection
       let startDate: string;
@@ -120,9 +155,7 @@ export function SleepPage() {
 
       if (dateRange === 'surgery') {
         // From surgery date to now (max 90 days)
-        const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
-          ? selectedPatient.surgeryDate
-          : user?.surgeryDate;
+        const surgeryDate = user?.surgeryDate;
 
         if (surgeryDate) {
           const surgeryDateObj = parseISO(surgeryDate);
@@ -145,6 +178,9 @@ export function SleepPage() {
         userId
       });
 
+      console.log(`✅ [SLEEP DEBUG] Sleep logs loaded - count: ${data.length}, userId: ${userId}, firstLogUserId: ${data[0]?.userId || 'none'}, dateRange: ${startDate} to ${endDate}`);
+      console.log('🌙 [DREAM DEBUG] First log has dreamQuality?', data[0]?.dreamQuality, 'Sample log:', data[0]);
+
       setSleepLogs(data);
     } catch (error) {
       console.error('Failed to load sleep logs:', error);
@@ -156,16 +192,14 @@ export function SleepPage() {
 
   const loadStats = async () => {
     try {
-      const userId = isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id;
+      const userId = selectedUserId || user?.id;
 
       // Calculate date range based on selection (same logic as loadSleepLogs)
       let startDate: string;
       const endDate = format(new Date(), 'yyyy-MM-dd');
 
       if (dateRange === 'surgery') {
-        const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
-          ? selectedPatient.surgeryDate
-          : user?.surgeryDate;
+        const surgeryDate = user?.surgeryDate;
 
         if (surgeryDate) {
           const surgeryDateObj = parseISO(surgeryDate);
@@ -187,6 +221,37 @@ export function SleepPage() {
     }
   };
 
+  // Load Samsung device status
+  const loadDeviceStatus = async () => {
+    try {
+      const response = await api.getSamsungDeviceStatus();
+      setDeviceStatus(response.data);
+    } catch (error) {
+      console.error('Failed to load device status:', error);
+    }
+  };
+
+  // Trigger manual sync
+  const handleManualSync = async () => {
+    try {
+      setIsSyncing(true);
+      await api.triggerSamsungSync();
+      toast.success('Syncing sleep data from Samsung Galaxy Watch...');
+
+      // Reload data after a short delay
+      setTimeout(() => {
+        loadSleepLogs();
+        loadStats();
+        loadDeviceStatus();
+        setIsSyncing(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error('Failed to trigger sync:', error);
+      toast.error(error.response?.data?.error || 'Failed to sync device');
+      setIsSyncing(false);
+    }
+  };
+
   const onSubmit = async (data: SleepFormData) => {
     try {
       setIsLoading(true);
@@ -205,8 +270,8 @@ export function SleepPage() {
       } else {
         const newLogData = {
           ...cleanedData,
-          // Always include userId: therapist uses selectedPatient, patient uses own user
-          userId: isViewingAsTherapist && selectedPatient?.userId ? selectedPatient.userId : user?.id
+          // Always include userId: therapist uses selectedUserId, patient uses own user
+          userId: selectedUserId || user?.id
         } as CreateSleepLogInput & { userId?: number };
 
         const newLog = await api.createSleepLog(newLogData);
@@ -335,8 +400,8 @@ export function SleepPage() {
     return 2; // Excessive > 12 hours - treat as blue (2 points)
   };
 
-  // Calculate monthly sleep score
-  const calculateMonthlySleepScore = () => {
+  // Calculate monthly sleep and dream scores (SEPARATE 100-point systems)
+  const calculateMonthlyScores = () => {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
@@ -348,48 +413,78 @@ export function SleepPage() {
       return logDate >= monthStart && logDate <= monthEnd;
     });
 
-    // Calculate base score
-    let baseScore = 0;
+    // Calculate sleep points (0-3 per day)
+    let sleepPoints = 0;
     monthLogs.forEach(log => {
       const hours = parseFloat(log.hoursSlept.toString());
-      baseScore += getSleepPoints(hours);
+      sleepPoints += getSleepPoints(hours);
     });
+
+    // Calculate dream points (0-3 per day)
+    let dreamPoints = 0;
+    const dreamPointsMap = {
+      nightmare: 0,
+      cannot_remember: 1,
+      sporadic: 2,
+      vivid_positive: 3,
+    };
+    monthLogs.forEach(log => {
+      if (log.dreamQuality) {
+        console.log('🌙 [DREAM SCORE] Found dream:', log.date, log.dreamQuality, 'Points:', dreamPointsMap[log.dreamQuality]);
+        dreamPoints += dreamPointsMap[log.dreamQuality];
+      }
+    });
+
+    console.log('🌙 [DREAM SCORE] Total dream points:', dreamPoints, 'from', monthLogs.filter(l => l.dreamQuality).length, 'dreams');
 
     // Check for perfect attendance (all days logged)
     const allDaysLogged = monthLogs.length === daysInCurrentMonth;
-    let bonusPoints = 0;
+
+    // Calculate bonus points for 100-point scale
+    let sleepBonus = 0;
+    let dreamBonus = 0;
 
     if (allDaysLogged) {
-      bonusPoints = daysInCurrentMonth === 30 ? 10 : 7; // 10 for 30-day month, 7 for 31-day month
+      // Bonus calculation to reach 100 points max
+      // 30 days: 90 points max → 10 bonus
+      // 31 days: 93 points max → 7 bonus
+      // 28/29 days: 84/87 points max → 16/13 bonus
+      const maxBasePoints = daysInCurrentMonth * 3;
+      sleepBonus = 100 - maxBasePoints;
+      dreamBonus = 100 - maxBasePoints;
     }
 
-    const totalScore = baseScore + bonusPoints;
-    const maxPossibleScore = (daysInCurrentMonth * 3) + (daysInCurrentMonth === 30 ? 10 : 7);
+    // Calculate final scores (out of 100)
+    const sleepScore = Math.min(sleepPoints + sleepBonus, 100);
+    const dreamScore = Math.min(dreamPoints + dreamBonus, 100);
 
     return {
-      totalScore,
-      baseScore,
-      bonusPoints,
-      maxPossibleScore,
+      sleepScore,
+      dreamScore,
+      sleepPoints,
+      dreamPoints,
+      sleepBonus,
+      dreamBonus,
       daysLogged: monthLogs.length,
       daysInMonth: daysInCurrentMonth,
       isPerfect: allDaysLogged,
     };
   };
 
-  // Helper function to get score color based on total score
-  const getScoreColor = (score: number, maxScore: number) => {
-    const percentage = (score / maxScore) * 100;
-
-    if (percentage >= 90) return { bg: 'bg-gradient-to-br from-green-500 to-emerald-600', text: 'text-white', border: 'border-green-400' };
-    if (percentage >= 75) return { bg: 'bg-gradient-to-br from-blue-500 to-cyan-600', text: 'text-white', border: 'border-blue-400' };
-    if (percentage >= 50) return { bg: 'bg-gradient-to-br from-yellow-500 to-orange-500', text: 'text-white', border: 'border-yellow-400' };
-    if (percentage >= 25) return { bg: 'bg-gradient-to-br from-orange-500 to-red-500', text: 'text-white', border: 'border-orange-400' };
-    return { bg: 'bg-gradient-to-br from-red-600 to-red-800', text: 'text-white', border: 'border-red-500' };
+  // Helper function to get score color based on score (out of 100)
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return { bg: 'bg-gradient-to-br from-green-500 to-emerald-600', text: 'text-white', border: 'border-green-400', glow: 'shadow-lg shadow-green-500/50' };
+    if (score >= 75) return { bg: 'bg-gradient-to-br from-blue-500 to-cyan-600', text: 'text-white', border: 'border-blue-400', glow: 'shadow-lg shadow-blue-500/50' };
+    if (score >= 50) return { bg: 'bg-gradient-to-br from-yellow-500 to-orange-500', text: 'text-white', border: 'border-yellow-400', glow: 'shadow-lg shadow-yellow-500/50' };
+    if (score >= 25) return { bg: 'bg-gradient-to-br from-orange-500 to-red-500', text: 'text-white', border: 'border-orange-400', glow: 'shadow-lg shadow-orange-500/50' };
+    return { bg: 'bg-gradient-to-br from-red-600 to-red-800', text: 'text-white', border: 'border-red-500', glow: 'shadow-lg shadow-red-500/50' };
   };
 
-  const sleepScore = calculateMonthlySleepScore();
-  const scoreColor = getScoreColor(sleepScore.totalScore, sleepScore.maxPossibleScore);
+  console.log(`🎨 [SLEEP DEBUG] RENDERING - sleepLogs.length: ${sleepLogs.length}, selectedUserId: ${selectedUserId}, firstLogUserId: ${sleepLogs[0]?.userId || 'none'}`);
+
+  const monthlyScores = calculateMonthlyScores();
+  const sleepScoreColor = getScoreColor(monthlyScores.sleepScore);
+  const dreamScoreColor = getScoreColor(monthlyScores.dreamScore);
 
   // Limit to last 90 days for chart performance
   const chartData = sleepLogs
@@ -456,6 +551,30 @@ export function SleepPage() {
         date: format(date, 'MMM d'),
         hours,
         quality: dayLog?.sleepQuality || null,
+        dreamQuality: dayLog?.dreamQuality || null,
+        dayOfWeek: format(date, 'EEE'),
+      });
+    }
+    return data;
+  })();
+
+  // 2b. Dream Heatmap Calendar Data - Current month
+  const heatmapDreamData = (() => {
+    const now = new Date();
+    const daysInMonth = getDaysInMonth(now);
+    const monthStart = startOfMonth(now);
+    const data = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(monthStart);
+      date.setDate(day);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayLog = sleepLogs.find(log => log.date === dateStr);
+
+      data.push({
+        day,
+        date: format(date, 'MMM d'),
+        dreamQuality: dayLog?.dreamQuality || null,
         dayOfWeek: format(date, 'EEE'),
       });
     }
@@ -493,9 +612,7 @@ export function SleepPage() {
     : 0;
 
   // 5. Bed/Wake Time Data - Chart over Days Since Surgery
-  const surgeryDate = (isViewingAsTherapist && selectedPatient?.surgeryDate)
-    ? selectedPatient.surgeryDate
-    : user?.surgeryDate;
+  const surgeryDate = user?.surgeryDate;
 
   const bedWakeScatterData = (() => {
     // sleepLogs is already filtered by loadSleepLogs based on dateRange
@@ -567,14 +684,9 @@ export function SleepPage() {
       parseISO(b.date).getTime() - parseISO(a.date).getTime()
     );
 
-    console.log('=== STREAK CALCULATION DEBUG ===');
-    console.log('Total sleep logs:', sleepLogs.length);
-    console.log('Sorted logs (newest first):', sortedLogs.map(l => l.date));
-
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    console.log('Today:', format(today, 'yyyy-MM-dd'));
 
     for (let i = 0; i < sortedLogs.length; i++) {
       const logDate = parseISO(sortedLogs[i].date);
@@ -584,18 +696,13 @@ export function SleepPage() {
       const logDateStr = format(logDate, 'yyyy-MM-dd');
       const expectedDateStr = format(expectedDate, 'yyyy-MM-dd');
 
-      console.log(`Day ${i}: Expected ${expectedDateStr}, Got ${logDateStr}, Match: ${logDateStr === expectedDateStr}`);
-
       if (logDateStr === expectedDateStr) {
         streak++;
       } else {
-        console.log(`Streak broken at day ${i}`);
         break;
       }
     }
 
-    console.log('Final streak:', streak);
-    console.log('=================================');
     return streak;
   };
   const currentStreak = calculateStreak();
@@ -679,61 +786,146 @@ export function SleepPage() {
     },
   ].filter(item => item.count > 0);
 
+  // 9. Dream Quality Distribution
+  const dreamQualityDistribution = sleepLogs.reduce((acc, log) => {
+    if (log.dreamQuality) {
+      acc[log.dreamQuality] = (acc[log.dreamQuality] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const dreamData = [
+    {
+      quality: 'Vivid & Positive',
+      count: dreamQualityDistribution.vivid_positive || 0,
+      color: '#10b981',
+      gradient: 'from-green-500 to-emerald-600',
+      glow: 'shadow-green-500/50',
+      points: 3,
+      emoji: '✨'
+    },
+    {
+      quality: 'Sporadic',
+      count: dreamQualityDistribution.sporadic || 0,
+      color: '#3b82f6',
+      gradient: 'from-blue-500 to-cyan-600',
+      glow: 'shadow-blue-500/50',
+      points: 2,
+      emoji: '🌙'
+    },
+    {
+      quality: "Can't Remember",
+      count: dreamQualityDistribution.cannot_remember || 0,
+      color: '#f59e0b',
+      gradient: 'from-yellow-500 to-orange-500',
+      glow: 'shadow-yellow-500/50',
+      points: 1,
+      emoji: '💭'
+    },
+    {
+      quality: 'Nightmares',
+      count: dreamQualityDistribution.nightmare || 0,
+      color: '#ef4444',
+      gradient: 'from-red-500 to-red-700',
+      glow: 'shadow-red-500/50',
+      points: 0,
+      emoji: '😱'
+    },
+  ].filter(item => item.count > 0);
+
+  const totalDreamsLogged = dreamData.reduce((sum, item) => sum + item.count, 0);
+
   return (
     <div className="space-y-6">
-      {/* Patient Selection Banner */}
-      {isViewingAsTherapist && selectedPatient && (
-        <div className="glass rounded-xl p-4 border-2" style={{ borderColor: 'var(--accent)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <User className="h-6 w-6" style={{ color: 'var(--accent)' }} />
-              <div>
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>Viewing sleep data for:</p>
-                <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{selectedPatient.name}</p>
-              </div>
-            </div>
-            <div className="text-sm" style={{ color: 'var(--muted)' }}>
-              Therapist View
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Patient Selector - Shows who's data is being viewed */}
+      <PatientSelector
+        onPatientChange={setSelectedUserId}
+        selectedUserId={selectedUserId}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+      {/* Header Row with Title and Action Button */}
+      <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white">Sleep Journal</h1>
-
-        {/* Sleep Score Card */}
-        <div className={`${scoreColor.bg} ${scoreColor.text} rounded-xl p-4 shadow-lg border-2 ${scoreColor.border} transform hover:scale-105 transition-transform duration-300`}>
-          <div className="flex items-center justify-center gap-3">
-            <Trophy className="h-8 w-8" />
-            <div className="text-center">
-              <div className="text-sm font-semibold opacity-90">Sleep Score</div>
-              <div className="text-3xl font-bold">
-                {sleepScore.totalScore}
-                <span className="text-lg opacity-75">/{sleepScore.maxPossibleScore}</span>
-              </div>
-              <div className="text-xs opacity-80 mt-1">
-                {sleepScore.daysLogged}/{sleepScore.daysInMonth} days
-                {sleepScore.isPerfect && (
-                  <span className="ml-2">
-                    <Award className="inline h-4 w-4 animate-pulse" />
+        <div className="flex items-center gap-3">
+          {/* Samsung Device Sync Status */}
+          {deviceStatus.connected && deviceStatus.syncSleep && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600/30 to-purple-600/30 border border-blue-400/30 backdrop-blur-sm">
+              <Smartphone className={`h-5 w-5 ${deviceStatus.syncStatus === 'active' ? 'text-green-400' : 'text-yellow-400'}`} />
+              <div className="flex flex-col">
+                <span className="text-xs text-white font-semibold">{deviceStatus.deviceName || 'Samsung Watch'}</span>
+                {deviceStatus.lastSyncedAt && (
+                  <span className="text-xs text-gray-300">
+                    Last sync: {format(new Date(deviceStatus.lastSyncedAt), 'MMM d, h:mm a')}
                   </span>
                 )}
               </div>
-              {sleepScore.isPerfect && (
-                <div className="text-xs font-semibold mt-1 animate-pulse">
-                  Perfect Month! +{sleepScore.bonusPoints} Bonus
-                </div>
-              )}
+              <button
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className={`ml-2 p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition-colors ${isSyncing ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                title="Sync now"
+              >
+                <RefreshCw className={`h-4 w-4 text-blue-400 ${isSyncing ? 'animate-spin' : ''}`} />
+              </button>
             </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
+          )}
           <Button onClick={handleOpenModal}>
             <Plus className="h-5 w-5 mr-2" />
             Log Sleep
           </Button>
+        </div>
+      </div>
+
+      {/* Score Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Sleep Score Card */}
+        <div className={`${sleepScoreColor.bg} ${sleepScoreColor.text} rounded-xl p-6 ${sleepScoreColor.glow} border-2 ${sleepScoreColor.border} transform hover:scale-105 transition-all duration-300`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Moon className="h-8 w-8" />
+              <div>
+                <div className="text-sm font-semibold opacity-90">Sleep Score</div>
+                <div className="text-4xl font-bold">
+                  {monthlyScores.sleepScore}
+                  <span className="text-xl opacity-75">/100</span>
+                </div>
+              </div>
+            </div>
+            {monthlyScores.isPerfect && (
+              <Award className="h-8 w-8 animate-pulse" />
+            )}
+          </div>
+          <div className="text-xs opacity-90 mt-3 flex items-center justify-between">
+            <span>{monthlyScores.daysLogged}/{monthlyScores.daysInMonth} days logged</span>
+            {monthlyScores.isPerfect && (
+              <span className="font-semibold">+{monthlyScores.sleepBonus} bonus!</span>
+            )}
+          </div>
+        </div>
+
+        {/* Dream Score Card */}
+        <div className={`${dreamScoreColor.bg} ${dreamScoreColor.text} rounded-xl p-6 ${dreamScoreColor.glow} border-2 ${dreamScoreColor.border} transform hover:scale-105 transition-all duration-300`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-8 w-8" />
+              <div>
+                <div className="text-sm font-semibold opacity-90">Dream Score</div>
+                <div className="text-4xl font-bold">
+                  {monthlyScores.dreamScore}
+                  <span className="text-xl opacity-75">/100</span>
+                </div>
+              </div>
+            </div>
+            {monthlyScores.isPerfect && (
+              <Award className="h-8 w-8 animate-pulse" />
+            )}
+          </div>
+          <div className="text-xs opacity-90 mt-3 flex items-center justify-between">
+            <span>{monthlyScores.daysLogged}/{monthlyScores.daysInMonth} days logged</span>
+            {monthlyScores.isPerfect && (
+              <span className="font-semibold">+{monthlyScores.dreamBonus} bonus!</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1805,59 +1997,214 @@ export function SleepPage() {
               Distribution across {sleepLogs.length} nights
             </div>
           </GlassCard>
+
+          {/* 9. Dream Quality Visualization - 5D Glass Morphic */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-400" />
+              Dream Journal Analytics
+            </h3>
+
+            {totalDreamsLogged > 0 ? (
+              <div className="space-y-6">
+                {/* Mystical Dream Orbs */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {dreamData.map((dream, index) => (
+                    <div key={dream.quality} className="relative group">
+                      <div className={`absolute inset-0 bg-gradient-to-r ${dream.gradient} opacity-20 blur-xl ${dream.glow} group-hover:opacity-40 transition-all duration-500`}></div>
+                      <div className={`relative glass rounded-2xl p-4 border-2 border-opacity-50 hover:scale-105 transition-transform duration-300`} style={{ borderColor: dream.color }}>
+                        <div className="text-center">
+                          <div className="text-4xl mb-2 animate-pulse">{dream.emoji}</div>
+                          <div className="text-2xl font-bold text-white mb-1">{dream.count}</div>
+                          <div className="text-xs text-gray-300 mb-1">{dream.quality}</div>
+                          <div className={`text-xs font-semibold`} style={{ color: dream.color }}>
+                            {dream.points} pts each
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 5D Radial Dream Wave */}
+                <div className="relative h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="20%"
+                      outerRadius="90%"
+                      data={dreamData.map((d, i) => ({
+                        ...d,
+                        fill: d.color,
+                        value: (d.count / totalDreamsLogged) * 100
+                      }))}
+                      startAngle={180}
+                      endAngle={-180}
+                    >
+                      <RadialBar
+                        minAngle={15}
+                        background={{ fill: '#1f2937' }}
+                        clockWise
+                        dataKey="value"
+                        cornerRadius={10}
+                      />
+                      <Legend
+                        iconSize={10}
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        content={({ payload }) => (
+                          <div className="space-y-2">
+                            {payload?.map((entry: any, index: number) => (
+                              <div key={index} className="flex items-center gap-2 text-xs">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                                <span className="text-white">{entry.payload.quality}</span>
+                                <span className="text-gray-400">({entry.payload.count})</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                <Moon className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>Start logging your dreams to see analytics</p>
+              </div>
+            )}
+          </GlassCard>
         </>
       )}
 
-      {/* Monthly Sleep Heatmap */}
+      {/* Monthly Heatmap - Sleep or Dreams */}
       <GlassCard>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-400" />
-          Monthly Sleep Heatmap
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-400" />
+            Monthly {heatmapMode === 'sleep' ? 'Sleep' : 'Dream'} Heatmap
+          </h3>
+          {/* Toggle Button */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setHeatmapMode('sleep')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                heatmapMode === 'sleep'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-lg shadow-blue-500/50'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              <Moon className="h-4 w-4 inline mr-2" />
+              Sleep Hours
+            </button>
+            <button
+              onClick={() => setHeatmapMode('dreams')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                heatmapMode === 'dreams'
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              <Sparkles className="h-4 w-4 inline mr-2" />
+              Dream Quality
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-7 gap-1">
-          {heatmapSleepData.map((day) => {
-            const hours = day.hours || 0;
-            const bgColor = hours === null ? 'bg-gray-800' :
-                            hours < 4 ? 'bg-gradient-to-br from-red-500 to-red-700' :
-                            hours < 6 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
-                            hours < 7 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                            hours < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
-                            'bg-gradient-to-br from-green-400 to-green-600';
-            const opacity = hours === null ? 0.2 : 1;
+          {(heatmapMode === 'sleep' ? heatmapSleepData : heatmapDreamData).map((day) => {
+            let bgColor, opacity, tooltip, displayValue;
+
+            if (heatmapMode === 'sleep') {
+              const hours = day.hours || 0;
+              bgColor = hours === null ? 'bg-gray-800' :
+                        hours < 4 ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                        hours < 6 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                        hours < 7 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                        hours < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                        'bg-gradient-to-br from-green-400 to-green-600';
+              opacity = hours === null ? 0.2 : 1;
+              tooltip = day.hours ? `${day.date}: ${day.hours}h (${day.quality || 'N/A'})` : day.date;
+              displayValue = day.hours ? `${day.hours}h` : null;
+            } else {
+              // Dream mode
+              const dreamQuality = day.dreamQuality;
+              bgColor = !dreamQuality ? 'bg-gray-800' :
+                        dreamQuality === 'nightmare' ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                        dreamQuality === 'cannot_remember' ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
+                        dreamQuality === 'sporadic' ? 'bg-gradient-to-br from-blue-500 to-cyan-600' :
+                        'bg-gradient-to-br from-green-500 to-emerald-600';
+              opacity = !dreamQuality ? 0.2 : 1;
+              const dreamLabels = {
+                nightmare: '😱',
+                cannot_remember: '💭',
+                sporadic: '🌙',
+                vivid_positive: '✨'
+              };
+              tooltip = dreamQuality ? `${day.date}: ${dreamQuality.replace('_', ' ')}` : day.date;
+              displayValue = dreamQuality ? dreamLabels[dreamQuality] : null;
+            }
+
             return (
               <div key={day.day}
                    className={`${bgColor} rounded-lg p-2 text-center transition-all duration-300 hover:scale-110 hover:shadow-lg`}
                    style={{ opacity }}
-                   title={day.hours ? `${day.date}: ${day.hours}h (${day.quality})` : day.date}>
+                   title={tooltip}>
                 <div className="text-xs font-bold text-white opacity-70">{day.dayOfWeek}</div>
                 <div className="text-lg font-bold text-white">{day.day}</div>
-                {day.hours && <div className="text-xs text-white opacity-90">{day.hours}h</div>}
+                {displayValue && <div className="text-xs text-white opacity-90">{displayValue}</div>}
               </div>
             );
           })}
         </div>
-        <div className="flex justify-between items-center mt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
-            <span className="text-white opacity-70">&lt;4h</span>
+
+        {/* Legend - switches based on mode */}
+        {heatmapMode === 'sleep' ? (
+          <div className="flex justify-between items-center mt-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
+              <span className="text-white opacity-70">&lt;4h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
+              <span className="text-white opacity-70">4-6h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-yellow-600"></div>
+              <span className="text-white opacity-70">6-7h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
+              <span className="text-white opacity-70">7-9h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
+              <span className="text-white opacity-70">9+h</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
-            <span className="text-white opacity-70">4-6h</span>
+        ) : (
+          <div className="flex justify-between items-center mt-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
+              <span className="text-white opacity-70">😱 Nightmare</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-500 to-orange-500"></div>
+              <span className="text-white opacity-70">💭 Can't Remember</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-cyan-600"></div>
+              <span className="text-white opacity-70">🌙 Sporadic</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-green-500 to-emerald-600"></div>
+              <span className="text-white opacity-70">✨ Vivid & Positive</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-yellow-600"></div>
-            <span className="text-white opacity-70">6-7h</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
-            <span className="text-white opacity-70">7-9h</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
-            <span className="text-white opacity-70">9+h</span>
-          </div>
-        </div>
+        )}
       </GlassCard>
 
       {/* Sleep Logs List */}
@@ -1996,6 +2343,22 @@ export function SleepPage() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              🌙 Dream Quality
+            </label>
+            <select
+              {...register('dreamQuality')}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select dream quality</option>
+              <option value="nightmare">🔴 Nightmares (0 pts)</option>
+              <option value="cannot_remember">🟡 Can't Remember (1 pt)</option>
+              <option value="sporadic">🔵 Sporadic/Forgot (2 pts)</option>
+              <option value="vivid_positive">🟢 Vivid & Positive (3 pts)</option>
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-white mb-2">
@@ -2027,6 +2390,18 @@ export function SleepPage() {
               rows={3}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Any notes about your sleep..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Dream Journal
+            </label>
+            <textarea
+              {...register('dreamNotes')}
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Describe your dreams..."
             />
           </div>
 

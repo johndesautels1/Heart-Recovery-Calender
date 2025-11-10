@@ -1669,18 +1669,81 @@ export function VitalsPage() {
     }
   }
 
+  // ============================================================================
+  // 🔍 DATA SOURCE DEBUG LOGGING - Track gauge data conflicts
+  // ============================================================================
+  console.log('[GAUGE DATA DEBUG] ===== VITALS DATA ANALYSIS =====');
+  console.log('[GAUGE DATA DEBUG] User context:', {
+    currentUserId: user?.id,
+    selectedUserId: selectedUserId,
+    viewingAsTherapist: !!selectedUserId,
+    userRole: user?.role
+  });
+  console.log('[GAUGE DATA DEBUG] Total vitals loaded from DB:', vitals.length);
+  console.log('[GAUGE DATA DEBUG] Filtered for luxury gauges:', filteredForLuxury.length);
+  console.log('[GAUGE DATA DEBUG] Device filter active:', selectedDevice);
+  console.log('[GAUGE DATA DEBUG] Time view:', globalTimeView);
+
+  // Analyze data sources
+  const sourceCounts = vitals.reduce((acc, v) => {
+    const source = `${v.source || 'unknown'} (device: ${v.deviceId || 'none'}, user: ${v.userId})`;
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  console.log('[GAUGE DATA DEBUG] Data sources:', sourceCounts);
+
   // Calculate MOST RECENT within the time period (not absolute latest)
   const bpVitalsForRecent = filteredForLuxury.filter(v => v.bloodPressureSystolic && v.bloodPressureDiastolic)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  if (bpVitalsForRecent.length > 0) {
+    console.log('[GAUGE DATA DEBUG] 🩸 Most recent BP from DB:', {
+      value: `${bpVitalsForRecent[0].bloodPressureSystolic}/${bpVitalsForRecent[0].bloodPressureDiastolic}`,
+      timestamp: bpVitalsForRecent[0].timestamp,
+      source: bpVitalsForRecent[0].source,
+      deviceId: bpVitalsForRecent[0].deviceId,
+      userId: bpVitalsForRecent[0].userId
+    });
+  } else {
+    console.log('[GAUGE DATA DEBUG] 🩸 NO BP data found in filtered set');
+  }
+
   const recentBP = bpVitalsForRecent.length > 0
     ? `${bpVitalsForRecent[0].bloodPressureSystolic}/${bpVitalsForRecent[0].bloodPressureDiastolic}`
     : null;
 
   const hrVitalsForRecent = filteredForLuxury.filter(v => v.heartRate)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  // Use live WebSocket data if available, otherwise use most recent database value
-  const recentHR = latestHeartRate?.data?.heartRate ||
+
+  if (hrVitalsForRecent.length > 0) {
+    console.log('[GAUGE DATA DEBUG] 💓 Most recent HR from DB:', {
+      value: hrVitalsForRecent[0].heartRate,
+      timestamp: hrVitalsForRecent[0].timestamp,
+      source: hrVitalsForRecent[0].source,
+      deviceId: hrVitalsForRecent[0].deviceId,
+      userId: hrVitalsForRecent[0].userId
+    });
+  } else {
+    console.log('[GAUGE DATA DEBUG] 💓 NO HR data found in filtered set');
+  }
+
+  if (latestHeartRate?.data) {
+    console.log('[GAUGE DATA DEBUG] 💓 WebSocket real-time HR:', {
+      value: latestHeartRate.data.heartRate,
+      timestamp: latestHeartRate.data.timestamp,
+      source: latestHeartRate.data.source,
+      device: latestHeartRate.data.device,
+      userId: latestHeartRate.data.userId
+    });
+  }
+
+  // 🚨 CRITICAL FIX: Only use WebSocket data if NOT viewing as therapist
+  // When viewing a patient's data, ignore real-time WebSocket data which might be from therapist's own devices
+  const recentHR = (!selectedUserId && latestHeartRate?.data?.heartRate) ||
     (hrVitalsForRecent.length > 0 ? hrVitalsForRecent[0].heartRate! : null);
+
+  console.log('[GAUGE DATA DEBUG] 💓 Final HR value displayed:', recentHR);
+  console.log('[GAUGE DATA DEBUG] ===== END =====');
 
   const o2VitalsForRecent = filteredForLuxury.filter(v => v.oxygenSaturation)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

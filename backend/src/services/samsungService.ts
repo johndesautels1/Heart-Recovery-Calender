@@ -4,6 +4,7 @@ import DeviceSyncLog from '../models/DeviceSyncLog';
 import ExerciseLog from '../models/ExerciseLog';
 import VitalsSample from '../models/VitalsSample';
 import Patient from '../models/Patient';
+import SleepLog from '../models/SleepLog';
 
 // Samsung Health API configuration
 // Note: Samsung Health uses Health Connect on Android 14+ for Galaxy Watch 8
@@ -44,6 +45,20 @@ interface SamsungHeartRateSample {
     device: string;
     dataOrigin: string;
   };
+}
+
+interface SamsungSleepSession {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  durationMillis: number;
+  stages?: {
+    stage: 'awake' | 'light' | 'deep' | 'rem';
+    startTime: string;
+    endTime: string;
+  }[];
+  sleepQuality?: number; // 0-100 quality score
+  notes?: string;
 }
 
 export const samsungService = {
@@ -257,6 +272,75 @@ export const samsungService = {
     }
   },
 
+  // Get sleep sessions from Health Connect
+  async getSleepSessions(
+    accessToken: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<SamsungSleepSession[]> {
+    try {
+      const response = await axios.get('https://healthconnect.googleapis.com/v1/sleep', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        },
+      });
+
+      return response.data.sessions || [];
+    } catch (error: any) {
+      console.error('Error fetching Samsung sleep sessions:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  // Calculate sleep quality from sleep stages
+  calculateSleepQuality(stages: SamsungSleepSession['stages'], durationHours: number): 'poor' | 'fair' | 'good' | 'excellent' {
+    if (!stages || stages.length === 0) {
+      // Basic quality based on duration
+      if (durationHours < 4) return 'poor';
+      if (durationHours < 6) return 'fair';
+      if (durationHours < 8) return 'good';
+      return 'excellent';
+    }
+
+    // Calculate stage percentages
+    const totalMillis = stages.reduce((sum, stage) => {
+      const start = new Date(stage.startTime).getTime();
+      const end = new Date(stage.endTime).getTime();
+      return sum + (end - start);
+    }, 0);
+
+    const deepSleep = stages.filter(s => s.stage === 'deep').reduce((sum, stage) => {
+      const start = new Date(stage.startTime).getTime();
+      const end = new Date(stage.endTime).getTime();
+      return sum + (end - start);
+    }, 0);
+
+    const remSleep = stages.filter(s => s.stage === 'rem').reduce((sum, stage) => {
+      const start = new Date(stage.startTime).getTime();
+      const end = new Date(stage.endTime).getTime();
+      return sum + (end - start);
+    }, 0);
+
+    const deepPercent = (deepSleep / totalMillis) * 100;
+    const remPercent = (remSleep / totalMillis) * 100;
+
+    // Ideal: 15-25% deep sleep, 20-25% REM sleep
+    const qualityScore = (
+      (deepPercent >= 15 && deepPercent <= 25 ? 25 : 0) +
+      (remPercent >= 20 && remPercent <= 25 ? 25 : 0) +
+      (durationHours >= 7 && durationHours <= 9 ? 50 : durationHours >= 6 ? 25 : 0)
+    );
+
+    if (qualityScore >= 75) return 'excellent';
+    if (qualityScore >= 50) return 'good';
+    if (qualityScore >= 25) return 'fair';
+    return 'poor';
+  },
+
   // Map Samsung exercise type to our category
   mapExerciseType(samsungType: string): string {
     const typeMap: Record<string, string> = {
@@ -460,6 +544,63 @@ export async function syncSamsungData(
           }
         } catch (error: any) {
           console.error('Error processing standalone BP:', error);
+        }
+      }
+    }
+
+    // Sync sleep data if enabled
+    if (device.syncSleep) {
+      const sleepSessions = await samsungService.getSleepSessions(
+        device.accessToken,
+        startTime,
+        endTime
+      );
+      recordsProcessed += sleepSessions.length;
+
+      for (const session of sleepSessions) {
+        try {
+          const sessionStart = new Date(session.startTime);
+          const sessionEnd = new Date(session.endTime);
+
+          // Calculate hours slept
+          const hoursSlept = session.durationMillis / (1000 * 60 * 60);
+
+          // Determine the date (day you woke up)
+          const sleepDate = sessionEnd.toISOString().split('T')[0];
+
+          // Check if already synced for this date
+          const existing = await SleepLog.findOne({
+            where: {
+              userId: device.userId,
+              date: sleepDate,
+            },
+          });
+
+          if (existing) {
+            // Skip if manual entry exists, unless it's also from device sync
+            recordsSkipped++;
+            continue;
+          }
+
+          // Calculate sleep quality based on stages and duration
+          const sleepQuality = samsungService.calculateSleepQuality(session.stages, hoursSlept);
+
+          // Create sleep log entry
+          await SleepLog.create({
+            userId: device.userId,
+            date: new Date(sleepDate),
+            hoursSlept: Math.round(hoursSlept * 100) / 100, // Round to 2 decimals
+            sleepQuality,
+            bedTime: sessionStart,
+            wakeTime: sessionEnd,
+            notes: `Auto-synced from Samsung Galaxy Watch 8${session.sleepQuality ? ` (Quality Score: ${session.sleepQuality})` : ''}`,
+          });
+
+          externalIds.push(session.sessionId);
+          recordsCreated++;
+        } catch (error: any) {
+          console.error('Error processing Samsung sleep session:', error);
+          recordsSkipped++;
         }
       }
     }

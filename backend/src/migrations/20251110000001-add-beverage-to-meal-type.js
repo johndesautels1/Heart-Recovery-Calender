@@ -1,9 +1,15 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Add 'beverage' to the existing mealType ENUM
-    await queryInterface.sequelize.query(
-      `ALTER TYPE "enum_meal_entries_mealType" ADD VALUE 'beverage';`
+    // Add 'beverage' to the existing mealType ENUM if it doesn't exist
+    const [results] = await queryInterface.sequelize.query(
+      `SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'beverage' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'enum_meal_entries_mealType')) AS exists;`
     );
+
+    if (!results[0].exists) {
+      await queryInterface.sequelize.query(
+        `ALTER TYPE "enum_meal_entries_mealType" ADD VALUE 'beverage';`
+      );
+    }
   },
 
   down: async (queryInterface, Sequelize) => {

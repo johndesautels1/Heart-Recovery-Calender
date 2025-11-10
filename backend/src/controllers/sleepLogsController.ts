@@ -4,7 +4,8 @@ import { Op } from 'sequelize';
 
 export const getSleepLogs = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || req.query.userId;
+    // Prioritize query userId (for therapists viewing patients) over authenticated user
+    const userId = req.query.userId || req.user?.id;
     const { date, start, end } = req.query;
     const where: any = { userId };
 
@@ -139,7 +140,8 @@ export const deleteSleepLog = async (req: Request, res: Response) => {
 
 export const getSleepStats = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || (req.query.userId as string);
+    // Prioritize query userId (for therapists viewing patients) over authenticated user
+    const userId = (req.query.userId as string) || req.user?.id;
     const { start, end } = req.query;
 
     const startDate = start

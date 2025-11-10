@@ -504,6 +504,7 @@ export interface SleepLog {
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
   quality?: 'poor' | 'fair' | 'good' | 'excellent'; // Alias for sleepQuality
+  dreamQuality?: 'nightmare' | 'cannot_remember' | 'sporadic' | 'vivid_positive';
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
@@ -519,6 +520,8 @@ export interface CreateSleepLogInput {
   date: string;
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  dreamQuality?: 'nightmare' | 'cannot_remember' | 'sporadic' | 'vivid_positive';
+  dreamNotes?: string;
   notes?: string;
   bedTime?: string;
   wakeTime?: string;

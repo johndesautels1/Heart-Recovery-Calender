@@ -28,6 +28,7 @@ interface DeviceConnectionAttributes {
   syncHeartRate: boolean;
   syncSteps: boolean;
   syncCalories: boolean;
+  syncSleep: boolean;
 
   createdAt?: Date;
   updatedAt?: Date;
@@ -59,6 +60,7 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
   public syncHeartRate!: boolean;
   public syncSteps!: boolean;
   public syncCalories!: boolean;
+  public syncSleep!: boolean;
 
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
@@ -174,6 +176,12 @@ class DeviceConnection extends Model<DeviceConnectionAttributes, DeviceConnectio
           allowNull: false,
           defaultValue: true,
           comment: 'Sync calorie burn data',
+        },
+        syncSleep: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: true,
+          comment: 'Sync sleep data',
         },
       },
       {

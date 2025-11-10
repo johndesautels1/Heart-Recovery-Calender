@@ -81,6 +81,7 @@ router.get('/callback', async (req: Request, res: Response) => {
         syncHeartRate: true,
         syncSteps: true,
         syncCalories: true,
+        syncSleep: true,
       });
     }
 
@@ -102,6 +103,150 @@ router.get('/callback', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in Samsung callback:', error);
     res.redirect(`${process.env.FRONTEND_URL}/settings/devices?error=callback_failed`);
+  }
+});
+
+// Manual sync trigger
+router.post('/sync', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the user's Samsung device connection
+    const device = await DeviceConnection.findOne({
+      where: {
+        userId,
+        deviceType: 'samsung_health',
+        syncStatus: 'active',
+      },
+    });
+
+    if (!device) {
+      return res.status(404).json({ error: 'Samsung device not connected' });
+    }
+
+    // Create sync log
+    const syncLog = await DeviceSyncLog.create({
+      deviceConnectionId: device.id,
+      syncType: 'manual',
+      dataType: 'all',
+      status: 'pending',
+      startedAt: new Date(),
+    });
+
+    // Trigger sync in background
+    syncSamsungData(device, syncLog)
+      .then(() => {
+        console.log('Samsung sync completed successfully');
+      })
+      .catch(error => {
+        console.error('Error in Samsung sync:', error);
+      });
+
+    res.json({
+      success: true,
+      message: 'Sync initiated',
+      data: { syncLogId: syncLog.id },
+    });
+  } catch (error) {
+    console.error('Error triggering Samsung sync:', error);
+    res.status(500).json({ error: 'Failed to initiate sync' });
+  }
+});
+
+// Update sync settings
+router.patch('/settings', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { autoSync, syncExercises, syncHeartRate, syncSteps, syncCalories, syncSleep } = req.body;
+
+    // Find the user's Samsung device connection
+    const device = await DeviceConnection.findOne({
+      where: {
+        userId,
+        deviceType: 'samsung_health',
+      },
+    });
+
+    if (!device) {
+      return res.status(404).json({ error: 'Samsung device not connected' });
+    }
+
+    // Update settings
+    if (autoSync !== undefined) device.autoSync = autoSync;
+    if (syncExercises !== undefined) device.syncExercises = syncExercises;
+    if (syncHeartRate !== undefined) device.syncHeartRate = syncHeartRate;
+    if (syncSteps !== undefined) device.syncSteps = syncSteps;
+    if (syncCalories !== undefined) device.syncCalories = syncCalories;
+    if (syncSleep !== undefined) device.syncSleep = syncSleep;
+
+    await device.save();
+
+    res.json({
+      success: true,
+      message: 'Settings updated',
+      data: {
+        autoSync: device.autoSync,
+        syncExercises: device.syncExercises,
+        syncHeartRate: device.syncHeartRate,
+        syncSteps: device.syncSteps,
+        syncCalories: device.syncCalories,
+        syncSleep: device.syncSleep,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating Samsung settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// Get device connection status
+router.get('/status', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const device = await DeviceConnection.findOne({
+      where: {
+        userId,
+        deviceType: 'samsung_health',
+      },
+    });
+
+    if (!device) {
+      return res.json({
+        success: true,
+        data: { connected: false },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        deviceName: device.deviceName,
+        syncStatus: device.syncStatus,
+        lastSyncedAt: device.lastSyncedAt,
+        syncError: device.syncError,
+        autoSync: device.autoSync,
+        syncExercises: device.syncExercises,
+        syncHeartRate: device.syncHeartRate,
+        syncSteps: device.syncSteps,
+        syncCalories: device.syncCalories,
+        syncSleep: device.syncSleep,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching Samsung device status:', error);
+    res.status(500).json({ error: 'Failed to fetch device status' });
   }
 });
 

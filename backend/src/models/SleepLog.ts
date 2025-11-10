@@ -7,6 +7,7 @@ interface SleepLogAttributes {
   date: Date;
   hoursSlept: number;
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  dreamQuality?: 'nightmare' | 'cannot_remember' | 'sporadic' | 'vivid_positive';
   postSurgeryDay?: number;
   notes?: string;
   bedTime?: Date;
@@ -27,6 +28,7 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
   public date!: Date;
   public hoursSlept!: number;
   public sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
+  public dreamQuality?: 'nightmare' | 'cannot_remember' | 'sporadic' | 'vivid_positive';
   public postSurgeryDay?: number;
   public notes?: string;
   public bedTime?: Date;
@@ -67,6 +69,11 @@ class SleepLog extends Model<SleepLogAttributes, SleepLogCreationAttributes> imp
         sleepQuality: {
           type: DataTypes.ENUM('poor', 'fair', 'good', 'excellent'),
           allowNull: true,
+        },
+        dreamQuality: {
+          type: DataTypes.ENUM('nightmare', 'cannot_remember', 'sporadic', 'vivid_positive'),
+          allowNull: true,
+          comment: 'Dream quality: nightmare (0pts), cannot_remember (1pt), sporadic (2pts), vivid_positive (3pts)',
         },
         postSurgeryDay: {
           type: DataTypes.INTEGER,

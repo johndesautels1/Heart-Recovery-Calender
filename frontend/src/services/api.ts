@@ -904,6 +904,41 @@ class ApiService {
     const response = await this.api.post(`/hawk/dismiss/${alertId}`);
     return response.data;
   }
+
+  // ==================== SAMSUNG DEVICE SYNC ENDPOINTS ====================
+  /**
+   * Get Samsung device connection status
+   * Returns connection status, sync settings, and last sync time
+   */
+  async getSamsungDeviceStatus(): Promise<any> {
+    const response = await this.api.get('/samsung/status');
+    return response.data;
+  }
+
+  /**
+   * Trigger manual sync from Samsung device
+   * Syncs sleep, exercise, and vitals data
+   */
+  async triggerSamsungSync(): Promise<any> {
+    const response = await this.api.post('/samsung/sync');
+    return response.data;
+  }
+
+  /**
+   * Update Samsung device sync settings
+   * @param settings - Sync settings (autoSync, syncSleep, syncExercises, etc.)
+   */
+  async updateSamsungSyncSettings(settings: {
+    autoSync?: boolean;
+    syncSleep?: boolean;
+    syncExercises?: boolean;
+    syncHeartRate?: boolean;
+    syncSteps?: boolean;
+    syncCalories?: boolean;
+  }): Promise<any> {
+    const response = await this.api.patch('/samsung/settings', settings);
+    return response.data;
+  }
 }
 
 // Export singleton instance
