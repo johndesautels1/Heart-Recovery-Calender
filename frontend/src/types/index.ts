@@ -497,6 +497,12 @@ export interface PostOpWeekResponse {
   isPreSurgery: boolean;
 }
 
+export interface SleepStage {
+  stage: 'awake' | 'light' | 'deep' | 'rem';
+  startTime: string;
+  endTime: string;
+}
+
 export interface SleepLog {
   id: number;
   userId: number;
@@ -512,6 +518,41 @@ export interface SleepLog {
   napDuration?: number;
   dreamNotes?: string;
   sleepScore?: number;
+
+  // Sleep Stages (from Samsung Galaxy Watch)
+  sleepStages?: SleepStage[];
+  awakeDuration?: number;
+  lightSleepDuration?: number;
+  deepSleepDuration?: number;
+  remSleepDuration?: number;
+  awakePercent?: number;
+  lightSleepPercent?: number;
+  deepSleepPercent?: number;
+  remSleepPercent?: number;
+
+  // Sleep Efficiency
+  timeInBed?: number;
+  timeAsleep?: number;
+  sleepEfficiency?: number;
+  sleepOnsetLatency?: number;
+  wakeAfterSleepOnset?: number;
+
+  // Sleep Environment
+  roomTemperature?: number;
+  noiseLevel?: number;
+  lightLevel?: number;
+  bedtimeRoutine?: string;
+  environmentNotes?: string;
+
+  // Sleep Consistency
+  bedtimeDeviation?: number;
+  waketimeDeviation?: number;
+
+  // Additional Quality Indicators
+  sleepInterruptions?: number;
+  restfulness?: number;
+  morningMood?: 'terrible' | 'poor' | 'okay' | 'good' | 'excellent';
+
   createdAt: string;
   updatedAt: string;
 }
@@ -525,6 +566,18 @@ export interface CreateSleepLogInput {
   notes?: string;
   bedTime?: string;
   wakeTime?: string;
+
+  // Sleep Environment (manually entered)
+  roomTemperature?: number;
+  noiseLevel?: number;
+  lightLevel?: number;
+  bedtimeRoutine?: string;
+  environmentNotes?: string;
+
+  // Additional Quality Indicators (manually entered)
+  sleepInterruptions?: number;
+  restfulness?: number;
+  morningMood?: 'terrible' | 'poor' | 'okay' | 'good' | 'excellent';
 }
 
 export interface SleepStats {

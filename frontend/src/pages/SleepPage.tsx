@@ -44,6 +44,18 @@ const sleepSchema = z.object({
   bedTime: z.string().optional(),
   wakeTime: z.string().optional(),
   notes: z.string().optional(),
+
+  // Sleep Environment
+  roomTemperature: z.number().min(50).max(90).optional(),
+  noiseLevel: z.number().min(1).max(10).optional(),
+  lightLevel: z.number().min(1).max(10).optional(),
+  bedtimeRoutine: z.string().optional(),
+  environmentNotes: z.string().optional(),
+
+  // Additional Quality Indicators
+  sleepInterruptions: z.number().min(0).max(50).optional(),
+  restfulness: z.number().min(1).max(10).optional(),
+  morningMood: z.enum(['terrible', 'poor', 'okay', 'good', 'excellent']).optional(),
 });
 
 type SleepFormData = z.infer<typeof sleepSchema>;
@@ -2378,6 +2390,117 @@ export function SleepPage() {
                 type="datetime-local"
                 {...register('wakeTime')}
               />
+            </div>
+          </div>
+
+          {/* Sleep Environment Tracking */}
+          <div className="border-t border-gray-700 pt-4 mt-2">
+            <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
+              🌡️ Sleep Environment
+            </h4>
+
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Room Temp (°F)
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="50"
+                  max="90"
+                  placeholder="60-67°F ideal"
+                  {...register('roomTemperature', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Noise Level (1-10)
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1=silent"
+                  {...register('noiseLevel', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Light Level (1-10)
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1=dark"
+                  {...register('lightLevel', { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Bedtime Routine
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g., meditation, reading, screen time"
+                {...register('bedtimeRoutine')}
+              />
+            </div>
+          </div>
+
+          {/* Additional Quality Indicators */}
+          <div className="border-t border-gray-700 pt-4 mt-2">
+            <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
+              ✨ Sleep Quality Details
+            </h4>
+
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Times Woke Up
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  {...register('sleepInterruptions', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Restfulness (1-10)
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1=exhausted"
+                  {...register('restfulness', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Morning Mood
+                </label>
+                <select
+                  {...register('morningMood')}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select mood</option>
+                  <option value="terrible">😞 Terrible</option>
+                  <option value="poor">😕 Poor</option>
+                  <option value="okay">😐 Okay</option>
+                  <option value="good">🙂 Good</option>
+                  <option value="excellent">😊 Excellent</option>
+                </select>
+              </div>
             </div>
           </div>
 

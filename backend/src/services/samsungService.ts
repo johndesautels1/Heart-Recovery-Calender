@@ -341,6 +341,67 @@ export const samsungService = {
     return 'poor';
   },
 
+  // Calculate detailed sleep stages breakdown
+  calculateSleepStagesBreakdown(stages: SamsungSleepSession['stages'], totalDurationMillis: number): {
+    awakeDuration: number;
+    lightSleepDuration: number;
+    deepSleepDuration: number;
+    remSleepDuration: number;
+    awakePercent: number;
+    lightSleepPercent: number;
+    deepSleepPercent: number;
+    remSleepPercent: number;
+  } {
+    if (!stages || stages.length === 0) {
+      return {
+        awakeDuration: 0,
+        lightSleepDuration: 0,
+        deepSleepDuration: 0,
+        remSleepDuration: 0,
+        awakePercent: 0,
+        lightSleepPercent: 0,
+        deepSleepPercent: 0,
+        remSleepPercent: 0,
+      };
+    }
+
+    // Calculate duration for each stage in minutes
+    const durations = {
+      awake: 0,
+      light: 0,
+      deep: 0,
+      rem: 0,
+    };
+
+    stages.forEach(stage => {
+      const start = new Date(stage.startTime).getTime();
+      const end = new Date(stage.endTime).getTime();
+      const durationMinutes = (end - start) / (1000 * 60);
+
+      durations[stage.stage] += durationMinutes;
+    });
+
+    // Calculate percentages
+    const totalMinutes = totalDurationMillis / (1000 * 60);
+    const percentages = {
+      awake: totalMinutes > 0 ? (durations.awake / totalMinutes) * 100 : 0,
+      light: totalMinutes > 0 ? (durations.light / totalMinutes) * 100 : 0,
+      deep: totalMinutes > 0 ? (durations.deep / totalMinutes) * 100 : 0,
+      rem: totalMinutes > 0 ? (durations.rem / totalMinutes) * 100 : 0,
+    };
+
+    return {
+      awakeDuration: Math.round(durations.awake * 100) / 100,
+      lightSleepDuration: Math.round(durations.light * 100) / 100,
+      deepSleepDuration: Math.round(durations.deep * 100) / 100,
+      remSleepDuration: Math.round(durations.rem * 100) / 100,
+      awakePercent: Math.round(percentages.awake * 100) / 100,
+      lightSleepPercent: Math.round(percentages.light * 100) / 100,
+      deepSleepPercent: Math.round(percentages.deep * 100) / 100,
+      remSleepPercent: Math.round(percentages.rem * 100) / 100,
+    };
+  },
+
   // Map Samsung exercise type to our category
   mapExerciseType(samsungType: string): string {
     const typeMap: Record<string, string> = {
@@ -585,14 +646,43 @@ export async function syncSamsungData(
           // Calculate sleep quality based on stages and duration
           const sleepQuality = samsungService.calculateSleepQuality(session.stages, hoursSlept);
 
-          // Create sleep log entry
+          // Calculate sleep stages breakdown
+          const stagesBreakdown = samsungService.calculateSleepStagesBreakdown(session.stages, session.durationMillis);
+
+          // Calculate sleep efficiency metrics
+          const timeInBedMinutes = session.durationMillis / (1000 * 60);
+          const timeAsleepMinutes = timeInBedMinutes - (stagesBreakdown.awakeDuration || 0);
+          const sleepEfficiency = timeInBedMinutes > 0 ? (timeAsleepMinutes / timeInBedMinutes) * 100 : 0;
+
+          // Count sleep interruptions (number of awake periods)
+          const sleepInterruptions = session.stages?.filter(s => s.stage === 'awake').length || 0;
+
+          // Create comprehensive sleep log entry
           await SleepLog.create({
             userId: device.userId,
             date: new Date(sleepDate),
-            hoursSlept: Math.round(hoursSlept * 100) / 100, // Round to 2 decimals
+            hoursSlept: Math.round(hoursSlept * 100) / 100,
             sleepQuality,
             bedTime: sessionStart,
             wakeTime: sessionEnd,
+
+            // Sleep stages data
+            sleepStages: session.stages,
+            awakeDuration: stagesBreakdown.awakeDuration,
+            lightSleepDuration: stagesBreakdown.lightSleepDuration,
+            deepSleepDuration: stagesBreakdown.deepSleepDuration,
+            remSleepDuration: stagesBreakdown.remSleepDuration,
+            awakePercent: stagesBreakdown.awakePercent,
+            lightSleepPercent: stagesBreakdown.lightSleepPercent,
+            deepSleepPercent: stagesBreakdown.deepSleepPercent,
+            remSleepPercent: stagesBreakdown.remSleepPercent,
+
+            // Sleep efficiency metrics
+            timeInBed: Math.round(timeInBedMinutes * 100) / 100,
+            timeAsleep: Math.round(timeAsleepMinutes * 100) / 100,
+            sleepEfficiency: Math.round(sleepEfficiency * 100) / 100,
+            sleepInterruptions,
+
             notes: `Auto-synced from Samsung Galaxy Watch 8${session.sleepQuality ? ` (Quality Score: ${session.sleepQuality})` : ''}`,
           });
 
