@@ -230,6 +230,12 @@ export function VitalsPage() {
     pnn50?: number;
   }>({});
 
+  // 🎥 ECG Recording State for cardiologist export
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
+  const [recordedEcgData, setRecordedEcgData] = useState<number[]>([]);
+  const [recordedHrvData, setRecordedHrvData] = useState<{ sdnn?: number; rmssd?: number; pnn50?: number } | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -614,6 +620,18 @@ export function VitalsPage() {
     }
   }, [latestECG]);
 
+  // 🎥 Continuously update recorded data while recording is active
+  useEffect(() => {
+    if (isRecording && ecgBuffer.length > 0) {
+      setRecordedEcgData([...ecgBuffer]); // Update with latest buffer
+      setRecordedHrvData({
+        sdnn: hrvMetrics.sdnn,
+        rmssd: hrvMetrics.rmssd,
+        pnn50: hrvMetrics.pnn50
+      }); // Update HRV metrics
+    }
+  }, [isRecording, ecgBuffer, hrvMetrics]);
+
   const loadVitals = async () => {
     try {
       setIsLoading(true);
@@ -867,6 +885,80 @@ export function VitalsPage() {
     } finally {
       setUploadingFile(false);
     }
+  };
+
+  // 🎥 Start recording ECG data for cardiologist
+  const startRecording = () => {
+    setIsRecording(true);
+    setRecordingStartTime(new Date());
+    setRecordedEcgData([...ecgBuffer]); // Copy current buffer
+    setRecordedHrvData({
+      sdnn: hrvMetrics.sdnn,
+      rmssd: hrvMetrics.rmssd,
+      pnn50: hrvMetrics.pnn50
+    }); // Capture current HRV metrics
+    toast.success('🎥 Recording started! Data will be captured for cardiologist review.');
+    console.log('[RECORD] Started recording ECG and HRV data');
+  };
+
+  // 🎥 Stop recording and prepare export
+  const stopRecording = () => {
+    setIsRecording(false);
+    const duration = recordingStartTime ? (new Date().getTime() - recordingStartTime.getTime()) / 1000 : 0;
+    toast.success(`✅ Recording stopped! Captured ${duration.toFixed(1)}s of ECG data.`);
+    console.log('[RECORD] Stopped recording. Duration:', duration, 'seconds');
+  };
+
+  // 📊 Export recorded ECG data for cardiologist (CSV format)
+  const exportRecordingForCardiologist = () => {
+    if (recordedEcgData.length === 0) {
+      toast.error('No recorded data to export. Please start recording first.');
+      return;
+    }
+
+    const patient = user;
+    const timestamp = recordingStartTime || new Date();
+    const durationSeconds = recordedEcgData.length / 130; // 130 Hz sampling rate
+
+    // Create CSV content with medical header
+    let csvContent = '';
+    csvContent += '# ECG Recording for Cardiologist Review\n';
+    csvContent += `# Patient: ${patient?.name || 'Unknown'}\n`;
+    csvContent += `# Email: ${patient?.email || 'N/A'}\n`;
+    csvContent += `# Recording Date: ${timestamp.toLocaleString()}\n`;
+    csvContent += `# Duration: ${durationSeconds.toFixed(2)} seconds\n`;
+    csvContent += `# Sampling Rate: 130 Hz (Polar H10)\n`;
+    csvContent += `# Total Samples: ${recordedEcgData.length}\n`;
+    csvContent += '#\n';
+    csvContent += '# HRV Metrics:\n';
+    csvContent += `# SDNN (Standard Deviation NN intervals): ${recordedHrvData?.sdnn?.toFixed(2) || 'N/A'} ms\n`;
+    csvContent += `# RMSSD (Root Mean Square of Successive Differences): ${recordedHrvData?.rmssd?.toFixed(2) || 'N/A'} ms\n`;
+    csvContent += `# pNN50 (Percentage of NN intervals >50ms): ${recordedHrvData?.pnn50?.toFixed(2) || 'N/A'} %\n`;
+    csvContent += '#\n';
+    csvContent += 'Sample_Index,Time_Seconds,Voltage_mV\n';
+
+    // Add ECG sample data
+    recordedEcgData.forEach((voltage, index) => {
+      const timeSeconds = (index / 130).toFixed(4);
+      csvContent += `${index},${timeSeconds},${voltage.toFixed(6)}\n`;
+    });
+
+    // Create downloadable file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    const filename = `ECG_Recording_${patient?.name?.replace(/\s+/g, '_')}_${timestamp.toISOString().split('T')[0]}_${timestamp.getHours()}-${timestamp.getMinutes()}.csv`;
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`📊 ECG data exported: ${filename}`);
+    console.log('[EXPORT] Exported ECG recording for cardiologist:', filename);
   };
 
   const handleAddWater = async (ounces: number) => {
@@ -3074,12 +3166,63 @@ export function VitalsPage() {
                         </div>
 
                         {/* HRV Metrics */}
-                        <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
+                        <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4 mb-4">
                           <HRVMetricsPanel
                             sdnn={sdnn}
                             rmssd={rmssd}
                             pnn50={pnn50}
                           />
+                        </div>
+
+                        {/* ECG Recording Controls for Cardiologist */}
+                        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border-2 border-purple-500/30 p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${isRecording ? 'bg-red-500/30 animate-pulse' : 'bg-purple-500/20'} border ${isRecording ? 'border-red-500/50' : 'border-purple-500/30'}`}>
+                                <Activity className={`h-5 w-5 ${isRecording ? 'text-red-400' : 'text-purple-400'}`} />
+                              </div>
+                              <div>
+                                <h3 className="text-md font-bold text-purple-400">
+                                  {isRecording ? '🔴 RECORDING' : '📊 Cardiologist Export'}
+                                </h3>
+                                <p className="text-xs text-gray-400">
+                                  {isRecording
+                                    ? `Recording ECG + HRV metrics • ${recordedEcgData.length} samples captured`
+                                    : 'Record ECG waveform and HRV metrics for medical review'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {!isRecording ? (
+                                <button
+                                  onClick={startRecording}
+                                  disabled={ecgBuffer.length === 0}
+                                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-red-400 font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                  START RECORDING
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={stopRecording}
+                                  className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 rounded-lg text-yellow-400 font-bold text-sm transition-all flex items-center gap-2"
+                                >
+                                  <div className="w-3 h-3 bg-yellow-500"></div>
+                                  STOP RECORDING
+                                </button>
+                              )}
+
+                              {recordedEcgData.length > 0 && !isRecording && (
+                                <button
+                                  onClick={exportRecordingForCardiologist}
+                                  className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-lg text-green-400 font-bold text-sm transition-all flex items-center gap-2"
+                                >
+                                  📥 EXPORT FOR DOCTOR
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -8544,6 +8687,59 @@ export function VitalsPage() {
                           </>
                         )}
                       </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ECG Recording Controls for Cardiologist */}
+              <div className="px-6 py-4">
+                <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border-2 border-purple-500/30 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${isRecording ? 'bg-red-500/30 animate-pulse' : 'bg-purple-500/20'} border ${isRecording ? 'border-red-500/50' : 'border-purple-500/30'}`}>
+                        <Activity className={`h-5 w-5 ${isRecording ? 'text-red-400' : 'text-purple-400'}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-md font-bold text-purple-400">
+                          {isRecording ? '🔴 RECORDING' : '📊 Cardiologist Export'}
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                          {isRecording
+                            ? `Recording ECG + HRV metrics • ${recordedEcgData.length} samples captured`
+                            : 'Record ECG waveform and HRV metrics for medical review'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {!isRecording ? (
+                        <button
+                          onClick={startRecording}
+                          disabled={ecgBuffer.length === 0}
+                          className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-red-400 font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          START RECORDING
+                        </button>
+                      ) : (
+                        <button
+                          onClick={stopRecording}
+                          className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 rounded-lg text-yellow-400 font-bold text-sm transition-all flex items-center gap-2"
+                        >
+                          <div className="w-3 h-3 bg-yellow-500"></div>
+                          STOP RECORDING
+                        </button>
+                      )}
+
+                      {recordedEcgData.length > 0 && !isRecording && (
+                        <button
+                          onClick={exportRecordingForCardiologist}
+                          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-lg text-green-400 font-bold text-sm transition-all flex items-center gap-2"
+                        >
+                          📥 EXPORT FOR DOCTOR
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

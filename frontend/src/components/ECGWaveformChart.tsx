@@ -129,7 +129,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
       const centerY = height / 2;
       const voltageScale = height / 6; // Scale for ±3mV range
 
-      // Draw ECG waveform
+      // Draw ECG waveform with PEAK-PRESERVING rendering for sharp QRS complexes
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2;
       ctx.shadowColor = '#ef4444';
@@ -137,16 +137,28 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
 
       ctx.beginPath();
       for (let x = 0; x < width; x++) {
-        const sampleIndex = Math.floor(x * samplesPerPixel);
-        if (sampleIndex < ecgData.length) {
-          const voltage = ecgData[sampleIndex];
-          const y = centerY - (voltage * voltageScale);
+        // CRITICAL: For each pixel, find min and max samples to preserve sharp peaks (QRS complexes)
+        const startSampleIndex = Math.floor(x * samplesPerPixel);
+        const endSampleIndex = Math.floor((x + 1) * samplesPerPixel);
 
-          if (x === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+        let minVoltage = ecgData[startSampleIndex];
+        let maxVoltage = ecgData[startSampleIndex];
+
+        // Find min/max in this pixel's sample range to preserve peaks
+        for (let i = startSampleIndex; i < endSampleIndex && i < ecgData.length; i++) {
+          minVoltage = Math.min(minVoltage, ecgData[i]);
+          maxVoltage = Math.max(maxVoltage, ecgData[i]);
+        }
+
+        const yMin = centerY - (maxVoltage * voltageScale);
+        const yMax = centerY - (minVoltage * voltageScale);
+
+        if (x === 0) {
+          ctx.moveTo(x, yMin);
+        } else {
+          // Draw vertical line for this pixel to show full range (preserves QRS peaks)
+          ctx.lineTo(x, yMin);
+          ctx.lineTo(x, yMax);
         }
       }
       ctx.stroke();
