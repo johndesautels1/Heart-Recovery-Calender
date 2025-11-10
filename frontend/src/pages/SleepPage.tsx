@@ -20,7 +20,7 @@ import {
   Activity,
   Sun
 } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine, RadialBarChart, RadialBar } from 'recharts';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -561,22 +561,20 @@ export function SleepPage() {
 
   // 6. Sleep Streak Data - Count consecutive days from today backwards
   const calculateStreak = () => {
-    if (sleepLogs.length === 0) {
-      console.log('No sleep logs for streak calculation');
-      return 0;
-    }
+    if (sleepLogs.length === 0) return 0;
 
     const sortedLogs = [...sleepLogs].sort((a, b) =>
       parseISO(b.date).getTime() - parseISO(a.date).getTime()
     );
 
+    console.log('=== STREAK CALCULATION DEBUG ===');
+    console.log('Total sleep logs:', sleepLogs.length);
+    console.log('Sorted logs (newest first):', sortedLogs.map(l => l.date));
+
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = format(today, 'yyyy-MM-dd');
-
-    console.log('Calculating streak. Today:', todayStr);
-    console.log('Most recent log date:', sortedLogs[0]?.date);
+    console.log('Today:', format(today, 'yyyy-MM-dd'));
 
     for (let i = 0; i < sortedLogs.length; i++) {
       const logDate = parseISO(sortedLogs[i].date);
@@ -591,11 +589,13 @@ export function SleepPage() {
       if (logDateStr === expectedDateStr) {
         streak++;
       } else {
+        console.log(`Streak broken at day ${i}`);
         break;
       }
     }
 
     console.log('Final streak:', streak);
+    console.log('=================================');
     return streak;
   };
   const currentStreak = calculateStreak();
@@ -606,26 +606,77 @@ export function SleepPage() {
     .reverse()
     .filter(log => log.bedTime && log.wakeTime)
     .map(log => {
-      const bedHour = parseInt(log.bedTime!.split(':')[0]) + parseInt(log.bedTime!.split(':')[1]) / 60;
-      const wakeHour = parseInt(log.wakeTime!.split(':')[0]) + parseInt(log.wakeTime!.split(':')[1]) / 60;
-      const normalizedBedTime = bedHour >= 18 ? bedHour : bedHour + 24;
-      const normalizedWakeTime = wakeHour <= 12 ? wakeHour + 24 : wakeHour;
+      try {
+        // Parse ISO timestamps to get hours and minutes
+        const bedDate = new Date(log.bedTime!);
+        const wakeDate = new Date(log.wakeTime!);
 
-      return {
-        date: format(parseISO(log.date), 'MMM d'),
-        bedTime: normalizedBedTime,
-        wakeTime: normalizedWakeTime,
-        duration: parseFloat(log.hoursSlept.toString()),
-        quality: log.sleepQuality || 'unknown',
-      };
-    });
+        if (isNaN(bedDate.getTime()) || isNaN(wakeDate.getTime())) {
+          return null;
+        }
+
+        const bedHour = bedDate.getHours() + bedDate.getMinutes() / 60;
+        const wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+
+        // Normalize to 24-hour timeline starting from 6 PM (18:00)
+        const normalizedBedTime = bedHour >= 18 ? bedHour - 18 : bedHour + 6; // Map 18:00-23:59 to 0-5.99, 0:00-17:59 to 6-23.99
+        const normalizedWakeTime = wakeHour <= 12 ? wakeHour + 6 : wakeHour - 18; // Wake times in morning
+
+        const sleepDuration = parseFloat(log.hoursSlept.toString());
+
+        return {
+          date: format(parseISO(log.date), 'MMM d'),
+          bedHour: normalizedBedTime,
+          wakeTime: format(wakeDate, 'h:mm a'),
+          sleepDuration: sleepDuration,
+          hours: sleepDuration.toFixed(1),
+          quality: log.sleepQuality || 'fair',
+        };
+      } catch (error) {
+        console.error('Error parsing sleep timeline data:', error);
+        return null;
+      }
+    })
+    .filter((data): data is NonNullable<typeof data> => data !== null);
 
   // 8. 3D Pyramid Data (quality distribution for isometric view)
   const pyramidData = [
-    { level: 'Excellent', count: qualityDistribution.excellent, color: '#10b981', layer: 4 },
-    { level: 'Good', count: qualityDistribution.good, color: '#3b82f6', layer: 3 },
-    { level: 'Fair', count: qualityDistribution.fair, color: '#f59e0b', layer: 2 },
-    { level: 'Poor', count: qualityDistribution.poor, color: '#ef4444', layer: 1 },
+    {
+      level: 'Excellent',
+      count: qualityDistribution.excellent,
+      color: '#10b981',
+      layer: 4,
+      label: 'Excellent',
+      gradient: 'bg-gradient-to-br from-green-500 to-green-700',
+      border: 'border-green-400'
+    },
+    {
+      level: 'Good',
+      count: qualityDistribution.good,
+      color: '#3b82f6',
+      layer: 3,
+      label: 'Good',
+      gradient: 'bg-gradient-to-br from-blue-500 to-blue-700',
+      border: 'border-blue-400'
+    },
+    {
+      level: 'Fair',
+      count: qualityDistribution.fair,
+      color: '#f59e0b',
+      layer: 2,
+      label: 'Fair',
+      gradient: 'bg-gradient-to-br from-yellow-500 to-yellow-700',
+      border: 'border-yellow-400'
+    },
+    {
+      level: 'Poor',
+      count: qualityDistribution.poor,
+      color: '#ef4444',
+      layer: 1,
+      label: 'Poor',
+      gradient: 'bg-gradient-to-br from-red-500 to-red-700',
+      border: 'border-red-400'
+    },
   ].filter(item => item.count > 0);
 
   return (
@@ -1419,59 +1470,6 @@ export function SleepPage() {
               </div>
             </GlassCard>
           </div>
-
-          {/* 2. Sleep Heatmap Calendar */}
-          <GlassCard>
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-400" />
-              Monthly Sleep Heatmap
-            </h3>
-            <div className="grid grid-cols-7 gap-1">
-              {heatmapSleepData.map((day) => {
-                const hours = day.hours || 0;
-                const bgColor = hours === null ? 'bg-gray-800' :
-                                hours < 4 ? 'bg-gradient-to-br from-red-500 to-red-700' :
-                                hours < 6 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
-                                hours < 7 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                                hours < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
-                                'bg-gradient-to-br from-green-400 to-green-600';
-                const opacity = hours === null ? 0.2 : 1;
-                return (
-                  <div key={day.day}
-                       className={`${bgColor} rounded-lg p-2 text-center transition-all duration-300 hover:scale-110 hover:shadow-lg`}
-                       style={{ opacity }}
-                       title={day.hours ? `${day.date}: ${day.hours}h (${day.quality})` : day.date}>
-                    <div className="text-xs font-bold text-white opacity-70">{day.dayOfWeek}</div>
-                    <div className="text-lg font-bold text-white">{day.day}</div>
-                    {day.hours && <div className="text-xs text-white opacity-90">{day.hours}h</div>}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-between items-center mt-4 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
-                <span className="text-white opacity-70">&lt;4h</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
-                <span className="text-white opacity-70">4-6h</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-yellow-600"></div>
-                <span className="text-white opacity-70">6-7h</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
-                <span className="text-white opacity-70">7-9h</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
-                <span className="text-white opacity-70">9+h</span>
-              </div>
-            </div>
-          </GlassCard>
-
           {/* 3. Sleep Debt Wave Chart */}
           {sleepDebtData.length > 0 && (
             <GlassCard>
@@ -1645,86 +1643,76 @@ export function SleepPage() {
               <Flame className="h-5 w-5 text-orange-500" />
               Logging Streak
             </h3>
-            <div className="flex items-center justify-center py-6">
-              <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
-                {/* Background glow effect */}
-                <div className={`absolute inset-0 rounded-full blur-2xl opacity-30 ${
-                  currentStreak >= 30 ? 'bg-yellow-500' :
-                  currentStreak >= 14 ? 'bg-orange-500' :
-                  currentStreak >= 7 ? 'bg-red-500' :
-                  currentStreak >= 3 ? 'bg-blue-500' :
-                  'bg-gray-500'
-                }`}></div>
-
-                <svg className="absolute inset-0" width="180" height="180">
-                  <defs>
-                    <linearGradient id="streakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor={
-                        currentStreak >= 30 ? '#fbbf24' :
-                        currentStreak >= 14 ? '#f59e0b' :
-                        currentStreak >= 7 ? '#f97316' :
-                        currentStreak >= 3 ? '#60a5fa' :
-                        '#9ca3af'
-                      } />
-                      <stop offset="100%" stopColor={
-                        currentStreak >= 30 ? '#d97706' :
-                        currentStreak >= 14 ? '#ea580c' :
-                        currentStreak >= 7 ? '#dc2626' :
-                        currentStreak >= 3 ? '#3b82f6' :
-                        '#6b7280'
-                      } />
-                    </linearGradient>
-                    <filter id="streakFlameGlow">
-                      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <circle cx="90" cy="90" r="75" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="12" />
-                  <circle cx="90" cy="90" r="75" fill="none"
-                          stroke="url(#streakGradient)"
-                          strokeWidth="12"
-                          strokeLinecap="round"
-                          strokeDasharray={`${2 * Math.PI * 75}`}
-                          strokeDashoffset={`${2 * Math.PI * 75 * (1 - Math.min(currentStreak / 30, 1))}`}
-                          transform="rotate(-90 90 90)"
-                          filter="url(#streakFlameGlow)" />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center text-center">
-                  <Flame className={`h-10 w-10 mb-1 ${
-                    currentStreak >= 30 ? 'text-yellow-400 animate-bounce' :
-                    currentStreak >= 14 ? 'text-orange-500 animate-pulse' :
-                    currentStreak >= 7 ? 'text-red-500 animate-pulse' :
-                    currentStreak >= 3 ? 'text-blue-400' :
-                    'text-gray-400'
-                  }`} />
-                  <div className={`text-4xl font-bold ${
+            <div className="flex flex-col items-center justify-center py-6">
+              {/* Large Number Display */}
+              <div className="flex items-center gap-4 mb-6">
+                <Flame className={`h-16 w-16 ${
+                  currentStreak >= 30 ? 'text-yellow-400 animate-bounce' :
+                  currentStreak >= 14 ? 'text-orange-500 animate-pulse' :
+                  currentStreak >= 7 ? 'text-red-500 animate-pulse' :
+                  currentStreak >= 3 ? 'text-blue-400 animate-pulse' :
+                  currentStreak >= 1 ? 'text-green-400 animate-pulse' :
+                  'text-gray-400'
+                }`} />
+                <div className="text-center">
+                  <div className={`text-6xl font-bold ${
                     currentStreak >= 30 ? 'text-yellow-300' :
                     currentStreak >= 14 ? 'text-orange-300' :
                     currentStreak >= 7 ? 'text-red-300' :
                     currentStreak >= 3 ? 'text-blue-300' :
+                    currentStreak >= 1 ? 'text-green-300' :
                     'text-white'
                   }`}>{currentStreak}</div>
-                  <div className="text-xs text-white opacity-90 font-semibold">
-                    {currentStreak === 1 ? 'day' : 'days'}
+                  <div className="text-sm text-white opacity-90 font-semibold mt-1">
+                    {currentStreak === 1 ? 'day streak' : 'days streak'}
                   </div>
                 </div>
               </div>
-            </div>
-            <div className={`text-center text-sm font-bold ${
-              currentStreak >= 30 ? 'text-yellow-300' :
-              currentStreak >= 14 ? 'text-orange-300' :
-              currentStreak >= 7 ? 'text-red-300' :
-              currentStreak >= 3 ? 'text-blue-300' :
-              'text-white opacity-70'
-            }`}>
-              {currentStreak >= 30 ? '🏆 MASTER LOGGER! 🏆' :
-               currentStreak >= 14 ? '🔥 ON FIRE! 🔥' :
-               currentStreak >= 7 ? '💪 KEEP GOING! 💪' :
-               currentStreak >= 3 ? '⭐ Getting Started!' :
-               '📅 Start your streak!'}
+
+              {/* Progress Bar */}
+              <div className="w-full max-w-md">
+                <div className="relative h-8 bg-gray-700/30 rounded-full overflow-hidden border-2 border-gray-600">
+                  <div
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
+                      currentStreak >= 30 ? 'bg-gradient-to-r from-yellow-500 to-amber-600' :
+                      currentStreak >= 14 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                      currentStreak >= 7 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                      currentStreak >= 3 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                      currentStreak >= 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                      'bg-gradient-to-r from-gray-500 to-gray-600'
+                    }`}
+                    style={{ width: `${Math.min((currentStreak / 30) * 100, 100)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white font-bold text-xs drop-shadow-lg">
+                      {currentStreak} / 30 days
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs text-white/60 mt-2 px-1">
+                  <span>Start</span>
+                  <span>Goal: 30 days</span>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              <div className={`text-center text-lg font-bold mt-6 ${
+                currentStreak >= 30 ? 'text-yellow-300' :
+                currentStreak >= 14 ? 'text-orange-300' :
+                currentStreak >= 7 ? 'text-red-300' :
+                currentStreak >= 3 ? 'text-blue-300' :
+                currentStreak >= 1 ? 'text-green-300' :
+                'text-white opacity-70'
+              }`}>
+                {currentStreak >= 30 ? '🏆 MASTER LOGGER! 🏆' :
+                 currentStreak >= 14 ? '🔥 ON FIRE! 🔥' :
+                 currentStreak >= 7 ? '💪 KEEP GOING! 💪' :
+                 currentStreak >= 3 ? '⭐ Getting Started!' :
+                 currentStreak >= 1 ? '🌱 Building Momentum!' :
+                 '📅 Start your streak!'}
+              </div>
             </div>
           </GlassCard>
 
@@ -1819,6 +1807,58 @@ export function SleepPage() {
           </GlassCard>
         </>
       )}
+
+      {/* Monthly Sleep Heatmap */}
+      <GlassCard>
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-blue-400" />
+          Monthly Sleep Heatmap
+        </h3>
+        <div className="grid grid-cols-7 gap-1">
+          {heatmapSleepData.map((day) => {
+            const hours = day.hours || 0;
+            const bgColor = hours === null ? 'bg-gray-800' :
+                            hours < 4 ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                            hours < 6 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                            hours < 7 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                            hours < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                            'bg-gradient-to-br from-green-400 to-green-600';
+            const opacity = hours === null ? 0.2 : 1;
+            return (
+              <div key={day.day}
+                   className={`${bgColor} rounded-lg p-2 text-center transition-all duration-300 hover:scale-110 hover:shadow-lg`}
+                   style={{ opacity }}
+                   title={day.hours ? `${day.date}: ${day.hours}h (${day.quality})` : day.date}>
+                <div className="text-xs font-bold text-white opacity-70">{day.dayOfWeek}</div>
+                <div className="text-lg font-bold text-white">{day.day}</div>
+                {day.hours && <div className="text-xs text-white opacity-90">{day.hours}h</div>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between items-center mt-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-700"></div>
+            <span className="text-white opacity-70">&lt;4h</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-600"></div>
+            <span className="text-white opacity-70">4-6h</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-yellow-600"></div>
+            <span className="text-white opacity-70">6-7h</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600"></div>
+            <span className="text-white opacity-70">7-9h</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-br from-green-400 to-green-600"></div>
+            <span className="text-white opacity-70">9+h</span>
+          </div>
+        </div>
+      </GlassCard>
 
       {/* Sleep Logs List */}
       <GlassCard>
