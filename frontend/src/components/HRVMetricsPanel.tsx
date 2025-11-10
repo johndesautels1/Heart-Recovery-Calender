@@ -84,7 +84,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
 
           <div className="flex items-baseline gap-1 mb-1">
             <span className={`text-3xl font-bold ${statusColors[sdnnStatus.color].text}`}>
-              {sdnn !== undefined ? sdnn.toFixed(1) : '--'}
+              {sdnn != null ? sdnn.toFixed(1) : '--'}
             </span>
             <span className="text-sm text-gray-400">ms</span>
           </div>
@@ -95,7 +95,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
           </div>
 
           {/* Progress Bar */}
-          {sdnn !== undefined && (
+          {sdnn != null && (
             <div className="mt-3 h-1.5 bg-gray-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${statusColors[sdnnStatus.color].bg} transition-all duration-500`}
@@ -121,7 +121,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
 
           <div className="flex items-baseline gap-1 mb-1">
             <span className={`text-3xl font-bold ${statusColors[rmssdStatus.color].text}`}>
-              {rmssd !== undefined ? rmssd.toFixed(1) : '--'}
+              {rmssd != null ? rmssd.toFixed(1) : '--'}
             </span>
             <span className="text-sm text-gray-400">ms</span>
           </div>
@@ -132,7 +132,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
           </div>
 
           {/* Progress Bar */}
-          {rmssd !== undefined && (
+          {rmssd != null && (
             <div className="mt-3 h-1.5 bg-gray-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${statusColors[rmssdStatus.color].bg} transition-all duration-500`}
@@ -158,7 +158,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
 
           <div className="flex items-baseline gap-1 mb-1">
             <span className={`text-3xl font-bold ${statusColors[pnn50Status.color].text}`}>
-              {pnn50 !== undefined ? pnn50.toFixed(1) : '--'}
+              {pnn50 != null ? pnn50.toFixed(1) : '--'}
             </span>
             <span className="text-sm text-gray-400">%</span>
           </div>
@@ -169,7 +169,7 @@ export const HRVMetricsPanel: React.FC<HRVMetricsPanelProps> = ({ sdnn, rmssd, p
           </div>
 
           {/* Progress Bar */}
-          {pnn50 !== undefined && (
+          {pnn50 != null && (
             <div className="mt-3 h-1.5 bg-gray-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${statusColors[pnn50Status.color].bg} transition-all duration-500`}

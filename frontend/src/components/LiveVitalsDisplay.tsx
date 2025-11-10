@@ -45,8 +45,8 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
 
   // Calculate HRV metrics from R-R intervals
   const calculateHRVMetrics = (intervals: number[]) => {
-    if (intervals.length < 5) {
-      return {}; // Need at least 5 intervals for meaningful HRV
+    if (intervals.length < 3) {
+      return {}; // Need at least 3 intervals for HRV calculation
     }
 
     // SDNN: Standard Deviation of NN intervals
@@ -271,11 +271,11 @@ export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType
                 updated.shift(); // Remove oldest
               }
 
-              // Calculate HRV metrics every 30 intervals (approximately every 30 seconds)
-              if (updated.length >= 30 && updated.length % 30 === 0) {
+              // Calculate HRV metrics every 5 intervals (approximately every 5 seconds) for faster display
+              if (updated.length >= 5 && updated.length % 5 === 0) {
                 const hrv = calculateHRVMetrics(updated);
                 setHrvMetrics(hrv);
-                console.log('[HRV] Calculated metrics:', hrv);
+                console.log('[HRV] 🫀 CALCULATED METRICS:', hrv);
 
                 // Send vitals with HRV metrics
                 sendVitalsToBackend({

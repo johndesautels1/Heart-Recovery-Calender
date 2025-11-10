@@ -223,6 +223,13 @@ export function VitalsPage() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // 🫀 HRV Metrics State (from Polar H10 real-time data)
+  const [hrvMetrics, setHrvMetrics] = useState<{
+    sdnn?: number;
+    rmssd?: number;
+    pnn50?: number;
+  }>({});
+
   const {
     register,
     handleSubmit,
@@ -504,6 +511,38 @@ export function VitalsPage() {
       }
     }
   }, [latestHeartRate, selectedDevice]);
+
+  // 🫀 CRITICAL: Listen for HRV metrics from WebSocket (from Polar H10)
+  useEffect(() => {
+    console.log('[HRV-DEBUG] 🔍 latestVitals changed:', latestVitals);
+
+    if (latestVitals?.data) {
+      const vitals = latestVitals.data;
+      console.log('[HRV-DEBUG] 🔍 Vitals data:', vitals);
+      console.log('[HRV-DEBUG] 🔍 SDNN value:', vitals.sdnn, 'type:', typeof vitals.sdnn);
+      console.log('[HRV-DEBUG] 🔍 RMSSD value:', vitals.rmssd, 'type:', typeof vitals.rmssd);
+      console.log('[HRV-DEBUG] 🔍 PNN50 value:', vitals.pnn50, 'type:', typeof vitals.pnn50);
+
+      // Extract HRV metrics if available
+      if (vitals.sdnn !== undefined || vitals.rmssd !== undefined || vitals.pnn50 !== undefined) {
+        console.log('[HRV] 🫀✅ Received real-time HRV metrics from WebSocket:', {
+          sdnn: vitals.sdnn,
+          rmssd: vitals.rmssd,
+          pnn50: vitals.pnn50
+        });
+
+        setHrvMetrics({
+          sdnn: vitals.sdnn,
+          rmssd: vitals.rmssd,
+          pnn50: vitals.pnn50
+        });
+      } else {
+        console.log('[HRV-DEBUG] ⚠️ NO HRV metrics in vitals data');
+      }
+    } else {
+      console.log('[HRV-DEBUG] ⚠️ latestVitals.data is null/undefined');
+    }
+  }, [latestVitals]);
 
   // Update nuclear clock every second - TEMPORARILY DISABLED for performance
   useEffect(() => {
@@ -1019,7 +1058,11 @@ export function VitalsPage() {
   // Priority: 1) WebSocket live data, 2) Most recent from database
   // This ensures "Last Vital Check" and vitals cards always show the most recent data
   // 🫀 CRITICAL: WebSocket sends { userId, timestamp, data }, so we need latestVitals.data
-  const filteredLatest = latestVitals?.data || (vitals.length > 0 ? vitals[vitals.length - 1] : null);
+  // 🫀 CRITICAL FIX: Merge WebSocket data with database data to preserve HRV fields
+  const dbLatest = vitals.length > 0 ? vitals[vitals.length - 1] : null;
+  const filteredLatest = latestVitals?.data
+    ? { ...dbLatest, ...latestVitals.data, sdnn: latestVitals.data.sdnn || dbLatest?.sdnn, rmssd: latestVitals.data.rmssd || dbLatest?.rmssd, pnn50: latestVitals.data.pnn50 || dbLatest?.pnn50 }
+    : dbLatest;
 
   // Helper function to filter vitals by time period
   const getTimePeriodFilter = (period: '7d' | '30d' | 'surgery') => {
@@ -1386,9 +1429,22 @@ export function VitalsPage() {
     ? filteredLatest.bloodPressureSystolic - filteredLatest.bloodPressureDiastolic
     : null;
   const latestBPVariability = chartData.length > 0 ? chartData[chartData.length - 1].bpVariability : null;
-  const sdnn = filteredLatest?.sdnn || null;
-  const rmssd = filteredLatest?.rmssd || null;
-  const pnn50 = filteredLatest?.pnn50 || null;
+  // 🫀 CRITICAL: Filter to comprehensive vitals with HRV data (same as Historic Flight Data)
+  const comprehensiveVitals = vitals.filter(v => v.sdnn || v.rmssd || v.pnn50);
+  console.log('[HRV-GAUGE-DEBUG] 🔍 Data sources:');
+  console.log('[HRV-GAUGE-DEBUG]   hrvMetrics:', hrvMetrics);
+  console.log('[HRV-GAUGE-DEBUG]   comprehensiveVitals count:', comprehensiveVitals.length);
+  console.log('[HRV-GAUGE-DEBUG]   comprehensiveVitals latest:', comprehensiveVitals.length > 0 ? comprehensiveVitals[comprehensiveVitals.length - 1] : null);
+  console.log('[HRV-GAUGE-DEBUG]   filteredLatest:', filteredLatest);
+  // 🫀 CRITICAL FIX: Prioritize LIVE WebSocket data (hrvMetrics) over database values for real-time gauge updates
+  // Convert to numbers to handle string values from WebSocket/database
+  const sdnnRaw = hrvMetrics.sdnn ?? ((comprehensiveVitals.length > 0 ? comprehensiveVitals[comprehensiveVitals.length - 1]?.sdnn : null) || filteredLatest?.sdnn);
+  const rmssdRaw = hrvMetrics.rmssd ?? ((comprehensiveVitals.length > 0 ? comprehensiveVitals[comprehensiveVitals.length - 1]?.rmssd : null) || filteredLatest?.rmssd);
+  const pnn50Raw = hrvMetrics.pnn50 ?? ((comprehensiveVitals.length > 0 ? comprehensiveVitals[comprehensiveVitals.length - 1]?.pnn50 : null) || filteredLatest?.pnn50);
+  const sdnn = sdnnRaw != null ? Number(sdnnRaw) : null;
+  const rmssd = rmssdRaw != null ? Number(rmssdRaw) : null;
+  const pnn50 = pnn50Raw != null ? Number(pnn50Raw) : null;
+  console.log('[HRV-GAUGE-DEBUG] 🫀 FINAL VALUES FOR GAUGES:', { sdnn, rmssd, pnn50 });
   const todayDate = format(new Date(), 'yyyy-MM-dd');
   const todayHydration = hydrationLogs.find(log => log.date === todayDate);
   const hydrationTarget = todayHydration?.targetOunces || calculatePersonalizedHydrationTarget();
@@ -3020,9 +3076,9 @@ export function VitalsPage() {
                         {/* HRV Metrics */}
                         <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
                           <HRVMetricsPanel
-                            sdnn={filteredLatest?.sdnn || undefined}
-                            rmssd={filteredLatest?.rmssd || undefined}
-                            pnn50={filteredLatest?.pnn50 || undefined}
+                            sdnn={sdnn}
+                            rmssd={rmssd}
+                            pnn50={pnn50}
                           />
                         </div>
                       </div>
@@ -8517,25 +8573,20 @@ export function VitalsPage() {
               {/* HRV Metrics Panel - Real-time data */}
               <div className="px-6 py-4">
                 <div className="bg-black/40 rounded-lg border border-purple-500/20 p-4">
-                  {filteredLatest?.sdnn || filteredLatest?.rmssd || filteredLatest?.pnn50 ? (
-                    <>
-                      <div className="mb-2 text-xs text-green-400 text-center font-bold">
-                        ✅ LIVE: Real-time HRV metrics from Polar H10
-                      </div>
-                      <HRVMetricsPanel
-                        sdnn={filteredLatest?.sdnn || undefined}
-                        rmssd={filteredLatest?.rmssd || undefined}
-                        pnn50={filteredLatest?.pnn50 || undefined}
-                      />
-                    </>
+                  {sdnn || rmssd || pnn50 ? (
+                    <div className="mb-2 text-xs text-green-400 text-center font-bold">
+                      ✅ LIVE: Real-time HRV from Polar H10 (SDNN: {sdnn?.toFixed(1) || '--'}ms, RMSSD: {rmssd?.toFixed(1) || '--'}ms, pNN50: {pnn50?.toFixed(1) || '--'}%)
+                    </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="mb-2 text-xs text-yellow-400 font-bold">
-                        ⚠️ Waiting for HRV data...
-                      </div>
-                      <p className="text-sm text-gray-400">Connect Polar H10 to see real-time HRV metrics</p>
+                    <div className="mb-2 text-xs text-yellow-400 text-center font-bold">
+                      ⚠️ Waiting for HRV data... (Connect Polar H10 and wait ~30 seconds for metrics)
                     </div>
                   )}
+                  <HRVMetricsPanel
+                    sdnn={sdnn}
+                    rmssd={rmssd}
+                    pnn50={pnn50}
+                  />
                 </div>
               </div>
 
