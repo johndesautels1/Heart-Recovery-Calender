@@ -14,6 +14,7 @@ import { ECGAnalysisPanel } from '../components/ECGAnalysisPanel';
 import { SpirometryDataEntry } from '../components/SpirometryDataEntry';
 import { TreadmillDataEntry } from '../components/TreadmillDataEntry';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { filterECGSignal, estimateSignalQuality } from '../utils/ecgFiltering';
 import {
   Activity,
   Heart,
@@ -235,6 +236,11 @@ export function VitalsPage() {
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [recordedEcgData, setRecordedEcgData] = useState<number[]>([]);
   const [recordedHrvData, setRecordedHrvData] = useState<{ sdnn?: number; rmssd?: number; pnn50?: number } | null>(null);
+  const [applyNoiseFilter, setApplyNoiseFilter] = useState(true); // Enable filtering by default
+
+  // 🎬 Replay State
+  const [showReplayModal, setShowReplayModal] = useState(false);
+  const [replayData, setReplayData] = useState<{ raw: number[], filtered: number[] } | null>(null);
 
   const {
     register,
@@ -909,6 +915,36 @@ export function VitalsPage() {
     console.log('[RECORD] Stopped recording. Duration:', duration, 'seconds');
   };
 
+  // 🎬 Replay last 30 seconds with filtering comparison
+  const replayLast30Seconds = () => {
+    if (recordedEcgData.length === 0) {
+      toast.error('No recorded data to replay. Please start recording first.');
+      return;
+    }
+
+    // Get last 30 seconds (130 Hz * 30s = 3900 samples)
+    const samplesFor30Sec = 130 * 30;
+    const startIndex = Math.max(0, recordedEcgData.length - samplesFor30Sec);
+    const last30SecData = recordedEcgData.slice(startIndex);
+
+    // Create filtered version
+    const filteredData = filterECGSignal(last30SecData, 130, {
+      removeBaseline: true,
+      removePowerline: true,
+      removeSpikes: true,
+      removeMuscleNoise: true,
+      powerlineFreq: 60,
+    });
+
+    const signalQuality = estimateSignalQuality(last30SecData, filteredData);
+
+    console.log('[REPLAY] Replaying last', (last30SecData.length / 130).toFixed(1), 'seconds');
+    console.log('[REPLAY] Signal quality after filtering:', signalQuality.toFixed(1), 'dB');
+
+    setReplayData({ raw: last30SecData, filtered: filteredData });
+    setShowReplayModal(true);
+  };
+
   // 📊 Export recorded ECG data for cardiologist (CSV format)
   const exportRecordingForCardiologist = () => {
     if (recordedEcgData.length === 0) {
@@ -920,6 +956,23 @@ export function VitalsPage() {
     const timestamp = recordingStartTime || new Date();
     const durationSeconds = recordedEcgData.length / 130; // 130 Hz sampling rate
 
+    // Apply noise filtering if enabled
+    let exportData = recordedEcgData;
+    let signalQuality = 0;
+
+    if (applyNoiseFilter) {
+      console.log('[EXPORT] Applying noise filtering to ECG data...');
+      exportData = filterECGSignal(recordedEcgData, 130, {
+        removeBaseline: true,
+        removePowerline: true,
+        removeSpikes: true,
+        removeMuscleNoise: true,
+        powerlineFreq: 60, // US standard (change to 50 for EU)
+      });
+      signalQuality = estimateSignalQuality(recordedEcgData, exportData);
+      console.log('[EXPORT] Filtering complete. Signal quality:', signalQuality.toFixed(1), 'dB');
+    }
+
     // Create CSV content with medical header
     let csvContent = '';
     csvContent += '# ECG Recording for Cardiologist Review\n';
@@ -928,7 +981,12 @@ export function VitalsPage() {
     csvContent += `# Recording Date: ${timestamp.toLocaleString()}\n`;
     csvContent += `# Duration: ${durationSeconds.toFixed(2)} seconds\n`;
     csvContent += `# Sampling Rate: 130 Hz (Polar H10)\n`;
-    csvContent += `# Total Samples: ${recordedEcgData.length}\n`;
+    csvContent += `# Total Samples: ${exportData.length}\n`;
+    csvContent += `# Noise Filtering: ${applyNoiseFilter ? 'ENABLED' : 'DISABLED'}\n`;
+    if (applyNoiseFilter) {
+      csvContent += `# Signal Quality (SNR): ${signalQuality.toFixed(1)} dB\n`;
+      csvContent += `# Filters Applied: Baseline removal, 60Hz powerline removal, spike removal, muscle noise removal\n`;
+    }
     csvContent += '#\n';
     csvContent += '# HRV Metrics:\n';
     csvContent += `# SDNN (Standard Deviation NN intervals): ${recordedHrvData?.sdnn?.toFixed(2) || 'N/A'} ms\n`;
@@ -938,7 +996,7 @@ export function VitalsPage() {
     csvContent += 'Sample_Index,Time_Seconds,Voltage_mV\n';
 
     // Add ECG sample data
-    recordedEcgData.forEach((voltage, index) => {
+    exportData.forEach((voltage, index) => {
       const timeSeconds = (index / 130).toFixed(4);
       csvContent += `${index},${timeSeconds},${voltage.toFixed(6)}\n`;
     });
@@ -948,7 +1006,8 @@ export function VitalsPage() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
 
-    const filename = `ECG_Recording_${patient?.name?.replace(/\s+/g, '_')}_${timestamp.toISOString().split('T')[0]}_${timestamp.getHours()}-${timestamp.getMinutes()}.csv`;
+    const filterSuffix = applyNoiseFilter ? '_FILTERED' : '_RAW';
+    const filename = `ECG_Recording${filterSuffix}_${patient?.name?.replace(/\s+/g, '_')}_${timestamp.toISOString().split('T')[0]}_${timestamp.getHours()}-${timestamp.getMinutes()}.csv`;
 
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
@@ -957,8 +1016,9 @@ export function VitalsPage() {
     link.click();
     document.body.removeChild(link);
 
-    toast.success(`📊 ECG data exported: ${filename}`);
-    console.log('[EXPORT] Exported ECG recording for cardiologist:', filename);
+    const filterStatus = applyNoiseFilter ? `(Filtered - SNR: ${signalQuality.toFixed(1)}dB)` : '(Raw - Unfiltered)';
+    toast.success(`📊 ECG exported for cardiologist ${filterStatus}`);
+    console.log('[EXPORT] Exported ECG recording:', filename, filterStatus);
   };
 
   const handleAddWater = async (ounces: number) => {
@@ -3176,7 +3236,7 @@ export function VitalsPage() {
 
                         {/* ECG Recording Controls for Cardiologist */}
                         <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border-2 border-purple-500/30 p-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${isRecording ? 'bg-red-500/30 animate-pulse' : 'bg-purple-500/20'} border ${isRecording ? 'border-red-500/50' : 'border-purple-500/30'}`}>
                                 <Activity className={`h-5 w-5 ${isRecording ? 'text-red-400' : 'text-purple-400'}`} />
@@ -3214,14 +3274,43 @@ export function VitalsPage() {
                               )}
 
                               {recordedEcgData.length > 0 && !isRecording && (
-                                <button
-                                  onClick={exportRecordingForCardiologist}
-                                  className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-lg text-green-400 font-bold text-sm transition-all flex items-center gap-2"
-                                >
-                                  📥 EXPORT FOR DOCTOR
-                                </button>
+                                <>
+                                  <button
+                                    onClick={replayLast30Seconds}
+                                    className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-lg text-blue-400 font-bold text-sm transition-all flex items-center gap-2"
+                                  >
+                                    ▶️ REPLAY LAST 30s
+                                  </button>
+                                  <button
+                                    onClick={exportRecordingForCardiologist}
+                                    className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-lg text-green-400 font-bold text-sm transition-all flex items-center gap-2"
+                                  >
+                                    📥 EXPORT FOR DOCTOR
+                                  </button>
+                                </>
                               )}
                             </div>
+                          </div>
+
+                          {/* Noise Filtering Toggle */}
+                          <div className="pt-3 border-t border-purple-500/20">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={applyNoiseFilter}
+                                onChange={(e) => setApplyNoiseFilter(e.target.checked)}
+                                className="w-4 h-4 rounded border-2 border-blue-500/40 bg-blue-500/10 checked:bg-blue-500 checked:border-blue-500 transition-all cursor-pointer"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Filter className="h-4 w-4 text-blue-400" />
+                                <span className="text-sm text-blue-300 group-hover:text-blue-200 transition-colors">
+                                  Apply noise filtering for cleaner ECG export
+                                </span>
+                              </div>
+                            </label>
+                            <p className="text-xs text-gray-500 mt-1 ml-7">
+                              Removes baseline wander, 60Hz powerline interference, spike artifacts, and muscle noise for easier interpretation by cardiologist
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -8861,6 +8950,87 @@ export function VitalsPage() {
         isOpen={showSpirometryModal}
         onClose={() => setShowSpirometryModal(false)}
       />
+
+      {/* ECG Replay Modal - Compare Filtered vs Raw */}
+      {showReplayModal && replayData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-7xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl shadow-2xl border-2 border-blue-500/30">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowReplayModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-red-500/80 hover:bg-red-600 transition-all border-2 border-white/30"
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+
+            {/* Header */}
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <Activity className="h-7 w-7 text-blue-400" />
+                ECG Replay - Filtering Comparison
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Last 30 seconds • {replayData.raw.length} samples @ 130 Hz • Compare raw vs filtered waveforms
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Raw ECG */}
+              <div className="bg-black/40 rounded-lg border-2 border-yellow-500/30 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+                    <Activity className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-yellow-400">RAW ECG Signal (Unfiltered)</h3>
+                    <p className="text-xs text-gray-400">Original data from Polar H10 with all noise and artifacts</p>
+                  </div>
+                </div>
+                <ECGWaveformChart
+                  ecgData={replayData.raw}
+                  samplingRate={130}
+                  showRWaveMarkers={true}
+                  showGridlines={true}
+                  width={1200}
+                  height={300}
+                />
+              </div>
+
+              {/* Filtered ECG */}
+              <div className="bg-black/40 rounded-lg border-2 border-green-500/30 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-green-500/20 border border-green-500/30">
+                    <Filter className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-green-400">FILTERED ECG Signal (Cleaned)</h3>
+                    <p className="text-xs text-gray-400">
+                      Noise removed: Baseline wander, 60Hz powerline, spike artifacts, muscle noise
+                    </p>
+                  </div>
+                </div>
+                <ECGWaveformChart
+                  ecgData={replayData.filtered}
+                  samplingRate={130}
+                  showRWaveMarkers={true}
+                  showGridlines={true}
+                  width={1200}
+                  height={300}
+                />
+              </div>
+
+              {/* Signal Quality Info */}
+              <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-4">
+                <div className="flex items-center gap-2 text-sm text-blue-300">
+                  <Activity className="h-4 w-4" />
+                  <strong>Notice:</strong> The filtered signal preserves QRS complexes (sharp cardiac spikes) while removing background noise for easier medical interpretation.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
