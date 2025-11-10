@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Zap } from 'lucide-react';
+import { Activity, Zap, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface ECGWaveformChartProps {
   ecgData: number[]; // ECG samples in millivolts
@@ -8,6 +8,8 @@ interface ECGWaveformChartProps {
   showGridlines?: boolean;
   width?: number;
   height?: number;
+  paperSpeed?: number; // mm/s (25 or 50 for medical standard)
+  enableZoom?: boolean; // Show zoom controls
 }
 
 export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
@@ -17,11 +19,26 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
   showGridlines = true,
   width = 1200,
   height = 400,
+  paperSpeed: initialPaperSpeed = 25,
+  enableZoom = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const [currentHeartRate, setCurrentHeartRate] = useState<number | null>(null);
   const [rPeaks, setRPeaks] = useState<number[]>([]);
+  const [paperSpeed, setPaperSpeed] = useState<number>(initialPaperSpeed); // mm/s
+
+  // Calculate actual canvas width based on paper speed
+  // Medical ECG standard: 25 mm/s or 50 mm/s
+  // 1 pixel ≈ 0.5 mm for screen display
+  const secondsOfData = ecgData.length / samplingRate;
+  const calculatedWidth = paperSpeed === 50
+    ? Math.max(width, secondsOfData * 100) // 50mm/s = 100 pixels/second
+    : paperSpeed === 25
+    ? Math.max(width, secondsOfData * 50)  // 25mm/s = 50 pixels/second
+    : width; // Default compressed view
+
+  const displayWidth = calculatedWidth;
 
   // Simple R-peak detection (threshold-based)
   const detectRPeaks = (samples: number[]): number[] => {
@@ -80,7 +97,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
     const render = () => {
       // Clear canvas
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, displayWidth, height);
 
       // Draw gridlines (medical ECG paper style)
       if (showGridlines) {
@@ -88,10 +105,13 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
         ctx.strokeStyle = 'rgba(220, 38, 38, 0.15)';
         ctx.lineWidth = 0.5;
 
-        const smallGridX = width / 250; // 250 small squares (10 seconds)
+        // Calculate grid spacing based on paper speed
+        const pixelsPerSecond = paperSpeed === 50 ? 100 : paperSpeed === 25 ? 50 : displayWidth / secondsOfData;
+        const smallGridX = pixelsPerSecond * 0.04; // 1mm = 0.04s
         const smallGridY = height / 40; // 40 small squares
 
-        for (let i = 0; i <= 250; i++) {
+        const numVerticalLines = Math.ceil(displayWidth / smallGridX);
+        for (let i = 0; i <= numVerticalLines; i++) {
           ctx.beginPath();
           ctx.moveTo(i * smallGridX, 0);
           ctx.lineTo(i * smallGridX, height);
@@ -101,7 +121,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
         for (let i = 0; i <= 40; i++) {
           ctx.beginPath();
           ctx.moveTo(0, i * smallGridY);
-          ctx.lineTo(width, i * smallGridY);
+          ctx.lineTo(displayWidth, i * smallGridY);
           ctx.stroke();
         }
 
@@ -109,7 +129,8 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
         ctx.strokeStyle = 'rgba(220, 38, 38, 0.3)';
         ctx.lineWidth = 1;
 
-        for (let i = 0; i <= 50; i++) {
+        const numLargeVerticalLines = Math.ceil(displayWidth / (smallGridX * 5));
+        for (let i = 0; i <= numLargeVerticalLines; i++) {
           ctx.beginPath();
           ctx.moveTo(i * smallGridX * 5, 0);
           ctx.lineTo(i * smallGridX * 5, height);
@@ -119,13 +140,13 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
         for (let i = 0; i <= 8; i++) {
           ctx.beginPath();
           ctx.moveTo(0, i * smallGridY * 5);
-          ctx.lineTo(width, i * smallGridY * 5);
+          ctx.lineTo(displayWidth, i * smallGridY * 5);
           ctx.stroke();
         }
       }
 
       // Calculate display parameters
-      const samplesPerPixel = ecgData.length / width;
+      const samplesPerPixel = ecgData.length / displayWidth;
       const centerY = height / 2;
       const voltageScale = height / 6; // Scale for ±3mV range
 
@@ -136,7 +157,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
       ctx.shadowBlur = 4;
 
       ctx.beginPath();
-      for (let x = 0; x < width; x++) {
+      for (let x = 0; x < displayWidth; x++) {
         // CRITICAL: For each pixel, find min and max samples to preserve sharp peaks (QRS complexes)
         const startSampleIndex = Math.floor(x * samplesPerPixel);
         const endSampleIndex = Math.floor((x + 1) * samplesPerPixel);
@@ -168,7 +189,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
       if (showRWaveMarkers && rPeaks.length > 0) {
         rPeaks.forEach(peakIndex => {
           const x = peakIndex / samplesPerPixel;
-          if (x >= 0 && x < width) {
+          if (x >= 0 && x < displayWidth) {
             const voltage = ecgData[peakIndex];
             const y = centerY - (voltage * voltageScale);
 
@@ -201,15 +222,15 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
 
       for (let i = -3; i <= 3; i++) {
         const y = centerY - (i * voltageScale);
-        ctx.fillText(`${i}mV`, width - 5, y + 4);
+        ctx.fillText(`${i}mV`, displayWidth - 5, y + 4);
       }
 
       // Draw time scale
       ctx.textAlign = 'center';
-      const secondsDisplayed = ecgData.length / samplingRate;
-      for (let i = 0; i <= 10; i++) {
-        const x = (i / 10) * width;
-        const time = (i / 10) * secondsDisplayed;
+      const numTimeMarkers = Math.min(10, Math.ceil(secondsOfData));
+      for (let i = 0; i <= numTimeMarkers; i++) {
+        const x = (i / numTimeMarkers) * displayWidth;
+        const time = (i / numTimeMarkers) * secondsOfData;
         ctx.fillText(`${time.toFixed(1)}s`, x, height - 5);
       }
 
@@ -223,7 +244,7 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [ecgData, rPeaks, showGridlines, showRWaveMarkers, width, height, samplingRate]);
+  }, [ecgData, rPeaks, showGridlines, showRWaveMarkers, displayWidth, height, samplingRate, paperSpeed, secondsOfData]);
 
   return (
     <div className="relative">
@@ -236,31 +257,74 @@ export const ECGWaveformChart: React.FC<ECGWaveformChartProps> = ({
           <div>
             <h3 className="text-lg font-bold text-red-400">ECG Waveform</h3>
             <p className="text-xs text-gray-400">
-              Real-time @ {samplingRate} Hz • {ecgData.length} samples • {(ecgData.length / samplingRate).toFixed(1)}s
+              Real-time @ {samplingRate} Hz • {ecgData.length} samples • {secondsOfData.toFixed(1)}s
             </p>
           </div>
         </div>
 
-        {currentHeartRate && (
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
-              <Zap className="h-5 w-5 text-yellow-400 animate-pulse" />
+        <div className="flex items-center gap-4">
+          {/* Paper Speed Controls */}
+          {enableZoom && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Paper Speed:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPaperSpeed(0)}
+                  className={`px-3 py-1 text-xs rounded border transition-all ${
+                    paperSpeed === 0
+                      ? 'bg-blue-500/30 border-blue-500 text-blue-300'
+                      : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  <ZoomOut className="h-3 w-3 inline mr-1" />
+                  Fit
+                </button>
+                <button
+                  onClick={() => setPaperSpeed(25)}
+                  className={`px-3 py-1 text-xs rounded border transition-all ${
+                    paperSpeed === 25
+                      ? 'bg-green-500/30 border-green-500 text-green-300'
+                      : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  25 mm/s
+                </button>
+                <button
+                  onClick={() => setPaperSpeed(50)}
+                  className={`px-3 py-1 text-xs rounded border transition-all ${
+                    paperSpeed === 50
+                      ? 'bg-purple-500/30 border-purple-500 text-purple-300'
+                      : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  <ZoomIn className="h-3 w-3 inline mr-1" />
+                  50 mm/s
+                </button>
+              </div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-yellow-400">{currentHeartRate}</div>
-              <div className="text-xs text-gray-400">BPM</div>
+          )}
+
+          {currentHeartRate && (
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+                <Zap className="h-5 w-5 text-yellow-400 animate-pulse" />
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-yellow-400">{currentHeartRate}</div>
+                <div className="text-xs text-gray-400">BPM</div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Canvas */}
-      <div className="relative rounded-lg overflow-hidden border-2 border-red-500/30 bg-slate-900">
+      {/* Canvas - Scrollable when stretched */}
+      <div className={`relative rounded-lg border-2 border-red-500/30 bg-slate-900 ${paperSpeed > 0 ? 'overflow-x-auto' : 'overflow-hidden'}`}>
         <canvas
           ref={canvasRef}
-          width={width}
+          width={displayWidth}
           height={height}
-          className="w-full h-auto"
+          className={paperSpeed > 0 ? 'h-auto' : 'w-full h-auto'}
         />
 
         {ecgData.length === 0 && (

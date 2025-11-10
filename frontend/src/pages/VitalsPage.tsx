@@ -3220,7 +3220,7 @@ export function VitalsPage() {
                               <div className="mb-2 text-xs text-green-400 text-center font-bold">
                                 ✅ LIVE: Displaying real-time ECG from Polar H10 ({ecgBuffer.length} samples)
                               </div>
-                              <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                              <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} enableZoom={true} />
                             </>
                           )}
                         </div>
@@ -8849,7 +8849,7 @@ export function VitalsPage() {
                       <div className="mb-2 text-xs text-green-400 text-center font-bold">
                         ✅ LIVE: Displaying real-time ECG from Polar H10 ({ecgBuffer.length} samples)
                       </div>
-                      <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} />
+                      <ECGWaveformChart ecgData={ecgBuffer} samplingRate={130} showRWaveMarkers={true} showGridlines={true} enableZoom={true} />
                     </>
                   )}
                 </div>
@@ -8994,6 +8994,7 @@ export function VitalsPage() {
                   showGridlines={true}
                   width={1200}
                   height={300}
+                  enableZoom={true}
                 />
               </div>
 
@@ -9017,6 +9018,7 @@ export function VitalsPage() {
                   showGridlines={true}
                   width={1200}
                   height={300}
+                  enableZoom={true}
                 />
               </div>
 
