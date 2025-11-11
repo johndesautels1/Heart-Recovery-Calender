@@ -927,3 +927,98 @@ export interface UpdateDeviceSettingsInput {
 export interface TriggerSyncInput {
   dataType?: 'all' | 'exercise' | 'heart_rate' | 'steps' | 'calories' | 'sleep';
 }
+
+// ==================== CIA (CARDIAC INTELLIGENCE ANALYSIS) TYPES ====================
+
+export interface CIARiskItem {
+  category: string;
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  finding: string;
+  recommendation: string;
+}
+
+export interface CIAFinding {
+  category: string;
+  finding: string;
+  significance: string;
+  details?: string;
+}
+
+export interface CIAActionItem {
+  priority: 'Immediate' | 'High' | 'Medium' | 'Low';
+  action: string;
+  rationale: string;
+  timeline?: string;
+}
+
+export interface CIAReportComment {
+  id: number;
+  reportId: number;
+  providerId: number;
+  userId: number;
+  comment: string;
+  commentType: 'feedback' | 'approval' | 'concern' | 'recommendation' | 'question';
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  provider?: Provider;
+}
+
+export interface CIAReport {
+  id: number;
+  userId: number;
+  patientId?: number;
+  generatedAt: string;
+  surgeryDate?: string;
+  analysisStartDate: string;
+  analysisEndDate: string;
+  daysPostSurgery?: number;
+  recoveryScore?: number;  // 0-100
+  reportData?: any;  // Full AI response JSON
+  summary?: string;  // Text summary
+  riskAssessment?: CIARiskItem[];  // Array of risk items
+  unusualFindings?: CIAFinding[];  // Array of findings
+  actionPlan?: CIAActionItem[];  // Array of action items
+  dataCompleteness?: {
+    hasVitals: boolean;
+    hasSleep: boolean;
+    hasExercise: boolean;
+    hasMeals: boolean;
+    hasMedications: boolean;
+    hasHydration: boolean;
+    hasECG: boolean;
+    hasHabits: boolean;
+    totalDataPoints: number;
+    dataCategories: string[];
+  };
+  metricsAnalyzed?: string[];  // Array of metric categories analyzed
+  aiModel?: string;  // e.g., "claude-sonnet-4-20250514"
+  aiPromptVersion?: string;  // e.g., "v1.0"
+  status: 'generating' | 'completed' | 'error';
+  errorMessage?: string;
+  sharedWithProviders: boolean;
+  createdAt: string;
+  updatedAt: string;
+  patient?: Patient;
+  comments?: CIAReportComment[];
+}
+
+export interface CIAEligibility {
+  eligible: boolean;
+  reason?: string;
+  nextEligibleDate?: string;
+  daysSinceSurgery?: number;
+  lastReportDate?: string;
+}
+
+export interface CIAReportsResponse {
+  reports: CIAReport[];
+}
+
+export interface CIAReportResponse {
+  report: CIAReport;
+}
+
+export interface CIACommentResponse {
+  comment: CIAReportComment;
+}

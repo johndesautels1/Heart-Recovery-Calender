@@ -27,6 +27,8 @@ import EventTemplate from './EventTemplate';
 import DeviceConnection from './DeviceConnection';
 import DeviceSyncLog from './DeviceSyncLog';
 import Provider from './Provider';
+import CIAReport from './CIAReport';
+import CIAReportComment from './CIAReportComment';
 
 // Create models object
 const models = {
@@ -56,6 +58,8 @@ const models = {
   DeviceConnection,
   DeviceSyncLog,
   Provider,
+  CIAReport,
+  CIAReportComment,
 };
 
 // Call associate methods for all models

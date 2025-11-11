@@ -1229,6 +1229,92 @@ export function ProfilePage() {
                         </p>
                       </div>
 
+                      {/* Claude AI / Anthropic API */}
+                      <div className="p-5 rounded-lg border-2 border-purple-500" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)' }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Cloud className="h-6 w-6 text-purple-500" />
+                            <div>
+                              <h4 className="font-bold text-lg" style={{ color: 'var(--ink-bright)' }}>
+                                Claude AI API (Anthropic)
+                              </h4>
+                              <div className="flex gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-500 text-white">
+                                  ACTIVE
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
+                                  CIA Reports
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <a
+                            href="https://console.anthropic.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-sm font-semibold hover:bg-purple-600 transition-colors"
+                          >
+                            API Console →
+                          </a>
+                        </div>
+                        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+                          Powers CIA (Cardiac Intelligence Analysis) reports with advanced multi-modal AI analysis of patient recovery data using international medical standards (AHA/ESC/ACC guidelines).
+                        </p>
+
+                        <div className="space-y-3">
+                          <Input
+                            label="Account Email"
+                            type="email"
+                            value="brokerpinellas@gmail.com"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Password"
+                            type="password"
+                            value="Puspin15!"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="Subscription Plan"
+                            value="Claude Max (Professional)"
+                            readOnly
+                            className="bg-white/5"
+                          />
+                          <Input
+                            label="API Key"
+                            type="password"
+                            value="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"
+                            readOnly
+                            className="bg-white/5 font-mono text-xs"
+                          />
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          <a
+                            href="https://docs.anthropic.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 text-sm font-semibold hover:bg-purple-600/30 transition-colors text-center"
+                          >
+                            📚 API Documentation
+                          </a>
+                          <a
+                            href="https://claude.com/claude-code"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 text-sm font-semibold hover:bg-purple-600/30 transition-colors text-center"
+                          >
+                            💻 Claude Code
+                          </a>
+                        </div>
+
+                        <p className="text-xs mt-3 p-2 rounded" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: 'var(--muted)' }}>
+                          ENV Variable: CLAUDE_API_KEY
+                        </p>
+                      </div>
+
                       {/* Apple Sign In */}
                       <div className="p-5 rounded-lg border border-gray-600" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
                         <div className="flex items-center justify-between mb-4">

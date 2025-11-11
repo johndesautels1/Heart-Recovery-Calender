@@ -42,6 +42,12 @@ import {
   CalorieSummary,
   DailyCalories,
   WeightCorrelation,
+  CIAReport,
+  CIAReportComment,
+  CIAEligibility,
+  CIAReportsResponse,
+  CIAReportResponse,
+  CIACommentResponse,
 } from '../types';
 
 class ApiService {
@@ -937,6 +943,73 @@ class ApiService {
     syncCalories?: boolean;
   }): Promise<any> {
     const response = await this.api.patch('/samsung/settings', settings);
+    return response.data;
+  }
+
+  // ==================== CIA (CARDIAC INTELLIGENCE ANALYSIS) ENDPOINTS ====================
+
+  /**
+   * Generate a new CIA report analyzing patient recovery progress
+   * Aggregates all patient data from Day 0 through current date/90 days
+   * Uses Claude AI with international medical standards (AHA/ESC/ACC)
+   * Note: 30-day rule applies - first report at 30+ days post-surgery, subsequent reports 30+ days apart
+   */
+  async generateCIAReport(): Promise<CIAReportResponse> {
+    const response = await this.api.post<CIAReportResponse>('/cia/analyze');
+    return response.data;
+  }
+
+  /**
+   * Get all CIA reports for the authenticated user
+   * @param limit - Maximum number of reports to return (default: 50)
+   * @param includeError - Include error reports in results (default: false)
+   */
+  async getCIAReports(limit: number = 50, includeError: boolean = false): Promise<CIAReportsResponse> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    if (includeError) {
+      params.append('includeError', 'true');
+    }
+    const response = await this.api.get<CIAReportsResponse>(`/cia/reports?${params.toString()}`);
+    return response.data;
+  }
+
+  /**
+   * Get a specific CIA report by ID
+   * @param reportId - Report ID to retrieve
+   */
+  async getCIAReportById(reportId: number): Promise<CIAReportResponse> {
+    const response = await this.api.get<CIAReportResponse>(`/cia/reports/${reportId}`);
+    return response.data;
+  }
+
+  /**
+   * Check if user is eligible to generate a new CIA report (30-day rule)
+   * Returns eligibility status, reason, next eligible date, and days since surgery
+   */
+  async checkCIAEligibility(): Promise<CIAEligibility> {
+    const response = await this.api.get<CIAEligibility>('/cia/eligibility');
+    return response.data;
+  }
+
+  /**
+   * Add a cardiac team provider comment to a CIA report
+   * @param reportId - Report ID to comment on
+   * @param comment - Comment text
+   * @param commentType - Type of comment (feedback, approval, concern, recommendation, question)
+   * @param isPrivate - Whether comment is private (only visible to cardiac team)
+   */
+  async addCIAReportComment(
+    reportId: number,
+    comment: string,
+    commentType: 'feedback' | 'approval' | 'concern' | 'recommendation' | 'question' = 'feedback',
+    isPrivate: boolean = false
+  ): Promise<CIACommentResponse> {
+    const response = await this.api.post<CIACommentResponse>(`/cia/reports/${reportId}/comments`, {
+      comment,
+      commentType,
+      isPrivate,
+    });
     return response.data;
   }
 }

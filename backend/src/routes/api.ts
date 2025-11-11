@@ -36,6 +36,7 @@ import polarRoutes from './polar';
 import polarH10Routes from './polarH10';
 import samsungRoutes from './samsung';
 import ecgRoutes from './ecg';
+import * as ciaController from '../controllers/ciaController';
 
 const router = Router();
 
@@ -680,6 +681,48 @@ router.use('/weather', weatherRoutes);
  * @note    Detects life-threatening combinations (diuretics + heat + exercise, low EF + high intensity, etc.)
  */
 router.use('/hawk', hawkRoutes);
+
+// ========== CIA (CARDIAC INTELLIGENCE ANALYSIS) ROUTES ==========
+
+/**
+ * @route   POST /api/cia/analyze
+ * @desc    Generate a new CIA report analyzing patient recovery progress
+ * @access  Private
+ * @body    None (uses authenticated user's data)
+ * @note    30-day rule: First report at 30+ days post-surgery, subsequent reports 30+ days apart
+ */
+router.post('/cia/analyze', ciaController.generateCIAReport);
+
+/**
+ * @route   GET /api/cia/reports
+ * @desc    Get all CIA reports for the authenticated user
+ * @access  Private
+ * @query   { limit?: number, includeError?: boolean }
+ */
+router.get('/cia/reports', ciaController.getCIAReports);
+
+/**
+ * @route   GET /api/cia/reports/:reportId
+ * @desc    Get a specific CIA report by ID
+ * @access  Private
+ */
+router.get('/cia/reports/:reportId', ciaController.getCIAReportById);
+
+/**
+ * @route   POST /api/cia/reports/:reportId/comments
+ * @desc    Add a cardiac team provider comment to a CIA report
+ * @access  Private (providers only)
+ * @body    { comment: string, commentType?: string, isPrivate?: boolean }
+ */
+router.post('/cia/reports/:reportId/comments', ciaController.addReportComment);
+
+/**
+ * @route   GET /api/cia/eligibility
+ * @desc    Check if user is eligible to generate a new CIA report (30-day rule)
+ * @access  Private
+ * @returns { eligible: boolean, reason?: string, nextEligibleDate?: Date }
+ */
+router.get('/cia/eligibility', ciaController.checkReportEligibility);
 
 export default router;
 

@@ -15,3 +15,4 @@ export { ExercisesPage } from './ExercisesPage';
 export { EventTemplatesPage } from './EventTemplatesPage';
 export { SleepPage } from './SleepPage';
 export { DevicesPage } from './DevicesPage';
+export { CIAPage } from './CIAPage';

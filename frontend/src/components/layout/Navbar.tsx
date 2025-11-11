@@ -18,7 +18,8 @@ import {
   Sun,
   UserCircle2,
   Dumbbell,
-  Smartphone
+  Smartphone,
+  Brain
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useView } from '../../contexts/ViewContext';
@@ -126,7 +127,7 @@ export function Navbar() {
     { path: '/exercises', label: 'Exercise & Activities', icon: Dumbbell },
     { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
     { path: '/food-diary', label: 'Food Diary', icon: FileText },
-    { path: '/medications', label: 'Medications', icon: Pill },
+    { path: '/medications', label: 'Medications & Nutraceuticals', icon: Pill },
     { path: '/sleep', label: 'Sleep Journal', icon: Moon },
     { path: '/devices', label: 'My Devices', icon: Smartphone },
   ];
@@ -276,6 +277,137 @@ export function Navbar() {
           </button>
         </div>
 
+        {/* CIA - Cardiac Intelligence Analysis - Ultra 5D Transparent Button */}
+        <div className="hidden md:flex items-center justify-center py-2">
+          <Link
+            to="/cia"
+            className="group relative"
+          >
+            {/* Outer glow rings */}
+            <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-blue-600/30 blur-xl animate-pulse"></div>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20 blur-2xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+            </div>
+
+            {/* Main 5D Button Container */}
+            <div
+              className="relative px-6 py-2 rounded-xl transition-all duration-500 group-hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.15) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                boxShadow: `
+                  0 8px 32px rgba(0, 0, 0, 0.3),
+                  0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                  0 2px 4px rgba(255, 255, 255, 0.2) inset,
+                  0 -2px 4px rgba(0, 0, 0, 0.2) inset,
+                  0 0 60px rgba(37, 99, 235, 0.2),
+                  0 0 80px rgba(109, 40, 217, 0.15)
+                `,
+              }}
+            >
+              {/* 3D depth layer 1 */}
+              <div
+                className="absolute inset-0 rounded-xl"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)',
+                  transform: 'translateZ(10px)',
+                }}
+              ></div>
+
+              {/* 3D depth layer 2 - prismatic effect */}
+              <div
+                className="absolute inset-0 rounded-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: `
+                    radial-gradient(circle at 30% 30%, rgba(37, 99, 235, 0.2) 0%, transparent 50%),
+                    radial-gradient(circle at 70% 70%, rgba(109, 40, 217, 0.2) 0%, transparent 50%),
+                    radial-gradient(circle at 50% 50%, rgba(67, 56, 202, 0.15) 0%, transparent 70%)
+                  `,
+                  transform: 'translateZ(5px)',
+                }}
+              ></div>
+
+              {/* Content */}
+              <div className="relative flex flex-col items-center justify-center space-y-0.5" style={{ transform: 'translateZ(20px)' }}>
+                {/* CIA Text - Crystal Clear & Readable */}
+                <div className="flex items-center gap-2">
+                  <Brain
+                    className="h-5 w-5 transition-all duration-500 group-hover:scale-110 group-hover:rotate-12"
+                    style={{
+                      color: '#2563eb',
+                      filter: 'drop-shadow(0 0 15px rgba(37, 99, 235, 1)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.8))',
+                    }}
+                  />
+                  <span
+                    className="font-black tracking-wider transition-all duration-500 group-hover:tracking-widest"
+                    style={{
+                      fontSize: '1.375rem',
+                      color: '#1d4ed8',
+                      WebkitTextStroke: '1.5px #000000',
+                      textShadow: `
+                        0 0 30px rgba(59, 130, 246, 1),
+                        0 0 50px rgba(96, 165, 250, 0.8),
+                        0 3px 8px rgba(0, 0, 0, 1),
+                        3px 3px 6px rgba(0, 0, 0, 1),
+                        -1px -1px 0 rgba(37, 99, 235, 0.8)
+                      `,
+                      fontWeight: 900,
+                      letterSpacing: '0.2em',
+                      fontFamily: '"Roboto", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+                    }}
+                  >
+                    CIA
+                  </span>
+                </div>
+
+                {/* Subtitle - Solid Crisp Bold White with Red Accents */}
+                <span
+                  className="text-[0.65rem] tracking-wide transition-all duration-500"
+                  style={{
+                    color: '#ffffff',
+                    WebkitTextStroke: '0.3px rgba(255, 255, 255, 0.8)',
+                    textShadow: `
+                      0 2px 4px rgba(0, 0, 0, 1),
+                      0 0 15px rgba(255, 59, 59, 0.6),
+                      1px 1px 2px rgba(0, 0, 0, 0.9)
+                    `,
+                    letterSpacing: '0.1em',
+                    fontWeight: 900,
+                    fontFamily: '"Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
+                  }}
+                >
+                  Cardiac Intelligence Analysis
+                </span>
+              </div>
+
+              {/* Animated light beam effect */}
+              <div
+                className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
+                  animation: 'shimmer 2s infinite',
+                }}
+              ></div>
+
+              {/* Bottom shine */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-px"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(37, 99, 235, 0.8) 50%, transparent 100%)',
+                }}
+              ></div>
+            </div>
+
+            {/* Floating particles effect on hover */}
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-blue-400 rounded-full animate-ping"></div>
+              <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
+              <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-red-400 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
+            </div>
+          </Link>
+        </div>
+
         {/* Row 2: Navigation Tabs with Glassmorphic Prismatic Design */}
         <div className="hidden md:flex items-center justify-center gap-1.5 pb-3 pt-1">
           {navItems.map((item) => {
@@ -286,12 +418,12 @@ export function Navbar() {
                 key={item.path}
                 to={item.path}
                 className="group relative"
-                style={{ minWidth: '105px' }}
+                style={{ minWidth: '95px' }}
               >
                 {/* Glassmorphic Tab - Clean, no internal prism */}
                 <div
                   className={clsx(
-                    'relative px-3 py-2 rounded-xl transition-all duration-300',
+                    'relative px-2.5 py-1.5 rounded-xl transition-all duration-300',
                     'backdrop-blur-lg border',
                     active
                       ? 'bg-white/50 border-white/70 shadow-lg'
@@ -306,10 +438,10 @@ export function Navbar() {
                 >
 
                   {/* Content */}
-                  <div className="relative flex items-center justify-center space-x-2">
+                  <div className="relative flex items-center justify-center space-x-1.5">
                     <Icon
                       className={clsx(
-                        'h-4 w-4 transition-all duration-300',
+                        'h-3.5 w-3.5 transition-all duration-300',
                         active ? 'scale-110' : 'group-hover:scale-105'
                       )}
                       style={{
@@ -323,7 +455,7 @@ export function Navbar() {
                         active ? 'font-extrabold' : 'group-hover:font-semibold'
                       )}
                       style={{
-                        fontSize: '0.9375rem',
+                        fontSize: '0.84rem',
                         color: active ? '#facc15' : '#ffffff',
                         textShadow: active
                           ? '0 0 20px rgba(250, 204, 21, 0.9), 0 1px 3px rgba(0, 0, 0, 1), 0 0 1px rgba(0, 0, 0, 0.8)'

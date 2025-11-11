@@ -27,6 +27,7 @@ import {
   EventTemplatesPage,
   SleepPage,
   DevicesPage,
+  CIAPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -76,6 +77,16 @@ function App() {
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+
+              {/* CIA - Full immersion route (no layout) */}
+              <Route
+                path="/cia"
+                element={
+                  <ProtectedRoute>
+                    <CIAPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Protected routes */}
               <Route
