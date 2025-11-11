@@ -847,6 +847,128 @@ export function SleepPage() {
 
   const totalDreamsLogged = dreamData.reduce((sum, item) => sum + item.count, 0);
 
+  // ==================== SAMSUNG SLEEP TRACKING FEATURES (1-4) ====================
+
+  // FEATURE 1: Sleep Stages Data (Stacked Bar Chart)
+  const sleepStagesChartData = sleepLogs
+    .filter(log => log.awakeDuration || log.lightSleepDuration || log.deepSleepDuration || log.remSleepDuration)
+    .slice(-30) // Last 30 days with sleep stages data
+    .reverse()
+    .map(log => ({
+      date: format(parseISO(log.date), 'MMM d'),
+      awake: log.awakeDuration || 0,
+      light: log.lightSleepDuration || 0,
+      deep: log.deepSleepDuration || 0,
+      rem: log.remSleepDuration || 0,
+      awakePercent: log.awakePercent || 0,
+      lightPercent: log.lightSleepPercent || 0,
+      deepPercent: log.deepSleepPercent || 0,
+      remPercent: log.remSleepPercent || 0,
+    }));
+
+  // Average sleep stages percentages
+  const avgSleepStages = sleepStagesChartData.length > 0 ? {
+    awake: sleepStagesChartData.reduce((sum, d) => sum + d.awakePercent, 0) / sleepStagesChartData.length,
+    light: sleepStagesChartData.reduce((sum, d) => sum + d.lightPercent, 0) / sleepStagesChartData.length,
+    deep: sleepStagesChartData.reduce((sum, d) => sum + d.deepPercent, 0) / sleepStagesChartData.length,
+    rem: sleepStagesChartData.reduce((sum, d) => sum + d.remPercent, 0) / sleepStagesChartData.length,
+  } : { awake: 0, light: 0, deep: 0, rem: 0 };
+
+  // FEATURE 2: Sleep Efficiency Data (Circular Gauge)
+  const sleepEfficiencyData = sleepLogs
+    .filter(log => log.sleepEfficiency !== null && log.sleepEfficiency !== undefined)
+    .slice(-30);
+
+  const avgSleepEfficiency = sleepEfficiencyData.length > 0
+    ? sleepEfficiencyData.reduce((sum, log) => sum + (log.sleepEfficiency || 0), 0) / sleepEfficiencyData.length
+    : 0;
+
+  const latestSleepEfficiency = sleepEfficiencyData.length > 0
+    ? sleepEfficiencyData[sleepEfficiencyData.length - 1].sleepEfficiency || 0
+    : 0;
+
+  // FEATURE 3: Sleep Consistency Score
+  const sleepConsistencyData = sleepLogs
+    .filter(log => log.bedTime && log.wakeTime)
+    .slice(-30); // Last 30 days
+
+  const calculateConsistencyScore = () => {
+    if (sleepConsistencyData.length < 3) return 0;
+
+    // Calculate average bedtime and waketime in minutes from midnight
+    const bedtimes = sleepConsistencyData.map(log => {
+      const bed = new Date(log.bedTime!);
+      let minutes = bed.getHours() * 60 + bed.getMinutes();
+      // Adjust for late night (after 6 PM is same day, before 6 AM is next day)
+      if (bed.getHours() < 6) minutes += 24 * 60;
+      return minutes;
+    });
+
+    const waketimes = sleepConsistencyData.map(log => {
+      const wake = new Date(log.wakeTime!);
+      return wake.getHours() * 60 + wake.getMinutes();
+    });
+
+    const avgBedtime = bedtimes.reduce((a, b) => a + b, 0) / bedtimes.length;
+    const avgWaketime = waketimes.reduce((a, b) => a + b, 0) / waketimes.length;
+
+    // Calculate standard deviation
+    const bedtimeVariance = bedtimes.reduce((sum, time) => sum + Math.pow(time - avgBedtime, 2), 0) / bedtimes.length;
+    const waketimeVariance = waketimes.reduce((sum, time) => sum + Math.pow(time - avgWaketime, 2), 0) / waketimes.length;
+
+    const bedtimeStdDev = Math.sqrt(bedtimeVariance);
+    const waketimeStdDev = Math.sqrt(waketimeVariance);
+
+    // Score: 100 = perfect consistency (0 deviation), decreases with higher std dev
+    // Every 30 min of std dev reduces score by ~15 points
+    const bedtimeScore = Math.max(0, 100 - (bedtimeStdDev / 30) * 15);
+    const waketimeScore = Math.max(0, 100 - (waketimeStdDev / 30) * 15);
+
+    return Math.round((bedtimeScore + waketimeScore) / 2);
+  };
+
+  const consistencyScore = calculateConsistencyScore();
+
+  // FEATURE 4: Nap Impact Analysis
+  const napLogs = sleepLogs.filter(log => log.isNap === true);
+  const nonNapLogs = sleepLogs.filter(log => log.isNap === false || log.isNap === null);
+
+  // Calculate average sleep quality on days with naps vs without
+  const datesWithNaps = new Set(napLogs.map(log => log.date));
+
+  const nightsAfterNaps = nonNapLogs.filter(log => {
+    const logDate = parseISO(log.date);
+    const prevDate = format(subDays(logDate, 1), 'yyyy-MM-dd');
+    return datesWithNaps.has(prevDate);
+  });
+
+  const nightsWithoutNaps = nonNapLogs.filter(log => {
+    const logDate = parseISO(log.date);
+    const prevDate = format(subDays(logDate, 1), 'yyyy-MM-dd');
+    return !datesWithNaps.has(prevDate);
+  });
+
+  const avgHoursAfterNaps = nightsAfterNaps.length > 0
+    ? nightsAfterNaps.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / nightsAfterNaps.length
+    : 0;
+
+  const avgHoursWithoutNaps = nightsWithoutNaps.length > 0
+    ? nightsWithoutNaps.reduce((sum, log) => sum + parseFloat(log.hoursSlept.toString()), 0) / nightsWithoutNaps.length
+    : 0;
+
+  const napImpactData = [
+    {
+      category: 'After Naps',
+      hours: avgHoursAfterNaps,
+      count: nightsAfterNaps.length,
+    },
+    {
+      category: 'No Naps',
+      hours: avgHoursWithoutNaps,
+      count: nightsWithoutNaps.length,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Patient Selector - Shows who's data is being viewed */}
@@ -2218,6 +2340,393 @@ export function SleepPage() {
           </div>
         )}
       </GlassCard>
+
+      {/* ==================== SAMSUNG SLEEP TRACKING VISUALIZATIONS (Features 1-4) ==================== */}
+
+      {/* FEATURE 1: Sleep Stages Stacked Bar Chart & Pie Chart */}
+      {sleepStagesChartData.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Stacked Bar Chart */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-purple-400" />
+              Sleep Stages Breakdown
+            </h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={sleepStagesChartData}>
+                <defs>
+                  <linearGradient id="awakeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fca5a5" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="lightGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#93c5fd" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="deepGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#c084fc" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="remGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6ee7b7" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9ca3af"
+                  tick={{ fill: '#d1d5db', fontSize: 11 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis
+                  stroke="#9ca3af"
+                  tick={{ fill: '#d1d5db', fontSize: 12 }}
+                  label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#d1d5db' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(31, 41, 55, 0.95)',
+                    border: '2px solid #8b5cf6',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                  }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  itemStyle={{ color: '#ffffff' }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{ color: '#ffffff' }}
+                />
+                <Bar dataKey="awake" stackId="a" fill="url(#awakeGradient)" name="Awake" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="light" stackId="a" fill="url(#lightGradient)" name="Light Sleep" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="deep" stackId="a" fill="url(#deepGradient)" name="Deep Sleep" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="rem" stackId="a" fill="url(#remGradient)" name="REM Sleep" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="text-xs text-center text-white opacity-70 mt-3">
+              Last {sleepStagesChartData.length} nights with Samsung Watch data
+            </div>
+          </GlassCard>
+
+          {/* Pie Chart - Average Distribution */}
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Moon className="h-5 w-5 text-purple-400" />
+              Average Sleep Stages Distribution
+            </h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Awake', value: avgSleepStages.awake, fill: '#ef4444' },
+                    { name: 'Light Sleep', value: avgSleepStages.light, fill: '#3b82f6' },
+                    { name: 'Deep Sleep', value: avgSleepStages.deep, fill: '#8b5cf6' },
+                    { name: 'REM Sleep', value: avgSleepStages.rem, fill: '#10b981' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {[
+                    { fill: '#ef4444' },
+                    { fill: '#3b82f6' },
+                    { fill: '#8b5cf6' },
+                    { fill: '#10b981' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(31, 41, 55, 0.95)',
+                    border: '2px solid #8b5cf6',
+                    borderRadius: '12px',
+                  }}
+                  formatter={(value: number) => `${value.toFixed(1)}%`}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+              <div className="text-white opacity-90">
+                <span className="font-semibold text-purple-400">Ideal Deep:</span> 15-25%
+                <br />
+                <span className="font-semibold text-green-400">Ideal REM:</span> 20-25%
+              </div>
+              <div className="text-white opacity-90">
+                <span className="font-semibold text-blue-400">Your Deep:</span> {avgSleepStages.deep.toFixed(1)}%
+                <br />
+                <span className="font-semibold text-green-400">Your REM:</span> {avgSleepStages.rem.toFixed(1)}%
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* FEATURE 2 & 3: Sleep Efficiency Gauge & Consistency Score */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* FEATURE 2: Sleep Efficiency Circular Gauge */}
+        {sleepEfficiencyData.length > 0 && (
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-cyan-400" />
+              Sleep Efficiency
+            </h3>
+            <div className="flex flex-col items-center justify-center py-6">
+              <div className="relative" style={{ width: 200, height: 200 }}>
+                <svg className="transform -rotate-90" width="200" height="200">
+                  <defs>
+                    <linearGradient id="efficiencyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={latestSleepEfficiency < 70 ? '#ef4444' : latestSleepEfficiency < 85 ? '#f59e0b' : '#10b981'} />
+                      <stop offset="100%" stopColor={latestSleepEfficiency < 70 ? '#b91c1c' : latestSleepEfficiency < 85 ? '#d97706' : '#059669'} />
+                    </linearGradient>
+                  </defs>
+                  {/* Background circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="#374151"
+                    strokeWidth="16"
+                    fill="none"
+                  />
+                  {/* Progress circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="url(#efficiencyGradient)"
+                    strokeWidth="16"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 85}`}
+                    strokeDashoffset={`${2 * Math.PI * 85 * (1 - latestSleepEfficiency / 100)}`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className={`text-5xl font-bold ${
+                    latestSleepEfficiency >= 85 ? 'text-green-400' :
+                    latestSleepEfficiency >= 70 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
+                    {latestSleepEfficiency.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-white opacity-70 mt-1">Latest Night</div>
+                </div>
+              </div>
+              <div className="mt-6 text-center">
+                <div className="text-sm text-white opacity-90 mb-2">
+                  30-Day Average: <span className="font-bold text-cyan-400">{avgSleepEfficiency.toFixed(1)}%</span>
+                </div>
+                <div className="text-xs text-white opacity-70">
+                  Target: <span className="font-semibold text-green-400">&gt;85%</span> |
+                  Formula: (Time Asleep / Time in Bed) × 100
+                </div>
+              </div>
+              {/* Status Badge */}
+              <div className={`mt-4 px-4 py-2 rounded-lg font-semibold ${
+                latestSleepEfficiency >= 85 ? 'bg-green-500/20 text-green-400' :
+                latestSleepEfficiency >= 70 ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {latestSleepEfficiency >= 85 ? '✓ Excellent Efficiency' :
+                 latestSleepEfficiency >= 70 ? '○ Good Efficiency' :
+                 '⚠ Needs Improvement'}
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* FEATURE 3: Sleep Consistency Score */}
+        {sleepConsistencyData.length >= 3 && (
+          <GlassCard>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-400" />
+              Sleep Consistency Score
+            </h3>
+            <div className="flex flex-col items-center justify-center py-6">
+              <div className="relative" style={{ width: 200, height: 200 }}>
+                <svg className="transform -rotate-90" width="200" height="200">
+                  <defs>
+                    <linearGradient id="consistencyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={consistencyScore < 60 ? '#ef4444' : consistencyScore < 80 ? '#f59e0b' : '#10b981'} />
+                      <stop offset="100%" stopColor={consistencyScore < 60 ? '#b91c1c' : consistencyScore < 80 ? '#d97706' : '#059669'} />
+                    </linearGradient>
+                  </defs>
+                  {/* Background circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="#374151"
+                    strokeWidth="16"
+                    fill="none"
+                  />
+                  {/* Progress circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="url(#consistencyGradient)"
+                    strokeWidth="16"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 85}`}
+                    strokeDashoffset={`${2 * Math.PI * 85 * (1 - consistencyScore / 100)}`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className={`text-5xl font-bold ${
+                    consistencyScore >= 80 ? 'text-green-400' :
+                    consistencyScore >= 60 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
+                    {consistencyScore}
+                  </div>
+                  <div className="text-sm text-white opacity-70 mt-1">out of 100</div>
+                </div>
+              </div>
+              <div className="mt-6 text-center">
+                <div className="text-sm text-white opacity-90 mb-2">
+                  Based on {sleepConsistencyData.length} nights
+                </div>
+                <div className="text-xs text-white opacity-70">
+                  Measures bedtime & wake time regularity
+                </div>
+              </div>
+              {/* Status Badge */}
+              <div className={`mt-4 px-4 py-2 rounded-lg font-semibold ${
+                consistencyScore >= 80 ? 'bg-green-500/20 text-green-400' :
+                consistencyScore >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {consistencyScore >= 80 ? '✓ Very Consistent' :
+                 consistencyScore >= 60 ? '○ Moderately Consistent' :
+                 '⚠ Inconsistent Schedule'}
+              </div>
+            </div>
+          </GlassCard>
+        )}
+      </div>
+
+      {/* FEATURE 4: Nap Impact Analysis */}
+      {napLogs.length > 0 && napImpactData[0].count > 0 && napImpactData[1].count > 0 && (
+        <GlassCard>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Sun className="h-5 w-5 text-yellow-400" />
+            Nap Impact Analysis
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Bar Chart */}
+            <div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={napImpactData}>
+                  <defs>
+                    <linearGradient id="napBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fbbf24" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="noNapBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis
+                    dataKey="category"
+                    stroke="#9ca3af"
+                    tick={{ fill: '#d1d5db', fontSize: 12 }}
+                  />
+                  <YAxis
+                    stroke="#9ca3af"
+                    tick={{ fill: '#d1d5db', fontSize: 12 }}
+                    label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: '#d1d5db' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(31, 41, 55, 0.95)',
+                      border: '2px solid #f59e0b',
+                      borderRadius: '12px',
+                    }}
+                    formatter={(value: number, name: string, props: any) => [
+                      `${value.toFixed(1)}h (${props.payload.count} nights)`,
+                      'Avg Sleep'
+                    ]}
+                  />
+                  <Bar
+                    dataKey="hours"
+                    name="Average Hours"
+                    radius={[8, 8, 0, 0]}
+                  >
+                    {napImpactData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={index === 0 ? 'url(#napBarGradient)' : 'url(#noNapBarGradient)'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg p-4 border border-yellow-400/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sun className="h-5 w-5 text-yellow-400" />
+                  <h4 className="text-white font-semibold">After Napping</h4>
+                </div>
+                <div className="text-3xl font-bold text-yellow-400 mb-1">
+                  {avgHoursAfterNaps.toFixed(1)}h
+                </div>
+                <div className="text-sm text-white opacity-70">
+                  Average nighttime sleep ({nightsAfterNaps.length} nights)
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg p-4 border border-blue-400/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Moon className="h-5 w-5 text-blue-400" />
+                  <h4 className="text-white font-semibold">Without Naps</h4>
+                </div>
+                <div className="text-3xl font-bold text-blue-400 mb-1">
+                  {avgHoursWithoutNaps.toFixed(1)}h
+                </div>
+                <div className="text-sm text-white opacity-70">
+                  Average nighttime sleep ({nightsWithoutNaps.length} nights)
+                </div>
+              </div>
+
+              {/* Impact Analysis */}
+              <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg p-4 border border-purple-400/30">
+                <h4 className="text-white font-semibold mb-2">Impact:</h4>
+                <div className="text-2xl font-bold text-white mb-1">
+                  {avgHoursAfterNaps > avgHoursWithoutNaps ? '▼' : '▲'}
+                  {' '}
+                  {Math.abs(avgHoursAfterNaps - avgHoursWithoutNaps).toFixed(1)}h
+                </div>
+                <div className="text-sm text-white opacity-70">
+                  {avgHoursAfterNaps > avgHoursWithoutNaps
+                    ? 'Naps associated with more nighttime sleep'
+                    : 'Naps associated with less nighttime sleep'}
+                </div>
+              </div>
+
+              <div className="text-xs text-white opacity-60 text-center mt-2">
+                Total naps logged: {napLogs.length}
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Sleep Logs List */}
       <GlassCard>
