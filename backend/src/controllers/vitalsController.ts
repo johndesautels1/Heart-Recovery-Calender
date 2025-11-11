@@ -6,6 +6,7 @@ import MealEntry from '../models/MealEntry';
 import { Op } from 'sequelize';
 import { sendWeightChangeAlert, sendHawkAlert } from '../services/notificationService';
 import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, checkHyperglycemiaMedicationCorrelation, checkHypoglycemiaMedicationCorrelation, checkFoodMedicationInteraction, checkHypoxiaMedicationCorrelation, getCareTeamForNotification } from '../services/medicationCorrelationService';
+import arrhythmiaDetectionService from '../services/arrhythmiaDetectionService';
 
 
 // GET /api/vitals - Get all vitals with filters
@@ -341,6 +342,19 @@ export const addVital = async (req: Request, res: Response) => {
         }
       } catch (alertError) {
         console.error('[VITALS] Error sending hypoxia alert:', alertError);
+      }
+    }
+
+    // 💓 ARRHYTHMIA DETECTION: Monitor for abnormal heart rhythms when HR data is present
+    if (vital.heartRate && userId) {
+      try {
+        console.log('[VITALS] Running arrhythmia detection on recent HR data...');
+        // Run arrhythmia monitoring in background (non-blocking)
+        arrhythmiaDetectionService.monitorAndAlertArrhythmia(userId).catch((err: any) => {
+          console.error('[VITALS] Error in arrhythmia monitoring (non-blocking):', err.message);
+        });
+      } catch (arrhythmiaError) {
+        console.error('[VITALS] Error triggering arrhythmia detection:', arrhythmiaError);
       }
     }
 
