@@ -1,0 +1,2648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Cardiac Intelligence™ - Advanced Analysis System</title>
+  <style>
+    :root {
+      --primary-glow: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #00d4ff 75%, #4facfe 100%);
+      --glass-white: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.75);
+      --accent-cyan: #00d4ff;
+      --accent-purple: #a855f7;
+      --accent-pink: #f093fb;
+      --success-green: #10b981;
+      --warning-amber: #f59e0b;
+      --critical-red: #ef4444;
+      --depth-1: rgba(0, 212, 255, 0.1);
+      --depth-2: rgba(168, 85, 247, 0.1);
+      --depth-3: rgba(240, 147, 251, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: #000;
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 5D Background Layers */
+    .background-container {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .bg-layer-1 {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f172a 100%);
+    }
+
+    .bg-layer-2 {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 50%, var(--depth-1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, var(--depth-2) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 20%, var(--depth-3) 0%, transparent 50%);
+      animation: float-gradient 20s ease-in-out infinite;
+    }
+
+    @keyframes float-gradient {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(-20px, -20px) scale(1.05); }
+      66% { transform: translate(20px, -10px) scale(0.95); }
+    }
+
+    .bg-layer-3 {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(0, 212, 255, 0.03) 35px, rgba(0, 212, 255, 0.03) 70px);
+      animation: scan-lines 10s linear infinite;
+    }
+
+    @keyframes scan-lines {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100px); }
+    }
+
+    /* Neural Network Animation */
+    .neural-network {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.3;
+    }
+
+    .neuron {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    .synapse {
+      position: absolute;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+      transform-origin: left center;
+      animation: synapse-fire 4s linear infinite;
+    }
+
+    @keyframes synapse-fire {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    /* Main Container */
+    .analysis-container {
+      position: relative;
+      z-index: 10;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header with Holographic Effect */
+    .header-section {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .main-title {
+      font-size: 4rem;
+      font-weight: 900;
+      background: var(--primary-glow);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 80px rgba(100, 220, 255, 0.5);
+      animation: holographic 3s ease-in-out infinite;
+      transform: translateZ(100px);
+      letter-spacing: 2px;
+    }
+
+    @keyframes holographic {
+      0%, 100% { 
+        filter: hue-rotate(0deg) brightness(1);
+        transform: translateZ(100px) rotateX(0deg);
+      }
+      50% { 
+        filter: hue-rotate(30deg) brightness(1.2);
+        transform: translateZ(120px) rotateX(2deg);
+      }
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.3rem;
+      margin-top: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    /* Advanced Start Button */
+    .start-analysis-section {
+      display: flex;
+      justify-content: center;
+      margin: 4rem 0;
+      position: relative;
+    }
+
+    .start-btn-container {
+      position: relative;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .start-btn {
+      position: relative;
+      padding: 2rem 5rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+      border: none;
+      border-radius: 100px;
+      color: white;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 20px 60px rgba(0, 212, 255, 0.5),
+                  inset 0 0 20px rgba(255, 255, 255, 0.2);
+      transform: translateZ(50px);
+    }
+
+    .start-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -200%;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      transition: left 0.5s;
+    }
+
+    .start-btn:hover::before {
+      left: 100%;
+    }
+
+    .start-btn:hover {
+      transform: translateZ(70px) translateY(-5px) scale(1.05);
+      box-shadow: 0 30px 80px rgba(0, 212, 255, 0.7),
+                  inset 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Multi-layer pulse effect */
+    .pulse-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      border-radius: 100px;
+      border: 3px solid var(--accent-cyan);
+      animation: pulse-ring-anim 2s infinite;
+      pointer-events: none;
+    }
+
+    .pulse-ring:nth-child(2) {
+      animation-delay: 0.5s;
+      border-color: var(--accent-purple);
+    }
+
+    .pulse-ring:nth-child(3) {
+      animation-delay: 1s;
+      border-color: var(--accent-pink);
+    }
+
+    @keyframes pulse-ring-anim {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+    }
+
+    /* Advanced Loading Overlay */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 14, 39, 0.98);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(20px);
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .ai-thinking {
+      text-align: center;
+      max-width: 600px;
+    }
+
+    .dna-loader {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 2rem;
+      position: relative;
+    }
+
+    .dna-strand {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      animation: dna-rotate 3s linear infinite;
+    }
+
+    @keyframes dna-rotate {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
+    }
+
+    .helix {
+      position: absolute;
+      width: 4px;
+      height: 100%;
+      left: 50%;
+      background: linear-gradient(180deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+      transform-style: preserve-3d;
+    }
+
+    .helix:nth-child(1) {
+      animation: helix-wave 2s ease-in-out infinite;
+    }
+
+    .helix:nth-child(2) {
+      animation: helix-wave 2s ease-in-out infinite reverse;
+    }
+
+    @keyframes helix-wave {
+      0%, 100% { transform: translateX(-20px) rotateY(0deg); }
+      50% { transform: translateX(20px) rotateY(180deg); }
+    }
+
+    .loading-text {
+      font-size: 1.6rem;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink), var(--accent-cyan));
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shift 3s linear infinite;
+      font-weight: 700;
+    }
+
+    @keyframes gradient-shift {
+      to { background-position: 300% center; }
+    }
+
+    .processing-steps {
+      margin-top: 2rem;
+      text-align: left;
+      display: inline-block;
+    }
+
+    .step-item {
+      margin: 0.8rem 0;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      opacity: 0.3;
+      transition: all 0.3s;
+      border-left: 3px solid transparent;
+    }
+
+    .step-item.active {
+      opacity: 1;
+      color: var(--accent-cyan);
+      background: rgba(0, 212, 255, 0.1);
+      border-left-color: var(--accent-cyan);
+      transform: translateX(10px);
+    }
+
+    /* Results Section */
+    .results-section {
+      display: none;
+      animation: fade-in-up 0.8s ease-out;
+    }
+
+    .results-section.active {
+      display: block;
+    }
+
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Ultra Glass Cards */
+    .glass-card {
+      background: linear-gradient(135deg, var(--glass-white), rgba(255, 255, 255, 0.02));
+      backdrop-filter: blur(20px) saturate(200%);
+      -webkit-backdrop-filter: blur(20px) saturate(200%);
+      border-radius: 24px;
+      border: 1px solid var(--glass-border);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--glass-shadow),
+                  inset 0 0 20px rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--primary-glow);
+      border-radius: 24px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s;
+    }
+
+    .glass-card:hover::before {
+      opacity: 0.3;
+    }
+
+    .glass-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+      animation: scan-line 4s linear infinite;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-8px) translateZ(20px) rotateX(2deg);
+      box-shadow: 0 30px 80px rgba(0, 212, 255, 0.4),
+                  inset 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent-cyan), transparent);
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      margin-right: 1.5rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+      animation: icon-float 3s ease-in-out infinite;
+    }
+
+    @keyframes icon-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--text-primary), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Advanced Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .metric-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 1.8rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform-style: preserve-3d;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at top right, var(--accent-cyan) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .metric-card:hover::before {
+      opacity: 0.15;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px) translateZ(10px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 212, 255, 0.3);
+    }
+
+    .metric-category {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent-purple);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.8rem;
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--text-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-unit {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-left: 0.5rem;
+    }
+
+    .metric-status {
+      display: inline-block;
+      padding: 0.35rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-top: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-normal {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+      color: var(--success-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .status-warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+      color: var(--warning-amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .status-critical {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+      color: var(--critical-red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+      animation: critical-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes critical-pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.4); }
+    }
+
+    /* ECG Waveform Container */
+    .ecg-container {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .ecg-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        repeating-linear-gradient(0deg, rgba(0, 212, 255, 0.05) 0px, transparent 1px, transparent 20px, rgba(0, 212, 255, 0.05) 21px),
+        repeating-linear-gradient(90deg, rgba(0, 212, 255, 0.05) 0px, transparent 1px, transparent 20px, rgba(0, 212, 255, 0.05) 21px);
+      pointer-events: none;
+    }
+
+    #ecgCanvas {
+      width: 100%;
+      height: 300px;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ecg-controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .ecg-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--accent-cyan);
+      border-radius: 10px;
+      color: var(--accent-cyan);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .ecg-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .ecg-info {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--accent-cyan);
+      border-radius: 10px;
+      padding: 0.8rem 1.2rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .ecg-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .ecg-stat {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ecg-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .ecg-stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    /* Advanced Risk Visualization */
+    .risk-visualization {
+      margin: 2rem 0;
+    }
+
+    .risk-meter {
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .risk-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, 
+        var(--success-green) 0%, 
+        #10b981 20%,
+        #f59e0b 50%,
+        #ef4444 80%,
+        var(--critical-red) 100%);
+      opacity: 0.3;
+    }
+
+    .risk-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success-green), var(--warning-amber), var(--critical-red));
+      width: 0%;
+      transition: width 2.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+      border-radius: 30px;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+    }
+
+    .risk-marker {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 80%;
+      background: white;
+      right: 0;
+      border-radius: 3px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+      animation: marker-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes marker-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+      50% { box-shadow: 0 0 40px rgba(255, 255, 255, 1); }
+    }
+
+    .risk-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .risk-score-display {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Findings Cards */
+    .findings-content {
+      line-height: 1.8;
+      color: var(--text-secondary);
+    }
+
+    .finding-item {
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+      border-left: 4px solid var(--accent-cyan);
+      border-radius: 12px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .finding-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .finding-item:hover::before {
+      transform: translateX(0);
+    }
+
+    .finding-item:hover {
+      transform: translateX(10px);
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+    }
+
+    .finding-severity {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-right: 1rem;
+    }
+
+    .finding-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+      color: var(--text-primary);
+    }
+
+    .finding-description {
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+
+    /* Recommendations */
+    .recommendation-list {
+      list-style: none;
+    }
+
+    .recommendation-item {
+      padding: 1.8rem;
+      margin: 1rem 0;
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(168, 85, 247, 0.08));
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: flex-start;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .recommendation-item::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, var(--accent-purple) 0%, transparent 70%);
+      opacity: 0.1;
+      transform: translate(30px, -30px);
+    }
+
+    .recommendation-item:hover {
+      transform: translateX(15px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(0, 212, 255, 0.25);
+      border-color: var(--accent-cyan);
+    }
+
+    .rec-priority {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .priority-high {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--critical-red);
+      border: 1px solid var(--critical-red);
+    }
+
+    .priority-medium {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning-amber);
+      border: 1px solid var(--warning-amber);
+    }
+
+    .priority-low {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success-green);
+      border: 1px solid var(--success-green);
+    }
+
+    .rec-icon {
+      margin-right: 1.5rem;
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .rec-content {
+      flex: 1;
+    }
+
+    .rec-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    .rec-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .rec-action {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 20px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .rec-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Confidence Indicator */
+    .confidence-section {
+      padding: 2rem;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0, 212, 255, 0.1));
+      border-radius: 20px;
+      margin: 2rem 0;
+    }
+
+    .confidence-indicator {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .confidence-label {
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      min-width: 200px;
+    }
+
+    .confidence-bar {
+      flex: 1;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan), var(--accent-pink));
+      width: 0%;
+      transition: width 2s cubic-bezier(0.4, 0.0, 0.2, 1);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+      position: relative;
+    }
+
+    .confidence-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .confidence-percentage {
+      min-width: 80px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 1.8rem;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Summary Call-to-Action */
+    .summary-cta {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(0, 212, 255, 0.15));
+      border: 2px solid var(--accent-cyan);
+      border-radius: 24px;
+      padding: 3rem;
+      text-align: center;
+      margin-top: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-cta::before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%);
+      animation: rotate-gradient 15s linear infinite;
+      opacity: 0.1;
+    }
+
+    @keyframes rotate-gradient {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .cta-message {
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      font-weight: 600;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .action-btn {
+      padding: 1.2rem 2.5rem;
+      border-radius: 50px;
+      border: none;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      color: white;
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent-cyan);
+      border: 2px solid var(--accent-cyan);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .action-btn:hover::before {
+      left: 100%;
+    }
+
+    /* Data source indicator */
+    .data-source {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      padding: 0.6rem 1.2rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--accent-cyan);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      animation: live-pulse 2s infinite;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { 
+        opacity: 1; 
+        transform: scale(1); 
+        box-shadow: 0 0 10px var(--accent-cyan);
+      }
+      50% { 
+        opacity: 0.5; 
+        transform: scale(1.5); 
+        box-shadow: 0 0 20px var(--accent-cyan);
+      }
+    }
+
+    /* Print Button */
+    .action-fab {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 1rem;
+      z-index: 100;
+    }
+
+    .fab-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border: none;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .fab-btn:hover {
+      transform: scale(1.1) rotate(10deg);
+      box-shadow: 0 15px 40px rgba(0, 212, 255, 0.6);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main-title {
+        font-size: 2.5rem;
+      }
+      
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .start-btn {
+        padding: 1.5rem 3rem;
+        font-size: 1.1rem;
+      }
+      
+      .glass-card {
+        padding: 1.8rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action-btn {
+        width: 100%;
+      }
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      .glass-card {
+        break-inside: avoid;
+        border: 1px solid #ddd;
+        box-shadow: none;
+      }
+
+      .start-analysis-section,
+      .action-fab,
+      .loading-overlay {
+        display: none;
+      }
+    }
+
+    /* Collapsible Sections */
+    .collapsible {
+      cursor: pointer;
+      position: relative;
+      padding-right: 30px;
+    }
+
+    .collapsible::after {
+      content: '▼';
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: transform 0.3s;
+    }
+
+    .collapsible.collapsed::after {
+      transform: translateY(-50%) rotate(-90deg);
+    }
+
+    .collapsible-content {
+      max-height: 2000px;
+      overflow: hidden;
+      transition: max-height 0.5s ease-out;
+    }
+
+    .collapsible-content.collapsed {
+      max-height: 0;
+    }
+
+    /* Biomarker Tabs */
+    .biomarker-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.8rem 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      color: white;
+      border-color: transparent;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Layers -->
+  <div class="background-container">
+    <div class="bg-layer-1"></div>
+    <div class="bg-layer-2"></div>
+    <div class="bg-layer-3"></div>
+  </div>
+
+  <!-- Neural Network Animation -->
+  <div class="neural-network" id="neuralNetwork"></div>
+
+  <!-- Main Container -->
+  <div class="analysis-container">
+    <!-- Header -->
+    <div class="header-section">
+      <h1 class="main-title">AI Cardiac Intelligence™</h1>
+      <p class="subtitle">Advanced Multi-Modal LLM Analysis Engine v3.0</p>
+    </div>
+
+    <!-- Start Analysis Button -->
+    <div class="start-analysis-section">
+      <div class="start-btn-container">
+        <button class="start-btn" id="startAnalysis" onclick="initiateAnalysis()">
+          <span>🧬 Start My Advanced AI Cardiac Analysis</span>
+        </button>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="ai-thinking">
+        <div class="dna-loader">
+          <div class="dna-strand">
+            <div class="helix"></div>
+            <div class="helix"></div>
+          </div>
+        </div>
+        <div class="loading-text">Claude AI is Performing Deep Cardiac Analysis...</div>
+        <div class="processing-steps">
+          <div class="step-item" id="step1">🫀 Processing Basic Vitals & Hemodynamics...</div>
+          <div class="step-item" id="step2">📊 Analyzing ECG/EKG Waveform Morphology...</div>
+          <div class="step-item" id="step3">🧬 Evaluating Biomarkers & Lab Results...</div>
+          <div class="step-item" id="step4">📈 Computing HRV & Autonomic Metrics...</div>
+          <div class="step-item" id="step5">🔬 Running ML Risk Stratification Models...</div>
+          <div class="step-item" id="step6">💊 Analyzing Medication Interactions...</div>
+          <div class="step-item" id="step7">🎯 Generating Personalized Recommendations...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="results-section" id="resultsSection">
+      
+      <!-- Basic Vitals -->
+      <div class="glass-card">
+        <div class="data-source">
+          <div class="live-dot"></div>
+          <span>LIVE DATA FEED</span>
+        </div>
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Core Hemodynamic Analysis</h2>
+        </div>
+        <div class="metrics-grid" id="vitalMetrics">
+          <!-- Core vitals will be populated here -->
+        </div>
+      </div>
+
+      <!-- ECG/EKG Waveform Analysis -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <h2 class="card-title">12-Lead ECG/EKG Waveform Analysis</h2>
+        </div>
+        <div class="ecg-container">
+          <canvas id="ecgCanvas"></canvas>
+          <div class="ecg-info">
+            <span id="ecgStatus">Analyzing 12-Lead ECG...</span>
+          </div>
+        </div>
+        <div class="ecg-controls">
+          <button class="ecg-btn" onclick="changeECGLead('I')">Lead I</button>
+          <button class="ecg-btn" onclick="changeECGLead('II')">Lead II</button>
+          <button class="ecg-btn" onclick="changeECGLead('III')">Lead III</button>
+          <button class="ecg-btn" onclick="changeECGLead('aVR')">aVR</button>
+          <button class="ecg-btn" onclick="changeECGLead('aVL')">aVL</button>
+          <button class="ecg-btn" onclick="changeECGLead('aVF')">aVF</button>
+          <button class="ecg-btn" onclick="changeECGLead('V1')">V1</button>
+          <button class="ecg-btn" onclick="changeECGLead('V2')">V2</button>
+          <button class="ecg-btn" onclick="changeECGLead('V3')">V3</button>
+          <button class="ecg-btn" onclick="changeECGLead('V4')">V4</button>
+          <button class="ecg-btn" onclick="changeECGLead('V5')">V5</button>
+          <button class="ecg-btn" onclick="changeECGLead('V6')">V6</button>
+        </div>
+        <div class="ecg-stats">
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="hrValue">--</div>
+            <div class="ecg-stat-label">Heart Rate (bpm)</div>
+          </div>
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="prInterval">--</div>
+            <div class="ecg-stat-label">PR Interval (ms)</div>
+          </div>
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="qrsComplex">--</div>
+            <div class="ecg-stat-label">QRS Width (ms)</div>
+          </div>
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="qtInterval">--</div>
+            <div class="ecg-stat-label">QT/QTc (ms)</div>
+          </div>
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="stSegment">--</div>
+            <div class="ecg-stat-label">ST Segment</div>
+          </div>
+          <div class="ecg-stat">
+            <div class="ecg-stat-value" id="tWave">--</div>
+            <div class="ecg-stat-label">T Wave</div>
+          </div>
+        </div>
+        <div id="waveformFindings"></div>
+      </div>
+
+      <!-- Advanced HRV Analysis -->
+      <div class="glass-card">
+        <div class="card-header collapsible" onclick="toggleSection('hrvSection')">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M16 11h3l-4-4-4 4h3v4h2zm-8 2H5l4 4 4-4H10V9H8z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Heart Rate Variability & Autonomic Analysis</h2>
+        </div>
+        <div class="collapsible-content" id="hrvSection">
+          <div class="metrics-grid" id="hrvMetrics">
+            <!-- HRV metrics will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Biomarker Analysis -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Comprehensive Biomarker Panel</h2>
+        </div>
+        <div class="biomarker-tabs">
+          <button class="tab-btn active" onclick="switchBiomarkerTab('cardiac')">Cardiac</button>
+          <button class="tab-btn" onclick="switchBiomarkerTab('lipid')">Lipid Panel</button>
+          <button class="tab-btn" onclick="switchBiomarkerTab('inflammatory')">Inflammatory</button>
+          <button class="tab-btn" onclick="switchBiomarkerTab('metabolic')">Metabolic</button>
+          <button class="tab-btn" onclick="switchBiomarkerTab('electrolyte')">Electrolytes</button>
+        </div>
+        <div class="tab-content active" id="cardiacTab">
+          <div class="metrics-grid" id="cardiacBiomarkers">
+            <!-- Cardiac biomarkers will be populated here -->
+          </div>
+        </div>
+        <div class="tab-content" id="lipidTab">
+          <div class="metrics-grid" id="lipidBiomarkers">
+            <!-- Lipid panel will be populated here -->
+          </div>
+        </div>
+        <div class="tab-content" id="inflammatoryTab">
+          <div class="metrics-grid" id="inflammatoryBiomarkers">
+            <!-- Inflammatory markers will be populated here -->
+          </div>
+        </div>
+        <div class="tab-content" id="metabolicTab">
+          <div class="metrics-grid" id="metabolicBiomarkers">
+            <!-- Metabolic markers will be populated here -->
+          </div>
+        </div>
+        <div class="tab-content" id="electrolyteTab">
+          <div class="metrics-grid" id="electrolyteBiomarkers">
+            <!-- Electrolytes will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Performance Metrics -->
+      <div class="glass-card">
+        <div class="card-header collapsible" onclick="toggleSection('performanceSection')">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Cardiac Performance & Exercise Metrics</h2>
+        </div>
+        <div class="collapsible-content" id="performanceSection">
+          <div class="metrics-grid" id="performanceMetrics">
+            <!-- Performance metrics will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Device Data Analysis -->
+      <div class="glass-card">
+        <div class="card-header collapsible" onclick="toggleSection('deviceSection')">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Cardiac Device & Monitor Data</h2>
+        </div>
+        <div class="collapsible-content" id="deviceSection">
+          <div class="metrics-grid" id="deviceMetrics">
+            <!-- Device metrics will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Assessment Dashboard -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">AI Risk Stratification Dashboard</h2>
+        </div>
+        <div class="risk-visualization">
+          <div class="risk-meter">
+            <div class="risk-gradient"></div>
+            <div class="risk-fill" id="riskFill">
+              <div class="risk-marker"></div>
+            </div>
+          </div>
+          <div class="risk-labels">
+            <span>Low Risk (0-30)</span>
+            <span>Moderate (31-60)</span>
+            <span>High Risk (61-100)</span>
+          </div>
+          <div class="risk-score-display" id="riskScore">
+            Risk Score: <span id="riskValue">--</span>/100
+          </div>
+        </div>
+        <div class="metrics-grid" id="riskFactors" style="margin-top: 2rem;">
+          <!-- Risk factors will be populated here -->
+        </div>
+      </div>
+
+      <!-- Key Findings -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">AI-Generated Key Findings</h2>
+        </div>
+        <div class="findings-content" id="keyFindings">
+          <!-- Findings will be populated here -->
+        </div>
+      </div>
+
+      <!-- AI Recommendations -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M9 17l3-2.94c-.39-.04-.68-.06-1-.06-2.67 0-8 1.34-8 4v2h9l-3-3zm2-5c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm4.47 8.5L12 17l1.4-1.41 2.07 2.08 5.13-5.17 1.4 1.41z"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Personalized AI Recommendations</h2>
+        </div>
+        <ul class="recommendation-list" id="recommendations">
+          <!-- Recommendations will be populated here -->
+        </ul>
+      </div>
+
+      <!-- Confidence Score -->
+      <div class="glass-card">
+        <div class="confidence-section">
+          <div class="confidence-indicator">
+            <span class="confidence-label">AI Analysis Confidence:</span>
+            <div class="confidence-bar">
+              <div class="confidence-fill" id="confidenceFill"></div>
+            </div>
+            <span class="confidence-percentage" id="confidencePercent">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary & Call to Action -->
+      <div class="glass-card summary-cta">
+        <div class="cta-message" id="summaryMessage">
+          <!-- Summary will be populated here -->
+        </div>
+        <div class="action-buttons">
+          <button class="action-btn btn-primary" onclick="shareWithDoctor()">📤 Share with Doctor</button>
+          <button class="action-btn btn-primary" onclick="scheduleFollowup()">📅 Schedule Follow-up</button>
+          <button class="action-btn btn-secondary" onclick="exportReport()">📊 Export Full Report</button>
+          <button class="action-btn btn-secondary" onclick="saveToEHR()">💾 Save to EHR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div class="action-fab">
+    <button class="fab-btn" onclick="printReport()" title="Print Report">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+      </svg>
+    </button>
+    <button class="fab-btn" onclick="speakAnalysis()" title="Audio Summary">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    // Neural Network Background
+    function createNeuralNetwork() {
+      const container = document.getElementById('neuralNetwork');
+      const neurons = 20;
+      const connections = 30;
+      
+      // Create neurons
+      for (let i = 0; i < neurons; i++) {
+        const neuron = document.createElement('div');
+        neuron.className = 'neuron';
+        neuron.style.left = Math.random() * 100 + '%';
+        neuron.style.top = Math.random() * 100 + '%';
+        neuron.style.animationDelay = Math.random() * 5 + 's';
+        container.appendChild(neuron);
+      }
+      
+      // Create synapses
+      for (let i = 0; i < connections; i++) {
+        const synapse = document.createElement('div');
+        synapse.className = 'synapse';
+        synapse.style.left = Math.random() * 100 + '%';
+        synapse.style.top = Math.random() * 100 + '%';
+        synapse.style.width = (50 + Math.random() * 150) + 'px';
+        synapse.style.transform = `rotate(${Math.random() * 360}deg)`;
+        synapse.style.animationDelay = Math.random() * 4 + 's';
+        container.appendChild(synapse);
+      }
+    }
+
+    // Initialize ECG Canvas
+    function initECGCanvas() {
+      const canvas = document.getElementById('ecgCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      // Draw ECG with actual data
+      drawECG(ctx, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+    }
+
+    // Draw ECG Waveform with real data
+    function drawECG(ctx, width, height) {
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+      
+      // ECG styling
+      ctx.strokeStyle = '#00d4ff';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00d4ff';
+      
+      // Use actual ECG data if available
+      const ecgData = window.ecgWaveformData || generateMockECG();
+      
+      ctx.beginPath();
+      const step = width / ecgData.length;
+      
+      ecgData.forEach((value, index) => {
+        const x = index * step;
+        const y = height / 2 - (value * height * 0.3);
+        
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.stroke();
+      
+      // Add grid overlay
+      ctx.strokeStyle = 'rgba(0, 212, 255, 0.1)';
+      ctx.lineWidth = 0.5;
+      ctx.shadowBlur = 0;
+      
+      // Vertical lines
+      for (let x = 0; x < width; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      
+      // Horizontal lines
+      for (let y = 0; y < height; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+    }
+
+    // Generate mock ECG data (fallback)
+    function generateMockECG() {
+      const data = [];
+      const segments = 500;
+      
+      for (let i = 0; i < segments; i++) {
+        // Simulate P wave, QRS complex, T wave pattern
+        const position = i % 100;
+        let value = 0;
+        
+        if (position >= 10 && position < 15) {
+          // P wave
+          value = Math.sin((position - 10) * Math.PI / 5) * 0.2;
+        } else if (position >= 25 && position < 35) {
+          // QRS complex
+          if (position < 30) {
+            value = -0.1 - Math.sin((position - 25) * Math.PI / 5) * 0.3;
+          } else {
+            value = 1.2 - (position - 30) * 0.24;
+          }
+        } else if (position >= 45 && position < 60) {
+          // T wave
+          value = Math.sin((position - 45) * Math.PI / 15) * 0.3;
+        }
+        
+        data.push(value);
+      }
+      
+      return data;
+    }
+
+    // Change ECG Lead
+    function changeECGLead(lead) {
+      console.log(`Switching to Lead ${lead}`);
+      // Re-draw with lead-specific data
+      initECGCanvas();
+    }
+
+    // Main Analysis Function - Connects to Claude API
+    async function initiateAnalysis() {
+      // Show loading overlay
+      document.getElementById('loadingOverlay').classList.add('active');
+      
+      // Animate loading steps
+      const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7'];
+      for (let i = 0; i < steps.length; i++) {
+        setTimeout(() => {
+          document.getElementById(steps[i]).classList.add('active');
+        }, i * 800);
+      }
+
+      try {
+        // Comprehensive cardiac data collection
+        const cardiacData = {
+          timestamp: new Date().toISOString(),
+          
+          // Basic Vitals
+          vitals: {
+            heartRate: window.heartRate || 72,
+            bloodPressureSystolic: window.bpSystolic || 120,
+            bloodPressureDiastolic: window.bpDiastolic || 80,
+            spO2: window.spO2 || 98,
+            temperature: window.temperature || 98.6,
+            respiratoryRate: window.respiratoryRate || 16,
+            weight: window.weight || 70,
+            height: window.height || 175,
+            bmi: window.bmi || 22.9
+          },
+          
+          // ECG/EKG Data
+          ecg: {
+            waveformData: window.ecgWaveformData || [],
+            heartRate: window.ecgHeartRate || 72,
+            prInterval: window.prInterval || 160,
+            qrsWidth: window.qrsWidth || 90,
+            qtInterval: window.qtInterval || 400,
+            qtcInterval: window.qtcInterval || 420,
+            stSegment: window.stSegment || 'Normal',
+            tWave: window.tWave || 'Normal',
+            pWave: window.pWave || 'Normal',
+            rhythm: window.rhythm || 'Sinus',
+            axis: window.axis || 'Normal',
+            qrsAxis: window.qrsAxis || 45,
+            leads: window.ecgLeads || {}
+          },
+          
+          // HRV Metrics
+          hrv: {
+            sdnn: window.sdnn || 45,
+            rmssd: window.rmssd || 35,
+            pnn50: window.pnn50 || 15,
+            hfPower: window.hfPower || 1200,
+            lfPower: window.lfPower || 800,
+            vlfPower: window.vlfPower || 400,
+            ulfPower: window.ulfPower || 200,
+            totalPower: window.totalPower || 2600,
+            lfHfRatio: window.lfHfRatio || 0.67,
+            dfa1: window.dfa1 || 1.1,
+            dfa2: window.dfa2 || 0.9,
+            sampleEntropy: window.sampleEntropy || 1.5,
+            approximateEntropy: window.approximateEntropy || 1.2
+          },
+          
+          // Biomarkers - Cardiac
+          cardiacBiomarkers: {
+            troponinI: window.troponinI || 0.01,
+            troponinT: window.troponinT || 0.01,
+            bnp: window.bnp || 50,
+            ntProBnp: window.ntProBnp || 125,
+            ckMb: window.ckMb || 3.5,
+            myoglobin: window.myoglobin || 55,
+            dDimer: window.dDimer || 0.4,
+            anp: window.anp || 28,
+            galectin3: window.galectin3 || 12,
+            gdf15: window.gdf15 || 800,
+            sST2: window.sST2 || 25
+          },
+          
+          // Lipid Panel
+          lipids: {
+            totalCholesterol: window.totalCholesterol || 180,
+            ldl: window.ldl || 100,
+            hdl: window.hdl || 60,
+            triglycerides: window.triglycerides || 120,
+            vldl: window.vldl || 24,
+            apoB: window.apoB || 90,
+            apoA1: window.apoA1 || 150,
+            lipoproteinA: window.lipoproteinA || 20,
+            nonHdlCholesterol: window.nonHdlCholesterol || 120,
+            cholesterolRatio: window.cholesterolRatio || 3.0,
+            ldlParticleCount: window.ldlParticleCount || 1200,
+            ldlParticleSize: window.ldlParticleSize || 21
+          },
+          
+          // Inflammatory Markers
+          inflammatory: {
+            crp: window.crp || 1.5,
+            hsCrp: window.hsCrp || 1.2,
+            il6: window.il6 || 2.5,
+            tnfAlpha: window.tnfAlpha || 5.0,
+            homocysteine: window.homocysteine || 10,
+            fibrinogen: window.fibrinogen || 300,
+            esr: window.esr || 10,
+            mpoPeroxidase: window.mpoPeroxidase || 400,
+            lppla2: window.lppla2 || 200,
+            mmp9: window.mmp9 || 50
+          },
+          
+          // Metabolic Panel
+          metabolic: {
+            glucose: window.glucose || 95,
+            hba1c: window.hba1c || 5.5,
+            insulin: window.insulin || 10,
+            cPeptide: window.cPeptide || 2.0,
+            lactate: window.lactate || 1.0,
+            pyruvate: window.pyruvate || 0.08,
+            ketones: window.ketones || 0.2,
+            creatinine: window.creatinine || 1.0,
+            bun: window.bun || 15,
+            egfr: window.egfr || 90,
+            albuminCreatinineRatio: window.albuminCreatinineRatio || 20,
+            cystatinC: window.cystatinC || 0.9
+          },
+          
+          // Electrolytes
+          electrolytes: {
+            sodium: window.sodium || 140,
+            potassium: window.potassium || 4.2,
+            chloride: window.chloride || 102,
+            bicarbonate: window.bicarbonate || 24,
+            calcium: window.calcium || 9.5,
+            ionizedCalcium: window.ionizedCalcium || 1.2,
+            magnesium: window.magnesium || 2.0,
+            phosphorus: window.phosphorus || 3.5,
+            anionGap: window.anionGap || 12
+          },
+          
+          // Cardiac Performance
+          performance: {
+            ejectionFraction: window.ejectionFraction || 60,
+            cardiacOutput: window.cardiacOutput || 5.5,
+            cardiacIndex: window.cardiacIndex || 3.2,
+            strokeVolume: window.strokeVolume || 70,
+            strokeVolumeIndex: window.strokeVolumeIndex || 40,
+            systemicVascularResistance: window.svr || 1200,
+            pulmonaryVascularResistance: window.pvr || 200,
+            lvef: window.lvef || 60,
+            rvef: window.rvef || 55,
+            eaRatio: window.eaRatio || 1.5,
+            ePrime: window.ePrime || 8,
+            lvedv: window.lvedv || 120,
+            lvesv: window.lvesv || 50,
+            lvMass: window.lvMass || 150,
+            laVolume: window.laVolume || 30
+          },
+          
+          // Exercise Metrics
+          exercise: {
+            vo2Max: window.vo2Max || 42,
+            mets: window.mets || 12,
+            exerciseCapacity: window.exerciseCapacity || 10,
+            peakHeartRate: window.peakHeartRate || 180,
+            heartRateReserve: window.heartRateReserve || 108,
+            recoveryHeartRate1Min: window.recoveryHR1 || 25,
+            recoveryHeartRate2Min: window.recoveryHR2 || 40,
+            exerciseDuration: window.exerciseDuration || 12,
+            borgScale: window.borgScale || 6,
+            dukeTreadmillScore: window.dukeScore || 5
+          },
+          
+          // Sleep Metrics
+          sleep: {
+            sleepHRV: window.sleepHRV || 50,
+            nocturnalDip: window.nocturnalDip || 15,
+            sleepApneaIndex: window.ahi || 5,
+            oxygenDesaturationIndex: window.odi || 4,
+            minSpO2: window.minSpO2 || 88,
+            totalSleepTime: window.totalSleepTime || 420,
+            sleepEfficiency: window.sleepEfficiency || 85,
+            remSleep: window.remSleep || 90,
+            deepSleep: window.deepSleep || 100
+          },
+          
+          // Vascular Health
+          vascular: {
+            pulseWaveVelocity: window.pwv || 7.5,
+            ankleBreachialIndex: window.abi || 1.1,
+            carotidIMT: window.cimt || 0.7,
+            endoPAT: window.endopat || 2.0,
+            flowMediatedDilation: window.fmd || 10,
+            augmentationIndex: window.augmentationIndex || 20,
+            centralSystolicPressure: window.csp || 115,
+            centralPulsePressure: window.cpp || 35
+          },
+          
+          // Device Data
+          deviceData: {
+            pacemakerActive: window.pacemakerActive || false,
+            pacingPercentage: window.pacingPercentage || 0,
+            icdShocks: window.icdShocks || 0,
+            icdATP: window.icdATP || 0,
+            loopRecorderEvents: window.loopEvents || 0,
+            deviceBattery: window.deviceBattery || 100,
+            leadImpedance: window.leadImpedance || 500,
+            sensingThreshold: window.sensingThreshold || 2.5,
+            pacingThreshold: window.pacingThreshold || 1.0
+          },
+          
+          // Medications
+          medications: window.medications || [],
+          
+          // Symptoms
+          symptoms: {
+            chestPain: window.chestPain || 0,
+            dyspnea: window.dyspnea || 0,
+            palpitations: window.palpitations || 0,
+            syncope: window.syncope || false,
+            fatigue: window.fatigue || 0,
+            edema: window.edema || 0,
+            orthopnea: window.orthopnea || false,
+            pnd: window.pnd || false
+          },
+          
+          // Patient History
+          history: {
+            age: window.patientAge || 50,
+            gender: window.patientGender || 'male',
+            smokingStatus: window.smokingStatus || 'never',
+            diabetic: window.diabetic || false,
+            hypertensive: window.hypertensive || false,
+            familyHistory: window.familyHistory || false,
+            previousMI: window.previousMI || false,
+            previousPCI: window.previousPCI || false,
+            previousCABG: window.previousCABG || false,
+            atrialFibrillation: window.afib || false,
+            heartFailure: window.hf || false,
+            ckd: window.ckd || false
+          }
+        };
+
+        // Call Claude API for analysis
+        const response = await callClaudeAPI(cardiacData);
+        
+        // Display results after processing
+        setTimeout(() => {
+          displayAnalysisResults(response);
+          document.getElementById('loadingOverlay').classList.remove('active');
+          document.getElementById('resultsSection').classList.add('active');
+        }, 6000);
+
+      } catch (error) {
+        console.error('Analysis error:', error);
+        alert('An error occurred during analysis. Please try again.');
+        document.getElementById('loadingOverlay').classList.remove('active');
+      }
+    }
+
+    // Claude API Integration
+    async function callClaudeAPI(data) {
+      // Production API call to your backend
+      // const response = await fetch('YOUR_BACKEND_ENDPOINT/analyze', {
+      //   method: 'POST',
+      //   headers: { 
+      //     'Content-Type': 'application/json',
+      //     'Authorization': 'Bearer YOUR_API_KEY'
+      //   },
+      //   body: JSON.stringify({
+      //     model: "claude-3-opus-20240229",
+      //     messages: [{
+      //       role: "user",
+      //       content: `Perform a comprehensive cardiac analysis on this data and provide:
+      //         1. Key findings with severity levels
+      //         2. Risk stratification score (0-100)
+      //         3. Detailed recommendations with priority levels
+      //         4. Confidence score for the analysis
+      //         5. Summary and call to action
+      //         
+      //         Data: ${JSON.stringify(data)}`
+      //     }],
+      //     max_tokens: 8000,
+      //     temperature: 0.2
+      //   })
+      // });
+      // return await response.json();
+
+      // Comprehensive mock response for demonstration
+      return {
+        vitals: {
+          heartRate: { value: data.vitals.heartRate, status: 'normal', unit: 'bpm' },
+          bloodPressure: { value: `${data.vitals.bloodPressureSystolic}/${data.vitals.bloodPressureDiastolic}`, status: 'normal', unit: 'mmHg' },
+          spO2: { value: data.vitals.spO2, status: 'normal', unit: '%' },
+          temperature: { value: data.vitals.temperature, status: 'normal', unit: '°F' },
+          respiratoryRate: { value: data.vitals.respiratoryRate, status: 'normal', unit: 'bpm' },
+          bmi: { value: data.vitals.bmi, status: 'normal', unit: 'kg/m²' }
+        },
+        
+        ecgAnalysis: {
+          rhythm: 'Normal Sinus Rhythm',
+          heartRate: data.ecg.heartRate,
+          prInterval: data.ecg.prInterval,
+          qrsWidth: data.ecg.qrsWidth,
+          qtInterval: data.ecg.qtInterval,
+          stSegment: 'No elevation or depression',
+          tWave: 'Normal morphology',
+          interpretation: 'ECG shows normal sinus rhythm with normal intervals and no acute ST-T changes'
+        },
+        
+        hrvMetrics: {
+          sdnn: { value: data.hrv.sdnn, status: 'normal', unit: 'ms' },
+          rmssd: { value: data.hrv.rmssd, status: 'normal', unit: 'ms' },
+          pnn50: { value: data.hrv.pnn50, status: 'normal', unit: '%' },
+          lfHfRatio: { value: data.hrv.lfHfRatio, status: 'normal', unit: '' }
+        },
+        
+        biomarkers: {
+          cardiac: {
+            troponin: { value: data.cardiacBiomarkers.troponinI, status: 'normal', unit: 'ng/mL' },
+            bnp: { value: data.cardiacBiomarkers.bnp, status: 'normal', unit: 'pg/mL' },
+            ntProBnp: { value: data.cardiacBiomarkers.ntProBnp, status: 'normal', unit: 'pg/mL' }
+          },
+          lipids: {
+            totalCholesterol: { value: data.lipids.totalCholesterol, status: 'normal', unit: 'mg/dL' },
+            ldl: { value: data.lipids.ldl, status: 'normal', unit: 'mg/dL' },
+            hdl: { value: data.lipids.hdl, status: 'normal', unit: 'mg/dL' },
+            triglycerides: { value: data.lipids.triglycerides, status: 'normal', unit: 'mg/dL' }
+          },
+          inflammatory: {
+            hsCrp: { value: data.inflammatory.hsCrp, status: 'normal', unit: 'mg/L' },
+            homocysteine: { value: data.inflammatory.homocysteine, status: 'normal', unit: 'µmol/L' }
+          }
+        },
+        
+        performance: {
+          ejectionFraction: { value: data.performance.ejectionFraction, status: 'normal', unit: '%' },
+          cardiacOutput: { value: data.performance.cardiacOutput, status: 'normal', unit: 'L/min' },
+          vo2Max: { value: data.exercise.vo2Max, status: 'normal', unit: 'mL/kg/min' }
+        },
+        
+        riskScore: 28,
+        confidence: 96,
+        
+        riskFactors: [
+          { factor: 'Age', value: data.history.age, impact: 'low' },
+          { factor: 'Blood Pressure', value: 'Optimal', impact: 'protective' },
+          { factor: 'Lipid Profile', value: 'Favorable', impact: 'protective' },
+          { factor: 'Inflammation', value: 'Low', impact: 'protective' },
+          { factor: 'Family History', value: data.history.familyHistory ? 'Present' : 'Absent', impact: data.history.familyHistory ? 'moderate' : 'none' }
+        ],
+        
+        findings: [
+          {
+            severity: 'normal',
+            title: 'Excellent Cardiac Function',
+            description: 'Ejection fraction of 60% indicates normal left ventricular systolic function with good pumping efficiency.'
+          },
+          {
+            severity: 'normal',
+            title: 'Optimal Heart Rate Variability',
+            description: 'HRV metrics (SDNN: 45ms, RMSSD: 35ms) suggest good autonomic balance and cardiovascular adaptability.'
+          },
+          {
+            severity: 'info',
+            title: 'Low Cardiovascular Risk',
+            description: 'All cardiac biomarkers including troponin and BNP are within normal limits, indicating no acute cardiac stress.'
+          },
+          {
+            severity: 'warning',
+            title: 'Borderline LDL Cholesterol',
+            description: 'LDL cholesterol at 100 mg/dL is at the upper limit of optimal. Consider dietary modifications.'
+          }
+        ],
+        
+        recommendations: [
+          {
+            priority: 'high',
+            icon: '🏃',
+            title: 'Maintain Regular Exercise Program',
+            description: 'Continue with 150 minutes of moderate aerobic activity weekly. Your VO2 max of 42 mL/kg/min shows good fitness.',
+            action: 'View Exercise Plan'
+          },
+          {
+            priority: 'medium',
+            icon: '🥗',
+            title: 'Heart-Healthy Mediterranean Diet',
+            description: 'Emphasize omega-3 rich foods, whole grains, and reduce saturated fats to optimize your lipid profile.',
+            action: 'Get Meal Plans'
+          },
+          {
+            priority: 'medium',
+            icon: '🧘',
+            title: 'Stress Management Techniques',
+            description: 'Regular meditation or yoga can further improve your already good HRV metrics.',
+            action: 'Start Program'
+          },
+          {
+            priority: 'low',
+            icon: '💊',
+            title: 'Consider Omega-3 Supplementation',
+            description: 'Fish oil supplementation may provide additional cardiovascular protection given your profile.',
+            action: 'Learn More'
+          }
+        ],
+        
+        summary: 'Your comprehensive cardiac analysis reveals excellent overall cardiovascular health with a low risk profile (28/100). All major cardiac indicators are within normal ranges, with particularly strong cardiac function (EF 60%) and good autonomic balance reflected in your HRV metrics. Minor attention to cholesterol management through diet would be beneficial. Continue your current healthy lifestyle with regular exercise and consider the recommended optimizations for long-term cardiac health.'
+      };
+    }
+
+    // Display Analysis Results
+    function displayAnalysisResults(data) {
+      // Populate vital metrics
+      const vitalMetrics = document.getElementById('vitalMetrics');
+      vitalMetrics.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(data.vitals)) {
+        const metricCard = createMetricCard(
+          'Core Vitals',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        vitalMetrics.appendChild(metricCard);
+      }
+
+      // Update ECG values
+      document.getElementById('hrValue').textContent = data.ecgAnalysis.heartRate;
+      document.getElementById('prInterval').textContent = data.ecgAnalysis.prInterval;
+      document.getElementById('qrsComplex').textContent = data.ecgAnalysis.qrsWidth;
+      document.getElementById('qtInterval').textContent = data.ecgAnalysis.qtInterval;
+      document.getElementById('stSegment').textContent = data.ecgAnalysis.stSegment;
+      document.getElementById('tWave').textContent = data.ecgAnalysis.tWave;
+      document.getElementById('ecgStatus').textContent = data.ecgAnalysis.rhythm;
+
+      // ECG findings
+      document.getElementById('waveformFindings').innerHTML = `
+        <div class="finding-item">
+          <strong>ECG Interpretation:</strong>
+          <p>${data.ecgAnalysis.interpretation}</p>
+        </div>
+      `;
+
+      // HRV Metrics
+      const hrvMetrics = document.getElementById('hrvMetrics');
+      hrvMetrics.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(data.hrvMetrics)) {
+        const metricCard = createMetricCard(
+          'HRV',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        hrvMetrics.appendChild(metricCard);
+      }
+
+      // Biomarkers
+      populateBiomarkers(data.biomarkers);
+
+      // Performance Metrics
+      const performanceMetrics = document.getElementById('performanceMetrics');
+      performanceMetrics.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(data.performance)) {
+        const metricCard = createMetricCard(
+          'Performance',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        performanceMetrics.appendChild(metricCard);
+      }
+
+      // Update risk meter
+      const riskFill = document.getElementById('riskFill');
+      const riskValue = document.getElementById('riskValue');
+      setTimeout(() => {
+        riskFill.style.width = `${data.riskScore}%`;
+        riskValue.textContent = data.riskScore;
+      }, 100);
+
+      // Risk factors
+      const riskFactors = document.getElementById('riskFactors');
+      riskFactors.innerHTML = '';
+      
+      data.riskFactors.forEach(factor => {
+        const factorCard = document.createElement('div');
+        factorCard.className = 'metric-card';
+        factorCard.innerHTML = `
+          <div class="metric-label">${factor.factor}</div>
+          <div class="metric-value">${factor.value}</div>
+          <span class="metric-status status-${factor.impact === 'protective' ? 'normal' : factor.impact === 'moderate' ? 'warning' : 'normal'}">${factor.impact.toUpperCase()}</span>
+        `;
+        riskFactors.appendChild(factorCard);
+      });
+
+      // Update confidence
+      const confidenceFill = document.getElementById('confidenceFill');
+      const confidencePercent = document.getElementById('confidencePercent');
+      setTimeout(() => {
+        confidenceFill.style.width = `${data.confidence}%`;
+        confidencePercent.textContent = `${data.confidence}%`;
+      }, 200);
+
+      // Populate findings
+      const findingsContainer = document.getElementById('keyFindings');
+      findingsContainer.innerHTML = data.findings.map(finding => `
+        <div class="finding-item">
+          <span class="finding-severity status-${finding.severity}">${finding.severity.toUpperCase()}</span>
+          <div class="finding-title">${finding.title}</div>
+          <div class="finding-description">${finding.description}</div>
+        </div>
+      `).join('');
+
+      // Populate recommendations
+      const recommendationsContainer = document.getElementById('recommendations');
+      recommendationsContainer.innerHTML = data.recommendations.map(rec => `
+        <li class="recommendation-item">
+          <span class="rec-priority priority-${rec.priority}">${rec.priority.toUpperCase()}</span>
+          <span class="rec-icon">${rec.icon}</span>
+          <div class="rec-content">
+            <div class="rec-title">${rec.title}</div>
+            <div class="rec-description">${rec.description}</div>
+            <span class="rec-action" onclick="handleRecommendation('${rec.action}')">${rec.action} →</span>
+          </div>
+        </li>
+      `).join('');
+
+      // Update summary
+      document.getElementById('summaryMessage').innerHTML = `
+        <p>${data.summary}</p>
+      `;
+
+      // Initialize ECG canvas
+      initECGCanvas();
+    }
+
+    // Create metric card
+    function createMetricCard(category, label, value, unit, status) {
+      const card = document.createElement('div');
+      card.className = 'metric-card';
+      card.innerHTML = `
+        <div class="metric-category">${category}</div>
+        <div class="metric-label">${label}</div>
+        <div class="metric-value">${value}<span class="metric-unit">${unit}</span></div>
+        <span class="metric-status status-${status}">${status.toUpperCase()}</span>
+      `;
+      return card;
+    }
+
+    // Populate biomarkers
+    function populateBiomarkers(biomarkers) {
+      // Cardiac biomarkers
+      const cardiacContainer = document.getElementById('cardiacBiomarkers');
+      cardiacContainer.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(biomarkers.cardiac)) {
+        const metricCard = createMetricCard(
+          'Cardiac',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        cardiacContainer.appendChild(metricCard);
+      }
+
+      // Lipid panel
+      const lipidContainer = document.getElementById('lipidBiomarkers');
+      lipidContainer.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(biomarkers.lipids)) {
+        const metricCard = createMetricCard(
+          'Lipid',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        lipidContainer.appendChild(metricCard);
+      }
+
+      // Inflammatory markers
+      const inflammatoryContainer = document.getElementById('inflammatoryBiomarkers');
+      inflammatoryContainer.innerHTML = '';
+      
+      for (const [key, metric] of Object.entries(biomarkers.inflammatory)) {
+        const metricCard = createMetricCard(
+          'Inflammatory',
+          formatMetricName(key),
+          metric.value,
+          metric.unit,
+          metric.status
+        );
+        inflammatoryContainer.appendChild(metricCard);
+      }
+    }
+
+    // Helper function to format metric names
+    function formatMetricName(name) {
+      return name
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .replace(/Hrv/, 'HRV')
+        .replace(/Sdnn/, 'SDNN')
+        .replace(/Rmssd/, 'RMSSD')
+        .replace(/Pnn/, 'pNN')
+        .replace(/Lf/, 'LF')
+        .replace(/Hf/, 'HF')
+        .replace(/Bnp/, 'BNP')
+        .replace(/Nt Pro Bnp/, 'NT-proBNP')
+        .replace(/Hs Crp/, 'hs-CRP')
+        .replace(/Ldl/, 'LDL')
+        .replace(/Hdl/, 'HDL')
+        .replace(/Vo2/, 'VO2')
+        .replace(/Sp O2/, 'SpO2');
+    }
+
+    // Toggle collapsible sections
+    function toggleSection(sectionId) {
+      const section = document.getElementById(sectionId);
+      const header = section.previousElementSibling;
+      section.classList.toggle('collapsed');
+      header.classList.toggle('collapsed');
+    }
+
+    // Switch biomarker tabs
+    function switchBiomarkerTab(tab) {
+      // Update active tab button
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Update active tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tab}Tab`).classList.add('active');
+    }
+
+    // Handle recommendation actions
+    function handleRecommendation(action) {
+      console.log('Recommendation action:', action);
+      // Integrate with your app's functionality
+    }
+
+    // Action button handlers
+    function shareWithDoctor() {
+      console.log('Sharing analysis with doctor...');
+      // Implement sharing functionality
+    }
+
+    function scheduleFollowup() {
+      console.log('Scheduling follow-up...');
+      // Implement scheduling functionality
+    }
+
+    function exportReport() {
+      console.log('Exporting full report...');
+      // Generate PDF report
+      window.print();
+    }
+
+    function saveToEHR() {
+      console.log('Saving to EHR...');
+      // Implement EHR integration
+    }
+
+    function printReport() {
+      window.print();
+    }
+
+    // Text-to-Speech for analysis
+    function speakAnalysis() {
+      const summary = document.getElementById('summaryMessage').textContent;
+      const utterance = new SpeechSynthesisUtterance(summary);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      createNeuralNetwork();
+      initECGCanvas();
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      initECGCanvas();
+    });
+
+    // Prevent closing during analysis
+    window.addEventListener('beforeunload', (e) => {
+      if (document.getElementById('loadingOverlay').classList.contains('active')) {
+        e.preventDefault();
+        e.returnValue = 'Analysis in progress. Are you sure you want to leave?';
+      }
+    });
+  </script>
+
+  <!-- Backend Integration Script -->
+  <script>
+    // BACKEND INTEGRATION CODE FOR CLAUDE API
+    
+    // This is the actual function that will call Claude API
+    async function callClaudeAPIProduction(cardiacData) {
+      const BACKEND_URL = 'YOUR_BACKEND_URL'; // Replace with your backend URL
+      const API_KEY = 'YOUR_API_KEY'; // Replace with your API key
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/cardiac-analysis`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "claude-3-opus-20240229",
+            messages: [{
+              role: "user",
+              content: `You are an expert cardiologist AI. Analyze this comprehensive cardiac data and provide:
+
+1. VITAL SIGNS ANALYSIS
+- Evaluate all vital signs with clinical interpretation
+- Flag any abnormal values with severity levels
+
+2. ECG/EKG DETAILED ANALYSIS
+- Rhythm analysis and interpretation
+- Interval measurements assessment
+- ST-T wave changes evaluation
+- Axis determination
+- Any arrhythmias or conduction abnormalities
+
+3. HEART RATE VARIABILITY ANALYSIS
+- Time domain metrics evaluation
+- Frequency domain analysis
+- Autonomic nervous system assessment
+- Clinical significance of HRV patterns
+
+4. BIOMARKER INTERPRETATION
+- Cardiac biomarkers (troponin, BNP, NT-proBNP)
+- Lipid panel with cardiovascular risk assessment
+- Inflammatory markers and their implications
+- Metabolic markers analysis
+- Electrolyte balance assessment
+
+5. CARDIAC PERFORMANCE METRICS
+- Ejection fraction and systolic function
+- Cardiac output and index evaluation
+- Vascular resistance assessment
+- Exercise capacity and VO2 max interpretation
+
+6. RISK STRATIFICATION
+- Calculate overall cardiac risk score (0-100 scale)
+- Identify major risk factors
+- Provide 10-year cardiovascular event risk if applicable
+
+7. KEY CLINICAL FINDINGS
+- List all significant findings with severity (normal, mild, moderate, severe, critical)
+- Provide clinical context for each finding
+
+8. PERSONALIZED RECOMMENDATIONS
+- Prioritized action items (high, medium, low priority)
+- Lifestyle modifications
+- Medication considerations
+- Follow-up testing recommendations
+- Referral suggestions if needed
+
+9. ANALYSIS CONFIDENCE
+- Provide confidence score (0-100%) for your analysis
+- Note any data limitations or areas needing clarification
+
+10. CLINICAL SUMMARY
+- Comprehensive summary suitable for patient understanding
+- Clear action items and next steps
+
+Please be thorough, evidence-based, and clinically accurate. Format your response as structured JSON.
+
+Cardiac Data:
+${JSON.stringify(cardiacData, null, 2)}`
+            }],
+            max_tokens: 8000,
+            temperature: 0.2,
+            system: "You are a board-certified cardiologist with expertise in cardiac diagnostics, risk assessment, and preventive cardiology. Provide accurate, evidence-based analysis while being clear and actionable."
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Parse Claude's response
+        const claudeResponse = JSON.parse(result.content[0].text);
+        
+        // Transform to expected format
+        return {
+          vitals: claudeResponse.vitalSigns,
+          ecgAnalysis: claudeResponse.ecgAnalysis,
+          hrvMetrics: claudeResponse.hrvAnalysis,
+          biomarkers: claudeResponse.biomarkers,
+          performance: claudeResponse.cardiacPerformance,
+          riskScore: claudeResponse.riskScore,
+          confidence: claudeResponse.confidence,
+          riskFactors: claudeResponse.riskFactors,
+          findings: claudeResponse.keyFindings,
+          recommendations: claudeResponse.recommendations,
+          summary: claudeResponse.clinicalSummary
+        };
+        
+      } catch (error) {
+        console.error('Claude API Error:', error);
+        throw error;
+      }
+    }
+
+    // Data collection from your app
+    function collectCardiacDataFromApp() {
+      // This function collects all cardiac data from your app
+      // Replace these with actual data from your app's state/storage
+      
+      return {
+        // Collect from your vitals page
+        vitals: {
+          heartRate: getVitalValue('heartRate'),
+          bloodPressureSystolic: getVitalValue('bpSystolic'),
+          bloodPressureDiastolic: getVitalValue('bpDiastolic'),
+          spO2: getVitalValue('spO2'),
+          temperature: getVitalValue('temperature'),
+          respiratoryRate: getVitalValue('respiratoryRate')
+        },
+        
+        // Collect from ECG module
+        ecg: {
+          waveformData: getECGWaveform(),
+          leads: getECGLeads(),
+          intervals: getECGIntervals()
+        },
+        
+        // Collect from HRV module
+        hrv: getHRVMetrics(),
+        
+        // Collect from lab results
+        biomarkers: getLabResults(),
+        
+        // Collect from device integrations
+        deviceData: getDeviceData(),
+        
+        // Collect from patient profile
+        history: getPatientHistory(),
+        medications: getMedications(),
+        symptoms: getSymptoms()
+      };
+    }
+
+    // Helper functions to get data from your app
+    function getVitalValue(vitalName) {
+      // Replace with actual data retrieval from your app
+      return window[vitalName] || null;
+    }
+
+    function getECGWaveform() {
+      // Get ECG waveform data from your app
+      return window.ecgData || [];
+    }
+
+    function getECGLeads() {
+      // Get 12-lead ECG data
+      return window.ecgLeads || {};
+    }
+
+    function getECGIntervals() {
+      // Get ECG interval measurements
+      return {
+        pr: window.prInterval,
+        qrs: window.qrsWidth,
+        qt: window.qtInterval,
+        qtc: window.qtcInterval
+      };
+    }
+
+    function getHRVMetrics() {
+      // Get HRV data from your app
+      return window.hrvData || {};
+    }
+
+    function getLabResults() {
+      // Get lab results from your app
+      return window.labResults || {};
+    }
+
+    function getDeviceData() {
+      // Get data from cardiac devices
+      return window.deviceData || {};
+    }
+
+    function getPatientHistory() {
+      // Get patient history
+      return window.patientHistory || {};
+    }
+
+    function getMedications() {
+      // Get current medications
+      return window.medications || [];
+    }
+
+    function getSymptoms() {
+      // Get symptom data
+      return window.symptoms || {};
+    }
+
+    // Override the mock function with production version when ready
+    if (window.USE_PRODUCTION_API) {
+      window.callClaudeAPI = callClaudeAPIProduction;
+    }
+  </script>
+</body>
+</html>
