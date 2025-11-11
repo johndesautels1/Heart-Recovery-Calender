@@ -74,6 +74,7 @@ class HabitLog extends Model<HabitLogAttributes, HabitLogCreationAttributes> imp
         modelName: 'HabitLog',
         tableName: 'habit_logs',
         timestamps: true,
+        underscored: true,
         indexes: [
           {
             fields: ['habitId'],

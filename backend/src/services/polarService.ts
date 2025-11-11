@@ -321,28 +321,38 @@ export async function syncPolarData(
 
         // Parse Polar timestamps (format: "2025-11-08T19:50:19" without Z suffix)
         // Add Z to indicate UTC time
-        if (!exercise['start-time'] || !exercise['stop-time']) {
-          console.error(`[POLAR-SYNC] Missing timestamps for exercise ${exercise.id}`);
+        if (!exercise.start_time) {
+          console.error(`[POLAR-SYNC] Missing start_time for exercise ${exercise.id}`);
           recordsSkipped++;
           continue;
         }
 
-        const startTime = exercise['start-time'].includes('Z')
-          ? exercise['start-time']
-          : exercise['start-time'] + 'Z';
-        const stopTime = exercise['stop-time'].includes('Z')
-          ? exercise['stop-time']
-          : exercise['stop-time'] + 'Z';
+        const startTime = exercise.start_time.includes('Z')
+          ? exercise.start_time
+          : exercise.start_time + 'Z';
+
+        // Calculate stop time from start time + duration if not provided
+        let stopTime: string;
+        if (exercise.stop_time) {
+          stopTime = exercise.stop_time.includes('Z')
+            ? exercise.stop_time
+            : exercise.stop_time + 'Z';
+        } else {
+          // Calculate from duration (totalMinutes already calculated above)
+          const startDate = new Date(startTime);
+          const stopDate = new Date(startDate.getTime() + totalMinutes * 60 * 1000);
+          stopTime = stopDate.toISOString();
+        }
 
         // Create exercise log entry
         await ExerciseLog.create({
-          prescriptionId: 0, // Will need to be linked manually or via smart matching
+          prescriptionId: null, // Will need to be linked manually or via smart matching
           patientId: patient.id,
           completedAt: new Date(stopTime),
           startedAt: new Date(startTime),
           actualDuration: totalMinutes,
-          duringHeartRateAvg: exercise['heart-rate']?.average,
-          duringHeartRateMax: exercise['heart-rate']?.maximum,
+          duringHeartRateAvg: exercise.heart_rate?.average,
+          duringHeartRateMax: exercise.heart_rate?.maximum,
           caloriesBurned: exercise.calories,
           distanceMiles: exercise.distance ? exercise.distance / 1609.34 : undefined, // Convert meters to miles
           dataSource: 'polar',
@@ -357,12 +367,12 @@ export async function syncPolarData(
         const VitalsSample = (await import('../models/VitalsSample')).default;
 
         // Create a vitals sample at exercise completion with heart rate data
-        if (exercise['heart-rate']?.average) {
+        if (exercise.heart_rate?.average) {
           try {
             await VitalsSample.create({
               userId: device.userId,
               timestamp: new Date(stopTime),
-              heartRate: exercise['heart-rate'].average,
+              heartRate: exercise.heart_rate.average,
               heartRateVariability: null, // HRV requires R-R interval data from Polar's dedicated HRV endpoint, not available in exercise summary
               source: 'device',
               deviceId: `polar_${device.id}`,

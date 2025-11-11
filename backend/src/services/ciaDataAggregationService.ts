@@ -219,11 +219,11 @@ export class CIADataAggregationService {
     const logs = await MedicationLog.findAll({
       where: {
         userId,
-        timestamp: {
+        takenTime: {
           [Op.between]: [startDate, endDate],
         },
       },
-      order: [['timestamp', 'DESC']],
+      order: [['takenTime', 'DESC']],
       limit: 5000,
     });
 
@@ -263,11 +263,11 @@ export class CIADataAggregationService {
     const habits = await HabitLog.findAll({
       where: {
         userId,
-        date: {
+        completedAt: {
           [Op.between]: [startDate, endDate],
         },
       },
-      order: [['date', 'DESC']],
+      order: [['completedAt', 'DESC']],
     });
 
     return habits.map(h => h.toJSON());
@@ -277,11 +277,11 @@ export class CIADataAggregationService {
     const scores = await DailyScore.findAll({
       where: {
         userId,
-        date: {
+        scoreDate: {
           [Op.between]: [startDate, endDate],
         },
       },
-      order: [['date', 'DESC']],
+      order: [['scoreDate', 'DESC']],
     });
 
     return scores.map(s => s.toJSON());

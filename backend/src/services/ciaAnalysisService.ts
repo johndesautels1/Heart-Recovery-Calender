@@ -68,8 +68,15 @@ export class CIAAnalysisService {
       .map(block => (block as any).text)
       .join('\n');
 
+    // Strip markdown code blocks if present (Claude often wraps JSON in ```json ... ```)
+    let jsonText = responseText.trim();
+    const markdownMatch = jsonText.match(/```json\n?([\s\S]*?)\n?```/);
+    if (markdownMatch) {
+      jsonText = markdownMatch[1].trim();
+    }
+
     // Parse the JSON response
-    const analysis = JSON.parse(responseText);
+    const analysis = JSON.parse(jsonText);
 
     return {
       recoveryScore: analysis.recoveryScore,
