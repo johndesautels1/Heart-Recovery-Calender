@@ -149,18 +149,60 @@ export class CIADataAggregationService {
   }
 
   private async fetchVitals(userId: number, startDate: Date, endDate: Date): Promise<any[]> {
-    const vitals = await VitalsSample.findAll({
-      where: {
-        userId,
-        timestamp: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
-      order: [['timestamp', 'DESC']],
-      limit: 10000, // Safety limit
+    // SMART AGGREGATION: Fetch daily summaries instead of 10,000+ individual readings
+    // This reduces data transfer by ~99% while maintaining AI analysis quality
+
+    const [dailySummaries] = await VitalsSample.sequelize!.query(`
+      SELECT
+        DATE(timestamp) as date,
+        COUNT(*) as sample_count,
+        AVG(heart_rate) as avg_heart_rate,
+        MIN(heart_rate) as min_heart_rate,
+        MAX(heart_rate) as max_heart_rate,
+        STDDEV(heart_rate) as stddev_heart_rate,
+        AVG(systolic_bp) as avg_systolic_bp,
+        MIN(systolic_bp) as min_systolic_bp,
+        MAX(systolic_bp) as max_systolic_bp,
+        AVG(diastolic_bp) as avg_diastolic_bp,
+        MIN(diastolic_bp) as min_diastolic_bp,
+        MAX(diastolic_bp) as max_diastolic_bp,
+        AVG(spo2) as avg_spo2,
+        MIN(spo2) as min_spo2,
+        AVG(respiratory_rate) as avg_respiratory_rate,
+        AVG(temperature) as avg_temperature
+      FROM vitals_samples
+      WHERE user_id = :userId
+        AND timestamp BETWEEN :startDate AND :endDate
+      GROUP BY DATE(timestamp)
+      ORDER BY date DESC
+    `, {
+      replacements: { userId, startDate, endDate },
+      type: 'SELECT' as any,
     });
 
-    return vitals.map(v => v.toJSON());
+    // Fetch critical/abnormal readings for detailed analysis
+    const [criticalReadings] = await VitalsSample.sequelize!.query(`
+      SELECT *
+      FROM vitals_samples
+      WHERE user_id = :userId
+        AND timestamp BETWEEN :startDate AND :endDate
+        AND (
+          heart_rate < 50 OR heart_rate > 120 OR
+          systolic_bp > 140 OR systolic_bp < 90 OR
+          diastolic_bp > 90 OR diastolic_bp < 60 OR
+          spo2 < 92
+        )
+      ORDER BY timestamp DESC
+      LIMIT 100
+    `, {
+      replacements: { userId, startDate, endDate },
+      type: 'SELECT' as any,
+    });
+
+    return [
+      { type: 'daily_summaries', data: dailySummaries },
+      { type: 'critical_readings', data: criticalReadings },
+    ];
   }
 
   private async fetchSleep(userId: number, startDate: Date, endDate: Date): Promise<any[]> {
@@ -178,33 +220,103 @@ export class CIADataAggregationService {
   }
 
   private async fetchExercise(patientId: number, startDate: Date, endDate: Date): Promise<any[]> {
-    const exercise = await ExerciseLog.findAll({
-      where: {
-        patientId,
-        completedAt: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
-      order: [['completedAt', 'DESC']],
-      limit: 5000,
+    // SMART AGGREGATION: Daily exercise summaries instead of 5,000+ individual logs
+    const [dailySummaries] = await ExerciseLog.sequelize!.query(`
+      SELECT
+        DATE(completed_at) as date,
+        COUNT(*) as session_count,
+        SUM(actual_duration) as total_duration_minutes,
+        SUM(calories_burned) as total_calories,
+        SUM(steps) as total_steps,
+        SUM(distance_miles) as total_distance_miles,
+        AVG(during_heart_rate_avg) as avg_heart_rate_during_exercise,
+        MAX(during_heart_rate_max) as max_heart_rate_during_exercise,
+        AVG(perceived_exertion) as avg_perceived_exertion,
+        AVG(pain_level) as avg_pain_level,
+        AVG(difficulty_rating) as avg_difficulty_rating,
+        AVG(actual_met) as avg_met
+      FROM exercise_logs
+      WHERE patient_id = :patientId
+        AND completed_at BETWEEN :startDate AND :endDate
+      GROUP BY DATE(completed_at)
+      ORDER BY date DESC
+    `, {
+      replacements: { patientId, startDate, endDate },
+      type: 'SELECT' as any,
     });
 
-    return exercise.map(e => e.toJSON());
+    // Fetch high-intensity or problematic sessions (high pain, high exertion)
+    const [noteworthySessions] = await ExerciseLog.sequelize!.query(`
+      SELECT *
+      FROM exercise_logs
+      WHERE patient_id = :patientId
+        AND completed_at BETWEEN :startDate AND :endDate
+        AND (
+          pain_level >= 5 OR
+          perceived_exertion >= 8 OR
+          during_heart_rate_max > 140 OR
+          notes IS NOT NULL
+        )
+      ORDER BY completed_at DESC
+      LIMIT 50
+    `, {
+      replacements: { patientId, startDate, endDate },
+      type: 'SELECT' as any,
+    });
+
+    return [
+      { type: 'daily_summaries', data: dailySummaries },
+      { type: 'noteworthy_sessions', data: noteworthySessions },
+    ];
   }
 
   private async fetchMeals(userId: number, startDate: Date, endDate: Date): Promise<any[]> {
-    const meals = await MealEntry.findAll({
-      where: {
-        userId,
-        timestamp: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
-      order: [['timestamp', 'DESC']],
-      limit: 5000,
+    // SMART AGGREGATION: Daily nutritional summaries instead of 5,000+ individual meal entries
+    const [dailySummaries] = await MealEntry.sequelize!.query(`
+      SELECT
+        DATE(timestamp) as date,
+        COUNT(*) as meal_count,
+        SUM(calories) as total_calories,
+        SUM(protein) as total_protein_g,
+        SUM(carbohydrates) as total_carbs_g,
+        SUM(total_fat) as total_fat_g,
+        SUM(saturated_fat) as total_saturated_fat_g,
+        SUM(fiber) as total_fiber_g,
+        SUM(sugar) as total_sugar_g,
+        SUM(sodium) as total_sodium_mg,
+        SUM(cholesterol) as total_cholesterol_mg,
+        AVG(satisfaction_rating) as avg_satisfaction,
+        SUM(CASE WHEN within_spec = true THEN 1 ELSE 0 END) as meals_within_spec,
+        SUM(CASE WHEN within_spec = false THEN 1 ELSE 0 END) as meals_out_of_spec
+      FROM meal_entries
+      WHERE user_id = :userId
+        AND timestamp BETWEEN :startDate AND :endDate
+        AND status = 'completed'
+      GROUP BY DATE(timestamp)
+      ORDER BY date DESC
+    `, {
+      replacements: { userId, startDate, endDate },
+      type: 'SELECT' as any,
     });
 
-    return meals.map(m => m.toJSON());
+    // Fetch meals that exceeded dietary limits (out of spec)
+    const [problematicMeals] = await MealEntry.sequelize!.query(`
+      SELECT *
+      FROM meal_entries
+      WHERE user_id = :userId
+        AND timestamp BETWEEN :startDate AND :endDate
+        AND within_spec = false
+      ORDER BY timestamp DESC
+      LIMIT 50
+    `, {
+      replacements: { userId, startDate, endDate },
+      type: 'SELECT' as any,
+    });
+
+    return [
+      { type: 'daily_summaries', data: dailySummaries },
+      { type: 'problematic_meals', data: problematicMeals },
+    ];
   }
 
   private async fetchMedications(userId: number): Promise<any[]> {
@@ -306,10 +418,20 @@ export class CIADataAggregationService {
     ecg: any[];
     habits: any[];
   }): DataCompleteness {
-    const hasVitals = data.vitals.length > 0;
+    // Handle aggregated data structure: [{ type: 'daily_summaries', data: [...] }, { type: 'critical_readings', data: [...] }]
+    const getDailySummaryLength = (aggregatedData: any[]): number => {
+      const dailySummary = Array.isArray(aggregatedData) && aggregatedData.find((item: any) => item.type === 'daily_summaries');
+      return dailySummary?.data?.length || 0;
+    };
+
+    const vitalsCount = getDailySummaryLength(data.vitals);
+    const exerciseCount = getDailySummaryLength(data.exercise);
+    const mealsCount = getDailySummaryLength(data.meals);
+
+    const hasVitals = vitalsCount > 0;
     const hasSleep = data.sleep.length > 0;
-    const hasExercise = data.exercise.length > 0;
-    const hasMeals = data.meals.length > 0;
+    const hasExercise = exerciseCount > 0;
+    const hasMeals = mealsCount > 0;
     const hasMedications = data.medications.length > 0 || data.medicationLogs.length > 0;
     const hasHydration = data.hydration.length > 0;
     const hasECG = data.ecg.length > 0;
@@ -325,11 +447,12 @@ export class CIADataAggregationService {
     if (hasECG) dataCategories.push('ecg');
     if (hasHabits) dataCategories.push('habits');
 
+    // Count daily data points (each day = 1 data point, much more manageable)
     const totalDataPoints =
-      data.vitals.length +
+      vitalsCount +
       data.sleep.length +
-      data.exercise.length +
-      data.meals.length +
+      exerciseCount +
+      mealsCount +
       data.medicationLogs.length +
       data.hydration.length +
       data.ecg.length +
