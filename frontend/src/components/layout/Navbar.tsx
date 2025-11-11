@@ -357,13 +357,13 @@ export function Navbar() {
                       fontFamily: '"Roboto", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
                     }}
                   >
-                    CIA
+                    CAI
                   </span>
                 </div>
 
                 {/* Subtitle - Solid Crisp Bold White with Red Accents */}
                 <span
-                  className="text-[0.65rem] tracking-wide transition-all duration-500"
+                  className="text-[0.875rem] tracking-wide transition-all duration-500"
                   style={{
                     color: '#ffffff',
                     WebkitTextStroke: '0.3px rgba(255, 255, 255, 0.8)',
@@ -377,7 +377,7 @@ export function Navbar() {
                     fontFamily: '"Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
                   }}
                 >
-                  Cardiac Intelligence Analysis
+                  Cardiac AI-Analysis
                 </span>
               </div>
 

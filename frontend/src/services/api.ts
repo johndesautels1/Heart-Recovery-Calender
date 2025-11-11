@@ -952,23 +952,33 @@ class ApiService {
    * Generate a new CIA report analyzing patient recovery progress
    * Aggregates all patient data from Day 0 through current date/90 days
    * Uses Claude AI with international medical standards (AHA/ESC/ACC)
-   * Note: 30-day rule applies - first report at 30+ days post-surgery, subsequent reports 30+ days apart
+   * Note: 30-day rule bypassed for admin/therapist (unlimited reports)
+   * @param targetUserId - Optional user ID to analyze (admin/therapist only, defaults to self)
    */
-  async generateCIAReport(): Promise<CIAReportResponse> {
-    const response = await this.api.post<CIAReportResponse>('/cia/analyze');
+  async generateCIAReport(targetUserId?: number): Promise<CIAReportResponse> {
+    const params = new URLSearchParams();
+    if (targetUserId) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+    const url = params.toString() ? `/cia/analyze?${params.toString()}` : '/cia/analyze';
+    const response = await this.api.post<CIAReportResponse>(url);
     return response.data;
   }
 
   /**
-   * Get all CIA reports for the authenticated user
+   * Get all CIA reports for the authenticated user or target user (admin/therapist only)
    * @param limit - Maximum number of reports to return (default: 50)
    * @param includeError - Include error reports in results (default: false)
+   * @param targetUserId - Optional user ID to get reports for (admin/therapist only, defaults to self)
    */
-  async getCIAReports(limit: number = 50, includeError: boolean = false): Promise<CIAReportsResponse> {
+  async getCIAReports(limit: number = 50, includeError: boolean = false, targetUserId?: number): Promise<CIAReportsResponse> {
     const params = new URLSearchParams();
     params.append('limit', limit.toString());
     if (includeError) {
       params.append('includeError', 'true');
+    }
+    if (targetUserId) {
+      params.append('targetUserId', targetUserId.toString());
     }
     const response = await this.api.get<CIAReportsResponse>(`/cia/reports?${params.toString()}`);
     return response.data;
@@ -984,11 +994,17 @@ class ApiService {
   }
 
   /**
-   * Check if user is eligible to generate a new CIA report (30-day rule)
+   * Check if user is eligible to generate a new CIA report (30-day rule bypassed for admin/therapist)
    * Returns eligibility status, reason, next eligible date, and days since surgery
+   * @param targetUserId - Optional user ID to check eligibility for (admin/therapist only, defaults to self)
    */
-  async checkCIAEligibility(): Promise<CIAEligibility> {
-    const response = await this.api.get<CIAEligibility>('/cia/eligibility');
+  async checkCIAEligibility(targetUserId?: number): Promise<CIAEligibility> {
+    const params = new URLSearchParams();
+    if (targetUserId) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+    const url = params.toString() ? `/cia/eligibility?${params.toString()}` : '/cia/eligibility';
+    const response = await this.api.get<CIAEligibility>(url);
     return response.data;
   }
 

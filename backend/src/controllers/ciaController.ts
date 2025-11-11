@@ -3,39 +3,63 @@ import CIAReport from '../models/CIAReport';
 import CIAReportComment from '../models/CIAReportComment';
 import Patient from '../models/Patient';
 import Provider from '../models/Provider';
+import User from '../models/User';
 import ciaDataAggregationService from '../services/ciaDataAggregationService';
 import ciaAnalysisService from '../services/ciaAnalysisService';
 import { Op } from 'sequelize';
 
 /**
  * POST /api/cia/analyze
- * Generate a new CIA report for the authenticated user
+ * Generate a new CIA report for the authenticated user or target user (admin/therapist only)
+ * Query param: targetUserId (optional) - for admin/therapist to analyze other patients
  */
 export const generateCIAReport = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const requestingUserId = req.user?.id;
 
-    if (!userId) {
+    if (!requestingUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Check eligibility (30-day rule)
-    const eligibility = await checkEligibility(userId);
-    if (!eligibility.eligible) {
-      return res.status(400).json({
-        error: 'Not eligible for report generation',
-        reason: eligibility.reason,
-        nextEligibleDate: eligibility.nextEligibleDate,
-      });
+    // Get requesting user
+    const requestingUser = await User.findByPk(requestingUserId);
+    if (!requestingUser) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Determine target user (self or another patient if admin/therapist)
+    const targetUserId = req.query.targetUserId
+      ? parseInt(req.query.targetUserId as string)
+      : requestingUserId;
+
+    // Check if requesting to analyze another user
+    if (targetUserId !== requestingUserId) {
+      // Only admin/therapist can analyze other users
+      if (requestingUser.role !== 'admin' && requestingUser.role !== 'therapist') {
+        return res.status(403).json({ error: 'Only admin/therapist can generate reports for other users' });
+      }
+    }
+
+    // Check eligibility (30-day rule) - bypassed for admin/therapist
+    const isAdminOrTherapist = requestingUser.role === 'admin' || requestingUser.role === 'therapist';
+    if (!isAdminOrTherapist) {
+      const eligibility = await checkEligibility(targetUserId);
+      if (!eligibility.eligible) {
+        return res.status(400).json({
+          error: 'Not eligible for report generation',
+          reason: eligibility.reason,
+          nextEligibleDate: eligibility.nextEligibleDate,
+        });
+      }
     }
 
     // Get patient profile
-    const patient = await Patient.findOne({ where: { userId } });
+    const patient = await Patient.findOne({ where: { userId: targetUserId } });
     const patientId = patient?.id || null;
 
     // Create report record with 'generating' status
     const report = await CIAReport.create({
-      userId,
+      userId: targetUserId,
       patientId,
       surgeryDate: patient?.surgeryDate || null,
       analysisStartDate: new Date(), // Will be updated after aggregation
@@ -47,8 +71,8 @@ export const generateCIAReport = async (req: Request, res: Response) => {
 
     // Aggregate patient data (async operation)
     try {
-      console.log(`[CIA] Starting data aggregation for user ${userId}, report ${report.id}`);
-      const aggregatedData = await ciaDataAggregationService.aggregatePatientData(userId);
+      console.log(`[CIA] Starting data aggregation for user ${targetUserId}, report ${report.id}`);
+      const aggregatedData = await ciaDataAggregationService.aggregatePatientData(targetUserId);
 
       // Update report with actual analysis dates
       await report.update({
@@ -113,20 +137,40 @@ export const generateCIAReport = async (req: Request, res: Response) => {
 
 /**
  * GET /api/cia/reports
- * Get all CIA reports for the authenticated user
+ * Get all CIA reports for the authenticated user or target user (admin/therapist only)
+ * Query params: limit, includeError, targetUserId (optional - for admin/therapist)
  */
 export const getCIAReports = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const requestingUserId = req.user?.id;
 
-    if (!userId) {
+    if (!requestingUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get requesting user
+    const requestingUser = await User.findByPk(requestingUserId);
+    if (!requestingUser) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Determine target user (self or another patient if admin/therapist)
+    const targetUserId = req.query.targetUserId
+      ? parseInt(req.query.targetUserId as string)
+      : requestingUserId;
+
+    // Check if requesting reports for another user
+    if (targetUserId !== requestingUserId) {
+      // Only admin/therapist can view other users' reports
+      if (requestingUser.role !== 'admin' && requestingUser.role !== 'therapist') {
+        return res.status(403).json({ error: 'Only admin/therapist can view reports for other users' });
+      }
     }
 
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const includeError = req.query.includeError === 'true';
 
-    const whereClause: any = { userId };
+    const whereClause: any = { userId: targetUserId };
     if (!includeError) {
       whereClause.status = { [Op.ne]: 'error' };
     }
@@ -242,17 +286,49 @@ export const addReportComment = async (req: Request, res: Response) => {
 
 /**
  * GET /api/cia/eligibility
- * Check if user is eligible to generate a new CIA report (30-day rule)
+ * Check if user is eligible to generate a new CIA report (30-day rule bypassed for admin/therapist)
+ * Query param: targetUserId (optional) - for admin/therapist to check other patients
  */
 export const checkReportEligibility = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const requestingUserId = req.user?.id;
 
-    if (!userId) {
+    if (!requestingUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const eligibility = await checkEligibility(userId);
+    // Get requesting user
+    const requestingUser = await User.findByPk(requestingUserId);
+    if (!requestingUser) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Determine target user (self or another patient if admin/therapist)
+    const targetUserId = req.query.targetUserId
+      ? parseInt(req.query.targetUserId as string)
+      : requestingUserId;
+
+    // Check if checking eligibility for another user
+    if (targetUserId !== requestingUserId) {
+      // Only admin/therapist can check other users' eligibility
+      if (requestingUser.role !== 'admin' && requestingUser.role !== 'therapist') {
+        return res.status(403).json({ error: 'Only admin/therapist can check eligibility for other users' });
+      }
+    }
+
+    // Admin/therapist always eligible (no 30-day rule)
+    const isAdminOrTherapist = requestingUser.role === 'admin' || requestingUser.role === 'therapist';
+    if (isAdminOrTherapist) {
+      res.json({
+        eligible: true,
+        reason: 'Admin/Therapist - unlimited report generation',
+        isUnlimited: true,
+      });
+      return;
+    }
+
+    // Check standard eligibility for patients
+    const eligibility = await checkEligibility(targetUserId);
 
     res.json(eligibility);
   } catch (error: any) {
