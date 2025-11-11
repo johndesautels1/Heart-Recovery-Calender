@@ -285,6 +285,49 @@ export const addReportComment = async (req: Request, res: Response) => {
 };
 
 /**
+ * DELETE /api/cia/reports/:reportId
+ * Delete a specific CIA report
+ */
+export const deleteCIAReport = async (req: Request, res: Response) => {
+  try {
+    const requestingUserId = req.user?.id;
+    const reportId = parseInt(req.params.reportId);
+
+    if (!requestingUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get requesting user
+    const requestingUser = await User.findByPk(requestingUserId);
+    if (!requestingUser) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Find the report
+    const report = await CIAReport.findByPk(reportId);
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Check permissions
+    const isAdminOrTherapist = requestingUser.role === 'admin' || requestingUser.role === 'therapist';
+    const isOwner = report.userId === requestingUserId;
+
+    if (!isOwner && !isAdminOrTherapist) {
+      return res.status(403).json({ error: 'You do not have permission to delete this report' });
+    }
+
+    // Delete the report (cascade will delete comments)
+    await report.destroy();
+
+    res.json({ success: true, message: 'Report deleted successfully' });
+  } catch (error: any) {
+    console.error('[CIA] Error deleting report:', error);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+};
+
+/**
  * GET /api/cia/eligibility
  * Check if user is eligible to generate a new CIA report (30-day rule bypassed for admin/therapist)
  * Query param: targetUserId (optional) - for admin/therapist to check other patients

@@ -711,6 +711,13 @@ router.get('/cia/reports', ciaController.getCIAReports);
 router.get('/cia/reports/:reportId', ciaController.getCIAReportById);
 
 /**
+ * @route   DELETE /api/cia/reports/:reportId
+ * @desc    Delete a specific CIA report
+ * @access  Private (owner or admin/therapist)
+ */
+router.delete('/cia/reports/:reportId', ciaController.deleteCIAReport);
+
+/**
  * @route   POST /api/cia/reports/:reportId/comments
  * @desc    Add a cardiac team provider comment to a CIA report
  * @access  Private (providers only)

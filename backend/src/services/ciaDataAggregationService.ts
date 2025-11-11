@@ -167,7 +167,7 @@ export class CIADataAggregationService {
     // SMART AGGREGATION: Fetch daily summaries instead of 10,000+ individual readings
     // This reduces data transfer by ~99% while maintaining AI analysis quality
 
-    const [dailySummaries] = await VitalsSample.sequelize!.query(`
+    const dailySummaries = await VitalsSample.sequelize!.query(`
       SELECT
         DATE(timestamp) as date,
         COUNT(*) as sample_count,
@@ -187,20 +187,20 @@ export class CIADataAggregationService {
         AVG(temperature) as avg_temperature
       FROM vitals_samples
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND timestamp BETWEEN :startDate AND :endDate
       GROUP BY DATE(timestamp)
       ORDER BY date DESC
     `, {
       replacements: { userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     // Fetch critical/abnormal readings for detailed analysis
-    const [criticalReadings] = await VitalsSample.sequelize!.query(`
+    const criticalReadings = await VitalsSample.sequelize!.query(`
       SELECT *
       FROM vitals_samples
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND timestamp BETWEEN :startDate AND :endDate
         AND (
           "heartRate" < 50 OR "heartRate" > 120 OR
           "bloodPressureSystolic" > 140 OR "bloodPressureSystolic" < 90 OR
@@ -212,7 +212,7 @@ export class CIADataAggregationService {
     `, {
       replacements: { userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     return [
       { type: 'daily_summaries', data: dailySummaries },
@@ -237,7 +237,7 @@ export class CIADataAggregationService {
   private async fetchExercise(patientId: number, userId: number, startDate: Date, endDate: Date): Promise<any[]> {
     // SMART AGGREGATION: Daily exercise summaries instead of 5,000+ individual logs
     // Check BOTH patientId and userId to handle ID mapping issues
-    const [dailySummaries] = await ExerciseLog.sequelize!.query(`
+    const dailySummaries = await ExerciseLog.sequelize!.query(`
       SELECT
         DATE("completedAt") as date,
         COUNT(*) as session_count,
@@ -253,21 +253,21 @@ export class CIADataAggregationService {
         AVG("actualMET") as avg_met
       FROM exercise_logs
       WHERE ("patientId" = :patientId OR "patientId" = :userId)
-        AND "completedAt" BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND "completedAt" BETWEEN :startDate AND :endDate
       GROUP BY DATE("completedAt")
       ORDER BY date DESC
     `, {
       replacements: { patientId, userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     // Fetch high-intensity or problematic sessions (high pain, high exertion)
     // Check BOTH patientId and userId to handle ID mapping issues
-    const [noteworthySessions] = await ExerciseLog.sequelize!.query(`
+    const noteworthySessions = await ExerciseLog.sequelize!.query(`
       SELECT *
       FROM exercise_logs
       WHERE ("patientId" = :patientId OR "patientId" = :userId)
-        AND "completedAt" BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND "completedAt" BETWEEN :startDate AND :endDate
         AND (
           "painLevel" >= 5 OR
           "perceivedExertion" >= 8 OR
@@ -279,7 +279,7 @@ export class CIADataAggregationService {
     `, {
       replacements: { patientId, userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     return [
       { type: 'daily_summaries', data: dailySummaries },
@@ -289,7 +289,7 @@ export class CIADataAggregationService {
 
   private async fetchMeals(userId: number, startDate: Date, endDate: Date): Promise<any[]> {
     // SMART AGGREGATION: Daily nutritional summaries instead of 5,000+ individual meal entries
-    const [dailySummaries] = await MealEntry.sequelize!.query(`
+    const dailySummaries = await MealEntry.sequelize!.query(`
       SELECT
         DATE(timestamp) as date,
         COUNT(*) as meal_count,
@@ -307,28 +307,28 @@ export class CIADataAggregationService {
         SUM(CASE WHEN "withinSpec" = false THEN 1 ELSE 0 END) as meals_out_of_spec
       FROM meal_entries
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND timestamp BETWEEN :startDate AND :endDate
         AND status = 'completed'
       GROUP BY DATE(timestamp)
       ORDER BY date DESC
     `, {
       replacements: { userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     // Fetch meals that exceeded dietary limits (out of spec)
-    const [problematicMeals] = await MealEntry.sequelize!.query(`
+    const problematicMeals = await MealEntry.sequelize!.query(`
       SELECT *
       FROM meal_entries
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
+        AND timestamp BETWEEN :startDate AND :endDate
         AND "withinSpec" = false
       ORDER BY timestamp DESC
       LIMIT 50
     `, {
       replacements: { userId, startDate, endDate },
       type: 'SELECT' as any,
-    });
+    }) as any[];
 
     return [
       { type: 'daily_summaries', data: dailySummaries },

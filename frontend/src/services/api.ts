@@ -1028,6 +1028,14 @@ class ApiService {
     });
     return response.data;
   }
+
+  /**
+   * Delete a CIA report
+   * @param reportId - Report ID to delete
+   */
+  async deleteCIAReport(reportId: number): Promise<void> {
+    await this.api.delete(`/cia/reports/${reportId}`);
+  }
 }
 
 // Export singleton instance

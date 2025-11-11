@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Brain, AlertTriangle, CheckCircle, TrendingUp, Activity,
   Calendar as CalendarIcon, Clock, Heart, Zap, Database, BarChart3,
-  Save, User, FileText, Target, Gauge
+  Save, User, FileText, Target, Gauge, Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { CIAReport, CIAEligibility, CIARiskItem, CIAFinding, CIAActionItem } from '../types';
@@ -163,6 +163,52 @@ export function CIAPage() {
       alert('Failed to save report');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the report when clicking delete
+
+    if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await api.deleteCIAReport(reportId);
+
+      // Remove from list and clear selection if it was selected
+      setReports(prev => prev.filter(r => r.id !== reportId));
+      if (selectedReport?.id === reportId) {
+        setSelectedReport(null);
+      }
+    } catch (err: any) {
+      alert(`Failed to delete report: ${err.response?.data?.error || err.message}`);
+    }
+  };
+
+  const handleDeleteAllReports = async () => {
+    if (reports.length === 0) {
+      alert('No reports to delete');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ALL ${reports.length} report(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    const count = reports.length;
+    try {
+      // Delete all reports in parallel
+      await Promise.all(reports.map(report => api.deleteCIAReport(report.id)));
+
+      // Clear all reports and selection
+      setReports([]);
+      setSelectedReport(null);
+      alert(`Successfully deleted ${count} report(s)`);
+    } catch (err: any) {
+      alert(`Failed to delete all reports: ${err.response?.data?.error || err.message}`);
+      // Refresh reports to see which ones were actually deleted
+      fetchReports();
     }
   };
 
@@ -916,7 +962,7 @@ export function CIAPage() {
               }}
             >
               {patients.map((patient: any) => (
-                <option key={patient.userId} value={patient.userId} style={{ background: '#1a1a2e', color: '#ffffff' }}>
+                <option key={patient.id} value={patient.userId} style={{ background: '#1a1a2e', color: '#ffffff' }}>
                   {patient.name || patient.firstName + ' ' + patient.lastName} {patient.userId === user.id ? '(You)' : ''}
                 </option>
               ))}
@@ -1065,39 +1111,75 @@ export function CIAPage() {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={handleGenerateReport}
-                  disabled={!eligibility?.eligible}
-                  style={{
-                    padding: '12px 24px',
-                    background: eligibility?.eligible
-                      ? 'linear-gradient(135deg, #00d4ff 0%, #a855f7 100%)'
-                      : 'rgba(255,255,255,0.1)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    cursor: eligibility?.eligible ? 'pointer' : 'not-allowed',
-                    opacity: eligibility?.eligible ? 1 : 0.5,
-                    boxShadow: eligibility?.eligible ? '0 4px 20px rgba(0, 212, 255, 0.4)' : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (eligibility?.eligible) {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 6px 30px rgba(0, 212, 255, 0.6)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (eligibility?.eligible) {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 212, 255, 0.4)';
-                    }
-                  }}
-                >
-                  🧬 Generate New CIA Report
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleGenerateReport}
+                    disabled={!eligibility?.eligible}
+                    style={{
+                      padding: '12px 24px',
+                      background: eligibility?.eligible
+                        ? 'linear-gradient(135deg, #00d4ff 0%, #a855f7 100%)'
+                        : 'rgba(255,255,255,0.1)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      cursor: eligibility?.eligible ? 'pointer' : 'not-allowed',
+                      opacity: eligibility?.eligible ? 1 : 0.5,
+                      boxShadow: eligibility?.eligible ? '0 4px 20px rgba(0, 212, 255, 0.4)' : 'none',
+                      transition: 'all 0.3s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (eligibility?.eligible) {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 6px 30px rgba(0, 212, 255, 0.6)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (eligibility?.eligible) {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 212, 255, 0.4)';
+                      }
+                    }}
+                  >
+                    🧬 Generate New CIA Report
+                  </button>
+
+                  <button
+                    onClick={handleDeleteAllReports}
+                    disabled={reports.length === 0}
+                    style={{
+                      padding: '12px 24px',
+                      background: reports.length > 0
+                        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                        : 'rgba(255,255,255,0.1)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      cursor: reports.length > 0 ? 'pointer' : 'not-allowed',
+                      opacity: reports.length > 0 ? 1 : 0.5,
+                      boxShadow: reports.length > 0 ? '0 4px 20px rgba(239, 68, 68, 0.4)' : 'none',
+                      transition: 'all 0.3s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (reports.length > 0) {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 6px 30px rgba(239, 68, 68, 0.6)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (reports.length > 0) {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 20px rgba(239, 68, 68, 0.4)';
+                      }
+                    }}
+                  >
+                    🗑️ Delete All Reports
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1155,8 +1237,9 @@ export function CIAPage() {
                           <span style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.9rem' }}>
                             Report #{report.id}
                           </span>
-                          {report.status === 'completed' && report.recoveryScore !== undefined && (
-                            <span style={{
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {report.status === 'completed' && report.recoveryScore !== undefined && (
+                              <span style={{
                               padding: '0.25rem 0.75rem',
                               borderRadius: '8px',
                               background: report.recoveryScore >= 75
@@ -1174,7 +1257,33 @@ export function CIAPage() {
                             }}>
                               {report.recoveryScore}/100
                             </span>
-                          )}
+                            )}
+                            <button
+                              onClick={(e) => handleDeleteReport(report.id, e)}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '6px',
+                                padding: '0.35rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                              }}
+                              title="Delete report"
+                            >
+                              <Trash2 size={14} color="#ef4444" />
+                            </button>
+                          </div>
                         </div>
                         <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <CalendarIcon className="h-3 w-3" />
