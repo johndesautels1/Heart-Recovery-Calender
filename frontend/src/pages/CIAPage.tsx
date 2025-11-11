@@ -200,14 +200,14 @@ export function CIAPage() {
 
     const { dataCompleteness } = selectedReport;
     const categories = [
-      { key: 'hasVitals', label: 'Cardiac Vitals', icon: '💓', metrics: ['Heart Rate', 'Blood Pressure', 'Oxygen Saturation', 'Heart Rate Variability'] },
-      { key: 'hasSleep', label: 'Sleep Quality', icon: '😴', metrics: ['Total Sleep Time', 'Sleep Efficiency', 'Deep Sleep %', 'REM Sleep %', 'Sleep Score'] },
-      { key: 'hasExercise', label: 'Exercise Performance', icon: '🏃', metrics: ['Exercise Duration', 'Average Heart Rate', 'Max Heart Rate', 'Calories Burned', 'Distance'] },
-      { key: 'hasMeals', label: 'Nutritional Intake', icon: '🍽️', metrics: ['Daily Sodium', 'Calories', 'Protein', 'Fiber', 'Saturated Fat'] },
-      { key: 'hasMedications', label: 'Medication Adherence', icon: '💊', metrics: ['Adherence Rate', 'Missed Doses', 'Medication Count'] },
+      { key: 'hasVitals', label: 'Vitals', icon: '💓', metrics: ['Heart Rate', 'Blood Pressure', 'Oxygen Saturation', 'Heart Rate Variability'] },
+      { key: 'hasSleep', label: 'Sleep', icon: '😴', metrics: ['Total Sleep Time', 'Sleep Efficiency', 'Deep Sleep %', 'REM Sleep %', 'Sleep Score'] },
+      { key: 'hasExercise', label: 'Exercises', icon: '🏃', metrics: ['Exercise Duration', 'Average Heart Rate', 'Max Heart Rate', 'Calories Burned', 'Distance'] },
+      { key: 'hasMeals', label: 'Meals', icon: '🍽️', metrics: ['Daily Sodium', 'Calories', 'Protein', 'Fiber', 'Saturated Fat'] },
+      { key: 'hasMedications', label: 'Medications', icon: '💊', metrics: ['Adherence Rate', 'Missed Doses', 'Medication Count'] },
       { key: 'hasHydration', label: 'Hydration', icon: '💧', metrics: ['Daily Water Intake', 'Hydration Consistency'] },
-      { key: 'hasECG', label: 'ECG/Cardiac Monitoring', icon: '📊', metrics: ['ECG Waveform Morphology', 'Arrhythmia Detection'] },
-      { key: 'hasHabits', label: 'Lifestyle Habits', icon: '🎯', metrics: ['Daily Habit Completion', 'Consistency Score'] },
+      { key: 'hasECG', label: 'ECG', icon: '📊', metrics: ['ECG Waveform Morphology', 'Arrhythmia Detection'] },
+      { key: 'hasHabits', label: 'Habits', icon: '🎯', metrics: ['Daily Habit Completion', 'Consistency Score'] },
     ];
 
     return (
@@ -327,14 +327,14 @@ export function CIAPage() {
   // Render Methodology Panel
   const renderMethodology = () => {
     const weights = [
-      { category: 'Cardiac Vitals', weight: 10, color: '#ef4444', description: 'Direct cardiac function indicators (HR, BP, HRV, O2)' },
-      { category: 'Exercise Capacity', weight: 9, color: '#f59e0b', description: 'Strong predictor of outcomes & functional status' },
+      { category: 'Vitals', weight: 10, color: '#ef4444', description: 'Direct cardiac function indicators (HR, BP, HRV, O2)' },
+      { category: 'Exercises', weight: 9, color: '#f59e0b', description: 'Strong predictor of outcomes & functional status' },
       { category: 'Medications', weight: 8, color: '#eab308', description: 'Essential for recovery & risk prevention' },
-      { category: 'Sleep Quality', weight: 7, color: '#10b981', description: 'Impacts recovery, inflammation & healing' },
-      { category: 'Nutrition', weight: 6, color: '#06b6d4', description: 'Long-term risk factor modification' },
-      { category: 'ECG Monitoring', weight: 10, color: '#a855f7', description: 'Arrhythmia detection (when available)' },
+      { category: 'Sleep', weight: 7, color: '#10b981', description: 'Impacts recovery, inflammation & healing' },
+      { category: 'Meals', weight: 6, color: '#06b6d4', description: 'Long-term risk factor modification' },
+      { category: 'ECG', weight: 10, color: '#a855f7', description: 'Arrhythmia detection (when available)' },
       { category: 'Hydration', weight: 5, color: '#8b5cf6', description: 'Fluid balance & circulation support' },
-      { category: 'Lifestyle Habits', weight: 4, color: '#ec4899', description: 'Behavioral compliance & consistency' },
+      { category: 'Habits', weight: 4, color: '#ec4899', description: 'Behavioral compliance & consistency' },
     ];
 
     return (

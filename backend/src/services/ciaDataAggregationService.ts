@@ -118,7 +118,7 @@ export class CIADataAggregationService {
     ] = await Promise.all([
       this.fetchVitals(userId, analysisStartDate, analysisEndDate),
       this.fetchSleep(userId, analysisStartDate, analysisEndDate),
-      this.fetchExercise(patient.id, analysisStartDate, analysisEndDate),
+      this.fetchExercise(patient.id, userId, analysisStartDate, analysisEndDate),
       this.fetchMeals(userId, analysisStartDate, analysisEndDate),
       this.fetchMedications(userId),
       this.fetchMedicationLogs(userId, analysisStartDate, analysisEndDate),
@@ -187,7 +187,7 @@ export class CIADataAggregationService {
         AVG(temperature) as avg_temperature
       FROM vitals_samples
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate AND :endDate
+        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
       GROUP BY DATE(timestamp)
       ORDER BY date DESC
     `, {
@@ -200,7 +200,7 @@ export class CIADataAggregationService {
       SELECT *
       FROM vitals_samples
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate AND :endDate
+        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
         AND (
           "heartRate" < 50 OR "heartRate" > 120 OR
           "bloodPressureSystolic" > 140 OR "bloodPressureSystolic" < 90 OR
@@ -234,8 +234,9 @@ export class CIADataAggregationService {
     return sleep.map(s => s.toJSON());
   }
 
-  private async fetchExercise(patientId: number, startDate: Date, endDate: Date): Promise<any[]> {
+  private async fetchExercise(patientId: number, userId: number, startDate: Date, endDate: Date): Promise<any[]> {
     // SMART AGGREGATION: Daily exercise summaries instead of 5,000+ individual logs
+    // Check BOTH patientId and userId to handle ID mapping issues
     const [dailySummaries] = await ExerciseLog.sequelize!.query(`
       SELECT
         DATE("completedAt") as date,
@@ -251,21 +252,22 @@ export class CIADataAggregationService {
         AVG("difficultyRating") as avg_difficulty_rating,
         AVG("actualMET") as avg_met
       FROM exercise_logs
-      WHERE "patientId" = :patientId
-        AND "completedAt" BETWEEN :startDate AND :endDate
+      WHERE ("patientId" = :patientId OR "patientId" = :userId)
+        AND "completedAt" BETWEEN :startDate::timestamptz AND :endDate::timestamptz
       GROUP BY DATE("completedAt")
       ORDER BY date DESC
     `, {
-      replacements: { patientId, startDate, endDate },
+      replacements: { patientId, userId, startDate, endDate },
       type: 'SELECT' as any,
     });
 
     // Fetch high-intensity or problematic sessions (high pain, high exertion)
+    // Check BOTH patientId and userId to handle ID mapping issues
     const [noteworthySessions] = await ExerciseLog.sequelize!.query(`
       SELECT *
       FROM exercise_logs
-      WHERE "patientId" = :patientId
-        AND "completedAt" BETWEEN :startDate AND :endDate
+      WHERE ("patientId" = :patientId OR "patientId" = :userId)
+        AND "completedAt" BETWEEN :startDate::timestamptz AND :endDate::timestamptz
         AND (
           "painLevel" >= 5 OR
           "perceivedExertion" >= 8 OR
@@ -275,7 +277,7 @@ export class CIADataAggregationService {
       ORDER BY "completedAt" DESC
       LIMIT 50
     `, {
-      replacements: { patientId, startDate, endDate },
+      replacements: { patientId, userId, startDate, endDate },
       type: 'SELECT' as any,
     });
 
@@ -305,7 +307,7 @@ export class CIADataAggregationService {
         SUM(CASE WHEN "withinSpec" = false THEN 1 ELSE 0 END) as meals_out_of_spec
       FROM meal_entries
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate AND :endDate
+        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
         AND status = 'completed'
       GROUP BY DATE(timestamp)
       ORDER BY date DESC
@@ -319,7 +321,7 @@ export class CIADataAggregationService {
       SELECT *
       FROM meal_entries
       WHERE "userId" = :userId
-        AND timestamp BETWEEN :startDate AND :endDate
+        AND timestamp BETWEEN :startDate::timestamptz AND :endDate::timestamptz
         AND "withinSpec" = false
       ORDER BY timestamp DESC
       LIMIT 50
@@ -489,3 +491,4 @@ export class CIADataAggregationService {
 }
 
 export default new CIADataAggregationService();
+
