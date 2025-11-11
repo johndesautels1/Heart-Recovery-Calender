@@ -4,8 +4,10 @@ import CIAReportComment from '../models/CIAReportComment';
 import Patient from '../models/Patient';
 import Provider from '../models/Provider';
 import User from '../models/User';
+import Alert from '../models/Alert';
 import ciaDataAggregationService from '../services/ciaDataAggregationService';
 import ciaAnalysisService from '../services/ciaAnalysisService';
+import { sendSMS, sendEmail } from '../services/notificationService';
 import { Op } from 'sequelize';
 
 /**
@@ -100,6 +102,11 @@ export const generateCIAReport = async (req: Request, res: Response) => {
         reportData: analysis.detailedAnalysis,
         status: 'completed',
       });
+
+      // 🚨 AUTO-ALERT CREATION: Create alerts from CIA risk findings
+      console.log(`[CIA] Processing risk assessment for auto-alerts...`);
+      await createAlertsFromRiskAssessment(targetUserId, analysis, report.id);
+      console.log(`[CIA] Auto-alerts processed successfully`);
 
       // Return completed report
       const completedReport = await CIAReport.findByPk(report.id, {
@@ -379,6 +386,265 @@ export const checkReportEligibility = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
+
+/**
+ * Helper function to create alerts from CIA risk assessment
+ * Parses risk findings and creates Alert records with notifications
+ */
+async function createAlertsFromRiskAssessment(
+  userId: number,
+  analysis: any,
+  reportId: number
+): Promise<void> {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      console.warn(`[CIA Auto-Alert] User ${userId} not found, skipping alerts`);
+      return;
+    }
+
+    // Parse risk assessment (expected format: JSON string or object with risk items)
+    let riskItems: any[] = [];
+    if (typeof analysis.riskAssessment === 'string') {
+      try {
+        const parsed = JSON.parse(analysis.riskAssessment);
+        riskItems = Array.isArray(parsed) ? parsed : parsed.risks || [];
+      } catch {
+        // If not JSON, try to extract risks from text
+        riskItems = parseRiskAssessmentText(analysis.riskAssessment);
+      }
+    } else if (Array.isArray(analysis.riskAssessment)) {
+      riskItems = analysis.riskAssessment;
+    } else if (analysis.riskAssessment?.risks) {
+      riskItems = analysis.riskAssessment.risks;
+    }
+
+    // Also check unusual findings for critical items
+    if (analysis.unusualFindings) {
+      const unusualItems = parseUnusualFindings(analysis.unusualFindings);
+      riskItems = [...riskItems, ...unusualItems];
+    }
+
+    console.log(`[CIA Auto-Alert] Found ${riskItems.length} risk items to process`);
+
+    let alertsCreated = 0;
+    let notificationsSent = 0;
+
+    for (const risk of riskItems) {
+      const severity = mapSeverityToAlertLevel(risk.severity || risk.level || 'info');
+
+      // Only create alerts for warning and critical severity
+      if (severity !== 'warning' && severity !== 'critical') {
+        continue;
+      }
+
+      const alertType = mapCategoryToAlertType(risk.category || risk.type || 'other');
+      const title = risk.title || risk.finding || `CIA Report Risk: ${risk.category || 'General'}`;
+      const message = risk.description || risk.message || risk.recommendation || 'Please review your CIA report for details.';
+
+      // Create alert
+      const alert = await Alert.create({
+        userId,
+        alertType,
+        severity,
+        title,
+        message,
+        relatedEntityType: 'cia_report',
+        relatedEntityId: reportId,
+        resolved: false,
+        notificationSent: false,
+      });
+
+      alertsCreated++;
+      console.log(`[CIA Auto-Alert] Created ${severity} alert: ${title}`);
+
+      // Send notifications for critical alerts
+      if (severity === 'critical') {
+        try {
+          const notificationMethods: string[] = [];
+
+          // SMS notification
+          if (user.phoneNumber) {
+            const smsText = `🚨 CRITICAL HEART HEALTH ALERT: ${title}. ${message.substring(0, 120)}... Log in to view full details. - Heart Recovery Calendar`;
+            const smsSent = await sendSMS(user.phoneNumber, smsText);
+            if (smsSent) {
+              notificationMethods.push('sms');
+              notificationsSent++;
+            }
+          }
+
+          // Email notification
+          const emailSubject = `🚨 Critical Health Alert from CIA Report`;
+          const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .alert-box { border-left: 5px solid #ef4444; background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .alert-header { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 10px; }
+    .alert-body { font-size: 16px; color: #991b1b; }
+    .cta-button { display: inline-block; padding: 12px 24px; background: #dc2626; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 15px 0; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; font-size: 12px; color: #666; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="alert-box">
+      <div class="alert-header">🚨 Critical Health Alert</div>
+      <div class="alert-body">
+        <p><strong>${title}</strong></p>
+        <p>${message}</p>
+      </div>
+    </div>
+    <p>Your latest CIA (Cardiac Intelligence Analysis) report has identified a critical health concern that requires immediate attention.</p>
+    <center>
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/cia" class="cta-button">View Full CIA Report →</a>
+    </center>
+    <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 3px solid #f59e0b;">
+      <strong>⚠️ Important:</strong> If you experience chest pain, severe shortness of breath, or other emergency symptoms, call 911 immediately. This alert is for informational purposes and does not replace emergency medical care.
+    </div>
+    <div class="footer">
+      <p><strong>Heart Recovery Calendar - CIA Report Alert</strong></p>
+      <p>You received this alert because your latest CIA report identified a critical health concern.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+          const emailSent = await sendEmail(user.email, emailSubject, emailHtml);
+          if (emailSent) {
+            notificationMethods.push('email');
+            notificationsSent++;
+          }
+
+          // Update alert with notification status
+          if (notificationMethods.length > 0) {
+            await alert.update({
+              notificationSent: true,
+              notificationMethods,
+            });
+          }
+        } catch (notifError: any) {
+          console.error(`[CIA Auto-Alert] Error sending notifications for alert ${alert.id}:`, notifError.message);
+        }
+      }
+    }
+
+    console.log(`[CIA Auto-Alert] Summary: Created ${alertsCreated} alerts, sent ${notificationsSent} notifications`);
+  } catch (error: any) {
+    console.error('[CIA Auto-Alert] Error creating alerts:', error.message);
+    // Don't throw - alert creation failure shouldn't block report generation
+  }
+}
+
+/**
+ * Parse risk assessment text to extract risk items
+ */
+function parseRiskAssessmentText(text: string): any[] {
+  const risks: any[] = [];
+
+  // Look for common patterns indicating severity
+  const criticalPatterns = /\b(critical|severe|dangerous|emergency|immediate|urgent)\b/gi;
+  const warningPatterns = /\b(warning|concern|elevated|high|moderate)\b/gi;
+
+  // Split by common delimiters
+  const lines = text.split(/\n|\.(?=\s[A-Z])/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length < 10) continue; // Skip very short lines
+
+    let severity = 'info';
+    if (criticalPatterns.test(trimmed)) {
+      severity = 'critical';
+    } else if (warningPatterns.test(trimmed)) {
+      severity = 'warning';
+    }
+
+    // Only include warning and critical items
+    if (severity === 'warning' || severity === 'critical') {
+      risks.push({
+        severity,
+        category: detectCategory(trimmed),
+        title: trimmed.substring(0, 100),
+        description: trimmed,
+      });
+    }
+  }
+
+  return risks;
+}
+
+/**
+ * Parse unusual findings for critical items
+ */
+function parseUnusualFindings(findings: string): any[] {
+  if (!findings) return [];
+
+  const risks: any[] = [];
+  const lines = findings.split(/\n|\.(?=\s[A-Z])/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length < 10) continue;
+
+    // Unusual findings are typically concerning
+    risks.push({
+      severity: 'warning',
+      category: detectCategory(trimmed),
+      title: `Unusual Finding: ${trimmed.substring(0, 80)}`,
+      description: trimmed,
+    });
+  }
+
+  return risks;
+}
+
+/**
+ * Detect category from text
+ */
+function detectCategory(text: string): string {
+  const lower = text.toLowerCase();
+
+  if (/\b(heart rate|hr|pulse|rhythm|arrhythmia|afib|bradycardia|tachycardia)\b/.test(lower)) return 'vitals';
+  if (/\b(blood pressure|bp|hypertension|systolic|diastolic)\b/.test(lower)) return 'vitals';
+  if (/\b(medication|drug|prescription|dose)\b/.test(lower)) return 'medication';
+  if (/\b(exercise|activity|physical|walking|steps)\b/.test(lower)) return 'exercise';
+  if (/\b(weight|edema|fluid|retention|swelling)\b/.test(lower)) return 'vitals';
+  if (/\b(meal|food|nutrition|diet|sodium|cholesterol)\b/.test(lower)) return 'nutrition';
+
+  return 'other';
+}
+
+/**
+ * Map severity text to Alert severity enum
+ */
+function mapSeverityToAlertLevel(severity: string): 'info' | 'warning' | 'critical' {
+  const lower = severity.toLowerCase();
+
+  if (/\b(critical|severe|emergency|danger)\b/.test(lower)) return 'critical';
+  if (/\b(warning|high|elevated|concern|moderate)\b/.test(lower)) return 'warning';
+
+  return 'info';
+}
+
+/**
+ * Map category to Alert alertType enum
+ */
+function mapCategoryToAlertType(category: string): 'medication_missed' | 'activity_issue' | 'vital_concern' | 'goal_overdue' | 'routine_skipped' | 'other' {
+  const lower = category.toLowerCase();
+
+  if (/\b(vital|heart|blood|pressure|hr|bp|weight|oxygen)\b/.test(lower)) return 'vital_concern';
+  if (/\b(medication|drug|prescription)\b/.test(lower)) return 'medication_missed';
+  if (/\b(exercise|activity|physical)\b/.test(lower)) return 'activity_issue';
+  if (/\b(goal|milestone|target)\b/.test(lower)) return 'goal_overdue';
+  if (/\b(routine|habit|schedule)\b/.test(lower)) return 'routine_skipped';
+
+  return 'other';
+}
 
 /**
  * Helper function to check report generation eligibility

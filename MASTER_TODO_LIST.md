@@ -1078,6 +1078,403 @@
 
 ---
 
+## 🎉 CIA (CARDIAC INTELLIGENCE ANALYSIS) - NEXT-LEVEL ENHANCEMENTS
+
+**Session:** November 11, 2025 - CIA Ultra-Premium Upgrade Session
+**Goal:** Transform CIA into a next-generation cardiac analysis tool with real-time alerts, 3D visualizations, and advanced analytics
+
+### ⭐⭐⭐ PHASE 1: CRITICAL REAL-TIME ALERTS & SAFETY (PRIORITY #1)
+
+#### 1. Auto-Alert Creation from CIA Risk Findings ✅ ARCHITECTURE READY
+- **What:** Automatically create Alert records when CIA reports identify Critical/High severity risks
+- **Current Gap:** CIA generates riskAssessment array but doesn't create alerts
+- **Implementation Location:** `backend/src/controllers/ciaController.ts` (after line 91 - AI analysis completes)
+- **Logic:**
+  ```typescript
+  // After AI analysis, before updating report
+  for (const risk of analysis.riskAssessment) {
+    if (risk.severity === 'critical' || risk.severity === 'high') {
+      await Alert.create({
+        userId: targetUserId,
+        therapistId: patient.therapistId,
+        alertType: mapCategoryToAlertType(risk.category), // vitals → vital_concern
+        severity: risk.severity === 'critical' ? 'critical' : 'warning',
+        title: `CIA Report: ${risk.category} Risk Detected`,
+        message: `${risk.finding}\n\nRecommendation: ${risk.recommendation}`,
+        relatedEntityType: 'cia_report',
+        relatedEntityId: report.id,
+        notificationSent: false,
+      });
+    }
+  }
+  ```
+- **Notification Flow:**
+  - SMS via Twilio (already integrated)
+  - Email notification (already integrated)
+  - Browser notification
+  - Therapist dashboard alert
+- **Impact:** CRITICAL - Proactive patient safety monitoring
+- **Estimated Time:** 2-3 hours
+- **Files to Modify:** `ciaController.ts`, `notificationService.ts`
+- **Status:** [ ] Not Started
+
+#### 2. Real-Time Arrhythmia Detection with Live ECG Feed
+- **What:** Detect AFib, PVC, PAC patterns from Polar H10 R-R intervals and Samsung ECG data
+- **Current State:** You already have live ECG display on Vitals page
+- **Data Available:** `heartRateVariability`, `sdnn`, `rmssd`, `pnn50` fields in VitalsSample model
+- **Enhancement:** Add arrhythmia pattern recognition
+- **Algorithm Options:**
+  - **Free/Open Source:** `hrv-analysis` npm package (open source HRV analysis)
+  - **Paid API:** Philips ECG Analysis API (contact for pricing)
+- **Features:**
+  - AFib Burden % (percentage of time in AFib)
+  - PVC count per day
+  - PAC count per day
+  - Irregular rhythm detection from R-R interval variability
+  - Real-time alerts for sustained arrhythmias
+- **Implementation:**
+  - New service: `backend/src/services/arrhythmiaDetectionService.ts`
+  - Integration into vitals recording: Check R-R intervals on each Polar sync
+  - Visual indicator on Vitals page: "Irregular Rhythm Detected" badge
+  - Add to CIA analysis prompt for AI interpretation
+- **Impact:** CRITICAL for cardiac patients - early arrhythmia detection
+- **Estimated Time:** 1-2 days
+- **Dependencies:** HRV analytics library (free), Polar H10 already integrated
+- **Status:** [ ] Not Started
+
+#### 3. Medication Interaction Checker (FDA API - FREE)
+- **What:** Real-time drug-drug interaction checking when medications are added
+- **API:** FDA OpenFDA Drug Interaction API (100% FREE, government-run)
+- **Current Gap:** Medications tracked but no interaction checking
+- **Implementation:**
+  - New service: `backend/src/services/drugInteractionService.ts`
+  - FDA API endpoint: `https://api.fda.gov/drug/label.json?search=openfda.brand_name:{drug1}+AND+{drug2}`
+  - Check on medication creation/update
+  - Display interaction matrix in CIA reports
+  - Real-time warning when adding new medication
+- **Features:**
+  - Severity levels: Major (contraindicated), Moderate (caution), Minor (monitor)
+  - Mechanism explanation (e.g., "Both prolong QT interval")
+  - Clinical recommendations (e.g., "ECG monitoring required")
+  - Add to CIA analysis for AI interpretation
+- **UI Locations:**
+  - Medications page: Warning banner when adding conflicting drug
+  - CIA reports: New "Medication Interactions" section
+  - Profile page: Interaction warnings in cardiac medications autocomplete
+- **Impact:** CRITICAL patient safety - prevent dangerous drug combinations
+- **Estimated Time:** 4-6 hours
+- **Cost:** FREE (FDA API, no rate limits)
+- **Status:** [ ] Not Started
+
+#### 4. Emergency Protocol System with Twilio Auto-Dial
+- **What:** STEMI/critical event detection with automatic emergency contact notification
+- **Triggers:**
+  - Critical vitals: SBP >180 or <90, HR >140 sustained, SpO2 <90%
+  - CIA report identifies "Critical" severity findings
+  - Patient manually triggers emergency button
+- **Actions:**
+  - SMS to patient: "Critical vitals detected. Are you okay? Reply YES if safe."
+  - If no reply in 5 minutes OR patient replies NO:
+    - SMS to therapist/admin
+    - SMS to emergency contacts from profile
+    - Optional: Twilio Voice API auto-dial emergency contact
+  - GPS location sharing (if browser permission granted)
+  - Emergency data package prepared (latest vitals, medications, allergies, surgery info)
+- **Implementation:**
+  - New controller: `backend/src/controllers/emergencyController.ts`
+  - New model: `EmergencyEvent.ts` (log all emergency triggers)
+  - Frontend: Red "Emergency" button on all pages (fixed position)
+  - Twilio integration for SMS + Voice calls
+- **Impact:** LIFE-SAVING - automated emergency response
+- **Estimated Time:** 1 day
+- **Cost:** Twilio SMS ($0.0075/SMS), Voice ($0.013/min)
+- **Status:** [ ] Not Started
+
+---
+
+### ⭐⭐ PHASE 2: ADVANCED HRV ANALYTICS & PREDICTIVE MONITORING
+
+#### 5. Deep HRV Analysis Dashboard
+- **What:** Comprehensive autonomic nervous system assessment from Polar H10 data
+- **Current State:** You have SDNN, RMSSD, pNN50 fields but no deep analysis
+- **Features:**
+  - **Time-Domain Metrics:**
+    - SDNN trends over time (cardiac autonomic regulation)
+    - RMSSD trends (parasympathetic activity)
+    - pNN50 trends (vagal tone indicator)
+  - **Frequency-Domain Metrics:**
+    - LF/HF ratio calculation (sympathetic/parasympathetic balance)
+    - VLF, LF, HF power spectral density
+    - Stress index calculation
+  - **Recovery Metrics:**
+    - HRV during sleep vs daytime
+    - HRV response to exercise (drop and recovery speed)
+    - Overnight HRV recovery score
+  - **Visual Components:**
+    - Poincaré plot (2D scatter of RR intervals)
+    - DFA (Detrended Fluctuation Analysis) chart
+    - Color-coded zones (healthy/borderline/concerning)
+- **Implementation:**
+  - New service: `backend/src/services/hrvAnalysisService.ts`
+  - Use `hrv` npm package (free, open source)
+  - Add to CIA analysis prompt as dedicated HRV section
+  - New section in CIA reports: "Autonomic Function Analysis"
+- **Integration Point:** CIA analysis service (line 89) - add HRV analysis before AI prompt
+- **Impact:** HIGH - autonomic function critical for cardiac recovery
+- **Estimated Time:** 1-2 days
+- **Dependencies:** `hrv` npm package (free)
+- **Status:** [ ] Not Started
+
+#### 6. Circadian Rhythm Analysis (24-Hour Patterns)
+- **What:** Analyze 24-hour BP/HR patterns to detect night-time dipping and sleep-wake cycle issues
+- **Current State:** You have 13k+ vitals with timestamps, not analyzed for circadian patterns
+- **Features:**
+  - Night-time dipping assessment (BP should drop 10-20% during sleep)
+  - Riser/Dipper/Non-Dipper classification
+  - Sleep-wake cycle correlation with vitals
+  - Optimal medication timing recommendations (chronotherapy)
+  - Visual 24-hour heatmap of vitals
+- **Implementation:**
+  - Enhance existing vitals aggregation to group by hour of day
+  - Calculate average vitals per hour (0-23)
+  - Compare sleep hours (10pm-6am) vs wake hours
+  - Add to CIA analysis prompt
+- **Display:**
+  - New chart in CIA reports: "24-Hour Circadian Profile"
+  - Color-coded heatmap showing HR/BP by time of day
+  - Medication timing optimization suggestions from AI
+- **Impact:** MEDIUM-HIGH - medication timing optimization
+- **Estimated Time:** 6-8 hours
+- **Status:** [ ] Not Started
+
+#### 7. Framingham + ASCVD + SCORE2 Risk Calculators
+- **What:** Integrate standard clinical cardiovascular risk scoring
+- **Calculators:**
+  - **Framingham Risk Score:** 10-year CVD risk (Heart Attack, Stroke, Heart Failure)
+  - **ASCVD Risk Estimator:** American College of Cardiology calculator
+  - **SCORE2:** European risk calculator (ESC guidelines)
+- **Implementation:**
+  - No API needed - just math formulas (open source algorithms)
+  - Input data already available: age, gender, BP, cholesterol, smoking, diabetes
+  - Calculate during CIA report generation
+  - Display in CIA reports with visual risk meter (0-100%)
+- **Features:**
+  - Calculate all 3 scores for comparison
+  - Geographic adjustment (US vs EU vs Asia models)
+  - Lifetime risk vs 10-year risk
+  - "What if" scenarios (e.g., "If cholesterol drops to 150...")
+- **Impact:** HIGH - clinical credibility, standard medical benchmarks
+- **Estimated Time:** 4-6 hours (formula implementation)
+- **Cost:** FREE (open source algorithms)
+- **Status:** [ ] Not Started
+
+#### 8. Predictive Deterioration Index (24-72 Hour Risk)
+- **What:** Machine learning model to predict cardiac events in next 24-72 hours
+- **Approach:**
+  - **Phase 1 (Now):** Rule-based early warning score
+    - Vital trends (HR increasing, BP rising, SpO2 dropping)
+    - Symptom progression (worsening dyspnea, edema, chest pain)
+    - Medication adherence drops
+    - Weight gain >2 lbs in 24 hours
+    - Simple weighted scoring system
+  - **Phase 2 (Later):** ML model training
+    - Use AWS SageMaker free tier (250 hours/month)
+    - Train on your accumulating patient data
+    - Predict readmission/decompensation risk
+- **Features:**
+  - Early Warning Score (0-10 scale)
+  - Color-coded risk level (green/yellow/orange/red)
+  - Specific deterioration indicators highlighted
+  - Auto-alert to therapist if score >7
+- **Implementation:**
+  - New service: `backend/src/services/earlyWarningService.ts`
+  - Calculate on each vitals recording
+  - Add to CIA reports as "Deterioration Risk Assessment"
+- **Impact:** HIGH - early intervention saves lives
+- **Estimated Time:** 1-2 days (rule-based), 1 week (ML model later)
+- **Cost:** FREE (rule-based), AWS SageMaker free tier (ML later)
+- **Status:** [ ] Not Started
+
+---
+
+### ⭐ PHASE 3: 3D VISUALIZATIONS & ENHANCED UI
+
+#### 9. 3D Rotating Heart Model with Pathology Visualization
+- **What:** Interactive WebGL 3D heart showing affected areas from CIA analysis
+- **Library:** Three.js (free, already included in HTML upload)
+- **Features:**
+  - 3D heart model that rotates
+  - Color-coded regions based on CIA risk findings
+  - Click regions for detailed analysis
+  - Animated blood flow visualization
+  - Ischemia zones, valve issues, wall motion abnormalities highlighted
+- **Integration:**
+  - Add to CIA reports page after recovery score dashboard
+  - Parse CIA findings to highlight specific cardiac regions
+  - Example: "Anterior wall ischemia" → highlight anterior region in red
+- **Implementation:**
+  - New component: `frontend/src/components/HeartModel3D.tsx`
+  - Use React Three Fiber (R3F) for React integration
+  - Load 3D heart model (GLB/GLTF format - free models available)
+  - Map CIA findings to cardiac anatomy regions
+- **Impact:** MEDIUM - Educational + engaging, not medically critical
+- **Estimated Time:** 2-3 days
+- **Cost:** FREE (Three.js, open source 3D models)
+- **Status:** [ ] Not Started
+
+#### 10. Live ECG Monitor with Multi-Lead Support
+- **What:** Enhance existing ECG display with 12-lead support and real-time annotations
+- **Current State:** You already have live ECG on Vitals page
+- **Enhancements:**
+  - Lead selector (I, II, III, aVR, aVL, aVF, V1-V6)
+  - P-QRS-T wave segment highlighting on hover
+  - Auto-zoom to abnormal segments
+  - Side-by-side normal vs abnormal comparison
+  - Export ECG strip as PDF for doctor
+- **Implementation:**
+  - Enhance existing ECG canvas rendering
+  - Add wave detection algorithm (free: `ecg-analysis` npm package)
+  - Add PDF export button using jsPDF
+- **Integration:** Vitals page ECG section (already exists)
+- **Impact:** MEDIUM - enhances existing feature
+- **Estimated Time:** 1 day
+- **Status:** [ ] Not Started
+
+#### 11. HRV Poincaré Plot Visualization
+- **What:** 2D scatter plot showing R-R interval patterns (standard HRV analysis)
+- **Display:** X-axis = RR(n), Y-axis = RR(n+1)
+- **Interpretation:**
+  - Tight cluster = low variability (concerning)
+  - Wide scatter = healthy variability
+  - Comet shape = specific arrhythmia patterns
+- **Implementation:**
+  - Add to CIA reports as "HRV Poincaré Analysis"
+  - Use Plotly.js or Chart.js for scatter plot
+  - Calculate from Polar H10 R-R interval data
+- **Impact:** MEDIUM - standard clinical HRV tool
+- **Estimated Time:** 4 hours
+- **Status:** [ ] Not Started
+
+#### 12. Recovery Trajectory 3D Surface Plot
+- **What:** 3D visualization showing recovery across multiple categories over time
+- **Axes:**
+  - X: Time (days post-surgery)
+  - Y: Recovery categories (8 categories: vitals, exercise, sleep, meds, meals, hydration, ECG, habits)
+  - Z: Score (0-100)
+- **Visualization:** 3D surface/mesh showing landscape of recovery
+- **Library:** Plotly.js (free, supports 3D plots)
+- **Integration:** CIA reports - enhance existing Garmin G1000 dashboard
+- **Impact:** LOW-MEDIUM - cool visualization, not essential
+- **Estimated Time:** 6-8 hours
+- **Status:** [ ] Not Started
+
+---
+
+### PHASE 4: TELEMEDICINE & THERAPIST TOOLS
+
+#### 13. Telemedicine-Ready Dashboard for Therapist
+- **What:** One-click data sharing screen for video consultations
+- **Features:**
+  - Screen share optimized layout
+  - Annotation tools (draw on vitals charts during call)
+  - Real-time collaborative ECG review
+  - HIPAA-compliant recording option
+  - Export session summary to PDF
+- **Implementation:**
+  - New page: `/consultation/:patientId`
+  - Uses existing CIA report data
+  - Add annotation canvas overlay on charts
+- **Impact:** MEDIUM - enhances therapist workflow
+- **Estimated Time:** 1-2 days
+- **Status:** [ ] Not Started
+
+#### 14. Smart Anomaly Spotlight in CIA Reports
+- **What:** Auto-highlight unusual patterns with visual callouts
+- **Features:**
+  - Auto-detect outliers in vitals data
+  - Animated arrows pointing to anomalies
+  - Side-by-side normal vs abnormal comparison
+  - Explanation tooltips for each anomaly
+- **Implementation:**
+  - Enhance existing CIA report display
+  - Add statistical outlier detection (>2 standard deviations)
+  - Add visual annotation layer on charts
+- **Impact:** MEDIUM - improves report readability
+- **Estimated Time:** 6-8 hours
+- **Status:** [ ] Not Started
+
+---
+
+### PHASE 5: LIFESTYLE PREDICTION & GAMIFICATION
+
+#### 15. Lifestyle Impact Simulator ("What If" Scenarios)
+- **What:** Model recovery trajectory changes based on lifestyle modifications
+- **Features:**
+  - "What if I exercise 3x/week instead of 1x?" → Show projected risk reduction
+  - "What if I reduce sodium to <2000mg/day?" → Show BP impact
+  - Use existing risk calculators + population data
+  - Interactive sliders to adjust variables
+- **Implementation:**
+  - Add to CIA reports as "Recovery Optimization Simulator"
+  - Use Framingham/ASCVD calculators with modified inputs
+  - Show before/after comparison charts
+- **Impact:** MEDIUM - motivational tool for patients
+- **Estimated Time:** 1 day
+- **Status:** [ ] Not Started
+
+#### 16. Voice-Activated Analysis
+- **What:** "Hey App, analyze my morning ECG" → navigates to vitals/ECG
+- **Implementation:**
+  - Web Speech API (free, built into browsers)
+  - Voice command recognition
+  - Limited command set (analyze, show, navigate)
+- **Impact:** LOW - novelty feature, not essential
+- **Estimated Time:** 4-6 hours
+- **Status:** [ ] Not Started
+
+#### 17. Vascular Age Calculator
+- **What:** "Your arteries are 45 years old (5 years younger than chronological age!)"
+- **Calculation:** Based on BP, lipids, smoking, diabetes
+- **Formula:** Framingham Vascular Age calculation (open source)
+- **Display:** CIA reports - visual gauge showing vascular vs chronological age
+- **Impact:** MEDIUM - motivational for patients
+- **Estimated Time:** 2-3 hours
+- **Status:** [ ] Not Started
+
+---
+
+### 🚫 EXPLICITLY NOT DOING (From HTML Upload)
+
+❌ **AR Mode** - Requires native app + ARCore/ARKit, too complex
+❌ **Holographic UI / Particle Effects** - Eye candy with no medical value
+❌ **Custom Cursor** - Annoying on mobile, no benefit
+❌ **Quantum Backgrounds / DNA Loaders** - Visual fluff, distracting
+❌ **3D Biomarker Constellation** - Confusing visualization, no clinical benefit
+❌ **Live ECG Animation with Glow** - Already have functional ECG, don't need glow
+❌ **Waveform Morphology AI** - Needs actual ECG device with leads, not just HR
+❌ **Strain Pattern Recognition** - Requires echocardiogram data (don't have)
+❌ **Ischemia Localization Map** - Requires 12-lead ECG (don't have currently)
+
+---
+
+### 📊 CIA ENHANCEMENT STATISTICS
+
+**Total Items from HTML:** 25 features
+**Feasible & Valuable:** 17 features ✅
+**Not Worth Implementing:** 8 features ❌
+
+**Priority Breakdown:**
+- **Phase 1 (Critical - Do First):** 4 items (real-time alerts, safety features)
+- **Phase 2 (High Value):** 4 items (HRV analytics, risk prediction)
+- **Phase 3 (Visual Enhancement):** 4 items (3D models, charts)
+- **Phase 4 (Therapist Tools):** 2 items (telemedicine, collaboration)
+- **Phase 5 (Nice to Have):** 3 items (simulations, gamification)
+
+**Estimated Total Implementation Time:** 2-3 weeks (full-time work)
+**Cost:** ~$50-100/month (Twilio SMS/voice for alerts)
+
+---
+
 ## 🔴 CRITICAL (Must Fix/Do First)
 
 ### Critical Bug Fixes
