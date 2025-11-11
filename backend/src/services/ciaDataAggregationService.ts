@@ -156,22 +156,22 @@ export class CIADataAggregationService {
       SELECT
         DATE(timestamp) as date,
         COUNT(*) as sample_count,
-        AVG(heart_rate) as avg_heart_rate,
-        MIN(heart_rate) as min_heart_rate,
-        MAX(heart_rate) as max_heart_rate,
-        STDDEV(heart_rate) as stddev_heart_rate,
-        AVG(systolic_bp) as avg_systolic_bp,
-        MIN(systolic_bp) as min_systolic_bp,
-        MAX(systolic_bp) as max_systolic_bp,
-        AVG(diastolic_bp) as avg_diastolic_bp,
-        MIN(diastolic_bp) as min_diastolic_bp,
-        MAX(diastolic_bp) as max_diastolic_bp,
-        AVG(spo2) as avg_spo2,
-        MIN(spo2) as min_spo2,
-        AVG(respiratory_rate) as avg_respiratory_rate,
+        AVG("heartRate") as avg_heart_rate,
+        MIN("heartRate") as min_heart_rate,
+        MAX("heartRate") as max_heart_rate,
+        STDDEV("heartRate") as stddev_heart_rate,
+        AVG("bloodPressureSystolic") as avg_systolic_bp,
+        MIN("bloodPressureSystolic") as min_systolic_bp,
+        MAX("bloodPressureSystolic") as max_systolic_bp,
+        AVG("bloodPressureDiastolic") as avg_diastolic_bp,
+        MIN("bloodPressureDiastolic") as min_diastolic_bp,
+        MAX("bloodPressureDiastolic") as max_diastolic_bp,
+        AVG("oxygenSaturation") as avg_spo2,
+        MIN("oxygenSaturation") as min_spo2,
+        AVG("respiratoryRate") as avg_respiratory_rate,
         AVG(temperature) as avg_temperature
       FROM vitals_samples
-      WHERE user_id = :userId
+      WHERE "userId" = :userId
         AND timestamp BETWEEN :startDate AND :endDate
       GROUP BY DATE(timestamp)
       ORDER BY date DESC
@@ -184,13 +184,13 @@ export class CIADataAggregationService {
     const [criticalReadings] = await VitalsSample.sequelize!.query(`
       SELECT *
       FROM vitals_samples
-      WHERE user_id = :userId
+      WHERE "userId" = :userId
         AND timestamp BETWEEN :startDate AND :endDate
         AND (
-          heart_rate < 50 OR heart_rate > 120 OR
-          systolic_bp > 140 OR systolic_bp < 90 OR
-          diastolic_bp > 90 OR diastolic_bp < 60 OR
-          spo2 < 92
+          "heartRate" < 50 OR "heartRate" > 120 OR
+          "bloodPressureSystolic" > 140 OR "bloodPressureSystolic" < 90 OR
+          "bloodPressureDiastolic" > 90 OR "bloodPressureDiastolic" < 60 OR
+          "oxygenSaturation" < 92
         )
       ORDER BY timestamp DESC
       LIMIT 100
@@ -223,22 +223,22 @@ export class CIADataAggregationService {
     // SMART AGGREGATION: Daily exercise summaries instead of 5,000+ individual logs
     const [dailySummaries] = await ExerciseLog.sequelize!.query(`
       SELECT
-        DATE(completed_at) as date,
+        DATE("completedAt") as date,
         COUNT(*) as session_count,
-        SUM(actual_duration) as total_duration_minutes,
-        SUM(calories_burned) as total_calories,
+        SUM("actualDuration") as total_duration_minutes,
+        SUM("caloriesBurned") as total_calories,
         SUM(steps) as total_steps,
-        SUM(distance_miles) as total_distance_miles,
-        AVG(during_heart_rate_avg) as avg_heart_rate_during_exercise,
-        MAX(during_heart_rate_max) as max_heart_rate_during_exercise,
-        AVG(perceived_exertion) as avg_perceived_exertion,
-        AVG(pain_level) as avg_pain_level,
-        AVG(difficulty_rating) as avg_difficulty_rating,
-        AVG(actual_met) as avg_met
+        SUM("distanceMiles") as total_distance_miles,
+        AVG("duringHeartRateAvg") as avg_heart_rate_during_exercise,
+        MAX("duringHeartRateMax") as max_heart_rate_during_exercise,
+        AVG("perceivedExertion") as avg_perceived_exertion,
+        AVG("painLevel") as avg_pain_level,
+        AVG("difficultyRating") as avg_difficulty_rating,
+        AVG("actualMET") as avg_met
       FROM exercise_logs
-      WHERE patient_id = :patientId
-        AND completed_at BETWEEN :startDate AND :endDate
-      GROUP BY DATE(completed_at)
+      WHERE "patientId" = :patientId
+        AND "completedAt" BETWEEN :startDate AND :endDate
+      GROUP BY DATE("completedAt")
       ORDER BY date DESC
     `, {
       replacements: { patientId, startDate, endDate },
@@ -249,15 +249,15 @@ export class CIADataAggregationService {
     const [noteworthySessions] = await ExerciseLog.sequelize!.query(`
       SELECT *
       FROM exercise_logs
-      WHERE patient_id = :patientId
-        AND completed_at BETWEEN :startDate AND :endDate
+      WHERE "patientId" = :patientId
+        AND "completedAt" BETWEEN :startDate AND :endDate
         AND (
-          pain_level >= 5 OR
-          perceived_exertion >= 8 OR
-          during_heart_rate_max > 140 OR
+          "painLevel" >= 5 OR
+          "perceivedExertion" >= 8 OR
+          "duringHeartRateMax" > 140 OR
           notes IS NOT NULL
         )
-      ORDER BY completed_at DESC
+      ORDER BY "completedAt" DESC
       LIMIT 50
     `, {
       replacements: { patientId, startDate, endDate },
@@ -279,17 +279,17 @@ export class CIADataAggregationService {
         SUM(calories) as total_calories,
         SUM(protein) as total_protein_g,
         SUM(carbohydrates) as total_carbs_g,
-        SUM(total_fat) as total_fat_g,
-        SUM(saturated_fat) as total_saturated_fat_g,
+        SUM("totalFat") as total_fat_g,
+        SUM("saturatedFat") as total_saturated_fat_g,
         SUM(fiber) as total_fiber_g,
         SUM(sugar) as total_sugar_g,
         SUM(sodium) as total_sodium_mg,
         SUM(cholesterol) as total_cholesterol_mg,
-        AVG(satisfaction_rating) as avg_satisfaction,
-        SUM(CASE WHEN within_spec = true THEN 1 ELSE 0 END) as meals_within_spec,
-        SUM(CASE WHEN within_spec = false THEN 1 ELSE 0 END) as meals_out_of_spec
+        AVG("satisfactionRating") as avg_satisfaction,
+        SUM(CASE WHEN "withinSpec" = true THEN 1 ELSE 0 END) as meals_within_spec,
+        SUM(CASE WHEN "withinSpec" = false THEN 1 ELSE 0 END) as meals_out_of_spec
       FROM meal_entries
-      WHERE user_id = :userId
+      WHERE "userId" = :userId
         AND timestamp BETWEEN :startDate AND :endDate
         AND status = 'completed'
       GROUP BY DATE(timestamp)
@@ -303,9 +303,9 @@ export class CIADataAggregationService {
     const [problematicMeals] = await MealEntry.sequelize!.query(`
       SELECT *
       FROM meal_entries
-      WHERE user_id = :userId
+      WHERE "userId" = :userId
         AND timestamp BETWEEN :startDate AND :endDate
-        AND within_spec = false
+        AND "withinSpec" = false
       ORDER BY timestamp DESC
       LIMIT 50
     `, {
