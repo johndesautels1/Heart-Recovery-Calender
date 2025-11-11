@@ -53,12 +53,27 @@ export class CIADataAggregationService {
    */
   async aggregatePatientData(userId: number): Promise<AggregatedPatientData> {
     // Get patient record to find surgery date (Day 0)
-    const patient = await Patient.findOne({
+    // CRITICAL: Try both userId lookup AND fallback to therapistId match for self-managed patients
+    let patient = await Patient.findOne({
       where: { userId },
     });
 
+    // Fallback: If no patient found by userId, check if this user IS a patient (self-managed)
+    // This handles cases where Patient.userId was NULL (legacy data issue)
     if (!patient) {
-      throw new Error(`No patient profile found for user ${userId}`);
+      patient = await Patient.findOne({
+        where: { therapistId: userId }, // Self-managed patients have therapistId = userId
+      });
+
+      // Auto-fix: Update the patient record to set userId (data integrity fix)
+      if (patient && !patient.userId) {
+        console.log(`[CIA-FIX] Auto-fixing Patient.userId NULL for patient ${patient.id} -> userId ${userId}`);
+        await patient.update({ userId });
+      }
+    }
+
+    if (!patient) {
+      throw new Error(`No patient profile found for user ${userId}. User may not have completed profile setup.`);
     }
 
     const surgeryDate = patient.surgeryDate;

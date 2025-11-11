@@ -7,6 +7,7 @@ import { Readable } from 'stream';
 import VitalsSample from '../models/VitalsSample';
 import ECGSample from '../models/ECGSample';
 import { broadcastECGData, broadcastHeartRate } from '../services/websocketService';
+import heartbeatBatchingService from '../services/heartbeatBatchingService';
 
 const router = express.Router();
 
@@ -165,53 +166,47 @@ router.post('/stream', async (req: Request, res: Response) => {
 
     console.log(`[ECG-STREAM] Received from user ${userId}: ${logParts.join(', ')}`);
 
-    // SAVE TO DATABASE - This is critical for data history!
+    // 🫀 SMART BATCHING: Add heartbeat to 1-minute aggregation window
+    // This prevents database flooding (8,000+ records/day → ~1,440 records/day)
     let savedVitalsSample: any = null;
     try {
-      const vitalData: any = {
+      // Add heartbeat to batching service (will auto-save aggregated data)
+      heartbeatBatchingService.addHeartbeat({
+        userId,
+        heartRate,
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        rrInterval,
+        sdnn,
+        rmssd,
+        pnn50,
+      });
+
+      const batchedFields = [`HR=${heartRate} BPM (batched)`];
+      if (rrInterval !== undefined && !isNaN(rrInterval)) batchedFields.push(`RR=${rrInterval}ms`);
+      if (sdnn !== undefined) batchedFields.push(`SDNN=${sdnn}ms`);
+      if (rmssd !== undefined) batchedFields.push(`RMSSD=${rmssd}ms`);
+      if (pnn50 !== undefined) batchedFields.push(`PNN50=${pnn50}%`);
+
+      console.log(`[ECG-STREAM] ✅ Batched: ${batchedFields.join(', ')} for user ${userId}`);
+
+      // For backward compatibility: create a temporary vitals object for broadcasting
+      // This won't be saved to DB, just used for real-time display
+      savedVitalsSample = {
+        id: null, // Not saved yet
         userId,
         timestamp: timestamp || new Date().toISOString(),
         heartRate,
+        heartRateVariability: rrInterval,
+        sdnn,
+        rmssd,
+        pnn50,
         source: 'device',
         deviceId: 'polar_h10_bluetooth',
-        medicationsTaken: false,
       };
 
-      // Add R-R interval if provided (stored as heartRateVariability)
-      if (rrInterval !== undefined && rrInterval !== null && !isNaN(rrInterval)) {
-        vitalData.heartRateVariability = rrInterval;
-      }
-
-      // Add HRV metrics if provided
-      if (sdnn !== undefined && sdnn !== null && !isNaN(sdnn)) {
-        vitalData.sdnn = sdnn;
-      }
-      if (rmssd !== undefined && rmssd !== null && !isNaN(rmssd)) {
-        vitalData.rmssd = rmssd;
-      }
-      if (pnn50 !== undefined && pnn50 !== null && !isNaN(pnn50)) {
-        vitalData.pnn50 = pnn50;
-      }
-
-      // Add ECG waveform value if provided (store in notes for backward compatibility)
-      if (ecgValue !== undefined && ecgValue !== null && !isNaN(ecgValue)) {
-        vitalData.notes = `ECG waveform value: ${ecgValue}V`;
-      }
-
-      savedVitalsSample = await VitalsSample.create(vitalData);
-
-      const savedFields = [`HR=${heartRate} BPM`];
-      if (rrInterval !== undefined && !isNaN(rrInterval)) savedFields.push(`RR=${rrInterval}ms`);
-      if (ecgValue !== undefined && !isNaN(ecgValue)) savedFields.push(`ECG=${ecgValue}V`);
-      if (sdnn !== undefined) savedFields.push(`SDNN=${sdnn}ms`);
-      if (rmssd !== undefined) savedFields.push(`RMSSD=${rmssd}ms`);
-      if (pnn50 !== undefined) savedFields.push(`PNN50=${pnn50}%`);
-
-      console.log(`[ECG-STREAM] ✅ Saved to database: ${savedFields.join(', ')} for user ${userId}`);
-
-      // 🫀 CRITICAL: Broadcast vitals update so HRV metrics display on LCD
+      // 🫀 CRITICAL: Broadcast vitals update so HRV metrics display on LCD in real-time
       const { broadcastVitalsUpdate } = await import('../services/websocketService');
-      broadcastVitalsUpdate(userId, savedVitalsSample.toJSON());
+      broadcastVitalsUpdate(userId, savedVitalsSample);
     } catch (dbError: any) {
       console.error('[ECG-STREAM] ❌ Failed to save to database:', dbError.message);
       // Continue with broadcast even if database save fails
@@ -226,13 +221,14 @@ router.post('/stream', async (req: Request, res: Response) => {
         const deviceIdStr = 'polar_h10_bluetooth';
         const sessionIdStr = sessionId || `session_${userId}_${Date.now()}`;
 
-        // Create ECG sample records for each waveform point
+        // ECG waveforms are saved to separate table (ecg_samples) for medical analysis
+        // This is independent of vitals batching
         const ecgSamplePromises = ecgWaveform.map(async (voltage: number, index: number) => {
           const sampleTimestamp = new Date(baseTimestamp.getTime() + (index * msPerSample));
 
           return ECGSample.create({
             userId,
-            vitalsSampleId: savedVitalsSample?.id || null,
+            vitalsSampleId: null, // No link to vitals when using heartbeat batching
             timestamp: sampleTimestamp,
             sampleIndex: index,
             voltage: voltage,

@@ -36,6 +36,7 @@ import polarRoutes from './polar';
 import polarH10Routes from './polarH10';
 import samsungRoutes from './samsung';
 import ecgRoutes from './ecg';
+import heartbeatBatchingRoutes from './heartbeatBatching';
 import * as ciaController from '../controllers/ciaController';
 
 const router = Router();
@@ -70,6 +71,7 @@ router.use('/polar', polarRoutes);
 router.use('/polar-h10', polarH10Routes);
 router.use('/samsung', samsungRoutes);
 router.use('/ecg', ecgRoutes);
+router.use('/heartbeat-batching', heartbeatBatchingRoutes);
 
 // All routes below require authentication
 router.use(authenticateToken);
