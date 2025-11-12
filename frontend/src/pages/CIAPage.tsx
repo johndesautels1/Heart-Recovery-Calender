@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Brain, AlertTriangle, CheckCircle, TrendingUp, Activity,
@@ -8,6 +8,9 @@ import {
 import { api } from '../services/api';
 import { CIAReport, CIAEligibility, CIARiskItem, CIAFinding, CIAActionItem } from '../types';
 import { Footer } from '../components/Footer';
+import { calculateVascularAge, calculateFraminghamRisk, calculateASCVDRisk } from '../utils/medicalCalculations';
+
+// Removed 3D heart model - using Sketchfab iframe embed instead
 
 export function CIAPage() {
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ export function CIAPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
+  const [patientData, setPatientData] = useState<any>(null);
 
   const generationSteps = [
     { icon: '🔍', text: 'Scanning Patient Data Repository...', category: 'vitals' },
@@ -100,6 +104,18 @@ export function CIAPage() {
       }
 
       const effectiveUserId = targetUserId || selectedUserId;
+
+      // Fetch patient data for cardiac conditions
+      let patientInfo = null;
+      try {
+        if (isAdminOrTherapist && effectiveUserId) {
+          const patientsList = await api.getPatients();
+          patientInfo = patientsList.data?.find((p: any) => p.userId === effectiveUserId);
+        }
+      } catch (err) {
+        console.log('Could not fetch patient data:', err);
+      }
+      setPatientData(patientInfo);
 
       const [eligibilityData, reportsData] = await Promise.all([
         api.checkCIAEligibility(effectiveUserId),
@@ -1186,22 +1202,16 @@ export function CIAPage() {
             {/* Reports List & Selected Report */}
             <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
               {/* Reports Sidebar */}
-              <div style={{
-                background: 'rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                boxShadow: '0 8px 32px rgba(31, 38, 135, 0.37)',
+              <div className="hud-panel-dark" style={{
                 maxHeight: '800px',
                 overflowY: 'auto',
               }}>
-                <h3 style={{ color: '#ffffff', fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <FileText className="h-5 w-5" style={{ color: '#00d4ff' }} />
-                  Previous Reports
+                <h3 className="hud-text-cyan" style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileText className="h-5 w-5" />
+                  PREVIOUS REPORTS
                 </h3>
                 {reports.length === 0 ? (
-                  <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '2rem 0' }}>
+                  <p className="hud-label" style={{ textAlign: 'center', padding: '2rem 0' }}>
                     No reports generated yet
                   </p>
                 ) : (
@@ -1234,7 +1244,7 @@ export function CIAPage() {
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                          <span style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.9rem' }}>
+                          <span className="hud-value" style={{ fontSize: '0.9rem' }}>
                             Report #{report.id}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1285,12 +1295,12 @@ export function CIAPage() {
                             </button>
                           </div>
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div className="hud-field-data" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <CalendarIcon className="h-3 w-3" />
                           {formatDate(report.generatedAt)}
                         </div>
                         {report.daysPostSurgery && (
-                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                          <div className="hud-label" style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
                             Day {report.daysPostSurgery} post-surgery
                           </div>
                         )}
@@ -1301,18 +1311,12 @@ export function CIAPage() {
               </div>
 
               {/* Selected Report Details */}
-              <div style={{
-                background: 'rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '16px',
-                padding: '2rem',
-                boxShadow: '0 8px 32px rgba(31, 38, 135, 0.37)',
+              <div className="hud-panel-dark" style={{
                 maxHeight: '100%',
                 overflowY: 'auto',
               }}>
                 {!selectedReport ? (
-                  <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'rgba(255,255,255,0.5)' }}>
+                  <div className="hud-label" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
                     <Brain className="h-16 w-16" style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
                     <p>Select a report to view details</p>
                   </div>
@@ -1322,10 +1326,10 @@ export function CIAPage() {
                     <div style={{ marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
                         <div>
-                          <h2 style={{ color: '#ffffff', fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                            CIA Report #{selectedReport.id}
+                          <h2 className="hud-value" style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
+                            CIA REPORT #{selectedReport.id}
                           </h2>
-                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div className="hud-field-data" style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                               <CalendarIcon className="h-4 w-4" />
                               {formatDate(selectedReport.generatedAt)}
@@ -1384,20 +1388,480 @@ export function CIAPage() {
                     {/* Garmin G1000-style Dashboard */}
                     {renderG1000Dashboard()}
 
+                    {/* Anatomical Heart Model - Item #9 - Sketchfab Embed */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <div style={{
+                        width: '100%',
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 20, 40, 0.95) 100%)',
+                        border: '2px solid rgba(0, 212, 255, 0.5)',
+                        padding: '1.5rem',
+                        boxShadow: '0 20px 60px rgba(0, 212, 255, 0.3), inset 0 0 60px rgba(0, 212, 255, 0.1)',
+                      }}>
+                        <div style={{
+                          color: '#00d4ff',
+                          fontFamily: 'monospace',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          marginBottom: '1rem',
+                          textShadow: '0 0 10px rgba(0, 212, 255, 0.8)',
+                        }}>
+                          🫀 ANATOMICAL HUMAN HEART VISUALIZATION
+                        </div>
+                        <div className="sketchfab-embed-wrapper" style={{ width: '100%', height: '600px' }}>
+                          <iframe
+                            title="3d Animated Realistic Human Heart - V2.0"
+                            frameBorder="0"
+                            allowFullScreen
+                            mozallowfullscreen="true"
+                            webkitallowfullscreen="true"
+                            allow="autoplay; fullscreen; xr-spatial-tracking"
+                            xr-spatial-tracking="true"
+                            execution-while-out-of-viewport="true"
+                            execution-while-not-rendered="true"
+                            web-share="true"
+                            src="https://sketchfab.com/models/168b474fba564f688048212e99b4159d/embed"
+                            style={{ width: '100%', height: '100%', borderRadius: '12px' }}
+                          />
+                        </div>
+                        <p style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 'normal',
+                          margin: '0.5rem 0 0 0',
+                          color: 'rgba(255,255,255,0.6)',
+                          fontFamily: 'monospace',
+                        }}>
+                          <a
+                            href="https://sketchfab.com/3d-models/3d-animated-realistic-human-heart-v20-168b474fba564f688048212e99b4159d?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            3D Animated Realistic Human Heart - V2.0
+                          </a> by{' '}
+                          <a
+                            href="https://sketchfab.com/docjana?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            Anatomy by Doctor Jana
+                          </a> on{' '}
+                          <a
+                            href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            Sketchfab
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Vascular Age & Risk Calculators */}
+                    {patientData && (
+                      <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ color: '#00d4ff', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Gauge className="h-5 w-5" />
+                          Cardiovascular Risk Assessment
+                        </h3>
+
+                        {(() => {
+                          // Get latest vitals for calculations
+                          const latestVitals = dataCompleteness.latestVitals;
+                          const systolicBP = latestVitals?.systolicBP || 120;
+                          const age = user?.dateOfBirth ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 50;
+                          const gender = user?.gender === 'Female' ? 'female' : 'male';
+
+                          // Calculate vascular age
+                          const vascularData = calculateVascularAge({
+                            chronologicalAge: age,
+                            systolicBP: systolicBP,
+                            totalCholesterol: 200,
+                            hdlCholesterol: 50,
+                            smoking: patientData.smokingStatus === 'current',
+                            diabetes: patientData.diabetesStatus === 'yes',
+                            gender: gender,
+                          });
+
+                          // Calculate Framingham Risk
+                          const framinghamData = calculateFraminghamRisk({
+                            age: age,
+                            gender: gender,
+                            totalCholesterol: 200,
+                            hdlCholesterol: 50,
+                            systolicBP: systolicBP,
+                            onBPMeds: (patientData.medications?.length || 0) > 0,
+                            smoking: patientData.smokingStatus === 'current',
+                            diabetes: patientData.diabetesStatus === 'yes',
+                          });
+
+                          // Calculate ASCVD Risk
+                          const ascvdData = calculateASCVDRisk({
+                            age: age,
+                            gender: gender,
+                            race: 'other',
+                            totalCholesterol: 200,
+                            hdlCholesterol: 50,
+                            systolicBP: systolicBP,
+                            onBPMeds: (patientData.medications?.length || 0) > 0,
+                            smoking: patientData.smokingStatus === 'current',
+                            diabetes: patientData.diabetesStatus === 'yes',
+                          });
+
+                          return (
+                            <>
+                              {/* Vascular Age Gauge */}
+                              <div className="hud-panel" style={{ marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                  <div>
+                                    <div className="hud-text-cyan" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                      VASCULAR AGE ANALYSIS
+                                    </div>
+                                    <div className="hud-label">
+                                      Your arterial system's biological age
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: 'right' }}>
+                                    <div className="hud-value" style={{ fontSize: '3rem', color: vascularData.difference <= 0 ? '#10b981' : vascularData.difference <= 5 ? '#f59e0b' : '#ef4444', lineHeight: 1 }}>
+                                      {vascularData.vascularAge}
+                                    </div>
+                                    <div className="hud-label" style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                      years old
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Age comparison bar */}
+                                <div style={{ position: 'relative', height: '40px', background: 'rgba(0,0,0,0.95)', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem', border: '1px solid rgba(0, 240, 255, 0.3)' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    height: '100%',
+                                    width: `${(age / 100) * 100}%`,
+                                    background: 'rgba(0, 240, 255, 0.3)',
+                                    borderRight: '3px solid #00f0ff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    paddingLeft: '0.5rem',
+                                  }}>
+                                    <span className="hud-text-cyan" style={{ fontSize: '0.75rem' }}>Chronological: {age}</span>
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    height: '100%',
+                                    width: `${(vascularData.vascularAge / 100) * 100}%`,
+                                    background: vascularData.difference <= 0 ? 'rgba(16, 185, 129, 0.3)' : vascularData.difference <= 5 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                                    borderRight: `3px solid ${vascularData.difference <= 0 ? '#10b981' : vascularData.difference <= 5 ? '#f59e0b' : '#ef4444'}`,
+                                  }} />
+                                </div>
+
+                                <div className="hud-field" style={{
+                                  borderLeft: `4px solid ${vascularData.difference <= 0 ? '#10b981' : vascularData.difference <= 5 ? '#f59e0b' : '#ef4444'}`,
+                                }}>
+                                  <div className="hud-field-data" style={{ marginBottom: '0.5rem' }}>
+                                    <strong>Difference:</strong> {vascularData.difference > 0 ? '+' : ''}{vascularData.difference} years
+                                  </div>
+                                  <div className="hud-field-data" style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>
+                                    {vascularData.interpretation}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Risk Calculators Side by Side */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                                {/* Framingham Risk Score */}
+                                <div className="hud-panel" style={{
+                                  border: `3px solid ${framinghamData.riskCategory === 'low' ? '#10b981' : framinghamData.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444'}`,
+                                  boxShadow: `0 0 40px ${framinghamData.riskCategory === 'low' ? 'rgba(16, 185, 129, 0.5)' : framinghamData.riskCategory === 'moderate' ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`,
+                                }}>
+                                  <div className="hud-text-cyan" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                    FRAMINGHAM RISK SCORE
+                                  </div>
+                                  <div className="hud-value" style={{ fontSize: '2.5rem', color: framinghamData.riskCategory === 'low' ? '#10b981' : framinghamData.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444', marginBottom: '0.5rem' }}>
+                                    {framinghamData.riskPercent}%
+                                  </div>
+                                  <div style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '12px',
+                                    background: `${framinghamData.riskCategory === 'low' ? '#10b981' : framinghamData.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444'}40`,
+                                    color: framinghamData.riskCategory === 'low' ? '#10b981' : framinghamData.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    marginBottom: '1rem',
+                                    textShadow: `0 0 10px ${framinghamData.riskCategory === 'low' ? 'rgba(16, 185, 129, 0.8)' : framinghamData.riskCategory === 'moderate' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(239, 68, 68, 0.8)'}`,
+                                  }}>
+                                    {framinghamData.riskCategory} Risk
+                                  </div>
+                                  <div className="hud-field-data" style={{ fontSize: '0.8rem', lineHeight: '1.6' }}>
+                                    {framinghamData.interpretation}
+                                  </div>
+                                  <div className="hud-field" style={{ marginTop: '1rem', fontSize: '0.75rem' }}>
+                                    10-year risk of heart attack, stroke, or CVD death
+                                  </div>
+                                </div>
+
+                                {/* ASCVD Risk Score */}
+                                <div className="hud-panel" style={{
+                                  border: `3px solid ${ascvdData.riskCategory === 'low' ? '#10b981' : ascvdData.riskCategory === 'borderline' ? '#3b82f6' : ascvdData.riskCategory === 'intermediate' ? '#f59e0b' : '#ef4444'}`,
+                                  boxShadow: `0 0 40px ${ascvdData.riskCategory === 'low' ? 'rgba(16, 185, 129, 0.5)' : ascvdData.riskCategory === 'borderline' ? 'rgba(59, 130, 246, 0.5)' : ascvdData.riskCategory === 'intermediate' ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`,
+                                }}>
+                                  <div className="hud-text-cyan" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                    ASCVD RISK CALCULATOR
+                                  </div>
+                                  <div className="hud-value" style={{ fontSize: '2.5rem', color: ascvdData.riskCategory === 'low' ? '#10b981' : ascvdData.riskCategory === 'borderline' ? '#3b82f6' : ascvdData.riskCategory === 'intermediate' ? '#f59e0b' : '#ef4444', marginBottom: '0.5rem' }}>
+                                    {ascvdData.riskPercent}%
+                                  </div>
+                                  <div style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '12px',
+                                    background: `${ascvdData.riskCategory === 'low' ? '#10b981' : ascvdData.riskCategory === 'borderline' ? '#3b82f6' : ascvdData.riskCategory === 'intermediate' ? '#f59e0b' : '#ef4444'}40`,
+                                    color: ascvdData.riskCategory === 'low' ? '#10b981' : ascvdData.riskCategory === 'borderline' ? '#3b82f6' : ascvdData.riskCategory === 'intermediate' ? '#f59e0b' : '#ef4444',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    marginBottom: '1rem',
+                                    textShadow: `0 0 10px ${ascvdData.riskCategory === 'low' ? 'rgba(16, 185, 129, 0.8)' : ascvdData.riskCategory === 'borderline' ? 'rgba(59, 130, 246, 0.8)' : ascvdData.riskCategory === 'intermediate' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(239, 68, 68, 0.8)'}`,
+                                  }}>
+                                    {ascvdData.riskCategory} Risk
+                                  </div>
+                                  <div className="hud-field-data" style={{ fontSize: '0.8rem', lineHeight: '1.6' }}>
+                                    {ascvdData.interpretation}
+                                  </div>
+                                  <div className="hud-field" style={{ marginTop: '1rem', fontSize: '0.75rem' }}>
+                                    ACC/AHA 10-year atherosclerotic cardiovascular disease risk
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Lifestyle Impact Simulator - What If Scenarios */}
+                    {patientData && (() => {
+                      const [simSmoking, setSimSmoking] = React.useState(patientData.smokingStatus === 'current');
+                      const [simBP, setSimBP] = React.useState(dataCompleteness.latestVitals?.systolicBP || 120);
+                      const [simExercise, setSimExercise] = React.useState(2); // days per week
+
+                      const age = user?.dateOfBirth ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 50;
+                      const gender = user?.gender === 'Female' ? 'female' : 'male';
+
+                      // Current risk
+                      const currentRisk = calculateFraminghamRisk({
+                        age,
+                        gender,
+                        totalCholesterol: 200,
+                        hdlCholesterol: 50,
+                        systolicBP: dataCompleteness.latestVitals?.systolicBP || 120,
+                        onBPMeds: (patientData.medications?.length || 0) > 0,
+                        smoking: patientData.smokingStatus === 'current',
+                        diabetes: patientData.diabetesStatus === 'yes',
+                      });
+
+                      // Simulated risk with lifestyle changes
+                      const simulatedRisk = calculateFraminghamRisk({
+                        age,
+                        gender,
+                        totalCholesterol: 200 - (simExercise * 5), // Exercise lowers cholesterol ~5mg/dL per day/week
+                        hdlCholesterol: 50 + (simExercise * 2), // Exercise increases HDL
+                        systolicBP: simBP,
+                        onBPMeds: (patientData.medications?.length || 0) > 0,
+                        smoking: simSmoking,
+                        diabetes: patientData.diabetesStatus === 'yes',
+                      });
+
+                      const riskReduction = currentRisk.riskPercent - simulatedRisk.riskPercent;
+
+                      return (
+                        <div style={{ marginBottom: '2rem' }}>
+                          <h3 className="hud-text-cyan" style={{ fontSize: '1.3rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Target className="h-5 w-5" />
+                            LIFESTYLE IMPACT SIMULATOR ("WHAT IF" SCENARIOS)
+                          </h3>
+                          <div className="hud-panel-dark">
+                            <div className="hud-field-data" style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                              Adjust lifestyle factors below to see potential impact on your cardiovascular risk:
+                            </div>
+
+                            {/* Interactive Sliders */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                              {/* Blood Pressure Slider */}
+                              <div>
+                                <label className="hud-text-cyan" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>
+                                  Systolic Blood Pressure: {simBP} mmHg
+                                </label>
+                                <input
+                                  type="range"
+                                  min="90"
+                                  max="180"
+                                  value={simBP}
+                                  onChange={(e) => setSimBP(Number(e.target.value))}
+                                  style={{ width: '100%', accentColor: '#00f0ff' }}
+                                />
+                                <div className="hud-label" style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                                  Target: {'<'}120 mmHg
+                                </div>
+                              </div>
+
+                              {/* Exercise Slider */}
+                              <div>
+                                <label className="hud-text-cyan" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>
+                                  Exercise: {simExercise} days/week
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="7"
+                                  value={simExercise}
+                                  onChange={(e) => setSimExercise(Number(e.target.value))}
+                                  style={{ width: '100%', accentColor: '#10b981' }}
+                                />
+                                <div className="hud-label" style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                                  Target: ≥3 days/week
+                                </div>
+                              </div>
+
+                              {/* Smoking Toggle */}
+                              <div>
+                                <label className="hud-text-cyan" style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>
+                                  Smoking Status
+                                </label>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                  <button
+                                    onClick={() => setSimSmoking(true)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '0.5rem',
+                                      borderRadius: '8px',
+                                      border: simSmoking ? '3px solid #ef4444' : '2px solid rgba(0, 240, 255, 0.3)',
+                                      background: simSmoking ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0,0,0,0.95)',
+                                      color: simSmoking ? '#ef4444' : '#ffffff',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      textShadow: simSmoking ? '0 0 10px rgba(239, 68, 68, 0.8)' : '0 0 10px rgba(255, 255, 255, 0.5)',
+                                    }}
+                                  >
+                                    Smoker
+                                  </button>
+                                  <button
+                                    onClick={() => setSimSmoking(false)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '0.5rem',
+                                      borderRadius: '8px',
+                                      border: !simSmoking ? '3px solid #10b981' : '2px solid rgba(0, 240, 255, 0.3)',
+                                      background: !simSmoking ? 'rgba(16, 185, 129, 0.3)' : 'rgba(0,0,0,0.95)',
+                                      color: !simSmoking ? '#10b981' : '#ffffff',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      textShadow: !simSmoking ? '0 0 10px rgba(16, 185, 129, 0.8)' : '0 0 10px rgba(255, 255, 255, 0.5)',
+                                    }}
+                                  >
+                                    Non-Smoker
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Before/After Comparison */}
+                            <div className="hud-panel" style={{ border: '3px solid rgba(0, 240, 255, 0.7)' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1.5rem', alignItems: 'center' }}>
+                                {/* Current Risk */}
+                                <div style={{ textAlign: 'center' }}>
+                                  <div className="hud-text-cyan" style={{ fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                    Current Risk
+                                  </div>
+                                  <div className="hud-value" style={{ fontSize: '2.5rem', color: '#ef4444' }}>
+                                    {currentRisk.riskPercent}%
+                                  </div>
+                                  <div style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '12px',
+                                    background: 'rgba(239, 68, 68, 0.4)',
+                                    color: '#ef4444',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    marginTop: '0.5rem',
+                                    textShadow: '0 0 10px rgba(239, 68, 68, 0.8)',
+                                  }}>
+                                    {currentRisk.riskCategory}
+                                  </div>
+                                </div>
+
+                                {/* Arrow */}
+                                <div style={{ fontSize: '2rem', color: riskReduction > 0 ? '#10b981' : '#00f0ff', fontWeight: 900, textShadow: riskReduction > 0 ? '0 0 15px rgba(16, 185, 129, 0.8)' : '0 0 15px rgba(0, 240, 255, 0.8)' }}>
+                                  →
+                                </div>
+
+                                {/* Simulated Risk */}
+                                <div style={{ textAlign: 'center' }}>
+                                  <div className="hud-text-cyan" style={{ fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                    Projected Risk
+                                  </div>
+                                  <div className="hud-value" style={{ fontSize: '2.5rem', color: simulatedRisk.riskCategory === 'low' ? '#10b981' : simulatedRisk.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444' }}>
+                                    {simulatedRisk.riskPercent}%
+                                  </div>
+                                  <div style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '12px',
+                                    background: `${simulatedRisk.riskCategory === 'low' ? '#10b981' : simulatedRisk.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444'}40`,
+                                    color: simulatedRisk.riskCategory === 'low' ? '#10b981' : simulatedRisk.riskCategory === 'moderate' ? '#f59e0b' : '#ef4444',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    marginTop: '0.5rem',
+                                    textShadow: `0 0 10px ${simulatedRisk.riskCategory === 'low' ? 'rgba(16, 185, 129, 0.8)' : simulatedRisk.riskCategory === 'moderate' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(239, 68, 68, 0.8)'}`,
+                                  }}>
+                                    {simulatedRisk.riskCategory}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Impact Summary */}
+                              {riskReduction !== 0 && (
+                                <div className="hud-field" style={{
+                                  marginTop: '1.5rem',
+                                  background: riskReduction > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                  borderLeft: `4px solid ${riskReduction > 0 ? '#10b981' : '#ef4444'}`,
+                                }}>
+                                  <div className="hud-value" style={{ fontSize: '0.95rem', marginBottom: '0.5rem', color: riskReduction > 0 ? '#10b981' : '#ef4444' }}>
+                                    {riskReduction > 0 ? '✅ Potential Benefit:' : '⚠️ Risk Increase:'}
+                                  </div>
+                                  <div className="hud-field-data" style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
+                                    {riskReduction > 0
+                                      ? `These lifestyle changes could reduce your 10-year CVD risk by ${riskReduction.toFixed(1)}% - equivalent to adding ${Math.round(riskReduction * 1.5)} healthy years to your life!`
+                                      : `These changes could increase your risk by ${Math.abs(riskReduction).toFixed(1)}%. Consider healthier alternatives.`
+                                    }
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Summary */}
                     {selectedReport.summary && (
                       <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ color: '#00d4ff', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h3 className="hud-text-cyan" style={{ fontSize: '1.3rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <TrendingUp className="h-5 w-5" />
-                          Executive Summary
+                          EXECUTIVE SUMMARY
                         </h3>
-                        <div style={{
-                          padding: '1.5rem',
-                          background: 'rgba(0, 212, 255, 0.1)',
-                          border: '1px solid rgba(0, 212, 255, 0.3)',
-                          borderRadius: '12px',
-                        }}>
-                          <p style={{ color: 'rgba(255,255,255,0.9)', lineHeight: '1.8', whiteSpace: 'pre-wrap', fontSize: '1rem' }}>
+                        <div className="hud-panel">
+                          <p className="hud-field-data" style={{ lineHeight: '1.8', whiteSpace: 'pre-wrap', fontSize: '1rem' }}>
                             {selectedReport.summary}
                           </p>
                         </div>
@@ -1407,44 +1871,44 @@ export function CIAPage() {
                     {/* Risk Assessment */}
                     {selectedReport.riskAssessment && selectedReport.riskAssessment.length > 0 && (
                       <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ color: '#ef4444', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h3 className="hud-text-red" style={{ fontSize: '1.3rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <AlertTriangle className="h-5 w-5" />
-                          Risk Assessment & Clinical Findings
+                          RISK ASSESSMENT & CLINICAL FINDINGS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {selectedReport.riskAssessment.map((risk: CIARiskItem, idx: number) => (
                             <div
                               key={idx}
+                              className="hud-panel"
                               style={{
-                                padding: '1.25rem',
-                                background: 'rgba(255,255,255,0.05)',
-                                border: `2px solid ${getSeverityColor(risk.severity)}40`,
-                                borderRadius: '12px',
+                                border: `3px solid ${getSeverityColor(risk.severity)}`,
+                                boxShadow: `0 0 40px ${getSeverityColor(risk.severity)}80`,
                               }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
-                                <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.05rem' }}>{risk.category}</span>
+                                <span className="hud-value" style={{ fontSize: '1.05rem' }}>{risk.category}</span>
                                 <span
                                   style={{
                                     padding: '0.4rem 1rem',
                                     borderRadius: '8px',
-                                    background: `${getSeverityColor(risk.severity)}20`,
+                                    background: `${getSeverityColor(risk.severity)}40`,
                                     color: getSeverityColor(risk.severity),
                                     fontSize: '0.8rem',
-                                    fontWeight: 700,
+                                    fontWeight: 800,
                                     textTransform: 'uppercase',
+                                    textShadow: `0 0 10px ${getSeverityColor(risk.severity)}`,
                                   }}
                                 >
                                   {risk.severity}
                                 </span>
                               </div>
-                              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
+                              <p className="hud-field-data" style={{ fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
                                 <strong>Finding:</strong> {risk.finding}
                               </p>
-                              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '0.5rem', lineHeight: '1.6' }}>
-                                <strong style={{ color: '#00d4ff' }}>Recommendation:</strong> {risk.recommendation}
+                              <p className="hud-field-data" style={{ fontSize: '0.9rem', marginBottom: '0.5rem', lineHeight: '1.6' }}>
+                                <strong className="hud-text-cyan">Recommendation:</strong> {risk.recommendation}
                               </p>
-                              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontStyle: 'italic', lineHeight: '1.6' }}>
+                              <p className="hud-field-data" style={{ fontSize: '0.85rem', fontStyle: 'italic', lineHeight: '1.6' }}>
                                 <strong>Clinical Basis:</strong> {risk.clinicalBasis}
                               </p>
                             </div>
@@ -1456,33 +1920,32 @@ export function CIAPage() {
                     {/* Unusual Findings */}
                     {selectedReport.unusualFindings && selectedReport.unusualFindings.length > 0 && (
                       <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ color: '#a855f7', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h3 className="hud-text-cyan" style={{ fontSize: '1.3rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#a855f7 !important' }}>
                           <Activity className="h-5 w-5" />
-                          Unusual Findings & Patterns
+                          UNUSUAL FINDINGS & PATTERNS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {selectedReport.unusualFindings.map((finding: CIAFinding, idx: number) => (
                             <div
                               key={idx}
+                              className="hud-panel"
                               style={{
-                                padding: '1.25rem',
-                                background: 'rgba(168, 85, 247, 0.1)',
-                                border: '2px solid rgba(168, 85, 247, 0.3)',
-                                borderRadius: '12px',
+                                border: '3px solid #a855f7',
+                                boxShadow: '0 0 40px rgba(168, 85, 247, 0.5)',
                               }}
                             >
-                              <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: '0.75rem', fontSize: '1.05rem' }}>
+                              <div className="hud-value" style={{ marginBottom: '0.75rem', fontSize: '1.05rem' }}>
                                 {finding.category}
                               </div>
-                              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
+                              <p className="hud-field-data" style={{ fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
                                 <strong>Observation:</strong> {finding.finding}
                               </p>
-                              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                <strong style={{ color: '#a855f7' }}>Clinical Significance:</strong> {finding.significance}
+                              <p className="hud-field-data" style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                <strong style={{ color: '#a855f7', textShadow: '0 0 10px rgba(168, 85, 247, 0.8)' }}>Clinical Significance:</strong> {finding.significance}
                               </p>
                               {finding.trend && (
-                                <div style={{ marginTop: '0.5rem', display: 'inline-block', padding: '0.3rem 0.75rem', background: 'rgba(168, 85, 247, 0.2)', borderRadius: '6px' }}>
-                                  <span style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 700 }}>
+                                <div style={{ marginTop: '0.5rem', display: 'inline-block', padding: '0.3rem 0.75rem', background: 'rgba(168, 85, 247, 0.4)', borderRadius: '6px' }}>
+                                  <span style={{ color: '#a855f7', fontSize: '0.8rem', fontWeight: 800, textShadow: '0 0 10px rgba(168, 85, 247, 0.8)' }}>
                                     Trend: {finding.trend.toUpperCase()}
                                   </span>
                                 </div>
@@ -1496,44 +1959,44 @@ export function CIAPage() {
                     {/* Action Plan - Enhanced */}
                     {selectedReport.actionPlan && selectedReport.actionPlan.length > 0 && (
                       <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ color: '#10b981', fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h3 className="hud-text-green" style={{ fontSize: '1.3rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Target className="h-5 w-5" />
-                          Personalized Action Plan & Recommendations
+                          PERSONALIZED ACTION PLAN & RECOMMENDATIONS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {selectedReport.actionPlan.map((action: CIAActionItem, idx: number) => (
                             <div
                               key={idx}
+                              className="hud-panel"
                               style={{
-                                padding: '1.25rem',
-                                background: 'rgba(16, 185, 129, 0.1)',
-                                border: '2px solid rgba(16, 185, 129, 0.3)',
-                                borderRadius: '12px',
+                                border: '3px solid #10b981',
+                                boxShadow: '0 0 40px rgba(16, 185, 129, 0.5)',
                               }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
-                                <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.05rem' }}>
+                                <span className="hud-value" style={{ fontSize: '1.05rem' }}>
                                   {idx + 1}. {action.action}
                                 </span>
                                 <span
                                   style={{
                                     padding: '0.4rem 1rem',
                                     borderRadius: '8px',
-                                    background: `${getPriorityColor(action.priority)}20`,
+                                    background: `${getPriorityColor(action.priority)}40`,
                                     color: getPriorityColor(action.priority),
                                     fontSize: '0.8rem',
-                                    fontWeight: 700,
+                                    fontWeight: 800,
                                     textTransform: 'uppercase',
+                                    textShadow: `0 0 10px ${getPriorityColor(action.priority)}`,
                                   }}
                                 >
                                   {action.priority}
                                 </span>
                               </div>
-                              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
-                                <strong style={{ color: '#10b981' }}>Evidence-Based Rationale:</strong> {action.rationale}
+                              <p className="hud-field-data" style={{ fontSize: '0.95rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>
+                                <strong style={{ color: '#10b981', textShadow: '0 0 10px rgba(16, 185, 129, 0.8)' }}>Evidence-Based Rationale:</strong> {action.rationale}
                               </p>
                               {action.timeline && (
-                                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <p className="hud-field-data" style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                   <Clock className="h-4 w-4" style={{ color: '#10b981' }} />
                                   <strong>Timeline:</strong> {action.timeline}
                                 </p>
