@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Medication from '../models/Medication';
 import MedicationLog from '../models/MedicationLog';
 import { Op } from 'sequelize';
+import drugInteractionService from '../services/drugInteractionService';
 
 // GET /api/medications - Get all medications
 export const getMedications = async (req: Request, res: Response) => {
@@ -80,6 +81,19 @@ export const addMedication = async (req: Request, res: Response) => {
     const medication = await Medication.create(medicationData);
 
     console.log('[ADD_MEDICATION] Medication created successfully:', medication.id);
+
+    // 💊 DRUG INTERACTION DETECTION: Check for dangerous interactions with other medications
+    if (medication.isActive) {
+      try {
+        console.log('[MEDICATIONS] Running drug interaction detection...');
+        // Run interaction monitoring in background (non-blocking)
+        drugInteractionService.monitorAndAlertDrugInteractions(userId).catch((err: any) => {
+          console.error('[MEDICATIONS] Error in drug interaction monitoring (non-blocking):', err.message);
+        });
+      } catch (interactionError) {
+        console.error('[MEDICATIONS] Error triggering drug interaction detection:', interactionError);
+      }
+    }
 
     res.status(201).json(medication);
   } catch (error: any) {
@@ -205,6 +219,19 @@ export const updateMedication = async (req: Request, res: Response) => {
 
     await medication.update(sanitizedData);
 
+    // 💊 DRUG INTERACTION DETECTION: Check for dangerous interactions after medication update
+    if (medication.isActive) {
+      try {
+        console.log('[MEDICATIONS] Running drug interaction detection after update...');
+        // Run interaction monitoring in background (non-blocking)
+        drugInteractionService.monitorAndAlertDrugInteractions(userId).catch((err: any) => {
+          console.error('[MEDICATIONS] Error in drug interaction monitoring (non-blocking):', err.message);
+        });
+      } catch (interactionError) {
+        console.error('[MEDICATIONS] Error triggering drug interaction detection:', interactionError);
+      }
+    }
+
     res.json(medication);
   } catch (error) {
     console.error('Error updating medication:', error);
@@ -250,6 +277,19 @@ export const toggleActive = async (req: Request, res: Response) => {
     }
 
     await medication.update({ isActive: !medication.isActive });
+
+    // 💊 DRUG INTERACTION DETECTION: Check for dangerous interactions when activating medication
+    if (medication.isActive) {
+      try {
+        console.log('[MEDICATIONS] Running drug interaction detection after activation...');
+        // Run interaction monitoring in background (non-blocking)
+        drugInteractionService.monitorAndAlertDrugInteractions(userId).catch((err: any) => {
+          console.error('[MEDICATIONS] Error in drug interaction monitoring (non-blocking):', err.message);
+        });
+      } catch (interactionError) {
+        console.error('[MEDICATIONS] Error triggering drug interaction detection:', interactionError);
+      }
+    }
 
     res.json(medication);
   } catch (error) {
