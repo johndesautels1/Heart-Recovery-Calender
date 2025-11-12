@@ -11,6 +11,8 @@ export interface User {
   timezone: string;
   role?: 'patient' | 'therapist' | 'admin';
   surgeryDate?: string;  // Day 0 - the date of heart surgery (for patient users)
+  dateOfBirth?: string;  // User's date of birth (for age calculations)
+  gender?: 'male' | 'female' | 'Male' | 'Female' | 'other';  // User's gender
   preferences?: {
     emailNotifications?: boolean;
     smsNotifications?: boolean;

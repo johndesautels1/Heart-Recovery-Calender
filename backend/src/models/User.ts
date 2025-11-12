@@ -40,6 +40,8 @@ interface UserAttributes {
   preferences?: UserPreferences;
   role?: 'patient' | 'therapist' | 'admin';
   surgeryDate?: Date;  // Day 0 - the date of heart surgery (for patient users)
+  dateOfBirth?: Date;  // User's date of birth (for age calculations)
+  gender?: 'male' | 'female' | 'other';  // User's gender
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -62,6 +64,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public preferences?: UserPreferences;
   public role?: 'patient' | 'therapist' | 'admin';
   public surgeryDate?: Date;
+  public dateOfBirth?: Date;
+  public gender?: 'male' | 'female' | 'other';
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -165,6 +169,16 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
           type: DataTypes.DATE,
           allowNull: true,
           comment: 'Day 0 - the date of heart surgery (for patient users)',
+        },
+        dateOfBirth: {
+          type: DataTypes.DATE,
+          allowNull: true,
+          comment: 'User date of birth for age calculations and risk assessments',
+        },
+        gender: {
+          type: DataTypes.ENUM('male', 'female', 'other'),
+          allowNull: true,
+          comment: 'User gender for medical risk calculations',
         },
       },
       {
