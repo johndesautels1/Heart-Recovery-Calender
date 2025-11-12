@@ -21,6 +21,233 @@ This document contains CRITICAL instructions including:
 
 ---
 
+## 🔴 CRITICAL DATABASE ARCHITECTURE - READ THIS FIRST
+
+### User = Patient Relationship (NOT Separate Entities)
+
+**CRITICAL UNDERSTANDING:** Patients and Users are **THE SAME PERSON**, not different database entities. The `patients` table is an **EXTENDED PROFILE** for users with health tracking data, NOT a separate person record.
+
+### Database Architecture
+
+#### User Table (`users`)
+```typescript
+// Primary user account - EVERYONE is a User first
+User {
+  id: number                          // Primary key
+  email: string                       // Login credential
+  name: string                        // Display name
+  role: 'patient' | 'therapist' | 'admin'  // User role
+  surgeryDate?: Date                  // For patient users
+  // ... other user account fields
+}
+```
+
+#### Patient Table (`patients`)
+```typescript
+// EXTENDED HEALTH PROFILE - Links to User via userId
+Patient {
+  id: number                          // Patient profile ID
+  userId?: number                     // 🔗 LINK TO USER ACCOUNT (users.id)
+  therapistId: number                 // Therapist managing this patient
+
+  // Extended health fields
+  dateOfBirth?: Date
+  heartConditions?: string[]
+  baselineBpSystolic?: number
+  ejectionFraction?: number
+  // ... 60+ health-specific fields
+}
+```
+
+### The Relationship
+
+```
+User (id=2, role='patient', name='John Doe')
+  ↓ links to
+Patient (id=1, userId=2, therapistId=5, heartConditions=['CAD'])
+         ↑ managed by
+User (id=5, role='therapist', name='Dr. Smith')
+```
+
+**Key Points:**
+1. **User.id = Patient.userId** - Same person, different aspects of their data
+2. **User** contains: login, role, basic info
+3. **Patient** contains: medical history, vitals, prescriptions
+4. **Query Pattern**: ALWAYS query User first, then JOIN Patient profile if exists
+
+### ❌ WRONG Data Access Patterns
+
+```typescript
+// ❌ WRONG - Querying ONLY Patient table misses User data
+const patient = await Patient.findOne({ where: { id: patientId }});
+// Missing: user email, role, surgeryDate, etc.
+
+// ❌ WRONG - Treating Patient as separate from User
+if (patient.email) // ERROR: Patient table has no email field!
+
+// ❌ WRONG - Looking for patient data without User context
+const vitals = await VitalsSample.findAll({ where: { patientId }});
+// Should use userId, not patientId!
+```
+
+### ✅ CORRECT Data Access Patterns
+
+```typescript
+// ✅ CORRECT - Query User, include Patient profile
+const user = await User.findByPk(userId, {
+  include: [{
+    model: Patient,
+    as: 'patientProfile',
+    where: { userId: userId },
+    required: false  // User might not have Patient profile yet
+  }]
+});
+
+// Access user data: user.email, user.role, user.surgeryDate
+// Access patient data: user.patientProfile.heartConditions
+
+// ✅ CORRECT - Query vitals using userId (NOT patientId)
+const vitals = await VitalsSample.findAll({
+  where: { userId: user.id }  // VitalsSample.userId links to User.id
+});
+
+// ✅ CORRECT - Get medications using userId
+const medications = await Medication.findAll({
+  where: { userId: user.id }  // Medication.userId links to User.id
+});
+```
+
+### Data Table Relationships
+
+**User-Linked Tables (use `userId`):**
+- `vitals_samples` - User's vital signs
+- `medications` - User's medications
+- `medication_logs` - User's medication doses
+- `meal_entries` - User's meals
+- `calendars` - User's calendars
+- `calendar_events` - User's calendar events
+- `exercise_logs` - User's exercise sessions
+- `device_connections` - User's connected devices (Polar, Strava)
+- `cia_reports` - User's AI health reports
+
+**Patient-Profile Tables (use `patientId` from Patient.id):**
+- `exercise_prescriptions` - Therapist-prescribed exercises
+- `therapy_goals` - Therapist-set recovery goals
+- (Patient table itself extends User with medical details)
+
+### Why This Matters for Data Integrations
+
+**Device Integration Example:**
+```typescript
+// ❌ WRONG - Device sync looks for Patient record
+const patient = await Patient.findOne({ where: { polarDeviceId }});
+const vitals = await VitalsSample.findAll({ where: { patientId: patient.id }});
+// FAILS: VitalsSample.patientId doesn't exist! Uses userId!
+
+// ✅ CORRECT - Device sync uses User + Patient profile
+const deviceConnection = await DeviceConnection.findOne({
+  where: { deviceType: 'polar' }
+});
+const user = await User.findByPk(deviceConnection.userId);
+const vitals = await VitalsSample.create({
+  userId: user.id,  // ✅ Correct foreign key
+  heartRate: 72,
+  // ...
+});
+```
+
+### Role Hierarchy
+
+```
+User Roles:
+├─ patient (role='patient')
+│   └─ Can ONLY view their own data
+│   └─ May have extended Patient profile (userId links to patients table)
+│
+├─ therapist (role='therapist')  ← Same as admin
+│   └─ Can view their own data (they may also be patients)
+│   └─ Can view ALL patients' data via dropdown selector
+│   └─ Can create/manage exercise prescriptions
+│
+└─ admin (role='admin')  ← Same as therapist
+    └─ Same permissions as therapist
+    └─ Can view/manage all users
+```
+
+**Dual Role Example:**
+```typescript
+// Dr. Smith is BOTH therapist AND patient (had heart surgery)
+User {
+  id: 5,
+  name: 'Dr. Smith',
+  role: 'therapist',  // Can manage other patients
+  surgeryDate: '2024-06-15'  // Also recovering from surgery
+}
+
+Patient {
+  id: 10,
+  userId: 5,  // Links to Dr. Smith's User account
+  therapistId: 6,  // Dr. Jones manages Dr. Smith's recovery
+  heartConditions: ['CABG'],
+  baselineBpSystolic: 120
+}
+
+// Dr. Smith can:
+// 1. View their OWN vitals/medications (userId=5)
+// 2. View ALL their patients' data (therapistId=5 in patients table)
+// 3. Toggle between "My Dashboard" and "Patient: John Doe"
+```
+
+### Migration Guide: Fixing Data Integration Issues
+
+If you're experiencing missing data, check these common issues:
+
+**1. Check Foreign Keys:**
+```sql
+-- ✅ Correct: Tables should link to users.id
+ALTER TABLE vitals_samples ADD FOREIGN KEY (userId) REFERENCES users(id);
+ALTER TABLE medications ADD FOREIGN KEY (userId) REFERENCES users(id);
+
+-- ❌ Wrong: Don't create patientId foreign keys in vitals/medications
+-- These should use userId, not patientId
+```
+
+**2. Fix API Endpoints:**
+```typescript
+// ❌ WRONG API - Returns only Patient data
+GET /api/patients/:id
+// Response: { id, therapistId, heartConditions, ... } // Missing email, role!
+
+// ✅ CORRECT API - Returns User with Patient profile
+GET /api/users/:id/profile
+// Response: {
+//   id, email, name, role, surgeryDate,
+//   patientProfile: { heartConditions, baselineBpSystolic, ... }
+// }
+```
+
+**3. Fix Frontend Data Fetching:**
+```typescript
+// ❌ WRONG - Separate queries causing data mismatches
+const patient = await api.getPatient(patientId);
+const vitals = await api.getVitals(patientId);  // FAILS: no patientId in vitals
+
+// ✅ CORRECT - Single query with proper relationships
+const userData = await api.getUserProfile(userId);
+const vitals = await api.getVitals(userData.id);  // Uses userId
+```
+
+### Summary: The Golden Rules
+
+1. **User is the primary entity** - Everyone has a User record first
+2. **Patient is an extended profile** - Optional medical details linked via userId
+3. **Query User first, JOIN Patient** - Never query Patient without User context
+4. **Use userId for vitals/meds** - Not patientId
+5. **Role determines permissions** - patient=view own, therapist/admin=view all
+6. **Therapists can also be patients** - Dual roles are valid (userId appears in both User and Patient tables)
+
+---
+
 ## 🐛 KNOWN ISSUES - REQUIRES IMMEDIATE ATTENTION
 
 **Session Date: 2025-11-12**
