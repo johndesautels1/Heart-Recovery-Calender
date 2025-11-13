@@ -13,16 +13,23 @@ router.get('/current', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
 
-    // Get patient profile to find location
+    // Query User first, then LEFT JOIN Patient profile (optional extended profile)
     const patient = await Patient.findOne({ where: { userId } });
 
-    if (!patient || !patient.city || !patient.state) {
-      return res.status(400).json({
-        error: 'No location found in patient profile. Please update your city and state.',
-      });
+    // Try to get location from Patient profile if it exists
+    let city = patient?.city;
+    let state = patient?.state;
+
+    // If no Patient profile or no location, use default location
+    // This allows weather widget to work for ALL users, not just those with Patient profiles
+    if (!city || !state) {
+      // Default to a reasonable location (can be configured via env var)
+      city = process.env.DEFAULT_CITY || 'New York';
+      state = process.env.DEFAULT_STATE || 'NY';
+      console.log(`[WEATHER] No location in profile for user ${userId}, using default: ${city}, ${state}`);
     }
 
-    const weather = await getCurrentWeather(patient.city, patient.state);
+    const weather = await getCurrentWeather(city, state);
 
     // Calculate hydration adjustment
     const hydrationAdjustment = calculateWeatherHydrationAdjustment(weather);
@@ -31,8 +38,9 @@ router.get('/current', authenticateToken, async (req: any, res) => {
       weather,
       hydrationAdjustment,
       location: {
-        city: patient.city,
-        state: patient.state,
+        city,
+        state,
+        isDefault: !patient?.city || !patient?.state, // Flag to indicate if using default
       },
     });
   } catch (error: any) {
@@ -50,16 +58,21 @@ router.get('/forecast/:date', authenticateToken, async (req: any, res) => {
     const userId = req.user.id;
     const targetDate = new Date(req.params.date);
 
-    // Get patient profile to find location
+    // Query User first, then LEFT JOIN Patient profile (optional extended profile)
     const patient = await Patient.findOne({ where: { userId } });
 
-    if (!patient || !patient.city || !patient.state) {
-      return res.status(400).json({
-        error: 'No location found in patient profile',
-      });
+    // Try to get location from Patient profile if it exists
+    let city = patient?.city;
+    let state = patient?.state;
+
+    // If no Patient profile or no location, use default location
+    if (!city || !state) {
+      city = process.env.DEFAULT_CITY || 'New York';
+      state = process.env.DEFAULT_STATE || 'NY';
+      console.log(`[WEATHER] No location in profile for user ${userId}, using default: ${city}, ${state}`);
     }
 
-    const weather = await getWeatherForDate(patient.city, patient.state, targetDate);
+    const weather = await getWeatherForDate(city, state, targetDate);
 
     // Calculate hydration adjustment
     const hydrationAdjustment = calculateWeatherHydrationAdjustment(weather);
@@ -68,8 +81,9 @@ router.get('/forecast/:date', authenticateToken, async (req: any, res) => {
       weather,
       hydrationAdjustment,
       location: {
-        city: patient.city,
-        state: patient.state,
+        city,
+        state,
+        isDefault: !patient?.city || !patient?.state,
       },
       date: targetDate.toISOString(),
     });
