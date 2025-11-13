@@ -1,7 +1,18 @@
 import { Request, Response } from 'express';
 import SleepLog from '../models/SleepLog';
+import User from '../models/User';
 import { Op } from 'sequelize';
+import { addMonths } from 'date-fns';
 
+/**
+ * GET /api/sleep-logs - Get sleep logs with filters
+ *
+ * Date range behavior:
+ * - If specific date is provided, returns that single date
+ * - If start/end dates are provided, uses them explicitly
+ * - If no dates provided, defaults to: surgery date to +1 month from today
+ * - Surgery date is required for defaults (User.surgeryDate is the source of truth)
+ */
 export const getSleepLogs = async (req: Request, res: Response) => {
   try {
     // Prioritize query userId (for therapists viewing patients) over authenticated user
@@ -10,11 +21,23 @@ export const getSleepLogs = async (req: Request, res: Response) => {
     const where: any = { userId };
 
     if (date) {
+      // Specific date requested
       where.date = date;
-    } else if (start || end) {
-      where.date = {};
-      if (start) where.date[Op.gte] = start;
-      if (end) where.date[Op.lte] = end;
+    } else {
+      // Fetch user to get surgery date for defaults
+      const user = await User.findByPk(userId);
+      if (!user?.surgeryDate) {
+        return res.status(400).json({ error: 'Surgery date required for date range defaults' });
+      }
+
+      // Default date range: surgery date to +1 month from today
+      const startDate = start ? new Date(start as string) : new Date(user.surgeryDate);
+      const endDate = end ? new Date(end as string) : addMonths(new Date(), 1);
+
+      where.date = {
+        [Op.gte]: startDate,
+        [Op.lte]: endDate
+      };
     }
 
     const sleepLogs = await SleepLog.findAll({
@@ -138,15 +161,28 @@ export const deleteSleepLog = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * GET /api/sleep-logs/stats - Get sleep statistics
+ *
+ * Date range behavior:
+ * - If start/end dates are provided, uses them explicitly
+ * - If no dates provided, defaults to: surgery date to today
+ * - Surgery date is required for defaults (User.surgeryDate is the source of truth)
+ */
 export const getSleepStats = async (req: Request, res: Response) => {
   try {
     // Prioritize query userId (for therapists viewing patients) over authenticated user
     const userId = (req.query.userId as string) || req.user?.id;
     const { start, end } = req.query;
 
-    const startDate = start
-      ? new Date(start as string)
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    // Fetch user to get surgery date for defaults
+    const user = await User.findByPk(userId);
+    if (!user?.surgeryDate) {
+      return res.status(400).json({ error: 'Surgery date required for date range defaults' });
+    }
+
+    // Default date range: surgery date to today
+    const startDate = start ? new Date(start as string) : new Date(user.surgeryDate);
     const endDate = end ? new Date(end as string) : new Date();
 
     const sleepLogs = await SleepLog.findAll({

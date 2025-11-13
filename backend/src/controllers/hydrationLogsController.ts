@@ -3,9 +3,18 @@ import HydrationLog from '../models/HydrationLog';
 import User from '../models/User';
 import Patient from '../models/Patient';
 import { Op } from 'sequelize';
+import { addMonths } from 'date-fns';
 import { calculateDailyWaterIntake } from '../services/hydrationCalculationService';
 
-// GET /api/hydration-logs - Get all hydration logs with filters
+/**
+ * GET /api/hydration-logs - Get all hydration logs with filters
+ *
+ * Date range behavior:
+ * - If specific date is provided, returns that single date
+ * - If startDate/endDate are provided, uses them explicitly
+ * - If no dates provided, defaults to: surgery date to +1 month from today
+ * - Surgery date is required for defaults (User.surgeryDate is the source of truth)
+ */
 export const getHydrationLogs = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -24,15 +33,24 @@ export const getHydrationLogs = async (req: Request, res: Response) => {
 
     // Date filtering
     if (date) {
+      // Specific date requested
       where.date = date;
-    } else if (startDate || endDate) {
-      where.date = {};
-      if (startDate) {
-        where.date[Op.gte] = startDate;
+    } else {
+      // Fetch user to get surgery date for defaults
+      const targetUserId = queryUserId || userId;
+      const user = await User.findByPk(targetUserId);
+      if (!user?.surgeryDate) {
+        return res.status(400).json({ error: 'Surgery date required for date range defaults' });
       }
-      if (endDate) {
-        where.date[Op.lte] = endDate;
-      }
+
+      // Default date range: surgery date to +1 month from today
+      const start = startDate ? new Date(startDate as string) : new Date(user.surgeryDate);
+      const end = endDate ? new Date(endDate as string) : addMonths(new Date(), 1);
+
+      where.date = {
+        [Op.gte]: start,
+        [Op.lte]: end
+      };
     }
 
     const logs = await HydrationLog.findAll({
