@@ -248,6 +248,139 @@ const vitals = await api.getVitals(userData.id);  // Uses userId
 
 ---
 
+## 🔴 CRITICAL: Surgery Date Architecture
+
+### Surgery Date as Day Zero
+
+**ARCHITECTURAL REQUIREMENT:** The entire application relies upon the surgery date being set as the beginning date of charts, vitals, and data entry. Surgery date is stored in the User Profile / Patient Profile (they are the same person) under "Profile → Surgical History → Surgery Date" and **MUST** be promulgated across the entire application to trigger every gauge and chart as the start date of data.
+
+### Surgery Date Storage
+
+**Current State:**
+- `User.surgeryDate` - Stored in users table (lines 42, 66, 168-172 in User.ts)
+- `Patient.surgeryDate` - Stored in patients table (lines 67, 172, 509-513 in Patient.ts)
+- **Issue**: Dual storage without synchronization can cause data corruption
+
+**Database Triggers:**
+All time-series models have PostgreSQL triggers that auto-calculate `postSurgeryDay` field:
+- `VitalsSample.postSurgeryDay` - Days since surgery for vital readings
+- `ExerciseLog.postSurgeryDay` - Days since surgery for exercise sessions
+- `MealLog.postSurgeryDay` - Days since surgery for meal entries
+- `Medication.postSurgeryDay` - Days since surgery for medication logs
+- `SleepLog.postSurgeryDay` - Days since surgery for sleep tracking
+- `HydrationLog.postSurgeryDay` - Days since surgery for hydration logs
+
+**Trigger Formula**: `postSurgeryDay = FLOOR(EXTRACT(EPOCH FROM (timestamp - Patient.surgeryDate)) / 86400)`
+
+**CRITICAL**: All triggers currently reference `Patient.surgeryDate`
+
+### Frontend Access Patterns
+
+#### ✅ Correct Pattern (Gold Standard from VitalsPage.tsx):
+```typescript
+const { user } = useAuth();
+const { patientData } = usePatientSelection();
+const surgeryDate = patientData?.surgeryDate || user?.surgeryDate;
+
+const calculateDateRange = (timeView: '7d' | '30d' | '90d' | 'surgery', surgeryDateStr?: string) => {
+  switch (timeView) {
+    case 'surgery':
+      if (surgeryDateStr) {
+        const surgery = new Date(surgeryDateStr);
+        const startDate = subMonths(surgery, 1);  // 1 month before surgery
+        const endDate = addMonths(new Date(), 1);  // 1 month after today
+        return { startDate, endDate };
+      }
+      break;
+    // ... other time views
+  }
+};
+```
+
+#### Pages Currently Implementing Correctly:
+- ✅ **VitalsPage.tsx** (lines 262-313, 368, 650, 1155-1214) - GOLD STANDARD
+- ✅ **SleepPage.tsx** - Uses similar pattern
+- ✅ **CAIPage.tsx** - Uses similar pattern
+
+#### Pages Requiring Fixes:
+- ❌ **DashboardPage.tsx** (lines 334-429) - CRITICAL BUG: 12-week chart goes BACKWARDS from today instead of FORWARD from surgery
+- ❌ **MealsPage.tsx** (lines 32, 132-149) - Missing 'surgery' timeline option
+- ❌ **MedicationsPage.tsx** - Missing 'surgery' timeline option
+
+### Backend Query Patterns
+
+#### ❌ Current Problem:
+**ZERO backend endpoints default to surgery date**. All controllers accept `startDate`/`endDate` query parameters but return ALL data if not provided:
+
+```typescript
+// Current BROKEN pattern in all controllers:
+const where: any = { userId };
+if (start || end) {
+  where.timestamp = {};
+  if (start) where.timestamp[Op.gte] = new Date(start);
+  if (end) where.timestamp[Op.lte] = new Date(end);
+}
+// ❌ No else clause - returns everything
+```
+
+#### ✅ Correct Pattern (To Be Implemented):
+```typescript
+// Should default to surgery date if no dates provided:
+const where: any = { userId };
+if (!start && !end) {
+  const patient = await Patient.findOne({ where: { userId } });
+  if (patient?.surgeryDate) {
+    start = patient.surgeryDate.toISOString();
+    end = addMonths(new Date(), 1).toISOString();
+  }
+}
+if (start || end) {
+  where.timestamp = {};
+  if (start) where.timestamp[Op.gte] = new Date(start);
+  if (end) where.timestamp[Op.lte] = new Date(end);
+}
+```
+
+#### Endpoints Requiring Surgery Date Defaults (18 total):
+- `GET /api/vitals` - vitalsController.ts
+- `GET /api/events` - calendarController.ts
+- `GET /api/exercise-logs` - exerciseLogsController.ts
+- `GET /api/meals` - mealsController.ts
+- `GET /api/medications` - medicationsController.ts
+- `GET /api/sleep` - sleepLogsController.ts
+- `GET /api/hydration` - hydrationLogsController.ts
+- `GET /api/daily-scores` - dailyScoresController.ts
+- `GET /api/calories/stats` - caloriesController.ts
+- (9 additional aggregate/stats endpoints)
+
+### Architecture Issues Identified
+
+**See**: [`SURGERY_DATE_AUDIT_REPORT.md`](./SURGERY_DATE_AUDIT_REPORT.md) for comprehensive audit findings
+
+**Key Issues:**
+1. Dual storage (User.surgeryDate + Patient.surgeryDate) without synchronization
+2. No centralized surgery date access hook in frontend
+3. No centralized surgery date utility in backend
+4. Database triggers reference Patient.surgeryDate but frontend reads from both User and Patient
+5. No default surgery date filtering in backend endpoints
+
+**Planned Fix Strategy:**
+- **Phase 1**: Clean up User/Patient entity architecture (11-16 hours)
+- **Phase 2**: Implement surgery date propagation on clean foundation (4 hours)
+
+### Timeline Options
+
+**Timeline Views Required:**
+All pages with time-series data should support these timeline options:
+- `7d` - Last 7 days
+- `30d` - Last 30 days
+- `90d` - Last 90 days
+- `surgery` - From surgery date to present (MOST IMPORTANT)
+
+**Default View**: Should be `surgery` to show entire recovery journey from Day Zero.
+
+---
+
 ## 🐛 KNOWN ISSUES - REQUIRES IMMEDIATE ATTENTION
 
 **Session Date: 2025-11-12**

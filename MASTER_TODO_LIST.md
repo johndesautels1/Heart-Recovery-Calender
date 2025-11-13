@@ -1991,3 +1991,36 @@
 - Frontend has 78+ TypeScript errors that need resolution 🔴
 - 0 npm security vulnerabilities ✅
 - All documentation complete ✅
+
+---
+
+## 🔴 CRITICAL: Surgery Date & Entity Architecture Fixes (November 13, 2025)
+
+### Surgery Date Audit Completed
+- **Audit Report:** `SURGERY_DATE_AUDIT_REPORT.md`
+- **5 Agent Reports Completed:** Frontend pages, backend endpoints, chart components, database models, React contexts
+- **Key Findings:** 0/18 backend endpoints default to surgery date, 6/9 frontend pages missing/broken surgery date logic
+
+### Phase 1: Entity Architecture Cleanup (PRIORITY 1) - 11-16 hours
+- [ ] Launch 5 agents to audit User/Patient/Therapist/Admin architecture
+- [ ] Design target architecture (User + roles, remove Patient duplication)
+- [ ] Create migration to add role field to User model
+- [ ] Migrate Patient data to User table
+- [ ] Update all foreign keys (patientId → userId)
+- [ ] Update all controllers/routes to use User model
+- [ ] Update frontend contexts (remove PatientSelectionContext confusion)
+- [ ] Update database triggers to reference User.surgeryDate
+- [ ] Test access control (patients can't access other patients)
+- [ ] Delete Patient model after successful migration
+
+### Phase 2: Surgery Date Propagation (PRIORITY 2) - 4 hours
+- [ ] Create backend/src/utils/surgeryDateHelper.ts utility
+- [ ] Update 18 backend controllers to default to surgery date
+- [ ] Create frontend/src/hooks/useSurgeryDate.ts custom hook
+- [ ] Fix DashboardPage.tsx:334-429 backwards calculation bug
+- [ ] Add 'surgery' timeline option to MealsPage.tsx
+- [ ] Add 'surgery' timeline option to MedicationsPage.tsx
+- [ ] Create centralized date utility module frontend/src/utils/surgeryDateUtils.ts
+- [ ] Test surgery date propagation across all pages
+
+**Estimated Total Time:** 15-20 hours for production-ready solution
