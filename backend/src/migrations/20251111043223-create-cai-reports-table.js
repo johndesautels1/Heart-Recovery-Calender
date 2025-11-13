@@ -135,20 +135,20 @@ module.exports = {
     });
 
     // Add indexes for common queries
-    await queryInterface.addIndex('CAI_reports', ['userId'], {
-      name: 'CAI_reports_user_id_idx',
+    await queryInterface.addIndex('cai_reports', ['userId'], {
+      name: 'cai_reports_user_id_idx',
     });
 
-    await queryInterface.addIndex('CAI_reports', ['patientId'], {
-      name: 'CAI_reports_patient_id_idx',
+    await queryInterface.addIndex('cai_reports', ['patientId'], {
+      name: 'cai_reports_patient_id_idx',
     });
 
-    await queryInterface.addIndex('CAI_reports', ['generatedAt'], {
-      name: 'CAI_reports_generated_at_idx',
+    await queryInterface.addIndex('cai_reports', ['generatedAt'], {
+      name: 'cai_reports_generated_at_idx',
     });
 
-    await queryInterface.addIndex('CAI_reports', ['status'], {
-      name: 'CAI_reports_status_idx',
+    await queryInterface.addIndex('cai_reports', ['status'], {
+      name: 'cai_reports_status_idx',
     });
   },
 
