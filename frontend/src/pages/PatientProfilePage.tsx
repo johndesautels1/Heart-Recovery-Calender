@@ -6,7 +6,7 @@ import {
   Activity, Pill, Hospital, Shield, Smartphone, Wallet,
   Upload, FileText, CreditCard, AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -107,7 +107,7 @@ interface Section {
 }
 
 export function PatientProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser } = useSession();
   const [isEditing, setIsEditing] = useState(true);  // Changed to true by default
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);

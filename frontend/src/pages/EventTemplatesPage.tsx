@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 interface EventTemplate {
   id: number;
@@ -58,7 +58,7 @@ export function EventTemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const { user } = useAuth();
+  const { user } = useSession();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateEventTemplateInput>();
 

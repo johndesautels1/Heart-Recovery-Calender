@@ -33,7 +33,7 @@ import api from '../services/api';
 import { SleepLog, CreateSleepLogInput, SleepStats } from '../types';
 import toast from 'react-hot-toast';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 const sleepSchema = z.object({
   date: z.string().min(1, 'Date is required'),
@@ -61,7 +61,7 @@ const sleepSchema = z.object({
 type SleepFormData = z.infer<typeof sleepSchema>;
 
 export function SleepPage() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const location = useLocation();
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [stats, setStats] = useState<SleepStats | null>(null);

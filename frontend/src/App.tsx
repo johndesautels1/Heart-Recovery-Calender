@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SessionProvider, useSession } from './contexts/SessionContext';
 import { ViewProvider } from './contexts/ViewContext';
-import { PatientSelectionProvider } from './contexts/PatientSelectionContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
@@ -40,7 +39,7 @@ const queryClient = new QueryClient({
 });
 
 function ProfileChecker({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, hasPatientProfile, user, isLoading } = useAuth();
+  const { isAuthenticated, hasPatientProfile, user, isLoading } = useSession();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
@@ -66,63 +65,61 @@ function ProfileChecker({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <SessionProvider>
         <WebSocketProvider>
           <ProfileChecker>
             <ViewProvider>
-              <PatientSelectionProvider>
-                <Router>
+              <Router>
                 <ScrollToTop />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
 
-              {/* CAI - Full immersion route (no layout) */}
-              <Route
-                path="/CAI"
-                element={
-                  <ProtectedRoute>
-                    <CAIPage />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* CAI - Full immersion route (no layout) */}
+                  <Route
+                    path="/CAI"
+                    element={
+                      <ProtectedRoute>
+                        <CAIPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Protected routes */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/vitals" element={<VitalsPage />} />
-                <Route path="/medications" element={<MedicationsPage />} />
-                <Route path="/meals" element={<MealsPage />} />
-                <Route path="/food-diary" element={<FoodDiaryPage />} />
-                <Route path="/sleep" element={<SleepPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/devices" element={<DevicesPage />} />
-                <Route path="/patients" element={<PatientsPage />} />
-                <Route path="/my-providers" element={<MyProvidersPage />} />
-                <Route path="/patients/:patientId/calendar" element={<PatientCalendarView />} />
-                <Route path="/exercises" element={<ExercisesPage />} />
-                <Route path="/event-templates" element={<EventTemplatesPage />} />
-              </Route>
+                  {/* Protected routes */}
+                  <Route
+                    element={
+                      <ProtectedRoute>
+                        <Layout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/calendar" element={<CalendarPage />} />
+                    <Route path="/vitals" element={<VitalsPage />} />
+                    <Route path="/medications" element={<MedicationsPage />} />
+                    <Route path="/meals" element={<MealsPage />} />
+                    <Route path="/food-diary" element={<FoodDiaryPage />} />
+                    <Route path="/sleep" element={<SleepPage />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/devices" element={<DevicesPage />} />
+                    <Route path="/patients" element={<PatientsPage />} />
+                    <Route path="/my-providers" element={<MyProvidersPage />} />
+                    <Route path="/patients/:patientId/calendar" element={<PatientCalendarView />} />
+                    <Route path="/exercises" element={<ExercisesPage />} />
+                    <Route path="/event-templates" element={<EventTemplatesPage />} />
+                  </Route>
 
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                  {/* Default redirect */}
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
               </Router>
-            </PatientSelectionProvider>
-          </ViewProvider>
+            </ViewProvider>
           </ProfileChecker>
         </WebSocketProvider>
-      </AuthProvider>
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

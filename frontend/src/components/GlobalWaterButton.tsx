@@ -3,10 +3,10 @@ import { Droplet, Plus, X, Calendar as CalendarIcon } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 export function GlobalWaterButton() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);

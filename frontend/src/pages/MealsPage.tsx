@@ -5,14 +5,14 @@ import { api } from '../services/api';
 import { FoodCategory, FoodItem, FoodStats, MealEntry, MedicationWarning } from '../types';
 import { AddToMealDialog } from '../components/AddToMealDialog';
 import { MedicationInteractionAlert } from '../components/MedicationInteractionAlert';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ReferenceLine } from 'recharts';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { WeightTrackingChart } from '../components/charts/WeightTrackingChart';
 
 export function MealsPage() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const { selectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [activeTab, setActiveTab] = useState<'database' | 'visuals'>('database');
   const [categories, setCategories] = useState<FoodCategory[]>([]);

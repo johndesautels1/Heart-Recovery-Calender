@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, Button } from '../components/ui';
 import { Stethoscope, Phone, Mail, MapPin, Calendar, Plus, Edit, Trash2, X, CalendarPlus, CalendarCheck, QrCode, Camera } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { api } from '../services/api';
 import { Provider, CreateProviderInput, ProviderType, PreferredContactMethod, PROVIDER_TYPE_LABELS, PROVIDER_TYPE_ICONS, CONTACT_METHOD_LABELS } from '../types';
 import { toast } from 'sonner';
@@ -10,7 +10,7 @@ import { QRGenerator } from '../components/QRGenerator';
 import { useTranslation } from 'react-i18next';
 
 export function MyProvidersPage() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const { t } = useTranslation();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);

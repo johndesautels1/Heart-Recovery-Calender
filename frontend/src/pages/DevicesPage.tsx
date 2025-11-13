@@ -6,11 +6,11 @@ import { DeviceConnection, DeviceSyncLog } from '../types';
 import { toast } from 'sonner';
 import { QRGenerator } from '../components/QRGenerator';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 export function DevicesPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user } = useSession();
   const [activeTab, setActiveTab] = useState<'implants' | 'trackers'>('implants');
   const [devices, setDevices] = useState<DeviceConnection[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<DeviceConnection | null>(null);

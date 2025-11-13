@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Heart, Mail, Lock } from 'lucide-react';
 import { Button, Input, GlassCard } from '../components/ui';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import toast from 'react-hot-toast';
 
 const loginSchema = z.object({
@@ -17,7 +17,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
   const {

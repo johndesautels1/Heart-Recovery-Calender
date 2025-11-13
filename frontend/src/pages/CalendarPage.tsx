@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import { format, addDays, parseISO } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import {
   exportToGoogleCalendar,
   exportToAppleCalendar,
@@ -48,7 +48,7 @@ type EventFormData = z.infer<typeof eventSchema>;
 
 export function CalendarPage() {
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
-  const { user } = useAuth();
+  const { user } = useSession();
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);

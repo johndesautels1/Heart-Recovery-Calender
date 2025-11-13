@@ -59,7 +59,7 @@ import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { RestTimer } from '../components/RestTimer';
 import { useView } from '../contexts/ViewContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { Patient } from '../types';
 
@@ -196,7 +196,7 @@ export function ExercisesPage() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const { isTherapistView } = useView();
-  const { user } = useAuth();
+  const { user } = useSession();
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const navigate = useNavigate();
 

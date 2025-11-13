@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, ChevronDown, ChevronUp, Shield, Heart } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { api } from '../services/api';
 
 interface HAWKAlert {
@@ -14,7 +14,7 @@ interface HAWKAlert {
 }
 
 export function GlobalHAWKAlert() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [alerts, setAlerts] = useState<HAWKAlert[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);

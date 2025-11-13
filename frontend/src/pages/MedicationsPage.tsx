@@ -29,7 +29,7 @@ import { z } from 'zod';
 import api from '../services/api';
 import { Medication, CreateMedicationInput, MedicationLog, VitalsSample, Patient } from '../types';
 import toast from 'react-hot-toast';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import { format, subDays, parseISO, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import { MedicationAutocomplete } from '../components/MedicationAutocomplete';
@@ -57,7 +57,7 @@ const medicationSchema = z.object({
 type MedicationFormData = z.infer<typeof medicationSchema>;
 
 export function MedicationsPage() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const { selectedPatient, setSelectedPatient, isViewingAsTherapist } = usePatientSelection();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [activeMeds, setActiveMeds] = useState<Medication[]>([]);

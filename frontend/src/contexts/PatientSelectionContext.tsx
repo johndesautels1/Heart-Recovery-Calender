@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Patient } from '../types';
-import { useAuth } from './AuthContext';
+import { useSession } from './SessionContext';
 import api from '../services/api';
 
 interface PatientSelectionContextType {
@@ -13,7 +13,7 @@ const PatientSelectionContext = createContext<PatientSelectionContextType | unde
 
 export function PatientSelectionProvider({ children }: { children: ReactNode }) {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSession();
 
   // Auto-load patient's own record if they're a patient-role user
   useEffect(() => {

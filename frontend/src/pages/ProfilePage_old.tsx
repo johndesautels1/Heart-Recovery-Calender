@@ -1,10 +1,10 @@
 import React from 'react';
 import { GlassCard } from '../components/ui';
 import { User } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const { user } = useSession();
 
   return (
     <div>

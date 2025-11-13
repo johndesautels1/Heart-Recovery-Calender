@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, ChevronDown } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import api from '../services/api';
 import { Patient } from '../types';
 
@@ -20,7 +20,7 @@ interface PatientSelectorProps {
  * Patient = User (same entity)
  */
 export function PatientSelector({ onPatientChange, selectedUserId }: PatientSelectorProps) {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [ownPatientProfile, setOwnPatientProfile] = useState<Patient | null>(null);

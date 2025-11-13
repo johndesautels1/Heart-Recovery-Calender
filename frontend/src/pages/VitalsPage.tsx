@@ -49,7 +49,7 @@ import api from '../services/api';
 import { VitalsSample, CreateVitalsInput, Patient, HydrationLog } from '../types';
 import toast from 'react-hot-toast';
 import { format, subDays, addDays, subMonths, addMonths } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 // Helper to convert empty/NaN values to undefined for optional number fields
 const optionalNumber = z.preprocess(
@@ -157,7 +157,7 @@ const vitalsSchema = z.object({
 type VitalsFormData = z.infer<typeof vitalsSchema>;
 
 export function VitalsPage() {
-  const { user } = useAuth(); // Access surgery date from user profile
+  const { user } = useSession(); // Access surgery date from user profile
   const navigate = useNavigate();
   const { latestHeartRate, latestVitals, latestECG, exerciseData, spirometryData } = useWebSocket(); // Listen for real-time heart rate updates, ECG, exercise, and spirometry data
   const [vitals, setVitals] = useState<VitalsSample[]>([]);

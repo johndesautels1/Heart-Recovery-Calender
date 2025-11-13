@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Heart, Mail, Lock, User, Stethoscope, UserCircle2, Shield } from 'lucide-react';
 import { Button, Input, GlassCard } from '../components/ui';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import toast from 'react-hot-toast';
 
 const registerSchema = z.object({
@@ -23,7 +23,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
   const {

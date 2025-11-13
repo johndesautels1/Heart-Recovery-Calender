@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Heart, Activity, Wifi, WifiOff, Bluetooth } from 'lucide-react';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { GlassCard, Button } from './ui';
 
 interface LiveVitalsDisplayProps {
@@ -10,7 +10,7 @@ interface LiveVitalsDisplayProps {
 
 export const LiveVitalsDisplay: React.FC<LiveVitalsDisplayProps> = ({ deviceType = 'all' }) => {
   const { isConnected, latestHeartRate, latestVitals, latestECG } = useWebSocket();
-  const { user } = useAuth();
+  const { user } = useSession();
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('Never');
   const [bleDevice, setBleDevice] = useState<BluetoothDevice | null>(null);

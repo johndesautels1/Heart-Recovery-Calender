@@ -26,7 +26,7 @@ import {
   Trophy
 } from 'lucide-react';
 import { GlassCard } from '../components/ui';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { usePatientSelection } from '../contexts/PatientSelectionContext';
 import api from '../services/api';
 import { VitalsSample, Medication, CalendarEvent, MealEntry, Patient } from '../types';
@@ -120,7 +120,7 @@ interface WeeklyMetrics {
 }
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const { selectedPatient, setSelectedPatient } = usePatientSelection();
   const [stats, setStats] = useState<DashboardStats>({
     todayEvents: [],
@@ -397,7 +397,8 @@ export function DashboardPage() {
         // Calculate Weight Score (0-100) - based on weight trend
         const weightScore = vitals.length > 0 && vitals[0].weight
           ? (() => {
-              const weekWeight = vitals[vitals.length - 1].weight; // Latest weight in week
+              // API returns vitals sorted DESC (newest first), so vitals[0] is most recent
+              const weekWeight = vitals[0].weight; // Latest weight in week
               const patient = isAdmin ? selectedPatient : patientProfile;
               if (!patient || !patient.startingWeight || !patient.targetWeight) return 0;
 

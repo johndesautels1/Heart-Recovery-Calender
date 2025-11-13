@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
+import { useSession } from './SessionContext';
 
 type ViewMode = 'patient' | 'therapist';
 
@@ -13,7 +13,7 @@ interface ViewContextType {
 const ViewContext = createContext<ViewContextType | undefined>(undefined);
 
 export function ViewProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [viewMode, setViewModeState] = useState<ViewMode>('patient');
 
   // Load view preference from localStorage on mount, or auto-set for therapist/admin

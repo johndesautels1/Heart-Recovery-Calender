@@ -7,7 +7,7 @@ import {
   Upload, FileText, CreditCard, AlertCircle, Clock, Settings,
   Download, X, Edit2, Trash2, Plus, Eye, Check, Key, Server, Cloud, Watch
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { searchMedications, getMedicationInfo, type MedicationInfo } from '../data/medicationDatabase';
@@ -171,7 +171,7 @@ interface Section {
 }
 
 export function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser } = useSession();
   const [isEditing, setIsEditing] = useState(true);  // Changed to true by default
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);

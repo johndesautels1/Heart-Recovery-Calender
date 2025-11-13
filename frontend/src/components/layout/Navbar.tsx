@@ -21,7 +21,7 @@ import {
   Smartphone,
   Brain
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSession } from '../../contexts/SessionContext';
 import { useView } from '../../contexts/ViewContext';
 import { LanguageSelector } from '../LanguageSelector';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ export function Navbar() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser } = useSession();
   const { viewMode, setViewMode, isTherapistView } = useView();
 
   // Load theme preference from localStorage on mount

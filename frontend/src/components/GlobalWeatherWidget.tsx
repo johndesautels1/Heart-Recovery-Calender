@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Cloud, X, ThermometerSun, Droplets, Wind, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 
 interface WeatherData {
   temp: number;
@@ -14,7 +14,7 @@ interface WeatherData {
 }
 
 export function GlobalWeatherWidget() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);

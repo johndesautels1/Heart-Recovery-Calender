@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from './ui/Modal';
-import { useAuth } from '../contexts/AuthContext';
+import { useSession } from '../contexts/SessionContext';
 import api from '../services/api';
 
 interface CompleteProfileModalProps {
@@ -9,7 +9,7 @@ interface CompleteProfileModalProps {
 }
 
 export function CompleteProfileModal({ isOpen, onClose }: CompleteProfileModalProps) {
-  const { refreshPatientProfile } = useAuth();
+  const { refreshPatientProfile } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
