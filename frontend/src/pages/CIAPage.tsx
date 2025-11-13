@@ -9,8 +9,6 @@ import { api } from '../services/api';
 import { CIAReport, CIAEligibility, CIARiskItem, CIAFinding, CIAActionItem } from '../types';
 import { Footer } from '../components/Footer';
 import { calculateVascularAge, calculateFraminghamRisk, calculateASCVDRisk } from '../utils/medicalCalculations';
-import { initHeartViewer, renderDiagnosisVisualization, clearHighlights } from '../components/heartViewer/heartViewer.js';
-import '../components/heartViewer/heartViewer.css';
 
 export function CIAPage() {
   const navigate = useNavigate();
@@ -28,9 +26,6 @@ export function CIAPage() {
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
   const [patientData, setPatientData] = useState<any>(null);
-  const [heartViewerTab, setHeartViewerTab] = useState<'anatomy' | 'diagnostic'>('anatomy');
-  const heartViewerContainerRef = useRef<HTMLDivElement>(null);
-  const heartViewerApiRef = useRef<any>(null);
   const sketchfabIframeRef = useRef<HTMLIFrameElement>(null);
   const sketchfabApiRef = useRef<any>(null);
 
@@ -74,41 +69,7 @@ export function CIAPage() {
     }
   }, [isGenerating]);
 
-  // Initialize Sketchfab API when anatomy tab is selected
-  // DISABLED - We're just using the iframe embed, no API control needed
-  // useEffect(() => {
-  //   // Sketchfab API initialization disabled
-  // }, [heartViewerTab]);
-
-  // Initialize 3D heart viewer when diagnostic tab is selected
-  useEffect(() => {
-    if (heartViewerTab === 'diagnostic' && heartViewerContainerRef.current && !heartViewerApiRef.current) {
-      const container = heartViewerContainerRef.current;
-
-      // Initialize viewer
-      initHeartViewer(container, {
-        modelPath: '/models/heart.glb',
-        cameraDistance: 0.25,
-        ambientLightIntensity: 0.5,
-        directionalLightIntensity: 0.8
-      })
-        .then((api) => {
-          heartViewerApiRef.current = api;
-          console.log('Heart viewer initialized successfully');
-        })
-        .catch((error) => {
-          console.error('Failed to initialize heart viewer:', error);
-        });
-
-      // Cleanup on unmount
-      return () => {
-        if (heartViewerApiRef.current) {
-          heartViewerApiRef.current.dispose();
-          heartViewerApiRef.current = null;
-        }
-      };
-    }
-  }, [heartViewerTab]);
+  // Sketchfab API initialization disabled - using simple iframe embed only
 
   // Function to visualize patient data on Sketchfab heart model
   const visualizePatientDataOnHeart = () => {
@@ -283,206 +244,6 @@ export function CIAPage() {
     }
   };
 
-  // Function to visualize risk data on 3D heart
-  const visualizeRiskOnHeart = () => {
-    console.log('🫀 Visualize button clicked');
-    console.log('User:', user);
-    console.log('Selected Report:', selectedReport);
-    console.log('Patient Profile Data:', patientData);
-
-    // Check if heart viewer is initialized
-    if (!heartViewerApiRef.current) {
-      console.error('❌ Heart viewer not initialized yet. Please switch to Diagnostic Viewer tab first.');
-      alert('Please switch to the "Diagnostic Viewer" tab to initialize the 3D heart model first.');
-      return;
-    }
-
-    try {
-      // ✅ CORRECT PATTERN: Get data from selectedReport (which contains User data)
-      const dataCompleteness = selectedReport?.dataCompleteness;
-      const reportData = selectedReport?.reportData;
-
-      // Get vitals from report's dataCompleteness or reportData
-      const latestVitals = (reportData as any)?.latestVitals || (dataCompleteness as any)?.latestVitals;
-      const systolicBP = latestVitals?.systolicBP || latestVitals?.bloodPressureSystolic || 140;
-
-      // ✅ CORRECT: Get age from User (primary entity)
-      const age = user?.dateOfBirth
-        ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-        : 55;
-
-      // ✅ CORRECT: Get gender from User (primary entity) or Patient profile
-      const gender = (user as any)?.gender === 'Female' || (user as any)?.gender === 'female'
-        ? 'female'
-        : patientData?.gender === 'female'
-        ? 'female'
-        : 'male';
-
-      // ✅ CORRECT: Get medications from dataCompleteness (linked to userId)
-      const hasMedications = dataCompleteness?.hasMedications || false;
-
-      // Patient profile extended fields (may not exist)
-      const smokingStatus = patientData?.smokingStatus || 'never';
-      const diabetesStatus = patientData?.diabetesStatus || 'no';
-
-      console.log(`✅ Using User data - Age: ${age}, Gender: ${gender}, BP: ${systolicBP}`);
-      console.log(`✅ Using Report data - Has Meds: ${hasMedications}`);
-      console.log(`✅ Using Patient profile - Smoking: ${smokingStatus}, Diabetes: ${diabetesStatus}`);
-
-      // Calculate risks
-      const framinghamData = calculateFraminghamRisk({
-        age: age,
-        gender: gender,
-        totalCholesterol: 220,
-        hdlCholesterol: 45,
-        systolicBP: systolicBP,
-        onBPMeds: hasMedications,
-        smoking: smokingStatus === 'current',
-        diabetes: diabetesStatus === 'yes',
-      });
-
-      const ascvdData = calculateASCVDRisk({
-        age: age,
-        gender: gender,
-        race: 'other',
-        totalCholesterol: 220,
-        hdlCholesterol: 45,
-        systolicBP: systolicBP,
-        onBPMeds: hasMedications,
-        smoking: smokingStatus === 'current',
-        diabetes: diabetesStatus === 'yes',
-      });
-
-      console.log('📊 Framingham Risk:', framinghamData);
-      console.log('📊 ASCVD Risk:', ascvdData);
-
-      // Validate risk data - note: functions return 'riskPercent', not 'risk10Year'
-      const framinghamRisk = framinghamData?.riskPercent ?? 0;
-      const framinghamCategory = framinghamData?.riskCategory ?? 'Unknown';
-      const ascvdRisk = ascvdData?.riskPercent ?? 0;
-      const ascvdCategory = ascvdData?.riskCategory ?? 'Unknown';
-
-      console.log('📊 Validated risks - Framingham:', framinghamRisk, 'ASCVD:', ascvdRisk);
-
-      // Create diagnosis JSON for heart viewer
-      const diagnosisJSON = {
-        view: 'internal',
-        coronaryPlaque: [
-          {
-            artery: 'LAD',
-            plaqueParams: {
-              severity: framinghamRisk / 100,
-              location: 'proximal',
-              type: 'calcified'
-            }
-          },
-          {
-            artery: 'RCA',
-            plaqueParams: {
-              severity: ascvdRisk / 100,
-              location: 'mid',
-              type: 'mixed'
-            }
-          }
-        ],
-        tooltips: {
-          'lad': `10-Year CVD Risk: ${framinghamRisk.toFixed(1)}% (${framinghamCategory})`,
-          'rca': `10-Year ASCVD Risk: ${ascvdRisk.toFixed(1)}% (${ascvdCategory})`,
-          'heart': `Systolic BP: ${systolicBP} mmHg`
-        }
-      };
-
-      console.log('📊 Diagnosis JSON:', diagnosisJSON);
-
-      // Render visualization
-      renderDiagnosisVisualization(diagnosisJSON);
-
-      // Enable auto-rotation for better viewing
-      if (heartViewerApiRef.current?.setAutoRotate) {
-        heartViewerApiRef.current.setAutoRotate(true);
-        console.log('✅ Auto-rotation enabled');
-      }
-
-      // Enable blood flow animation
-      if (heartViewerApiRef.current?.setBloodFlow) {
-        heartViewerApiRef.current.setBloodFlow(true);
-        console.log('✅ Blood flow animation enabled');
-      }
-
-      // Enable heartbeat animation
-      if (heartViewerApiRef.current?.setHeartBeat) {
-        heartViewerApiRef.current.setHeartBeat(true);
-        console.log('✅ Heartbeat animation enabled');
-      }
-
-      // Add risk data overlay to the viewer
-      const viewerContainer = heartViewerContainerRef.current;
-      if (viewerContainer) {
-        // Remove existing overlay if present
-        const existingOverlay = viewerContainer.querySelector('.risk-data-overlay');
-        if (existingOverlay) existingOverlay.remove();
-
-        // Create new overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'risk-data-overlay';
-        overlay.style.cssText = `
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          background: rgba(0, 0, 0, 0.8);
-          border: 1px solid #00d4ff;
-          border-radius: 8px;
-          padding: 15px;
-          color: #00d4ff;
-          font-family: monospace;
-          font-size: 0.85rem;
-          z-index: 1000;
-          pointer-events: none;
-          backdrop-filter: blur(10px);
-        `;
-
-        const riskColor = framinghamRisk < 10 ? '#00ff88' :
-                         framinghamRisk < 20 ? '#ffff00' :
-                         framinghamRisk < 30 ? '#ff6600' : '#ff0000';
-
-        overlay.innerHTML = `
-          <div style="font-weight: bold; margin-bottom: 8px; color: ${riskColor};">
-            🫀 CARDIOVASCULAR RISK ANALYSIS
-          </div>
-          <div style="margin-bottom: 4px;">
-            📊 Framingham Risk: <span style="color: ${riskColor}; font-weight: bold;">${framinghamRisk.toFixed(1)}%</span>
-            <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem;"> (${framinghamCategory})</span>
-          </div>
-          <div style="margin-bottom: 4px;">
-            📊 ASCVD Risk: <span style="color: ${riskColor}; font-weight: bold;">${ascvdRisk.toFixed(1)}%</span>
-            <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem;"> (${ascvdCategory})</span>
-          </div>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 212, 255, 0.3); font-size: 0.75rem; color: rgba(255,255,255,0.7);">
-            💓 BP: ${systolicBP} mmHg | 👤 Age: ${age} | ⚧ ${gender}
-          </div>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 212, 255, 0.3); font-size: 0.7rem; color: rgba(255,255,255,0.6);">
-            🩸 Anatomical Blood Flow (Systemic • Pulmonary • Coronary)
-          </div>
-          <div style="margin-top: 4px; font-size: 0.7rem; color: rgba(255,255,255,0.6);">
-            💓 Cardiac Cycle: 75 BPM (Atrial + Ventricular Systole)
-          </div>
-          <div style="margin-top: 4px; font-size: 0.7rem; color: rgba(255,255,255,0.6);">
-            🫀 Coronary Arteries: LAD • LCX • RCA
-          </div>
-          <div style="margin-top: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.5);">
-            🖱️ Drag to rotate • Scroll to zoom
-          </div>
-        `;
-
-        viewerContainer.appendChild(overlay);
-      }
-
-      console.log('✅ Risk visualization applied to 3D heart model');
-    } catch (error) {
-      console.error('❌ Error visualizing risk on heart:', error);
-      alert(`Error visualizing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
 
   const loadData = async (targetUserId?: number) => {
     try {
@@ -1824,261 +1585,117 @@ export function CIAPage() {
                           🫀 3D HEART VISUALIZATION
                         </div>
 
-                        {/* Tab Navigation */}
-                        <div style={{
-                          display: 'flex',
-                          gap: '1rem',
-                          marginBottom: '1rem',
-                          borderBottom: '1px solid rgba(0, 212, 255, 0.3)'
-                        }}>
-                          <button
-                            onClick={() => setHeartViewerTab('anatomy')}
-                            style={{
-                              background: heartViewerTab === 'anatomy' ? 'rgba(0, 212, 255, 0.2)' : 'transparent',
-                              border: 'none',
-                              color: heartViewerTab === 'anatomy' ? '#00d4ff' : 'rgba(255,255,255,0.6)',
-                              fontFamily: 'monospace',
-                              fontSize: '0.8rem',
-                              padding: '0.75rem 1.5rem',
-                              cursor: 'pointer',
-                              borderBottom: heartViewerTab === 'anatomy' ? '2px solid #00d4ff' : '2px solid transparent',
-                              transition: 'all 0.3s ease',
-                              fontWeight: heartViewerTab === 'anatomy' ? 700 : 400,
-                            }}
-                          >
-                            ANATOMY EXPLORER
-                          </button>
-                          <button
-                            onClick={() => setHeartViewerTab('diagnostic')}
-                            style={{
-                              background: heartViewerTab === 'diagnostic' ? 'rgba(0, 212, 255, 0.2)' : 'transparent',
-                              border: 'none',
-                              color: heartViewerTab === 'diagnostic' ? '#00d4ff' : 'rgba(255,255,255,0.6)',
-                              fontFamily: 'monospace',
-                              fontSize: '0.8rem',
-                              padding: '0.75rem 1.5rem',
-                              cursor: 'pointer',
-                              borderBottom: heartViewerTab === 'diagnostic' ? '2px solid #00d4ff' : '2px solid transparent',
-                              transition: 'all 0.3s ease',
-                              fontWeight: heartViewerTab === 'diagnostic' ? 700 : 400,
-                            }}
-                          >
-                            DIAGNOSTIC VIEWER
-                          </button>
+                        {/* 3D Heart Anatomy Viewer */}
+                        <div className="sketchfab-embed-wrapper" style={{ width: '100%', height: '600px', position: 'relative' }}>
+                          <iframe
+                            ref={sketchfabIframeRef}
+                            id="sketchfab-heart-viewer"
+                            title="3d Animated Realistic Human Heart - V2.0"
+                            frameBorder="0"
+                            allowFullScreen
+                            mozallowfullscreen="true"
+                            webkitallowfullscreen="true"
+                            allow="autoplay; fullscreen; xr-spatial-tracking"
+                            xr-spatial-tracking="true"
+                            execution-while-out-of-viewport="true"
+                            execution-while-not-rendered="true"
+                            web-share="true"
+                            src="https://sketchfab.com/models/168b474fba564f688048212e99b4159d/embed"
+                            style={{ width: '100%', height: '100%', borderRadius: '12px' }}
+                          />
+
+                          {/* Patient Data Overlay */}
+                          <div id="heart-data-overlay" style={{
+                            position: 'absolute',
+                            top: '10px',
+                            left: '10px',
+                            background: 'rgba(0, 0, 0, 0.8)',
+                            border: '1px solid #00d4ff',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            color: '#00d4ff',
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem',
+                            maxWidth: '300px',
+                            backdropFilter: 'blur(10px)',
+                            zIndex: 1000,
+                            pointerEvents: 'none'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '0.85rem' }}>
+                              🫀 CARDIAC STATUS
+                            </div>
+                            <div id="overlay-content">
+                              Click "Visualize Patient Data" to see cardiac analysis
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Anatomy Explorer Tab Content */}
-                        {heartViewerTab === 'anatomy' && (
-                          <>
-                            <div className="sketchfab-embed-wrapper" style={{ width: '100%', height: '600px', position: 'relative' }}>
-                              <iframe
-                                ref={sketchfabIframeRef}
-                                id="sketchfab-heart-viewer"
-                                title="3d Animated Realistic Human Heart - V2.0"
-                                frameBorder="0"
-                                allowFullScreen
-                                mozallowfullscreen="true"
-                                webkitallowfullscreen="true"
-                                allow="autoplay; fullscreen; xr-spatial-tracking"
-                                xr-spatial-tracking="true"
-                                execution-while-out-of-viewport="true"
-                                execution-while-not-rendered="true"
-                                web-share="true"
-                                src="https://sketchfab.com/models/168b474fba564f688048212e99b4159d/embed"
-                                style={{ width: '100%', height: '100%', borderRadius: '12px' }}
-                              />
+                        {/* Patient Data Visualization Button */}
+                        <button
+                          onClick={visualizePatientDataOnHeart}
+                          style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            marginTop: '16px',
+                            background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)',
+                            border: '2px solid #00d4ff',
+                            borderRadius: '8px',
+                            color: '#00d4ff',
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
+                            fontFamily: 'monospace',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+                            letterSpacing: '0.05em'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 100, 255, 0.3) 100%)';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.5)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+                          }}
+                        >
+                          🫀 VISUALIZE PATIENT DATA
+                        </button>
 
-                              {/* Patient Data Overlay */}
-                              <div id="heart-data-overlay" style={{
-                                position: 'absolute',
-                                top: '10px',
-                                left: '10px',
-                                background: 'rgba(0, 0, 0, 0.8)',
-                                border: '1px solid #00d4ff',
-                                borderRadius: '8px',
-                                padding: '12px',
-                                color: '#00d4ff',
-                                fontFamily: 'monospace',
-                                fontSize: '0.75rem',
-                                maxWidth: '300px',
-                                backdropFilter: 'blur(10px)',
-                                zIndex: 1000,
-                                pointerEvents: 'none'
-                              }}>
-                                <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '0.85rem' }}>
-                                  🫀 CARDIAC STATUS
-                                </div>
-                                <div id="overlay-content">
-                                  Click "Visualize Patient Data" to see cardiac analysis
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Patient Data Visualization Button */}
-                            <button
-                              onClick={visualizePatientDataOnHeart}
-                              style={{
-                                width: '100%',
-                                padding: '14px 20px',
-                                marginTop: '16px',
-                                background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)',
-                                border: '2px solid #00d4ff',
-                                borderRadius: '8px',
-                                color: '#00d4ff',
-                                fontSize: '0.9rem',
-                                fontWeight: 700,
-                                fontFamily: 'monospace',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                backdropFilter: 'blur(10px)',
-                                boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
-                                letterSpacing: '0.05em'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 100, 255, 0.3) 100%)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.5)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)';
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
-                              }}
-                            >
-                              🫀 VISUALIZE PATIENT DATA
-                            </button>
-
-                            <p style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 'normal',
-                              margin: '0.5rem 0 0 0',
-                              color: 'rgba(255,255,255,0.6)',
-                              fontFamily: 'monospace',
-                            }}>
-                              <a
-                                href="https://sketchfab.com/3d-models/3d-animated-realistic-human-heart-v20-168b474fba564f688048212e99b4159d?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
-                                target="_blank"
-                                rel="nofollow noreferrer"
-                                style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
-                              >
-                                3D Animated Realistic Human Heart - V2.0
-                              </a> by{' '}
-                              <a
-                                href="https://sketchfab.com/docjana?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
-                                target="_blank"
-                                rel="nofollow noreferrer"
-                                style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
-                              >
-                                Anatomy by Doctor Jana
-                              </a> on{' '}
-                              <a
-                                href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
-                                target="_blank"
-                                rel="nofollow noreferrer"
-                                style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
-                              >
-                                Sketchfab
-                              </a>
-                            </p>
-                          </>
-                        )}
-
-                        {/* Diagnostic Viewer Tab Content */}
-                        {heartViewerTab === 'diagnostic' && (
-                          <>
-                            <div
-                              ref={heartViewerContainerRef}
-                              className="heart-viewer-container"
-                              style={{ position: 'relative' }}
-                            >
-                              <div className="heart-viewer-loading">
-                                Loading 3D Heart Model...
-                              </div>
-                            </div>
-
-                            {/* Visualize Risk Button */}
-                            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <button
-                                onClick={visualizeRiskOnHeart}
-                                style={{
-                                  background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.3) 100%)',
-                                  border: '1px solid #00d4ff',
-                                  color: '#00d4ff',
-                                  fontFamily: 'monospace',
-                                  fontSize: '0.85rem',
-                                  fontWeight: 700,
-                                  padding: '0.75rem 1.5rem',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.3s ease',
-                                  textShadow: '0 0 10px rgba(0, 212, 255, 0.8)',
-                                  boxShadow: '0 4px 12px rgba(0, 212, 255, 0.3)',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 100, 255, 0.4) 100%)';
-                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 212, 255, 0.5)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.3) 100%)';
-                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 212, 255, 0.3)';
-                                }}
-                              >
-                                🫀 VISUALIZE CARDIOVASCULAR RISK
-                              </button>
-                              <button
-                                onClick={() => {
-                                  clearHighlights();
-                                  // Stop auto-rotation
-                                  if (heartViewerApiRef.current?.setAutoRotate) {
-                                    heartViewerApiRef.current.setAutoRotate(false);
-                                  }
-                                  // Stop blood flow
-                                  if (heartViewerApiRef.current?.setBloodFlow) {
-                                    heartViewerApiRef.current.setBloodFlow(false);
-                                  }
-                                  // Stop heartbeat
-                                  if (heartViewerApiRef.current?.setHeartBeat) {
-                                    heartViewerApiRef.current.setHeartBeat(false);
-                                  }
-                                  // Remove overlay
-                                  const overlay = heartViewerContainerRef.current?.querySelector('.risk-data-overlay');
-                                  if (overlay) overlay.remove();
-                                }}
-                                style={{
-                                  background: 'rgba(0, 0, 0, 0.5)',
-                                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                                  color: 'rgba(255, 255, 255, 0.7)',
-                                  fontFamily: 'monospace',
-                                  fontSize: '0.75rem',
-                                  padding: '0.75rem 1rem',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.3s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                                  e.currentTarget.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)';
-                                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-                                }}
-                              >
-                                CLEAR
-                              </button>
-                            </div>
-
-                            <p style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 'normal',
-                              margin: '0.5rem 0 0 0',
-                              color: 'rgba(255,255,255,0.6)',
-                              fontFamily: 'monospace',
-                            }}>
-                              Interactive diagnostic visualization powered by Three.js
-                            </p>
-                          </>
-                        )}
+                        <p style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 'normal',
+                          margin: '0.5rem 0 0 0',
+                          color: 'rgba(255,255,255,0.6)',
+                          fontFamily: 'monospace',
+                        }}>
+                          <a
+                            href="https://sketchfab.com/3d-models/3d-animated-realistic-human-heart-v20-168b474fba564f688048212e99b4159d?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            3D Animated Realistic Human Heart - V2.0
+                          </a> by{' '}
+                          <a
+                            href="https://sketchfab.com/docjana?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            Anatomy by Doctor Jana
+                          </a> on{' '}
+                          <a
+                            href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=168b474fba564f688048212e99b4159d"
+                            target="_blank"
+                            rel="nofollow noreferrer"
+                            style={{ fontWeight: 'bold', color: '#00d4ff', textDecoration: 'none' }}
+                          >
+                            Sketchfab
+                          </a>
+                        </p>
                       </div>
                     </div>
 
