@@ -259,7 +259,7 @@ export function VitalsPage() {
    * Calculates start and end dates for charts with 1-month buffers
    * Applied uniformly to all charts for consistent rendering
    */
-  const calculateDateRange = (timeView: '7d' | '30d' | '90d' | 'surgery', surgeryDateStr?: string): { startDate: string; endDate: string } => {
+  const calculateDateRange = React.useCallback((timeView: '7d' | '30d' | '90d' | 'surgery', surgeryDateStr?: string) => {
     const today = new Date();
     let startDate: Date;
     let endDate: Date;
@@ -310,7 +310,7 @@ export function VitalsPage() {
     };
     console.log(`[DATE RANGE] Final range:`, result);
     return result;
-  };
+  }, []); // No dependencies - function only uses passed parameters
 
   // Load patient data (contains surgery date from patient profile)
   useEffect(() => {
@@ -469,10 +469,6 @@ export function VitalsPage() {
     console.log('[SURGERY DATE DEBUG] Patient:', { id: patientData?.id, name: patientData?.name, userId: patientData?.userId });
     console.log('[SURGERY DATE DEBUG] ===================================');
   }, [surgeryDate, patientData, user]);
-
-  useEffect(() => {
-    loadVitals();
-  }, [surgeryDate, selectedUserId, globalTimeView]); // Reload when surgery date, user, or time view changes
 
   // Load Hawk Alerts
   useEffect(() => {
@@ -638,39 +634,50 @@ export function VitalsPage() {
     }
   }, [isRecording, ecgBuffer, hrvMetrics]);
 
-  const loadVitals = async () => {
-    try {
-      setIsLoading(true);
+  // Load vitals when dependencies change (matches dashboard pattern)
+  useEffect(() => {
+    const loadVitals = async () => {
+      const userId = selectedUserId || user?.id;
+      if (!userId) {
+        console.log('[VitalsPage] Skipping vitals load - user not yet available');
+        return;
+      }
 
-      // UNIFIED: Calculate date range with 1-month buffers
-      const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
+      try {
+        setIsLoading(true);
 
-      console.log(`[VitalsPage] Loading vitals for ${globalTimeView} view: ${startDate} to ${endDate}`);
+        // UNIFIED: Calculate date range with 1-month buffers
+        const { startDate, endDate } = calculateDateRange(globalTimeView, surgeryDate);
 
-      // Fetch vitals data - Sort by timestamp ascending (oldest to newest) for left-to-right charts
-      console.log('[VitalsPage] Fetching vitals for userId:', selectedUserId || user?.id);
-      const vitalsData = await api.getVitals({
-        startDate,
-        endDate,
-        userId: selectedUserId || undefined
-      });
-      console.log('[VitalsPage] Fetched', vitalsData.length, 'vitals records');
+        console.log(`[VitalsPage] Loading vitals for ${globalTimeView} view: ${startDate} to ${endDate}`);
 
-      // Sort chronologically: oldest (left) to newest (right)
-      const sortedData = vitalsData.sort((a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-      setVitals(sortedData);
+        // Fetch vitals data - Sort by timestamp ascending (oldest to newest) for left-to-right charts
+        console.log('[VitalsPage] Fetching vitals for userId:', userId);
+        const vitalsData = await api.getVitals({
+          startDate,
+          endDate,
+          userId: selectedUserId || undefined
+        });
+        console.log('[VitalsPage] Fetched', vitalsData.length, 'vitals records');
 
-      // Latest vital is provided by WebSocket hook (line 160)
-      // No need to fetch separately - real-time updates handled automatically
-    } catch (error) {
-      console.error('Failed to load vitals:', error);
-      toast.error('Failed to load vitals data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // Sort chronologically: oldest (left) to newest (right)
+        const sortedData = vitalsData.sort((a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        setVitals(sortedData);
+
+        // Latest vital is provided by WebSocket hook (line 160)
+        // No need to fetch separately - real-time updates handled automatically
+      } catch (error) {
+        console.error('Failed to load vitals:', error);
+        toast.error('Failed to load vitals data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadVitals();
+  }, [user?.id, surgeryDate, selectedUserId, globalTimeView]);
 
   // Sync vitals to patient profile (2-way sync)
   const syncVitalsToProfile = async (vital: VitalsSample) => {
