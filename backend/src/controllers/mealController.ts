@@ -195,29 +195,35 @@ export const getMeals = async (req: Request, res: Response) => {
     const actualEnd = (endDate || end) as string | undefined;
 
     if (date) {
+      // Specific date requested - return full day (00:00:00 to 23:59:59)
       const dayStart = new Date(date as string);
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(date as string);
       dayEnd.setHours(23, 59, 59, 999);
       where.timestamp = { [Op.gte]: dayStart, [Op.lte]: dayEnd };
-    } else if (actualStart || actualEnd) {
-      where.timestamp = {};
-      if (actualStart) {
-        const startDay = new Date(actualStart);
-        startDay.setHours(0, 0, 0, 0);
-        where.timestamp[Op.gte] = startDay;
+    } else {
+      // Fetch user to get surgery date for defaults
+      const user = await User.findByPk(userId);
+      if (!user?.surgeryDate) {
+        return res.status(400).json({ error: 'Surgery date required for date range defaults' });
       }
-      if (actualEnd) {
-        const endDay = new Date(actualEnd);
-        endDay.setHours(23, 59, 59, 999);
-        where.timestamp[Op.lte] = endDay;
-      }
+
+      // Default date range: surgery date to +1 month from today
+      const startDay = actualStart ? new Date(actualStart) : new Date(user.surgeryDate);
+      const endDay = actualEnd ? new Date(actualEnd) : new Date();
+      endDay.setMonth(endDay.getMonth() + 1);
+
+      // Set to full days for consistency
+      startDay.setHours(0, 0, 0, 0);
+      endDay.setHours(23, 59, 59, 999);
+
+      where.timestamp = { [Op.gte]: startDay, [Op.lte]: endDay };
     }
 
     if (mealType) where.mealType = mealType;
 
     const meals = await MealEntry.findAll({ where, order: [['timestamp', 'DESC']] });
-    console.log(`[Meals API] Found ${meals.length} meals for user ${userId} between ${actualStart || 'beginning'} and ${actualEnd || 'now'}`);
+    console.log(`[Meals API] Found ${meals.length} meals for user ${userId} between ${actualStart || 'surgery date'} and ${actualEnd || '+1 month'}`);
     res.json({ data: meals });
   } catch (error) {
     console.error('Error fetching meals:', error);
