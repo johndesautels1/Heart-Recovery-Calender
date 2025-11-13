@@ -1,15 +1,22 @@
 import { Request, Response } from 'express';
 import VitalsSample from '../models/VitalsSample';
 import User from '../models/User';
-import Patient from '../models/Patient';
 import MealEntry from '../models/MealEntry';
 import { Op } from 'sequelize';
+import { addMonths } from 'date-fns';
 import { sendWeightChangeAlert, sendHawkAlert } from '../services/notificationService';
 import { checkWeightChangeMedicationCorrelation, checkEdemaMedicationCorrelation, checkHyperglycemiaMedicationCorrelation, checkHypoglycemiaMedicationCorrelation, checkFoodMedicationInteraction, checkHypoxiaMedicationCorrelation, getCareTeamForNotification } from '../services/medicationCorrelationService';
 import arrhythmiaDetectionService from '../services/arrhythmiaDetectionService';
 
 
-// GET /api/vitals - Get all vitals with filters
+/**
+ * GET /api/vitals - Get all vitals with filters
+ *
+ * Date range behavior:
+ * - If start/end dates are provided, uses them explicitly
+ * - If no dates provided, defaults to: surgery date to +1 month from today
+ * - Surgery date is required for defaults (User.surgeryDate is the source of truth)
+ */
 export const getVitals = async (req: Request, res: Response) => {
   try {
     // Check query param first (for admin/therapist viewing other patients), fall back to logged-in user
@@ -23,11 +30,20 @@ export const getVitals = async (req: Request, res: Response) => {
 
     const where: any = { userId };
 
-    if (start || end) {
-      where.timestamp = {};
-      if (start) where.timestamp[Op.gte] = new Date(start as string);
-      if (end) where.timestamp[Op.lte] = new Date(end as string);
+    // Fetch user to get surgery date for defaults
+    const user = await User.findByPk(userId);
+    if (!user?.surgeryDate) {
+      return res.status(400).json({ error: 'Surgery date required for date range defaults' });
     }
+
+    // Default date range: surgery date to +1 month from today
+    const startDate = start ? new Date(start as string) : new Date(user.surgeryDate);
+    const endDate = end ? new Date(end as string) : addMonths(new Date(), 1);
+
+    where.timestamp = {
+      [Op.gte]: startDate,
+      [Op.lte]: endDate
+    };
 
     const vitals = await VitalsSample.findAll({
       where,

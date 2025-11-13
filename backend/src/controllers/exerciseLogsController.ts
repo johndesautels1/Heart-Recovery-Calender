@@ -8,8 +8,16 @@ import ExercisePrescription from '../models/ExercisePrescription';
 import { Op } from 'sequelize';
 import { calculateCaloriesBurned } from '../utils/calorieCalculator';
 import { calculateMETsFromHeartRate } from '../utils/metCalculator';
+import { addMonths } from 'date-fns';
 
-// GET /api/exercise-logs - Get all exercise logs with filters
+/**
+ * GET /api/exercise-logs - Get all exercise logs with filters
+ *
+ * Date Range Behavior:
+ * - If startDate and/or endDate are provided, uses those values
+ * - If no dates provided, defaults to: surgery date through +1 month from today
+ * - Requires User.surgeryDate to be set for default date range
+ */
 export const getExerciseLogs = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -18,12 +26,16 @@ export const getExerciseLogs = async (req: Request, res: Response) => {
 
     const where: any = {};
 
+    // Determine target user ID for date range defaults
+    let targetUserId = userId;
+
     // If patient role, only show their own logs
     if (userRole === 'patient') {
       where.patientId = userId;
     } else if (queryUserId) {
       // Therapists can query specific patient's logs
       where.patientId = queryUserId;
+      targetUserId = queryUserId as string;
     }
 
     if (exerciseId) {
@@ -34,16 +46,23 @@ export const getExerciseLogs = async (req: Request, res: Response) => {
       where.prescriptionId = prescriptionId;
     }
 
-    // Date range filtering
-    if (startDate || endDate) {
-      where.completedAt = {};
-      if (startDate) {
-        where.completedAt[Op.gte] = new Date(startDate as string);
-      }
-      if (endDate) {
-        where.completedAt[Op.lte] = new Date(endDate as string);
-      }
+    // Date range filtering with surgery date defaults
+    // Fetch user to get surgery date for defaults
+    const user = await User.findByPk(targetUserId);
+    if (!user?.surgeryDate) {
+      return res.status(400).json({
+        error: 'Surgery date required for date range defaults. Please set surgery date in user profile.'
+      });
     }
+
+    // Default date range: surgery date to +1 month from today
+    const startDateValue = startDate ? new Date(startDate as string) : new Date(user.surgeryDate);
+    const endDateValue = endDate ? new Date(endDate as string) : addMonths(new Date(), 1);
+
+    where.completedAt = {
+      [Op.gte]: startDateValue,
+      [Op.lte]: endDateValue
+    };
 
     const logs = await ExerciseLog.findAll({
       where,

@@ -8,6 +8,7 @@ import ExerciseLog from '../models/ExerciseLog';
 import ExercisePrescription from '../models/ExercisePrescription';
 import Patient from '../models/Patient';
 import { Op } from 'sequelize';
+import { addMonths } from 'date-fns';
 
 // GET /api/events - Get events with filters
 export const getEvents = async (req: Request, res: Response) => {
