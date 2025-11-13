@@ -123,7 +123,7 @@ ${percentage >= 100 ? `<div class="alert-box" style="border-left-color:#dc2626;b
 <p style="margin:0;font-weight:bold;color:#dc2626;">⛔ You have EXCEEDED your daily ${nutrient} limit!</p>
 <p style="margin:10px 0 0 0;">Please avoid all ${nutrient}-rich foods for the rest of the day and consult your care team if you experience any symptoms.</p></div>` : ''}
 <div class="recommendations"><h3>🫀 Why This Matters for Your Heart</h3><p>
-${nutrient === 'sodium' ? '<strong>High sodium intake increases blood pressure</strong>, which forces your heart to work harder and increases risk of heart attack, stroke, and heart failure. For heart recovery patients, controlling sodium is critical.' : '<strong>Excess cholesterol can clog your arteries</strong> with plaque buildup, restricting blood flow to your heart and brain. This significantly increases risk of heart attack and stroke, especially during recovery.'}
+${nutrient === 'sodium' ? '<strong>High sodium intake increases blood pressure</strong>, which forces your heart to work harder and increases risk of heart attack, stroke, and heart failure. For heart recovery patients, controlling sodium is critical.' : '<strong>Excess cholesterol can clog your arteries</strong> with plaque buildup, restricting blood flow to your heart and brain. This significantly increases risk of heart attack and stroke, espeCAIlly during recovery.'}
 </p><h3>✅ What To Do Now</h3><ul>
 ${nutrient === 'sodium' ? `<li>Avoid processed foods, canned soups, deli meats, cheese, and salty snacks</li>
 <li>Don't add salt to your meals</li>

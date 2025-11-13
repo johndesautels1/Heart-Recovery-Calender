@@ -206,7 +206,7 @@ export const createHydrationLog = async (req: Request, res: Response) => {
     console.log('[HYDRATION-LOGS] Hydration log created/updated successfully:', log.id);
     console.log('[HYDRATION-LOGS] postSurgeryDay:', log.postSurgeryDay);
 
-    // Load full log with associations
+    // Load full log with assoCAItions
     const fullLog = await HydrationLog.findByPk(log.id, {
       include: [
         {
@@ -253,7 +253,7 @@ export const updateHydrationLog = async (req: Request, res: Response) => {
 
     await log.update(updateData);
 
-    // Reload with associations
+    // Reload with assoCAItions
     const updatedLog = await HydrationLog.findByPk(log.id, {
       include: [
         {

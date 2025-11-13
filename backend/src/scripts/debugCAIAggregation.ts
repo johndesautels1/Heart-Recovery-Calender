@@ -1,14 +1,14 @@
 /**
- * DEBUG: Trace EXACT queries and dates used in CIA aggregation
+ * DEBUG: Trace EXACT queries and dates used in CAI aggregation
  * This will show us WHY the queries return zero results
  */
 
 import sequelize from '../models/database';
 import Patient from '../models/Patient';
 
-async function debugCIAAggregation() {
+async function debugCAIAggregation() {
   try {
-    console.log('🔬 DEBUGGING CIA AGGREGATION\n');
+    console.log('🔬 DEBUGGING CAI AGGREGATION\n');
     console.log('='.repeat(70));
 
     const userId = 2;
@@ -204,4 +204,4 @@ async function debugCIAAggregation() {
   }
 }
 
-debugCIAAggregation();
+debugCAIAggregation();

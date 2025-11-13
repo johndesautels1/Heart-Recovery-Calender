@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('cia_report_comments', {
+    await queryInterface.createTable('cai_report_comments', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -13,11 +13,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'cia_reports',
+          model: 'cai_reports',
           key: 'id',
         },
         onDelete: 'CASCADE',
-        comment: 'CIA report this comment belongs to',
+        comment: 'CAI report this comment belongs to',
       },
       providerId: {
         type: Sequelize.INTEGER,
@@ -42,7 +42,7 @@ module.exports = {
       comment: {
         type: Sequelize.TEXT,
         allowNull: false,
-        comment: 'Provider feedback on the CIA report',
+        comment: 'Provider feedback on the CAI report',
       },
       commentType: {
         type: Sequelize.ENUM('feedback', 'approval', 'concern', 'recommendation', 'question'),
@@ -69,20 +69,20 @@ module.exports = {
     });
 
     // Add indexes
-    await queryInterface.addIndex('cia_report_comments', ['reportId'], {
-      name: 'cia_report_comments_report_id_idx',
+    await queryInterface.addIndex('cai_report_comments', ['reportId'], {
+      name: 'cai_report_comments_report_id_idx',
     });
 
-    await queryInterface.addIndex('cia_report_comments', ['providerId'], {
-      name: 'cia_report_comments_provider_id_idx',
+    await queryInterface.addIndex('cai_report_comments', ['providerId'], {
+      name: 'cai_report_comments_provider_id_idx',
     });
 
-    await queryInterface.addIndex('cia_report_comments', ['userId'], {
-      name: 'cia_report_comments_user_id_idx',
+    await queryInterface.addIndex('cai_report_comments', ['userId'], {
+      name: 'cai_report_comments_user_id_idx',
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('cia_report_comments');
+    await queryInterface.dropTable('cai_report_comments');
   },
 };

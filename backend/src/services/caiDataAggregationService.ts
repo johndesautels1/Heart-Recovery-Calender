@@ -46,7 +46,7 @@ export interface AggregatedPatientData {
   providers: any[];
 }
 
-export class CIADataAggregationService {
+export class CAIDataAggregationService {
   /**
    * Aggregate all patient data from Day 0 (surgery date) through analysis period
    * Analysis period: surgery date to current date OR 90 days, whichever is longer
@@ -67,7 +67,7 @@ export class CIADataAggregationService {
 
       // Auto-fix: Update the patient record to set userId (data integrity fix)
       if (patient && !patient.userId) {
-        console.log(`[CIA-FIX] Auto-fixing Patient.userId NULL for patient ${patient.id} -> userId ${userId}`);
+        console.log(`[CAI-FIX] Auto-fixing Patient.userId NULL for patient ${patient.id} -> userId ${userId}`);
         await patient.update({ userId });
       }
     }
@@ -490,5 +490,5 @@ export class CIADataAggregationService {
   }
 }
 
-export default new CIADataAggregationService();
+export default new CAIDataAggregationService();
 

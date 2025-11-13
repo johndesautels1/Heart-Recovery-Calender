@@ -55,7 +55,7 @@ async function addBeverages() {
       { name: 'Beer', healthRating: 'red', servingSize: '12 oz', calories: 150, sodium: 15, carbs: 13, notes: 'Alcohol - limit consumption' },
       { name: 'Wine (Red)', healthRating: 'yellow', servingSize: '5 oz', calories: 125, sodium: 5, carbs: 4, notes: 'Moderate consumption may benefit heart health' },
       { name: 'Soda (Regular)', healthRating: 'red', servingSize: '12 oz', calories: 140, sodium: 40, carbs: 39, notes: 'High in sugar - avoid' },
-      { name: 'Soda (Diet)', healthRating: 'yellow', servingSize: '12 oz', calories: 0, sodium: 40, notes: 'Artificial sweeteners - use sparingly' },
+      { name: 'Soda (Diet)', healthRating: 'yellow', servingSize: '12 oz', calories: 0, sodium: 40, notes: 'ArtifiCAIl sweeteners - use sparingly' },
       { name: 'Coconut Water', healthRating: 'green', servingSize: '8 oz', calories: 45, sodium: 250, carbs: 9, notes: 'Good source of electrolytes' },
       { name: 'Almond Milk (Unsweetened)', healthRating: 'green', servingSize: '8 oz', calories: 30, sodium: 150, protein: 1, carbs: 1, fat: 2.5 },
     ];

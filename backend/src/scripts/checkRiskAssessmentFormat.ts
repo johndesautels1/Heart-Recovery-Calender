@@ -1,16 +1,16 @@
 /**
- * Check the format of risk assessment in existing CIA reports
+ * Check the format of risk assessment in existing CAI reports
  */
 
 import sequelize from '../models/database';
-import CIAReport from '../models/CIAReport';
+import CAIReport from '../models/CAIReport';
 
 async function checkRiskAssessmentFormat() {
   try {
     const userId = 2;
     console.log('\n📋 CHECKING RISK ASSESSMENT FORMAT\n');
 
-    const report = await CIAReport.findOne({
+    const report = await CAIReport.findOne({
       where: { userId },
       order: [['generatedAt', 'DESC']],
     });

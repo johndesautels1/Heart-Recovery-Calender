@@ -29,7 +29,7 @@ export const getFoodItems = async (req: Request, res: Response) => {
 
     const queryOptions: any = {
       where,
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -71,7 +71,7 @@ export const getFoodItemsByCategory = async (req: Request, res: Response) => {
 
     const items = await FoodItem.findAll({
       where: { categoryId },
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -102,7 +102,7 @@ export const getFoodItemsByHealthRating = async (req: Request, res: Response) =>
 
     const items = await FoodItem.findAll({
       where: { healthRating: rating },
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -147,7 +147,7 @@ export const searchFoodItems = async (req: Request, res: Response) => {
 
     const items = await FoodItem.findAll({
       where,
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -174,7 +174,7 @@ export const getFoodItemById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const item = await FoodItem.findByPk(id, {
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -240,7 +240,7 @@ export const createFoodItem = async (req: Request, res: Response) => {
     });
 
     const itemWithCategory = await FoodItem.findByPk(item.id, {
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -281,7 +281,7 @@ export const updateFoodItem = async (req: Request, res: Response) => {
     await item.update(updateData);
 
     const updatedItem = await FoodItem.findByPk(id, {
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodCategory,
@@ -336,7 +336,7 @@ export const getFoodStats = async (req: Request, res: Response) => {
         'name',
         'icon',
       ],
-      // TEMPORARY: Removed due to association errors
+      // TEMPORARY: Removed due to assoCAItion errors
 //       // include: [
 //         {
 //           model: FoodItem,

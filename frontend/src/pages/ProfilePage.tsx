@@ -669,13 +669,27 @@ export function ProfilePage() {
         await syncProfileToVitals(updated);
       } else {
         // Update existing patient profile
+        // Only send non-null/non-undefined fields to avoid erasing existing data
+        const updateData: any = {};
+        Object.keys(patientData).forEach(key => {
+          const value = (patientData as any)[key];
+          // Only include fields that have actual values (not null, undefined, or empty string)
+          if (value !== null && value !== undefined && value !== '') {
+            updateData[key] = value;
+          }
+          // Include arrays even if empty (they might be intentionally cleared)
+          if (Array.isArray(value)) {
+            updateData[key] = value;
+          }
+        });
+
         response = await fetch(`http://localhost:4000/api/patients/${patientId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
-          body: JSON.stringify(patientData)
+          body: JSON.stringify(updateData)
         });
 
         if (!response.ok) {
@@ -1243,7 +1257,7 @@ export function ProfilePage() {
                                   ACTIVE
                                 </span>
                                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">
-                                  CIA Reports
+                                  CAI Reports
                                 </span>
                               </div>
                             </div>
@@ -1258,7 +1272,7 @@ export function ProfilePage() {
                           </a>
                         </div>
                         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-                          Powers CIA (Cardiac Intelligence Analysis) reports with advanced multi-modal AI analysis of patient recovery data using international medical standards (AHA/ESC/ACC guidelines).
+                          Powers CAI (Cardiac Intelligence Analysis) reports with advanced multi-modal AI analysis of patient recovery data using international medical standards (AHA/ESC/ACC guidelines).
                         </p>
 
                         <div className="space-y-3">

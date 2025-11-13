@@ -28,7 +28,7 @@ const exerciseTips = {
     modifications: 'Easier: Make smaller circles, reduce to 5 reps each direction, sit with back support. Harder: Make larger circles, increase to 15 reps each direction, stand while performing, combine with arm swings. Can add alternating rolls (one shoulder at a time).',
   },
   'Wrist Circles': {
-    formTips: 'Make full circles with hands, not just wiggling. Keep forearms still, movement only at wrist. No pain should occur. Breathe normally. Can do this frequently throughout day, especially if hands feel stiff.',
+    formTips: 'Make full circles with hands, not just wiggling. Keep forearms still, movement only at wrist. No pain should occur. Breathe normally. Can do this frequently throughout day, espeCAIlly if hands feel stiff.',
     modifications: 'Easier: Make smaller circles, reduce to 5 reps each direction, rest elbows on armrests. Harder: Make larger circles, increase to 15 reps, add wrist flexion/extension holds, clasp hands and circle together. Can add light grip strengthening with soft ball.',
   },
   'Slow Walking (Indoor)': {
@@ -180,7 +180,7 @@ const exerciseTips = {
     modifications: 'Easier: Use more padding under knee, reduce forward shift, hold 15 seconds, keep hands on floor for support. Harder: Lift back arm overhead, increase forward shift, hold 30-45 seconds, add rotation. Can perform standing lunge stretch against wall.',
   },
   'Calf Stretch (Wall)': {
-    formTips: 'Keep back heel down firmly - crucial for stretch. Back leg straight with slight knee bend. Front knee bends to shift weight forward. Should feel stretch in calf, not Achilles tendon. Keep toes pointing straight ahead. Don\'t bounce.',
+    formTips: 'Keep back heel down firmly - cruCAIl for stretch. Back leg straight with slight knee bend. Front knee bends to shift weight forward. Should feel stretch in calf, not Achilles tendon. Keep toes pointing straight ahead. Don\'t bounce.',
     modifications: 'Easier: Stand closer to wall, reduce forward lean, hold 15 seconds, keep back knee slightly bent. Harder: Step further back, increase forward lean, hold 30-45 seconds, straighten back knee more. Can also stretch with knee bent for soleus muscle.',
   },
   'Chest Doorway Stretch': {
@@ -208,7 +208,7 @@ const exerciseTips = {
     modifications: 'Easier: Follow instructor\'s easier modifications, take more frequent breaks, reduce range of motion, slow down pace. Harder: Follow standard moves, add light weights if offered, reduce breaks, increase range. Choose appropriate class level - cardiac rehab or senior fitness best.',
   },
   'Light Jogging Intervals': {
-    formTips: 'CRITICAL: Physician approval required. Excellent walking base needed first. Jog very slowly - barely faster than walking. Stay in prescribed heart rate zone. Land mid-foot, not heel. Keep shoulders relaxed. Stop immediately if chest discomfort, unusual breathlessness, or dizziness.',
+    formTips: 'CRITICAL: PhysiCAIn approval required. Excellent walking base needed first. Jog very slowly - barely faster than walking. Stay in prescribed heart rate zone. Land mid-foot, not heel. Keep shoulders relaxed. Stop immediately if chest discomfort, unusual breathlessness, or dizziness.',
     modifications: 'Easier: Jog 30 seconds only, walk 5 minutes between, total 20 minutes, jog on flat surface only. Harder: Increase jog to 2 minutes, reduce walk to 3 minutes, extend total time, add gentle hills. Never progress too quickly - this is advanced activity.',
   },
   'Full Squats': {

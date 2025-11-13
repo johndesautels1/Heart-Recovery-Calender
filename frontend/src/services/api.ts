@@ -42,12 +42,12 @@ import {
   CalorieSummary,
   DailyCalories,
   WeightCorrelation,
-  CIAReport,
-  CIAReportComment,
-  CIAEligibility,
-  CIAReportsResponse,
-  CIAReportResponse,
-  CIACommentResponse,
+  CAIReport,
+  CAIReportComment,
+  CAIEligibility,
+  CAIReportsResponse,
+  CAIReportResponse,
+  CAICommentResponse,
 } from '../types';
 
 class ApiService {
@@ -946,32 +946,32 @@ class ApiService {
     return response.data;
   }
 
-  // ==================== CIA (CARDIAC INTELLIGENCE ANALYSIS) ENDPOINTS ====================
+  // ==================== CAI (CARDIAC INTELLIGENCE ANALYSIS) ENDPOINTS ====================
 
   /**
-   * Generate a new CIA report analyzing patient recovery progress
+   * Generate a new CAI report analyzing patient recovery progress
    * Aggregates all patient data from Day 0 through current date/90 days
    * Uses Claude AI with international medical standards (AHA/ESC/ACC)
    * Note: 30-day rule bypassed for admin/therapist (unlimited reports)
    * @param targetUserId - Optional user ID to analyze (admin/therapist only, defaults to self)
    */
-  async generateCIAReport(targetUserId?: number): Promise<CIAReportResponse> {
+  async generateCAIReport(targetUserId?: number): Promise<CAIReportResponse> {
     const params = new URLSearchParams();
     if (targetUserId) {
       params.append('targetUserId', targetUserId.toString());
     }
-    const url = params.toString() ? `/cia/analyze?${params.toString()}` : '/cia/analyze';
-    const response = await this.api.post<CIAReportResponse>(url);
+    const url = params.toString() ? `/CAI/analyze?${params.toString()}` : '/CAI/analyze';
+    const response = await this.api.post<CAIReportResponse>(url);
     return response.data;
   }
 
   /**
-   * Get all CIA reports for the authenticated user or target user (admin/therapist only)
+   * Get all CAI reports for the authenticated user or target user (admin/therapist only)
    * @param limit - Maximum number of reports to return (default: 50)
    * @param includeError - Include error reports in results (default: false)
    * @param targetUserId - Optional user ID to get reports for (admin/therapist only, defaults to self)
    */
-  async getCIAReports(limit: number = 50, includeError: boolean = false, targetUserId?: number): Promise<CIAReportsResponse> {
+  async getCAIReports(limit: number = 50, includeError: boolean = false, targetUserId?: number): Promise<CAIReportsResponse> {
     const params = new URLSearchParams();
     params.append('limit', limit.toString());
     if (includeError) {
@@ -980,48 +980,48 @@ class ApiService {
     if (targetUserId) {
       params.append('targetUserId', targetUserId.toString());
     }
-    const response = await this.api.get<CIAReportsResponse>(`/cia/reports?${params.toString()}`);
+    const response = await this.api.get<CAIReportsResponse>(`/CAI/reports?${params.toString()}`);
     return response.data;
   }
 
   /**
-   * Get a specific CIA report by ID
+   * Get a specific CAI report by ID
    * @param reportId - Report ID to retrieve
    */
-  async getCIAReportById(reportId: number): Promise<CIAReportResponse> {
-    const response = await this.api.get<CIAReportResponse>(`/cia/reports/${reportId}`);
+  async getCAIReportById(reportId: number): Promise<CAIReportResponse> {
+    const response = await this.api.get<CAIReportResponse>(`/CAI/reports/${reportId}`);
     return response.data;
   }
 
   /**
-   * Check if user is eligible to generate a new CIA report (30-day rule bypassed for admin/therapist)
+   * Check if user is eligible to generate a new CAI report (30-day rule bypassed for admin/therapist)
    * Returns eligibility status, reason, next eligible date, and days since surgery
    * @param targetUserId - Optional user ID to check eligibility for (admin/therapist only, defaults to self)
    */
-  async checkCIAEligibility(targetUserId?: number): Promise<CIAEligibility> {
+  async checkCAIEligibility(targetUserId?: number): Promise<CAIEligibility> {
     const params = new URLSearchParams();
     if (targetUserId) {
       params.append('targetUserId', targetUserId.toString());
     }
-    const url = params.toString() ? `/cia/eligibility?${params.toString()}` : '/cia/eligibility';
-    const response = await this.api.get<CIAEligibility>(url);
+    const url = params.toString() ? `/CAI/eligibility?${params.toString()}` : '/CAI/eligibility';
+    const response = await this.api.get<CAIEligibility>(url);
     return response.data;
   }
 
   /**
-   * Add a cardiac team provider comment to a CIA report
+   * Add a cardiac team provider comment to a CAI report
    * @param reportId - Report ID to comment on
    * @param comment - Comment text
    * @param commentType - Type of comment (feedback, approval, concern, recommendation, question)
    * @param isPrivate - Whether comment is private (only visible to cardiac team)
    */
-  async addCIAReportComment(
+  async addCAIReportComment(
     reportId: number,
     comment: string,
     commentType: 'feedback' | 'approval' | 'concern' | 'recommendation' | 'question' = 'feedback',
     isPrivate: boolean = false
-  ): Promise<CIACommentResponse> {
-    const response = await this.api.post<CIACommentResponse>(`/cia/reports/${reportId}/comments`, {
+  ): Promise<CAICommentResponse> {
+    const response = await this.api.post<CAICommentResponse>(`/CAI/reports/${reportId}/comments`, {
       comment,
       commentType,
       isPrivate,
@@ -1030,11 +1030,11 @@ class ApiService {
   }
 
   /**
-   * Delete a CIA report
+   * Delete a CAI report
    * @param reportId - Report ID to delete
    */
-  async deleteCIAReport(reportId: number): Promise<void> {
-    await this.api.delete(`/cia/reports/${reportId}`);
+  async deleteCAIReport(reportId: number): Promise<void> {
+    await this.api.delete(`/CAI/reports/${reportId}`);
   }
 }
 

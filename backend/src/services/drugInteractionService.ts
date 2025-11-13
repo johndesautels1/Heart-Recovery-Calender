@@ -106,7 +106,7 @@ const DRUG_INTERACTIONS: DrugInteraction[] = [
     mechanism: 'Increased statin levels due to inhibition of metabolism; additive muscle toxicity',
     effect: 'Increased risk of rhabdomyolysis (muscle breakdown) leading to kidney damage. Severe muscle pain, weakness, dark urine.',
     recommendation: 'Gemfibrozil + statin is contraindicated. Fenofibrate is safer alternative if fibrate needed. Use lowest statin dose.',
-    monitoring: 'Creatine kinase (CK) levels if muscle symptoms develop. Watch for muscle pain, tenderness, weakness, especially with exercise. Dark or red urine requires immediate evaluation.',
+    monitoring: 'Creatine kinase (CK) levels if muscle symptoms develop. Watch for muscle pain, tenderness, weakness, espeCAIlly with exercise. Dark or red urine requires immediate evaluation.',
   },
 
   // Metformin + Contrast Dye

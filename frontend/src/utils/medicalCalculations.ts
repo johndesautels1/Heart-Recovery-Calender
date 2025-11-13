@@ -1,4 +1,4 @@
-// Medical Risk Calculation Utilities for CIA Reports
+// Medical Risk Calculation Utilities for CAI Reports
 
 /**
  * Calculate Vascular Age based on cardiovascular risk factors
@@ -157,7 +157,7 @@ export function calculateFraminghamRisk(params: {
 
 /**
  * Calculate ASCVD (Atherosclerotic Cardiovascular Disease) 10-Year Risk
- * American College of Cardiology/American Heart Association calculator
+ * American College of Cardiology/American Heart AssoCAItion calculator
  */
 export function calculateASCVDRisk(params: {
   age: number;
@@ -209,7 +209,7 @@ export function calculateASCVDRisk(params: {
   if (riskCategory === 'low') {
     interpretation = `Low ASCVD risk (<5%). Continue healthy lifestyle. Statin therapy not typically recommended.`;
   } else if (riskCategory === 'borderline') {
-    interpretation = `Borderline ASCVD risk (5-7.5%). Discuss risk-benefit of statin therapy with physician.`;
+    interpretation = `Borderline ASCVD risk (5-7.5%). Discuss risk-benefit of statin therapy with physiCAIn.`;
   } else if (riskCategory === 'intermediate') {
     interpretation = `Intermediate ASCVD risk (7.5-20%). Statin therapy recommended. Coronary calcium score may help refine risk.`;
   } else {

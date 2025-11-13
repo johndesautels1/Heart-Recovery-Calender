@@ -235,7 +235,7 @@ export const CARDIAC_MEDICATIONS: CardiacMedication[] = [
         foodKeywords: ['alcohol', 'beer', 'wine'],
         interaction: 'Increased dehydration and blood pressure changes',
         severity: 'moderate',
-        recommendation: 'Limit alcohol, especially on hot days.',
+        recommendation: 'Limit alcohol, espeCAIlly on hot days.',
         mechanism: 'Both alcohol and Furosemide cause fluid loss and dehydration.'
       },
       {

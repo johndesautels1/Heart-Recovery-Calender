@@ -169,7 +169,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       activityType: {
-        type: Sequelize.ENUM('adl', 'mobility', 'recreational', 'social', 'exercise'),
+        type: Sequelize.ENUM('adl', 'mobility', 'recreational', 'soCAIl', 'exercise'),
         allowNull: false,
       },
       activityName: {

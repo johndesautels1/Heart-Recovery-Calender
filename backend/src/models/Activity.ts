@@ -4,7 +4,7 @@ import sequelize from './database';
 interface ActivityAttributes {
   id: number;
   userId: number;
-  activityType: 'adl' | 'mobility' | 'recreational' | 'social' | 'exercise';
+  activityType: 'adl' | 'mobility' | 'recreational' | 'soCAIl' | 'exercise';
   activityName: string;
   activityCategory?: string;
   activityDate: Date;
@@ -28,7 +28,7 @@ interface ActivityCreationAttributes extends Optional<ActivityAttributes, 'id'> 
 class Activity extends Model<ActivityAttributes, ActivityCreationAttributes> implements ActivityAttributes {
   public id!: number;
   public userId!: number;
-  public activityType!: 'adl' | 'mobility' | 'recreational' | 'social' | 'exercise';
+  public activityType!: 'adl' | 'mobility' | 'recreational' | 'soCAIl' | 'exercise';
   public activityName!: string;
   public activityCategory?: string;
   public activityDate!: Date;
@@ -63,7 +63,7 @@ class Activity extends Model<ActivityAttributes, ActivityCreationAttributes> imp
           },
         },
         activityType: {
-          type: DataTypes.ENUM('adl', 'mobility', 'recreational', 'social', 'exercise'),
+          type: DataTypes.ENUM('adl', 'mobility', 'recreational', 'soCAIl', 'exercise'),
           allowNull: false,
           comment: 'ADL=Activities of Daily Living',
         },

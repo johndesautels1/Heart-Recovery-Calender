@@ -258,7 +258,7 @@ export async function checkHyperglycemiaMedicationCorrelation(
     const medList = medicationNames.join(', ');
 
     const message = `🦅 HAWK ALERT: Possible Medication-Induced High Blood Sugar - Investigate!`;
-    const recommendation = `Your blood sugar is elevated (${bloodSugar} mg/dL). The following medication(s) are known to raise blood sugar: ${medList}. High blood sugar is especially dangerous for heart patients. Contact your healthcare provider immediately to discuss if medication adjustments or additional diabetes management is needed.`;
+    const recommendation = `Your blood sugar is elevated (${bloodSugar} mg/dL). The following medication(s) are known to raise blood sugar: ${medList}. High blood sugar is espeCAIlly dangerous for heart patients. Contact your healthcare provider immediately to discuss if medication adjustments or additional diabetes management is needed.`;
 
     return {
       type: 'hyperglycemia',
@@ -369,7 +369,7 @@ export async function checkFoodMedicationInteraction(
           medicationNames,
           foodItems: recentMeals.items || ['High-sodium foods'],
           message: `🦅 HAWK ALERT: Dangerous Food-Medication Combination Detected!`,
-          recommendation: `You consumed high sodium (${recentMeals.sodium}mg) with elevated blood sugar (${bloodSugar} mg/dL) while taking: ${medList}. This combination is especially dangerous for heart patients and can cause fluid retention, increased blood pressure, and worsened diabetes. Reduce sodium intake immediately and monitor your vitals closely.`
+          recommendation: `You consumed high sodium (${recentMeals.sodium}mg) with elevated blood sugar (${bloodSugar} mg/dL) while taking: ${medList}. This combination is espeCAIlly dangerous for heart patients and can cause fluid retention, increased blood pressure, and worsened diabetes. Reduce sodium intake immediately and monitor your vitals closely.`
         });
       }
     }

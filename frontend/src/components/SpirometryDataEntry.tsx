@@ -18,7 +18,7 @@ export const SpirometryDataEntry: React.FC<SpirometryDataEntryProps> = ({ isOpen
     pef: '',  // Peak Expiratory Flow (L/min)
     fef2575: '', // Forced Expiratory Flow 25-75% (L/sec)
     notes: '',
-    technicianName: '',
+    techniCAInName: '',
     location: '',
   });
 
@@ -42,7 +42,7 @@ export const SpirometryDataEntry: React.FC<SpirometryDataEntryProps> = ({ isOpen
         pef: '',
         fef2575: '',
         notes: '',
-        technicianName: '',
+        techniCAInName: '',
         location: '',
       });
       onClose();
@@ -187,11 +187,11 @@ export const SpirometryDataEntry: React.FC<SpirometryDataEntryProps> = ({ isOpen
                 <h3 className="text-lg font-semibold text-cyan-400 mb-3">Additional Information</h3>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Technician Name</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-300">TechniCAIn Name</label>
                     <input
                       type="text"
-                      value={formData.technicianName}
-                      onChange={(e) => setFormData({ ...formData, technicianName: e.target.value })}
+                      value={formData.techniCAInName}
+                      onChange={(e) => setFormData({ ...formData, techniCAInName: e.target.value })}
                       placeholder="e.g., Dr. Sarah Johnson"
                       className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 outline-none"
                     />

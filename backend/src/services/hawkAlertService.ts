@@ -257,7 +257,7 @@ function checkWeatherAlerts(params: HAWKAlertParams, alerts: HAWKAlert[]) {
       severity: 'critical',
       category: 'weather',
       title: '🚨 EXTREME HEAT WARNING',
-      message: `EXTREME HEAT ADVISORY: ${params.temperature}°F is life-threatening, especially for cardiac patients.`,
+      message: `EXTREME HEAT ADVISORY: ${params.temperature}°F is life-threatening, espeCAIlly for cardiac patients.`,
       actions: [
         '❄️ Stay indoors with air conditioning',
         '❌ NO outdoor activities',

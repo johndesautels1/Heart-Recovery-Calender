@@ -65,7 +65,7 @@ export const addProvider = async (req: Request, res: Response) => {
 
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
-    if (sanitizedData.specialty === '') sanitizedData.specialty = null;
+    if (sanitizedData.speCAIlty === '') sanitizedData.speCAIlty = null;
     if (sanitizedData.providerType === '') sanitizedData.providerType = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
     if (sanitizedData.email === '') sanitizedData.email = null;
@@ -123,7 +123,7 @@ export const updateProvider = async (req: Request, res: Response) => {
 
     // Sanitize empty strings to null for optional fields
     const sanitizedData = { ...req.body };
-    if (sanitizedData.specialty === '') sanitizedData.specialty = null;
+    if (sanitizedData.speCAIlty === '') sanitizedData.speCAIlty = null;
     if (sanitizedData.providerType === '') sanitizedData.providerType = null;
     if (sanitizedData.phone === '') sanitizedData.phone = null;
     if (sanitizedData.email === '') sanitizedData.email = null;

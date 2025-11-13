@@ -470,7 +470,7 @@ export function MealsPage() {
         'rice', 'bread', 'pasta', 'grain', 'oat', 'cereal', 'wheat', 'bagel', 'toast',
         'tortilla', 'noodle', 'quinoa', 'barley', 'cracker', 'roll', 'bun', 'muffin',
         'waffle', 'pancake', 'couscous', 'bulgur', 'farro', 'spelt', 'rye', 'croissant',
-        'baguette', 'pita', 'flatbread', 'sourdough', 'ciabatta', 'focaccia', 'pretzel',
+        'baguette', 'pita', 'flatbread', 'sourdough', 'CAIbatta', 'focacCAI', 'pretzel',
         'breadstick', 'english muffin', 'biscuit', 'scone', 'cornbread', 'ramen', 'udon',
         'soba', 'linguine', 'spaghetti', 'penne', 'macaroni', 'lasagna', 'ravioli', 'gnocchi'
       ];
@@ -2400,7 +2400,7 @@ export function MealsPage() {
                     </AreaChart>
                   </ResponsiveContainer>
                   <div className="text-xs text-center text-white opacity-70 mt-2">
-                    Daily limit: 2300mg sodium (American Heart Association)
+                    Daily limit: 2300mg sodium (American Heart AssoCAItion)
                   </div>
                 </GlassCard>
               )}

@@ -18,7 +18,7 @@ export function MyProvidersPage() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [formData, setFormData] = useState<CreateProviderInput>({
     name: '',
-    specialty: '',
+    speCAIlty: '',
     providerType: undefined,
     phone: '',
     email: '',
@@ -61,7 +61,7 @@ export function MyProvidersPage() {
     setEditingProvider(null);
     setFormData({
       name: '',
-      specialty: '',
+      speCAIlty: '',
       providerType: undefined,
       phone: '',
       email: '',
@@ -85,7 +85,7 @@ export function MyProvidersPage() {
     setEditingProvider(provider);
     setFormData({
       name: provider.name,
-      specialty: provider.specialty || '',
+      speCAIlty: provider.speCAIlty || '',
       providerType: provider.providerType,
       phone: provider.phone || '',
       email: provider.email || '',
@@ -174,7 +174,7 @@ export function MyProvidersPage() {
       // Validate and populate form
       setFormData({
         name: parsed.name || '',
-        specialty: parsed.specialty || '',
+        speCAIlty: parsed.speCAIlty || '',
         providerType: parsed.providerType,
         phone: parsed.phone || '',
         email: parsed.email || '',
@@ -205,7 +205,7 @@ export function MyProvidersPage() {
     const essentialData = {
       name: provider.name,
       providerType: provider.providerType,
-      specialty: provider.specialty,
+      speCAIlty: provider.speCAIlty,
       phone: provider.phone,
       email: provider.email,
       address: provider.address,
@@ -228,7 +228,7 @@ export function MyProvidersPage() {
     const essentialProvidersData = providers.map(provider => ({
       name: provider.name,
       providerType: provider.providerType,
-      specialty: provider.specialty,
+      speCAIlty: provider.speCAIlty,
       phone: provider.phone,
       email: provider.email,
       address: provider.address,
@@ -305,9 +305,9 @@ export function MyProvidersPage() {
                         {PROVIDER_TYPE_LABELS[provider.providerType]}
                       </p>
                     )}
-                    {provider.specialty && (
+                    {provider.speCAIlty && (
                       <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                        {provider.specialty}
+                        {provider.speCAIlty}
                       </p>
                     )}
                     <div className="flex gap-2 mt-1">
@@ -570,15 +570,15 @@ export function MyProvidersPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink)' }}>
-                    Specialty / Additional Info
+                    SpeCAIlty / Additional Info
                   </label>
                   <input
                     type="text"
-                    value={formData.specialty}
-                    onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                    value={formData.speCAIlty}
+                    onChange={(e) => setFormData({ ...formData, speCAIlty: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border"
                     style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--ink)' }}
-                    placeholder="e.g., Board Certified, Subspecialty"
+                    placeholder="e.g., Board Certified, SubspeCAIlty"
                   />
                 </div>
 

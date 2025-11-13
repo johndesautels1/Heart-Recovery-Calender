@@ -1,5 +1,5 @@
 /**
- * Fix surgery date to be in the past so CIA reports work
+ * Fix surgery date to be in the past so CAI reports work
  */
 
 import sequelize from '../models/database';
@@ -24,7 +24,7 @@ async function fixSurgeryDate() {
     await patient.update({ surgeryDate: newSurgeryDate });
 
     console.log(`✅ Updated surgery date to: ${newSurgeryDate}`);
-    console.log(`   This is ${60} days ago - realistic for CIA analysis`);
+    console.log(`   This is ${60} days ago - realistic for CAI analysis`);
 
   } catch (error: any) {
     console.error('❌ Error:', error.message);

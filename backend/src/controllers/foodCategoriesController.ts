@@ -10,7 +10,7 @@ export const getFoodCategories = async (req: Request, res: Response) => {
   try {
     const categories = await FoodCategory.findAll({
       order: [['sortOrder', 'ASC']],
-      // TEMPORARY: Removed include due to Sequelize association errors
+      // TEMPORARY: Removed include due to Sequelize assoCAItion errors
       // include: [
       //   {
       //     model: FoodItem,

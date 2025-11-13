@@ -37,7 +37,7 @@ import polarH10Routes from './polarH10';
 import samsungRoutes from './samsung';
 import ecgRoutes from './ecg';
 import heartbeatBatchingRoutes from './heartbeatBatching';
-import * as ciaController from '../controllers/ciaController';
+import * as CAIController from '../controllers/caiController';
 
 const router = Router();
 
@@ -684,54 +684,54 @@ router.use('/weather', weatherRoutes);
  */
 router.use('/hawk', hawkRoutes);
 
-// ========== CIA (CARDIAC INTELLIGENCE ANALYSIS) ROUTES ==========
+// ========== CAI (CARDIAC INTELLIGENCE ANALYSIS) ROUTES ==========
 
 /**
- * @route   POST /api/cia/analyze
- * @desc    Generate a new CIA report analyzing patient recovery progress
+ * @route   POST /api/CAI/analyze
+ * @desc    Generate a new CAI report analyzing patient recovery progress
  * @access  Private
  * @body    None (uses authenticated user's data)
  * @note    30-day rule: First report at 30+ days post-surgery, subsequent reports 30+ days apart
  */
-router.post('/cia/analyze', ciaController.generateCIAReport);
+router.post('/CAI/analyze', CAIController.generateCAIReport);
 
 /**
- * @route   GET /api/cia/reports
- * @desc    Get all CIA reports for the authenticated user
+ * @route   GET /api/CAI/reports
+ * @desc    Get all CAI reports for the authenticated user
  * @access  Private
  * @query   { limit?: number, includeError?: boolean }
  */
-router.get('/cia/reports', ciaController.getCIAReports);
+router.get('/CAI/reports', CAIController.getCAIReports);
 
 /**
- * @route   GET /api/cia/reports/:reportId
- * @desc    Get a specific CIA report by ID
+ * @route   GET /api/CAI/reports/:reportId
+ * @desc    Get a specific CAI report by ID
  * @access  Private
  */
-router.get('/cia/reports/:reportId', ciaController.getCIAReportById);
+router.get('/CAI/reports/:reportId', CAIController.getCAIReportById);
 
 /**
- * @route   DELETE /api/cia/reports/:reportId
- * @desc    Delete a specific CIA report
+ * @route   DELETE /api/CAI/reports/:reportId
+ * @desc    Delete a specific CAI report
  * @access  Private (owner or admin/therapist)
  */
-router.delete('/cia/reports/:reportId', ciaController.deleteCIAReport);
+router.delete('/CAI/reports/:reportId', CAIController.deleteCAIReport);
 
 /**
- * @route   POST /api/cia/reports/:reportId/comments
- * @desc    Add a cardiac team provider comment to a CIA report
+ * @route   POST /api/CAI/reports/:reportId/comments
+ * @desc    Add a cardiac team provider comment to a CAI report
  * @access  Private (providers only)
  * @body    { comment: string, commentType?: string, isPrivate?: boolean }
  */
-router.post('/cia/reports/:reportId/comments', ciaController.addReportComment);
+router.post('/CAI/reports/:reportId/comments', CAIController.addReportComment);
 
 /**
- * @route   GET /api/cia/eligibility
- * @desc    Check if user is eligible to generate a new CIA report (30-day rule)
+ * @route   GET /api/CAI/eligibility
+ * @desc    Check if user is eligible to generate a new CAI report (30-day rule)
  * @access  Private
  * @returns { eligible: boolean, reason?: string, nextEligibleDate?: Date }
  */
-router.get('/cia/eligibility', ciaController.checkReportEligibility);
+router.get('/CAI/eligibility', CAIController.checkReportEligibility);
 
 export default router;
 

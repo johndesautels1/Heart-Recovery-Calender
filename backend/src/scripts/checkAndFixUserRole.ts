@@ -32,7 +32,7 @@ async function checkAndFixUserRole() {
       console.log(`\n⚠️  User role is "${user.role}" - updating to "therapist"...`);
       await user.update({ role: 'therapist' });
       console.log('✅ User role updated to therapist');
-      console.log('\n🎉 You can now generate unlimited CIA reports!');
+      console.log('\n🎉 You can now generate unlimited CAI reports!');
     }
 
   } catch (error: any) {

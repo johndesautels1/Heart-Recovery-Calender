@@ -6,7 +6,7 @@ import sequelize from '../models/database';
 
 async function testAggregationQueries() {
   try {
-    console.log('Testing CIA Data Aggregation Queries\n');
+    console.log('Testing CAI Data Aggregation Queries\n');
     console.log('='.repeat(60));
 
     const userId = 2;

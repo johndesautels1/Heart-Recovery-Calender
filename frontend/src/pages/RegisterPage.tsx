@@ -52,7 +52,7 @@ export function RegisterPage() {
     if (/[a-z]/.test(pwd)) strength += 15; // lowercase
     if (/[A-Z]/.test(pwd)) strength += 15; // uppercase
     if (/[0-9]/.test(pwd)) strength += 15; // numbers
-    if (/[^a-zA-Z0-9]/.test(pwd)) strength += 20; // special chars
+    if (/[^a-zA-Z0-9]/.test(pwd)) strength += 20; // speCAIl chars
 
     // Determine label and color
     if (strength < 40) return { strength, label: 'Weak', color: 'bg-red-500' };
@@ -197,7 +197,7 @@ export function RegisterPage() {
                       <span className={password.length >= 8 ? 'text-green-600' : ''}>✓ 8+ chars</span>
                       <span className={/[A-Z]/.test(password) ? 'text-green-600' : ''}>✓ uppercase</span>
                       <span className={/[0-9]/.test(password) ? 'text-green-600' : ''}>✓ number</span>
-                      <span className={/[^a-zA-Z0-9]/.test(password) ? 'text-green-600' : ''}>✓ special</span>
+                      <span className={/[^a-zA-Z0-9]/.test(password) ? 'text-green-600' : ''}>✓ speCAIl</span>
                     </div>
                   </div>
                 </div>

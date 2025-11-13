@@ -495,7 +495,7 @@ export default function MedicationList() {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Special Instructions"
+                label="SpeCAIl Instructions"
                 value={formData.instructions || ''}
                 onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
                 multiline

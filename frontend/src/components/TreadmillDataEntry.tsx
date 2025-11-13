@@ -26,7 +26,7 @@ export const TreadmillDataEntry: React.FC<TreadmillDataEntryProps> = ({ isOpen, 
     vo2Max: '', // mL/kg/min
     symptoms: '',
     ekgFindings: '',
-    technicianName: '',
+    techniCAInName: '',
     location: '',
     videoLink: '', // Zoom/YouTube link for live stream
     notes: '',
@@ -61,7 +61,7 @@ export const TreadmillDataEntry: React.FC<TreadmillDataEntryProps> = ({ isOpen, 
         vo2Max: '',
         symptoms: '',
         ekgFindings: '',
-        technicianName: '',
+        techniCAInName: '',
         location: '',
         videoLink: '',
         notes: '',
@@ -341,11 +341,11 @@ export const TreadmillDataEntry: React.FC<TreadmillDataEntryProps> = ({ isOpen, 
                 <h3 className="text-lg font-semibold text-yellow-400 mb-3">Clinical Observations</h3>
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Technician/Physician</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-300">TechniCAIn/PhysiCAIn</label>
                     <input
                       type="text"
-                      value={formData.technicianName}
-                      onChange={(e) => setFormData({ ...formData, technicianName: e.target.value })}
+                      value={formData.techniCAInName}
+                      onChange={(e) => setFormData({ ...formData, techniCAInName: e.target.value })}
                       placeholder="e.g., Dr. John Smith"
                       className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/30 outline-none"
                     />

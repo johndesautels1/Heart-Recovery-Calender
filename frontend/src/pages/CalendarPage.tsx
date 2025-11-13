@@ -1209,7 +1209,7 @@ See browser console for full configuration details.
   const createCalendar = async (data: CreateCalendarInput & { assignToUserId?: number }) => {
     try {
       // If assignToUserId is provided (for therapist creating calendar for patient),
-      // we need to create it via a different endpoint or handle it specially
+      // we need to create it via a different endpoint or handle it speCAIlly
       const newCalendar = await api.createCalendar(data);
       setCalendars([...calendars, newCalendar]);
 
@@ -2127,7 +2127,7 @@ See browser console for full configuration details.
               outline: 1px solid rgba(255, 255, 255, 0.25) !important;
             }
 
-            /* Today's date gets special ultra-premium treatment */
+            /* Today's date gets speCAIl ultra-premium treatment */
             .fc-day-today .fc-daygrid-day-frame {
               transform: translateZ(25px) rotateX(3deg) rotateY(-2deg) scale(1.03) !important;
 

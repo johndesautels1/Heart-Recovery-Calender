@@ -226,7 +226,7 @@ const exerciseMedia = {
     videoUrl: 'https://www.youtube.com/watch?v=jq3R_8y5TH8',
     imageUrl: 'https://i.ytimg.com/vi/jq3R_8y5TH8/maxresdefault.jpg'
   },
-  'Dancing (Social)': {
+  'Dancing (SoCAIl)': {
     videoUrl: 'https://www.youtube.com/watch?v=Qh35LLzKo6A',
     imageUrl: 'https://i.ytimg.com/vi/Qh35LLzKo6A/maxresdefault.jpg'
   },

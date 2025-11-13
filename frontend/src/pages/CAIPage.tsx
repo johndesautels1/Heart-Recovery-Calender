@@ -6,16 +6,16 @@ import {
   Save, User, FileText, Target, Gauge, Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
-import { CIAReport, CIAEligibility, CIARiskItem, CIAFinding, CIAActionItem } from '../types';
+import { CAIReport, CAIEligibility, CAIRiskItem, CAIFinding, CAIActionItem } from '../types';
 import { Footer } from '../components/Footer';
 import { calculateVascularAge, calculateFraminghamRisk, calculateASCVDRisk } from '../utils/medicalCalculations';
 
-export function CIAPage() {
+export function CAIPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [eligibility, setEligibility] = useState<CIAEligibility | null>(null);
-  const [reports, setReports] = useState<CIAReport[]>([]);
-  const [selectedReport, setSelectedReport] = useState<CIAReport | null>(null);
+  const [eligibility, setEligibility] = useState<CAIEligibility | null>(null);
+  const [reports, setReports] = useState<CAIReport[]>([]);
+  const [selectedReport, setSelectedReport] = useState<CAIReport | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -294,8 +294,8 @@ export function CIAPage() {
       setPatientData(patientInfo);
 
       const [eligibilityData, reportsData] = await Promise.all([
-        api.checkCIAEligibility(effectiveUserId),
-        api.getCIAReports(50, false, effectiveUserId),
+        api.checkCAIEligibility(effectiveUserId),
+        api.getCAIReports(50, false, effectiveUserId),
       ]);
       setEligibility(eligibilityData);
       setReports(reportsData.reports);
@@ -306,8 +306,8 @@ export function CIAPage() {
         setSelectedReport(latestReport);
       }
     } catch (err: any) {
-      console.error('Error loading CIA data:', err);
-      setError(err.response?.data?.error || 'Failed to load CIA data');
+      console.error('Error loading CAI data:', err);
+      setError(err.response?.data?.error || 'Failed to load CAI data');
     } finally {
       setIsLoading(false);
     }
@@ -321,14 +321,14 @@ export function CIAPage() {
       setGenerationStep(0);
       setError(null);
 
-      const response = await api.generateCIAReport(selectedUserId);
+      const response = await api.generateCAIReport(selectedUserId);
 
       setIsGenerating(false);
       setReports(prev => [response.report, ...prev]);
       setSelectedReport(response.report);
 
       // Refresh eligibility
-      const newEligibility = await api.checkCIAEligibility(selectedUserId);
+      const newEligibility = await api.checkCAIEligibility(selectedUserId);
       setEligibility(newEligibility);
     } catch (err: any) {
       console.error('Error generating report:', err);
@@ -366,7 +366,7 @@ export function CIAPage() {
     }
 
     try {
-      await api.deleteCIAReport(reportId);
+      await api.deleteCAIReport(reportId);
 
       // Remove from list and clear selection if it was selected
       setReports(prev => prev.filter(r => r.id !== reportId));
@@ -391,7 +391,7 @@ export function CIAPage() {
     const count = reports.length;
     try {
       // Delete all reports in parallel
-      await Promise.all(reports.map(report => api.deleteCIAReport(report.id)));
+      await Promise.all(reports.map(report => api.deleteCAIReport(report.id)));
 
       // Clear all reports and selection
       setReports([]);
@@ -611,7 +611,7 @@ export function CIAPage() {
             🏥 International Guidelines Applied:
           </div>
           <ul style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', paddingLeft: '1.5rem', margin: 0 }}>
-            <li>American Heart Association (AHA) Cardiac Rehabilitation Standards</li>
+            <li>American Heart AssoCAItion (AHA) Cardiac Rehabilitation Standards</li>
             <li>American College of Cardiology Foundation (ACCF) Guidelines</li>
             <li>European Society of Cardiology (ESC) Recommendations</li>
             <li>JNC-8 Hypertension Management Guidelines</li>
@@ -1189,7 +1189,7 @@ export function CIAPage() {
               animation: 'spin 1s linear infinite',
               margin: '0 auto 1rem',
             }} />
-            <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading CIA System...</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading CAI System...</p>
           </div>
         )}
 
@@ -1287,7 +1287,7 @@ export function CIAPage() {
                   </h3>
                   {eligibility?.eligible ? (
                     <p style={{ color: '#10b981', fontSize: '0.95rem' }}>
-                      ✓ You are eligible to generate a new CIA report
+                      ✓ You are eligible to generate a new CAI report
                       {eligibility.daysSinceSurgery && ` (${eligibility.daysSinceSurgery} days post-surgery)`}
                     </p>
                   ) : (
@@ -1335,7 +1335,7 @@ export function CIAPage() {
                       }
                     }}
                   >
-                    🧬 Generate New CIA Report
+                    🧬 Generate New CAI Report
                   </button>
 
                   <button
@@ -1503,7 +1503,7 @@ export function CIAPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
                         <div>
                           <h2 className="hud-value" style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
-                            CIA REPORT #{selectedReport.id}
+                            CAI REPORT #{selectedReport.id}
                           </h2>
                           <div className="hud-field-data" style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -2116,7 +2116,7 @@ export function CIAPage() {
                           RISK ASSESSMENT & CLINICAL FINDINGS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          {selectedReport.riskAssessment.map((risk: CIARiskItem, idx: number) => (
+                          {selectedReport.riskAssessment.map((risk: CAIRiskItem, idx: number) => (
                             <div
                               key={idx}
                               className="hud-panel"
@@ -2165,7 +2165,7 @@ export function CIAPage() {
                           UNUSUAL FINDINGS & PATTERNS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          {selectedReport.unusualFindings.map((finding: CIAFinding, idx: number) => (
+                          {selectedReport.unusualFindings.map((finding: CAIFinding, idx: number) => (
                             <div
                               key={idx}
                               className="hud-panel"
@@ -2204,7 +2204,7 @@ export function CIAPage() {
                           PERSONALIZED ACTION PLAN & RECOMMENDATIONS
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          {selectedReport.actionPlan.map((action: CIAActionItem, idx: number) => (
+                          {selectedReport.actionPlan.map((action: CAIActionItem, idx: number) => (
                             <div
                               key={idx}
                               className="hud-panel"

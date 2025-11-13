@@ -64,6 +64,7 @@ export async function getCurrentWeather(city: string, state?: string): Promise<W
         appid: apiKey,
         units: 'imperial', // Fahrenheit
       },
+      timeout: 10000, // 10 second timeout
     });
 
     const data = response.data;
@@ -143,6 +144,7 @@ export async function getWeatherForDate(city: string, state: string, targetDate:
         appid: apiKey,
         units: 'imperial',
       },
+      timeout: 10000, // 10 second timeout
     });
 
     // Find closest forecast to target date

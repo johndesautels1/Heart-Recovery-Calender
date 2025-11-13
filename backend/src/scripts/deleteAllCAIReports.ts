@@ -1,17 +1,17 @@
 /**
- * Delete all CIA reports for user ID 2
+ * Delete all CAI reports for user ID 2
  */
 
 import sequelize from '../models/database';
-import CIAReport from '../models/CIAReport';
-import CIAReportComment from '../models/CIAReportComment';
+import CAIReport from '../models/CAIReport';
+import CAIReportComment from '../models/CAIReportComment';
 
 async function deleteAllReports() {
   try {
-    console.log('🗑️  Starting to delete all CIA reports for user ID 2...');
+    console.log('🗑️  Starting to delete all CAI reports for user ID 2...');
 
     // First, get all reports for this user
-    const reports = await CIAReport.findAll({
+    const reports = await CAIReport.findAll({
       where: { userId: 2 }
     });
 
@@ -22,7 +22,7 @@ async function deleteAllReports() {
       console.log(`\n🔄 Deleting report ID ${report.id}...`);
 
       // First delete comments
-      const commentsDeleted = await CIAReportComment.destroy({
+      const commentsDeleted = await CAIReportComment.destroy({
         where: { reportId: report.id }
       });
       console.log(`  ├─ Deleted ${commentsDeleted} comment(s)`);
@@ -32,7 +32,7 @@ async function deleteAllReports() {
       console.log(`  └─ ✅ Report ${report.id} deleted successfully`);
     }
 
-    console.log(`\n🎉 Successfully deleted all ${reports.length} CIA reports!`);
+    console.log(`\n🎉 Successfully deleted all ${reports.length} CAI reports!`);
 
   } catch (error: any) {
     console.error('❌ Error:', error.message);

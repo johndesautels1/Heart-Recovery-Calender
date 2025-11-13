@@ -3,7 +3,7 @@ import sequelize from './database';
 
 type ReportStatus = 'generating' | 'completed' | 'error';
 
-interface CIAReportAttributes {
+interface CAIReportAttributes {
   id: number;
   userId: number;
   patientId?: number;
@@ -29,9 +29,9 @@ interface CIAReportAttributes {
   updatedAt?: Date;
 }
 
-interface CIAReportCreationAttributes extends Optional<CIAReportAttributes, 'id' | 'generatedAt' | 'status' | 'sharedWithProviders'> {}
+interface CAIReportCreationAttributes extends Optional<CAIReportAttributes, 'id' | 'generatedAt' | 'status' | 'sharedWithProviders'> {}
 
-class CIAReport extends Model<CIAReportAttributes, CIAReportCreationAttributes> implements CIAReportAttributes {
+class CAIReport extends Model<CAIReportAttributes, CAIReportCreationAttributes> implements CAIReportAttributes {
   public id!: number;
   public userId!: number;
   public patientId?: number;
@@ -58,7 +58,7 @@ class CIAReport extends Model<CIAReportAttributes, CIAReportCreationAttributes> 
   public readonly updatedAt!: Date;
 
   static initialize() {
-    CIAReport.init(
+    CAIReport.init(
       {
         id: {
           type: DataTypes.INTEGER,
@@ -159,20 +159,20 @@ class CIAReport extends Model<CIAReportAttributes, CIAReportCreationAttributes> 
       },
       {
         sequelize,
-        modelName: 'CIAReport',
-        tableName: 'cia_reports',
+        modelName: 'CAIReport',
+        tableName: 'CAI_reports',
         timestamps: true,
       }
     );
   }
 
   static associate(models: any) {
-    CIAReport.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
-    CIAReport.belongsTo(models.Patient, { foreignKey: 'patientId', as: 'patient' });
-    CIAReport.hasMany(models.CIAReportComment, { foreignKey: 'reportId', as: 'comments' });
+    CAIReport.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    CAIReport.belongsTo(models.Patient, { foreignKey: 'patientId', as: 'patient' });
+    CAIReport.hasMany(models.CAIReportComment, { foreignKey: 'reportId', as: 'comments' });
   }
 }
 
-CIAReport.initialize();
+CAIReport.initialize();
 
-export default CIAReport;
+export default CAIReport;

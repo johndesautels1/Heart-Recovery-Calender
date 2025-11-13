@@ -1,14 +1,14 @@
 /**
- * Debug why CIA reports don't show vitals, meals, exercise data
+ * Debug why CAI reports don't show vitals, meals, exercise data
  */
 
 import sequelize from '../models/database';
 import Patient from '../models/Patient';
 
-async function debugCIAData() {
+async function debugCAIData() {
   try {
     const userId = 2;
-    console.log(`\n🔍 DEBUGGING CIA DATA FOR USER ${userId}\n`);
+    console.log(`\n🔍 DEBUGGING CAI DATA FOR USER ${userId}\n`);
 
     // Get patient and surgery date
     const patient = await Patient.findOne({ where: { userId } });
@@ -23,7 +23,7 @@ async function debugCIAData() {
     console.log(`   Surgery Date: ${patient.surgeryDate}`);
     console.log(`   Surgery Date (raw): ${JSON.stringify(patient.surgeryDate)}`);
 
-    // Calculate analysis date range (same logic as ciaDataAggregationService.ts)
+    // Calculate analysis date range (same logic as CAIDataAggregationService.ts)
     const now = new Date();
     let analysisStartDate: Date;
     let analysisEndDate: Date;
@@ -141,7 +141,7 @@ async function debugCIAData() {
     });
     console.log(exerciseInRange);
 
-    // Run the ACTUAL query from ciaDataAggregationService for vitals
+    // Run the ACTUAL query from CAIDataAggregationService for vitals
     console.log(`\n📊 ACTUAL VITALS QUERY FROM SERVICE:`);
     const [vitalsActual] = await sequelize.query(`
       SELECT
@@ -177,4 +177,4 @@ async function debugCIAData() {
   }
 }
 
-debugCIAData();
+debugCAIData();

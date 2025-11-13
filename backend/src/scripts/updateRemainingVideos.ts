@@ -22,7 +22,7 @@ const remainingVideos: Record<string, string> = {
 
   // Group activities
   'Group Exercise Class': 'https://www.youtube.com/watch?v=gJE4PXzl8dE', // SilverSneakers - 30 Minute Chair Exercise for Seniors
-  'Dancing (Social)': 'https://www.youtube.com/watch?v=hnTPg4GmVTk', // Ballroom Dance Lessons - Waltz Basic Steps
+  'Dancing (SoCAIl)': 'https://www.youtube.com/watch?v=hnTPg4GmVTk', // Ballroom Dance Lessons - Waltz Basic Steps
   'Tennis (Doubles)': 'https://www.youtube.com/watch?v=PwD6H_4yB3g', // Tennis Doubles Strategy and Tips
   'Pickleball': 'https://www.youtube.com/watch?v=xhttGUNjQto', // PrimeTime Pickleball - How to Play Pickleball
   'Bowling': 'https://www.youtube.com/watch?v=OoyRbBHXQOA', // USBC - How to Bowl for Beginners

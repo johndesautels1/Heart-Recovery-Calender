@@ -1,21 +1,21 @@
 import { Request, Response } from 'express';
-import CIAReport from '../models/CIAReport';
-import CIAReportComment from '../models/CIAReportComment';
+import CAIReport from '../models/CAIReport';
+import CAIReportComment from '../models/CAIReportComment';
 import Patient from '../models/Patient';
 import Provider from '../models/Provider';
 import User from '../models/User';
 import Alert from '../models/Alert';
-import ciaDataAggregationService from '../services/ciaDataAggregationService';
-import ciaAnalysisService from '../services/ciaAnalysisService';
+import CAIDataAggregationService from '../services/CAIDataAggregationService';
+import CAIAnalysisService from '../services/CAIAnalysisService';
 import { sendSMS, sendEmail } from '../services/notificationService';
 import { Op } from 'sequelize';
 
 /**
- * POST /api/cia/analyze
- * Generate a new CIA report for the authenticated user or target user (admin/therapist only)
+ * POST /api/CAI/analyze
+ * Generate a new CAI report for the authenticated user or target user (admin/therapist only)
  * Query param: targetUserId (optional) - for admin/therapist to analyze other patients
  */
-export const generateCIAReport = async (req: Request, res: Response) => {
+export const generateCAIReport = async (req: Request, res: Response) => {
   try {
     const requestingUserId = req.user?.id;
 
@@ -60,7 +60,7 @@ export const generateCIAReport = async (req: Request, res: Response) => {
     const patientId = patient?.id || null;
 
     // Create report record with 'generating' status
-    const report = await CIAReport.create({
+    const report = await CAIReport.create({
       userId: targetUserId,
       patientId,
       surgeryDate: patient?.surgeryDate || null,
@@ -73,8 +73,8 @@ export const generateCIAReport = async (req: Request, res: Response) => {
 
     // Aggregate patient data (async operation)
     try {
-      console.log(`[CIA] Starting data aggregation for user ${targetUserId}, report ${report.id}`);
-      const aggregatedData = await ciaDataAggregationService.aggregatePatientData(targetUserId);
+      console.log(`[CAI] Starting data aggregation for user ${targetUserId}, report ${report.id}`);
+      const aggregatedData = await CAIDataAggregationService.aggregatePatientData(targetUserId);
 
       // Update report with actual analysis dates
       await report.update({
@@ -85,12 +85,12 @@ export const generateCIAReport = async (req: Request, res: Response) => {
         metricsAnalyzed: aggregatedData.dataCompleteness.dataCategories,
       });
 
-      console.log(`[CIA] Data aggregation complete. Starting AI analysis...`);
+      console.log(`[CAI] Data aggregation complete. Starting AI analysis...`);
 
       // Perform AI analysis
-      const analysis = await ciaAnalysisService.analyzePatientData(aggregatedData);
+      const analysis = await CAIAnalysisService.analyzePatientData(aggregatedData);
 
-      console.log(`[CIA] AI analysis complete. Recovery score: ${analysis.recoveryScore}`);
+      console.log(`[CAI] AI analysis complete. Recovery score: ${analysis.recoveryScore}`);
 
       // Update report with analysis results
       await report.update({
@@ -103,17 +103,17 @@ export const generateCIAReport = async (req: Request, res: Response) => {
         status: 'completed',
       });
 
-      // 🚨 AUTO-ALERT CREATION: Create alerts from CIA risk findings
-      console.log(`[CIA] Processing risk assessment for auto-alerts...`);
+      // 🚨 AUTO-ALERT CREATION: Create alerts from CAI risk findings
+      console.log(`[CAI] Processing risk assessment for auto-alerts...`);
       await createAlertsFromRiskAssessment(targetUserId, analysis, report.id);
-      console.log(`[CIA] Auto-alerts processed successfully`);
+      console.log(`[CAI] Auto-alerts processed successfully`);
 
       // Return completed report
-      const completedReport = await CIAReport.findByPk(report.id, {
+      const completedReport = await CAIReport.findByPk(report.id, {
         include: [
           { model: Patient, as: 'patient' },
           {
-            model: CIAReportComment,
+            model: CAIReportComment,
             as: 'comments',
             include: [{ model: Provider, as: 'provider' }],
           },
@@ -122,7 +122,7 @@ export const generateCIAReport = async (req: Request, res: Response) => {
 
       res.status(201).json({ report: completedReport });
     } catch (analysisError: any) {
-      console.error('[CIA] Error during analysis:', analysisError);
+      console.error('[CAI] Error during analysis:', analysisError);
 
       // Mark report as error
       await report.update({
@@ -137,17 +137,17 @@ export const generateCIAReport = async (req: Request, res: Response) => {
       });
     }
   } catch (error: any) {
-    console.error('[CIA] Error generating report:', error);
+    console.error('[CAI] Error generating report:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * GET /api/cia/reports
- * Get all CIA reports for the authenticated user or target user (admin/therapist only)
+ * GET /api/CAI/reports
+ * Get all CAI reports for the authenticated user or target user (admin/therapist only)
  * Query params: limit, includeError, targetUserId (optional - for admin/therapist)
  */
-export const getCIAReports = async (req: Request, res: Response) => {
+export const getCAIReports = async (req: Request, res: Response) => {
   try {
     const requestingUserId = req.user?.id;
 
@@ -182,12 +182,12 @@ export const getCIAReports = async (req: Request, res: Response) => {
       whereClause.status = { [Op.ne]: 'error' };
     }
 
-    const reports = await CIAReport.findAll({
+    const reports = await CAIReport.findAll({
       where: whereClause,
       include: [
         { model: Patient, as: 'patient' },
         {
-          model: CIAReportComment,
+          model: CAIReportComment,
           as: 'comments',
           where: { isPrivate: false },
           required: false,
@@ -200,16 +200,16 @@ export const getCIAReports = async (req: Request, res: Response) => {
 
     res.json({ reports });
   } catch (error: any) {
-    console.error('[CIA] Error fetching reports:', error);
+    console.error('[CAI] Error fetching reports:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * GET /api/cia/reports/:reportId
- * Get a specific CIA report by ID
+ * GET /api/CAI/reports/:reportId
+ * Get a specific CAI report by ID
  */
-export const getCIAReportById = async (req: Request, res: Response) => {
+export const getCAIReportById = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const reportId = parseInt(req.params.reportId);
@@ -218,12 +218,12 @@ export const getCIAReportById = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const report = await CIAReport.findOne({
+    const report = await CAIReport.findOne({
       where: { id: reportId, userId },
       include: [
         { model: Patient, as: 'patient' },
         {
-          model: CIAReportComment,
+          model: CAIReportComment,
           as: 'comments',
           where: { isPrivate: false },
           required: false,
@@ -238,14 +238,14 @@ export const getCIAReportById = async (req: Request, res: Response) => {
 
     res.json({ report });
   } catch (error: any) {
-    console.error('[CIA] Error fetching report:', error);
+    console.error('[CAI] Error fetching report:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * POST /api/cia/reports/:reportId/comments
- * Add a provider comment to a CIA report
+ * POST /api/CAI/reports/:reportId/comments
+ * Add a provider comment to a CAI report
  */
 export const addReportComment = async (req: Request, res: Response) => {
   try {
@@ -258,7 +258,7 @@ export const addReportComment = async (req: Request, res: Response) => {
     }
 
     // Verify the report exists
-    const report = await CIAReport.findByPk(reportId);
+    const report = await CAIReport.findByPk(reportId);
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
@@ -270,7 +270,7 @@ export const addReportComment = async (req: Request, res: Response) => {
     }
 
     // Create comment
-    const reportComment = await CIAReportComment.create({
+    const reportComment = await CAIReportComment.create({
       reportId,
       providerId: provider.id,
       userId,
@@ -280,22 +280,22 @@ export const addReportComment = async (req: Request, res: Response) => {
     });
 
     // Return comment with provider info
-    const commentWithProvider = await CIAReportComment.findByPk(reportComment.id, {
+    const commentWithProvider = await CAIReportComment.findByPk(reportComment.id, {
       include: [{ model: Provider, as: 'provider' }],
     });
 
     res.status(201).json({ comment: commentWithProvider });
   } catch (error: any) {
-    console.error('[CIA] Error adding comment:', error);
+    console.error('[CAI] Error adding comment:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * DELETE /api/cia/reports/:reportId
- * Delete a specific CIA report
+ * DELETE /api/CAI/reports/:reportId
+ * Delete a specific CAI report
  */
-export const deleteCIAReport = async (req: Request, res: Response) => {
+export const deleteCAIReport = async (req: Request, res: Response) => {
   try {
     const requestingUserId = req.user?.id;
     const reportId = parseInt(req.params.reportId);
@@ -311,7 +311,7 @@ export const deleteCIAReport = async (req: Request, res: Response) => {
     }
 
     // Find the report
-    const report = await CIAReport.findByPk(reportId);
+    const report = await CAIReport.findByPk(reportId);
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
@@ -329,14 +329,14 @@ export const deleteCIAReport = async (req: Request, res: Response) => {
 
     res.json({ success: true, message: 'Report deleted successfully' });
   } catch (error: any) {
-    console.error('[CIA] Error deleting report:', error);
+    console.error('[CAI] Error deleting report:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * GET /api/cia/eligibility
- * Check if user is eligible to generate a new CIA report (30-day rule bypassed for admin/therapist)
+ * GET /api/CAI/eligibility
+ * Check if user is eligible to generate a new CAI report (30-day rule bypassed for admin/therapist)
  * Query param: targetUserId (optional) - for admin/therapist to check other patients
  */
 export const checkReportEligibility = async (req: Request, res: Response) => {
@@ -382,13 +382,13 @@ export const checkReportEligibility = async (req: Request, res: Response) => {
 
     res.json(eligibility);
   } catch (error: any) {
-    console.error('[CIA] Error checking eligibility:', error);
+    console.error('[CAI] Error checking eligibility:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
 /**
- * Helper function to create alerts from CIA risk assessment
+ * Helper function to create alerts from CAI risk assessment
  * Parses risk findings and creates Alert records with notifications
  */
 async function createAlertsFromRiskAssessment(
@@ -399,7 +399,7 @@ async function createAlertsFromRiskAssessment(
   try {
     const user = await User.findByPk(userId);
     if (!user) {
-      console.warn(`[CIA Auto-Alert] User ${userId} not found, skipping alerts`);
+      console.warn(`[CAI Auto-Alert] User ${userId} not found, skipping alerts`);
       return;
     }
 
@@ -425,7 +425,7 @@ async function createAlertsFromRiskAssessment(
       riskItems = [...riskItems, ...unusualItems];
     }
 
-    console.log(`[CIA Auto-Alert] Found ${riskItems.length} risk items to process`);
+    console.log(`[CAI Auto-Alert] Found ${riskItems.length} risk items to process`);
 
     let alertsCreated = 0;
     let notificationsSent = 0;
@@ -439,8 +439,8 @@ async function createAlertsFromRiskAssessment(
       }
 
       const alertType = mapCategoryToAlertType(risk.category || risk.type || 'other');
-      const title = risk.title || risk.finding || `CIA Report Risk: ${risk.category || 'General'}`;
-      const message = risk.description || risk.message || risk.recommendation || 'Please review your CIA report for details.';
+      const title = risk.title || risk.finding || `CAI Report Risk: ${risk.category || 'General'}`;
+      const message = risk.description || risk.message || risk.recommendation || 'Please review your CAI report for details.';
 
       // Create alert
       const alert = await Alert.create({
@@ -449,14 +449,14 @@ async function createAlertsFromRiskAssessment(
         severity,
         title,
         message,
-        relatedEntityType: 'cia_report',
+        relatedEntityType: 'CAI_report',
         relatedEntityId: reportId,
         resolved: false,
         notificationSent: false,
       });
 
       alertsCreated++;
-      console.log(`[CIA Auto-Alert] Created ${severity} alert: ${title}`);
+      console.log(`[CAI Auto-Alert] Created ${severity} alert: ${title}`);
 
       // Send notifications for critical alerts
       if (severity === 'critical') {
@@ -474,7 +474,7 @@ async function createAlertsFromRiskAssessment(
           }
 
           // Email notification
-          const emailSubject = `🚨 Critical Health Alert from CIA Report`;
+          const emailSubject = `🚨 Critical Health Alert from CAI Report`;
           const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -499,16 +499,16 @@ async function createAlertsFromRiskAssessment(
         <p>${message}</p>
       </div>
     </div>
-    <p>Your latest CIA (Cardiac Intelligence Analysis) report has identified a critical health concern that requires immediate attention.</p>
+    <p>Your latest CAI (Cardiac Intelligence Analysis) report has identified a critical health concern that requires immediate attention.</p>
     <center>
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/cia" class="cta-button">View Full CIA Report →</a>
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/CAI" class="cta-button">View Full CAI Report →</a>
     </center>
     <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 3px solid #f59e0b;">
       <strong>⚠️ Important:</strong> If you experience chest pain, severe shortness of breath, or other emergency symptoms, call 911 immediately. This alert is for informational purposes and does not replace emergency medical care.
     </div>
     <div class="footer">
-      <p><strong>Heart Recovery Calendar - CIA Report Alert</strong></p>
-      <p>You received this alert because your latest CIA report identified a critical health concern.</p>
+      <p><strong>Heart Recovery Calendar - CAI Report Alert</strong></p>
+      <p>You received this alert because your latest CAI report identified a critical health concern.</p>
     </div>
   </div>
 </body>
@@ -528,14 +528,14 @@ async function createAlertsFromRiskAssessment(
             });
           }
         } catch (notifError: any) {
-          console.error(`[CIA Auto-Alert] Error sending notifications for alert ${alert.id}:`, notifError.message);
+          console.error(`[CAI Auto-Alert] Error sending notifications for alert ${alert.id}:`, notifError.message);
         }
       }
     }
 
-    console.log(`[CIA Auto-Alert] Summary: Created ${alertsCreated} alerts, sent ${notificationsSent} notifications`);
+    console.log(`[CAI Auto-Alert] Summary: Created ${alertsCreated} alerts, sent ${notificationsSent} notifications`);
   } catch (error: any) {
-    console.error('[CIA Auto-Alert] Error creating alerts:', error.message);
+    console.error('[CAI Auto-Alert] Error creating alerts:', error.message);
     // Don't throw - alert creation failure shouldn't block report generation
   }
 }
@@ -684,7 +684,7 @@ async function checkEligibility(userId: number): Promise<{
   }
 
   // Check for most recent completed report
-  const lastReport = await CIAReport.findOne({
+  const lastReport = await CAIReport.findOne({
     where: {
       userId,
       status: 'completed',

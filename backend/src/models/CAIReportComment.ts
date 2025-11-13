@@ -3,7 +3,7 @@ import sequelize from './database';
 
 type CommentType = 'feedback' | 'approval' | 'concern' | 'recommendation' | 'question';
 
-interface CIAReportCommentAttributes {
+interface CAIReportCommentAttributes {
   id: number;
   reportId: number;
   providerId: number;
@@ -15,9 +15,9 @@ interface CIAReportCommentAttributes {
   updatedAt?: Date;
 }
 
-interface CIAReportCommentCreationAttributes extends Optional<CIAReportCommentAttributes, 'id' | 'commentType' | 'isPrivate'> {}
+interface CAIReportCommentCreationAttributes extends Optional<CAIReportCommentAttributes, 'id' | 'commentType' | 'isPrivate'> {}
 
-class CIAReportComment extends Model<CIAReportCommentAttributes, CIAReportCommentCreationAttributes> implements CIAReportCommentAttributes {
+class CAIReportComment extends Model<CAIReportCommentAttributes, CAIReportCommentCreationAttributes> implements CAIReportCommentAttributes {
   public id!: number;
   public reportId!: number;
   public providerId!: number;
@@ -30,7 +30,7 @@ class CIAReportComment extends Model<CIAReportCommentAttributes, CIAReportCommen
   public readonly updatedAt!: Date;
 
   static initialize() {
-    CIAReportComment.init(
+    CAIReportComment.init(
       {
         id: {
           type: DataTypes.INTEGER,
@@ -41,7 +41,7 @@ class CIAReportComment extends Model<CIAReportCommentAttributes, CIAReportCommen
           type: DataTypes.INTEGER,
           allowNull: false,
           references: {
-            model: 'cia_reports',
+            model: 'CAI_reports',
             key: 'id',
           },
         },
@@ -78,20 +78,20 @@ class CIAReportComment extends Model<CIAReportCommentAttributes, CIAReportCommen
       },
       {
         sequelize,
-        modelName: 'CIAReportComment',
-        tableName: 'cia_report_comments',
+        modelName: 'CAIReportComment',
+        tableName: 'cai_report_comments',
         timestamps: true,
       }
     );
   }
 
   static associate(models: any) {
-    CIAReportComment.belongsTo(models.CIAReport, { foreignKey: 'reportId', as: 'report' });
-    CIAReportComment.belongsTo(models.Provider, { foreignKey: 'providerId', as: 'provider' });
-    CIAReportComment.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    CAIReportComment.belongsTo(models.CAIReport, { foreignKey: 'reportId', as: 'report' });
+    CAIReportComment.belongsTo(models.Provider, { foreignKey: 'providerId', as: 'provider' });
+    CAIReportComment.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
   }
 }
 
-CIAReportComment.initialize();
+CAIReportComment.initialize();
 
-export default CIAReportComment;
+export default CAIReportComment;

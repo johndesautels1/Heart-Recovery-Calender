@@ -1,15 +1,15 @@
 /**
- * Test what data is being passed to the CIA AI prompt
+ * Test what data is being passed to the CAI AI prompt
  */
 
-import ciaDataAggregationService from '../services/ciaDataAggregationService';
+import CAIDataAggregationService from '../services/CAIDataAggregationService';
 
 async function testPromptData() {
   try {
     const userId = 2;
-    console.log('\n📋 TESTING CIA PROMPT DATA STRUCTURE\n');
+    console.log('\n📋 TESTING CAI PROMPT DATA STRUCTURE\n');
 
-    const aggregatedData = await ciaDataAggregationService.aggregatePatientData(userId);
+    const aggregatedData = await CAIDataAggregationService.aggregatePatientData(userId);
 
     console.log('✅ Data aggregation complete\n');
 

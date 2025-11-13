@@ -141,7 +141,7 @@ class Medication extends Model<MedicationAttributes, MedicationCreationAttribute
         instructions: {
           type: DataTypes.TEXT,
           allowNull: true,
-          comment: 'Special instructions (take with food, etc.)',
+          comment: 'SpeCAIl instructions (take with food, etc.)',
         },
         isActive: {
           type: DataTypes.BOOLEAN,

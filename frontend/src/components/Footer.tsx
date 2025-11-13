@@ -71,7 +71,7 @@ export function Footer() {
           <div className="relative">
             <img
               src={logoImage}
-              alt="AI Applications Division - John E. Desautels & Associates"
+              alt="AI Applications Division - John E. Desautels & associates"
               className="w-32 h-auto opacity-90 hover:opacity-100 transition-opacity cursor-help"
             />
             {/* Company Info Tooltip */}
@@ -84,7 +84,7 @@ export function Footer() {
             >
               <div className="space-y-2 text-sm">
                 <h4 className="font-bold text-base" style={{ color: 'var(--accent)' }}>
-                  John E. Desautels & Associates
+                  John E. Desautels & associates
                 </h4>
                 <div style={{ color: 'var(--ink)' }}>
                   <p className="font-semibold" style={{ color: 'var(--cyan)' }}>AI Applications Division</p>

@@ -411,7 +411,7 @@ export interface Provider {
   id: number;
   userId: number;
   name: string;
-  specialty?: string;
+  speCAIlty?: string;
   providerType?: ProviderType;
   phone?: string;
   email?: string;
@@ -433,7 +433,7 @@ export interface Provider {
 
 export interface CreateProviderInput {
   name: string;
-  specialty?: string;
+  speCAIlty?: string;
   providerType?: ProviderType;
   phone?: string;
   email?: string;
@@ -930,30 +930,30 @@ export interface TriggerSyncInput {
   dataType?: 'all' | 'exercise' | 'heart_rate' | 'steps' | 'calories' | 'sleep';
 }
 
-// ==================== CIA (CARDIAC INTELLIGENCE ANALYSIS) TYPES ====================
+// ==================== CAI (CARDIAC INTELLIGENCE ANALYSIS) TYPES ====================
 
-export interface CIARiskItem {
+export interface CAIRiskItem {
   category: string;
   severity: 'Critical' | 'High' | 'Medium' | 'Low';
   finding: string;
   recommendation: string;
 }
 
-export interface CIAFinding {
+export interface CAIFinding {
   category: string;
   finding: string;
   significance: string;
   details?: string;
 }
 
-export interface CIAActionItem {
+export interface CAIActionItem {
   priority: 'Immediate' | 'High' | 'Medium' | 'Low';
   action: string;
   rationale: string;
   timeline?: string;
 }
 
-export interface CIAReportComment {
+export interface CAIReportComment {
   id: number;
   reportId: number;
   providerId: number;
@@ -966,7 +966,7 @@ export interface CIAReportComment {
   provider?: Provider;
 }
 
-export interface CIAReport {
+export interface CAIReport {
   id: number;
   userId: number;
   patientId?: number;
@@ -978,9 +978,9 @@ export interface CIAReport {
   recoveryScore?: number;  // 0-100
   reportData?: any;  // Full AI response JSON
   summary?: string;  // Text summary
-  riskAssessment?: CIARiskItem[];  // Array of risk items
-  unusualFindings?: CIAFinding[];  // Array of findings
-  actionPlan?: CIAActionItem[];  // Array of action items
+  riskAssessment?: CAIRiskItem[];  // Array of risk items
+  unusualFindings?: CAIFinding[];  // Array of findings
+  actionPlan?: CAIActionItem[];  // Array of action items
   dataCompleteness?: {
     hasVitals: boolean;
     hasSleep: boolean;
@@ -1002,10 +1002,10 @@ export interface CIAReport {
   createdAt: string;
   updatedAt: string;
   patient?: Patient;
-  comments?: CIAReportComment[];
+  comments?: CAIReportComment[];
 }
 
-export interface CIAEligibility {
+export interface CAIEligibility {
   eligible: boolean;
   reason?: string;
   nextEligibleDate?: string;
@@ -1013,14 +1013,14 @@ export interface CIAEligibility {
   lastReportDate?: string;
 }
 
-export interface CIAReportsResponse {
-  reports: CIAReport[];
+export interface CAIReportsResponse {
+  reports: CAIReport[];
 }
 
-export interface CIAReportResponse {
-  report: CIAReport;
+export interface CAIReportResponse {
+  report: CAIReport;
 }
 
-export interface CIACommentResponse {
-  comment: CIAReportComment;
+export interface CAICommentResponse {
+  comment: CAIReportComment;
 }

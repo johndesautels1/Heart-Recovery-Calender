@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { AggregatedPatientData } from './ciaDataAggregationService';
+import { AggregatedPatientData } from './CAIDataAggregationService';
 
 const AI_MODEL = 'claude-sonnet-4-20250514';
 const AI_PROMPT_VERSION = 'v1.0';
 
-interface CIAAnalysisResult {
+interface CAIAnalysisResult {
   recoveryScore: number;
   summary: string;
   riskAssessment: RiskItem[];
@@ -36,7 +36,7 @@ interface ActionItem {
   timeline: string;
 }
 
-export class CIAAnalysisService {
+export class CAIAnalysisService {
   private client: Anthropic;
 
   constructor() {
@@ -47,7 +47,7 @@ export class CIAAnalysisService {
     this.client = new Anthropic({ apiKey });
   }
 
-  async analyzePatientData(data: AggregatedPatientData): Promise<CIAAnalysisResult> {
+  async analyzePatientData(data: AggregatedPatientData): Promise<CAIAnalysisResult> {
     const prompt = this.buildAnalysisPrompt(data);
 
     const message = await this.client.messages.create({
@@ -295,4 +295,4 @@ Generate the analysis now based on the patient data provided.`;
   }
 }
 
-export default new CIAAnalysisService();
+export default new CAIAnalysisService();

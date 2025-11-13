@@ -109,7 +109,7 @@ export const createPrescription = async (req: Request, res: Response) => {
 
     const prescription = await ExercisePrescription.create(prescriptionData);
 
-    // Load full prescription with associations
+    // Load full prescription with assoCAItions
     const fullPrescription = await ExercisePrescription.findByPk(prescription.id, {
       include: [
         {
@@ -149,7 +149,7 @@ export const updatePrescription = async (req: Request, res: Response) => {
 
     await prescription.update(req.body);
 
-    // Load full prescription with associations
+    // Load full prescription with assoCAItions
     const fullPrescription = await ExercisePrescription.findByPk(prescription.id, {
       include: [
         {

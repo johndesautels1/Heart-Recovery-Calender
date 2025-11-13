@@ -277,10 +277,10 @@ export function Navbar() {
           </button>
         </div>
 
-        {/* CIA - Cardiac Intelligence Analysis - Ultra 5D Transparent Button */}
+        {/* CAI - Cardiac Intelligence Analysis - Ultra 5D Transparent Button */}
         <div className="hidden md:flex items-center justify-center py-2">
           <Link
-            to="/cia"
+            to="/CAI"
             className="group relative"
           >
             {/* Outer glow rings */}
@@ -330,7 +330,7 @@ export function Navbar() {
 
               {/* Content */}
               <div className="relative flex flex-col items-center justify-center space-y-0.5" style={{ transform: 'translateZ(20px)' }}>
-                {/* CIA Text - Crystal Clear & Readable */}
+                {/* CAI Text - Crystal Clear & Readable */}
                 <div className="flex items-center gap-2">
                   <Brain
                     className="h-5 w-5 transition-all duration-500 group-hover:scale-110 group-hover:rotate-12"

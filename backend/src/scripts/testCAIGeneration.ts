@@ -7,12 +7,12 @@
  * 3. Aggregate all data categories successfully
  */
 
-import ciaDataAggregationService from '../services/ciaDataAggregationService';
+import CAIDataAggregationService from '../services/CAIDataAggregationService';
 import Patient from '../models/Patient';
 import sequelize from '../models/database';
 import { Op } from 'sequelize';
 
-async function testCIADataAggregation() {
+async function testCAIDataAggregation() {
   try {
     console.log('🧪 Testing CAI Data Aggregation After Fixes\n');
     console.log('=' .repeat(60));
@@ -40,7 +40,7 @@ async function testCIADataAggregation() {
     console.log('\n📊 Step 2: Testing data aggregation service...');
     console.log('   This tests the patient lookup fix and exercise data loading.\n');
 
-    const aggregatedData = await ciaDataAggregationService.aggregatePatientData(userId);
+    const aggregatedData = await CAIDataAggregationService.aggregatePatientData(userId);
 
     console.log('=' .repeat(60));
     console.log('✅ DATA AGGREGATION SUCCESSFUL!\n');
@@ -111,4 +111,4 @@ async function testCIADataAggregation() {
 
 // Run the test
 console.log('🚀 Starting CAI Data Aggregation Test...\n');
-testCIADataAggregation();
+testCAIDataAggregation();

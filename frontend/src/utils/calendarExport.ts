@@ -103,7 +103,7 @@ export function generateICSFile(events: CalendarEvent[], calendarName: string = 
 }
 
 /**
- * Escape special characters in ICS text fields
+ * Escape speCAIl characters in ICS text fields
  */
 function escapeICSText(text: string): string {
   return text

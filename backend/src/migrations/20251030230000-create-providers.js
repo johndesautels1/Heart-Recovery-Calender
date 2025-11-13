@@ -25,10 +25,10 @@ module.exports = {
         allowNull: false,
         comment: 'Provider full name (e.g., Dr. John Smith)',
       },
-      specialty: {
+      speCAIlty: {
         type: Sequelize.STRING(255),
         allowNull: true,
-        comment: 'Medical specialty (e.g., Cardiologist, Primary Care)',
+        comment: 'Medical speCAIlty (e.g., Cardiologist, Primary Care)',
       },
       phone: {
         type: Sequelize.STRING(20),

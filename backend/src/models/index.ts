@@ -27,8 +27,8 @@ import EventTemplate from './EventTemplate';
 import DeviceConnection from './DeviceConnection';
 import DeviceSyncLog from './DeviceSyncLog';
 import Provider from './Provider';
-import CIAReport from './CIAReport';
-import CIAReportComment from './CIAReportComment';
+import CAIReport from './CAIReport';
+import CAIReportComment from './CAIReportComment';
 
 // Create models object
 const models = {
@@ -58,19 +58,19 @@ const models = {
   DeviceConnection,
   DeviceSyncLog,
   Provider,
-  CIAReport,
-  CIAReportComment,
+  CAIReport,
+  CAIReportComment,
 };
 
 // Call associate methods for all models
-console.log('[MODELS] Setting up model associations...');
+console.log('[MODELS] Setting up model assoCAItions...');
 Object.values(models).forEach((model: any) => {
   if (model.associate) {
     console.log(`[MODELS] Calling associate() for ${model.name}`);
     model.associate(models);
   }
 });
-console.log('[MODELS] Model associations setup complete');
+console.log('[MODELS] Model assoCAItions setup complete');
 
 export default sequelize;
 export { models };

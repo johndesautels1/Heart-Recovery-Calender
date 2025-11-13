@@ -203,7 +203,7 @@ export const createOrUpdateDailyScore = async (req: Request, res: Response) => {
     console.log('[DAILY-SCORES] Daily score created/updated successfully:', score.id);
     console.log('[DAILY-SCORES] postSurgeryDay:', score.postSurgeryDay);
 
-    // Load full score with associations
+    // Load full score with assoCAItions
     const fullScore = await DailyScore.findByPk(score.id, {
       include: [
         {

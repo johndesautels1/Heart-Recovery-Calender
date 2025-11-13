@@ -1,19 +1,19 @@
 /**
- * Test the new auto-alert creation from CIA reports
+ * Test the new auto-alert creation from CAI reports
  */
 
 import sequelize from '../models/database';
 import Alert from '../models/Alert';
-import CIAReport from '../models/CIAReport';
+import CAIReport from '../models/CAIReport';
 
 async function testAutoAlerts() {
   try {
     const userId = 2;
-    console.log('\n🔔 TESTING CIA AUTO-ALERT CREATION\n');
+    console.log('\n🔔 TESTING CAI AUTO-ALERT CREATION\n');
 
-    // Check for recent CIA reports
-    console.log('1. Checking for recent CIA reports...');
-    const recentReports = await CIAReport.findAll({
+    // Check for recent CAI reports
+    console.log('1. Checking for recent CAI reports...');
+    const recentReports = await CAIReport.findAll({
       where: { userId },
       order: [['generatedAt', 'DESC']],
       limit: 5,
@@ -22,24 +22,24 @@ async function testAutoAlerts() {
     console.log(`   Found ${recentReports.length} recent reports\n`);
 
     if (recentReports.length === 0) {
-      console.log('❌ No reports found. Generate a CIA report first.\n');
+      console.log('❌ No reports found. Generate a CAI report first.\n');
       return;
     }
 
     // Check for alerts created for these reports
-    console.log('2. Checking for alerts linked to CIA reports...');
+    console.log('2. Checking for alerts linked to CAI reports...');
     const reportIds = recentReports.map(r => r.id);
 
     const alerts = await Alert.findAll({
       where: {
         userId,
-        relatedEntityType: 'cia_report',
+        relatedEntityType: 'CAI_report',
       },
       order: [['createdAt', 'DESC']],
       limit: 20,
     });
 
-    console.log(`   Found ${alerts.length} total CIA-related alerts\n`);
+    console.log(`   Found ${alerts.length} total CAI-related alerts\n`);
 
     // Group alerts by report
     const alertsByReport = new Map<number, any[]>();

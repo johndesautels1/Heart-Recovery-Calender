@@ -245,7 +245,7 @@ export const createExerciseLog = async (req: Request, res: Response) => {
       }
     }
 
-    // Load full log with associations
+    // Load full log with assoCAItions
     const fullLog = await ExerciseLog.findByPk(log.id, {
       include: [
         {
@@ -297,7 +297,7 @@ export const updateExerciseLog = async (req: Request, res: Response) => {
 
     await log.update(updateData);
 
-    // Reload with associations
+    // Reload with assoCAItions
     const updatedLog = await ExerciseLog.findByPk(log.id, {
       include: [
         {

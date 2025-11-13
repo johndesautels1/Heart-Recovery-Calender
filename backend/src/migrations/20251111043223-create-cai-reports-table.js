@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('cia_reports', {
+    await queryInterface.createTable('cai_reports', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -135,24 +135,24 @@ module.exports = {
     });
 
     // Add indexes for common queries
-    await queryInterface.addIndex('cia_reports', ['userId'], {
-      name: 'cia_reports_user_id_idx',
+    await queryInterface.addIndex('CAI_reports', ['userId'], {
+      name: 'CAI_reports_user_id_idx',
     });
 
-    await queryInterface.addIndex('cia_reports', ['patientId'], {
-      name: 'cia_reports_patient_id_idx',
+    await queryInterface.addIndex('CAI_reports', ['patientId'], {
+      name: 'CAI_reports_patient_id_idx',
     });
 
-    await queryInterface.addIndex('cia_reports', ['generatedAt'], {
-      name: 'cia_reports_generated_at_idx',
+    await queryInterface.addIndex('CAI_reports', ['generatedAt'], {
+      name: 'CAI_reports_generated_at_idx',
     });
 
-    await queryInterface.addIndex('cia_reports', ['status'], {
-      name: 'cia_reports_status_idx',
+    await queryInterface.addIndex('CAI_reports', ['status'], {
+      name: 'CAI_reports_status_idx',
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('cia_reports');
+    await queryInterface.dropTable('cai_reports');
   },
 };
