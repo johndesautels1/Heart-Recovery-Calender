@@ -8,7 +8,7 @@ interface ProviderAttributes {
   id: number;
   userId: number;
   name: string;
-  speCAIlty?: string;
+  specialty?: string;
   providerType?: ProviderType;
   phone?: string;
   email?: string;
@@ -28,13 +28,13 @@ interface ProviderAttributes {
   updatedAt?: Date;
 }
 
-interface ProviderCreationAttributes extends Optional<ProviderAttributes, 'id' | 'speCAIlty' | 'providerType' | 'phone' | 'email' | 'address' | 'nextAppointment' | 'notes' | 'isPrimary' | 'officeHours' | 'faxNumber' | 'patientPortalUrl' | 'preferredContactMethod' | 'acceptedInsurance' | 'lastVisitDate' | 'isEmergencyContact' | 'pharmacyLicenseNumber' | 'createdAt' | 'updatedAt'> {}
+interface ProviderCreationAttributes extends Optional<ProviderAttributes, 'id' | 'specialty' | 'providerType' | 'phone' | 'email' | 'address' | 'nextAppointment' | 'notes' | 'isPrimary' | 'officeHours' | 'faxNumber' | 'patientPortalUrl' | 'preferredContactMethod' | 'acceptedInsurance' | 'lastVisitDate' | 'isEmergencyContact' | 'pharmacyLicenseNumber' | 'createdAt' | 'updatedAt'> {}
 
 class Provider extends Model<ProviderAttributes, ProviderCreationAttributes> implements ProviderAttributes {
   public id!: number;
   public userId!: number;
   public name!: string;
-  public speCAIlty?: string;
+  public specialty?: string;
   public providerType?: ProviderType;
   public phone?: string;
   public email?: string;
@@ -74,7 +74,7 @@ class Provider extends Model<ProviderAttributes, ProviderCreationAttributes> imp
           type: DataTypes.STRING(255),
           allowNull: false,
         },
-        speCAIlty: {
+        specialty: {
           type: DataTypes.STRING(255),
           allowNull: true,
         },
