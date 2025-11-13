@@ -355,7 +355,9 @@ if (start || end) {
 
 ### Architecture Issues Identified
 
-**See**: [`SURGERY_DATE_AUDIT_REPORT.md`](./SURGERY_DATE_AUDIT_REPORT.md) for comprehensive audit findings
+**Audit Reports:**
+- [`SURGERY_DATE_AUDIT_REPORT.md`](./SURGERY_DATE_AUDIT_REPORT.md) - Surgery date propagation issues (5 agents)
+- [`ENTITY_ARCHITECTURE_AUDIT_REPORT.md`](./ENTITY_ARCHITECTURE_AUDIT_REPORT.md) - User/Patient/Therapist/Admin architecture audit (5 agents)
 
 **Key Issues:**
 1. Dual storage (User.surgeryDate + Patient.surgeryDate) without synchronization
