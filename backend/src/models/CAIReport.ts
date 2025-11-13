@@ -160,7 +160,7 @@ class CAIReport extends Model<CAIReportAttributes, CAIReportCreationAttributes> 
       {
         sequelize,
         modelName: 'CAIReport',
-        tableName: 'CAI_reports',
+        tableName: 'cai_reports',
         timestamps: true,
       }
     );
