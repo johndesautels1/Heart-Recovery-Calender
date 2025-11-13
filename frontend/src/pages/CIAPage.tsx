@@ -31,6 +31,8 @@ export function CIAPage() {
   const [heartViewerTab, setHeartViewerTab] = useState<'anatomy' | 'diagnostic'>('anatomy');
   const heartViewerContainerRef = useRef<HTMLDivElement>(null);
   const heartViewerApiRef = useRef<any>(null);
+  const sketchfabIframeRef = useRef<HTMLIFrameElement>(null);
+  const sketchfabApiRef = useRef<any>(null);
 
   const generationSteps = [
     { icon: '🔍', text: 'Scanning Patient Data Repository...', category: 'vitals' },
@@ -72,6 +74,12 @@ export function CIAPage() {
     }
   }, [isGenerating]);
 
+  // Initialize Sketchfab API when anatomy tab is selected
+  // DISABLED - We're just using the iframe embed, no API control needed
+  // useEffect(() => {
+  //   // Sketchfab API initialization disabled
+  // }, [heartViewerTab]);
+
   // Initialize 3D heart viewer when diagnostic tab is selected
   useEffect(() => {
     if (heartViewerTab === 'diagnostic' && heartViewerContainerRef.current && !heartViewerApiRef.current) {
@@ -102,6 +110,179 @@ export function CIAPage() {
     }
   }, [heartViewerTab]);
 
+  // Function to visualize patient data on Sketchfab heart model
+  const visualizePatientDataOnHeart = () => {
+    console.log('🫀 Visualize Patient Data clicked');
+
+    try {
+      // Get patient data
+      const dataCompleteness = selectedReport?.dataCompleteness;
+      const reportData = selectedReport?.reportData;
+      const latestVitals = (reportData as any)?.latestVitals || (dataCompleteness as any)?.latestVitals;
+      const systolicBP = latestVitals?.systolicBP || latestVitals?.bloodPressureSystolic || 140;
+      const diastolicBP = latestVitals?.diastolicBP || latestVitals?.bloodPressureDiastolic || 90;
+      const heartRate = latestVitals?.heartRate || 75;
+      const cholesterolTotal = latestVitals?.cholesterolTotal || 200;
+      const cholesterolHDL = latestVitals?.cholesterolHDL || 50;
+      const cholesterolLDL = latestVitals?.cholesterolLDL || 130;
+
+      const age = user?.dateOfBirth
+        ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : 55;
+
+      const gender = (user as any)?.gender === 'Female' || (user as any)?.gender === 'female' ? 'female' : 'male';
+      const smokingStatus = patientData?.smokingStatus || 'never';
+      const diabetesStatus = patientData?.diabetesStatus || 'no';
+
+      // Calculate risks
+      const framinghamData = calculateFraminghamRisk({
+        age,
+        gender,
+        totalCholesterol: cholesterolTotal,
+        hdlCholesterol: cholesterolHDL,
+        systolicBP,
+        onBPMeds: dataCompleteness?.hasMedications || false,
+        smoking: smokingStatus === 'current',
+        diabetes: diabetesStatus === 'yes'
+      });
+
+      const ascvdData = calculateASCVDRisk({
+        age,
+        gender,
+        race: 'white',
+        totalCholesterol: cholesterolTotal,
+        hdlCholesterol: cholesterolHDL,
+        systolicBP,
+        onBPMeds: dataCompleteness?.hasMedications || false,
+        smoking: smokingStatus === 'current',
+        diabetes: diabetesStatus === 'yes'
+      });
+
+      const framinghamRisk = framinghamData?.riskPercent ?? 0;
+      const ascvdRisk = ascvdData?.riskPercent ?? 0;
+
+      // DETECT CARDIOVASCULAR CONDITIONS
+      const conditions: string[] = [];
+
+      // 1. Hypertension Detection (based on ACC/AHA 2017 guidelines)
+      let hypertensionStage = '';
+      if (systolicBP >= 180 || diastolicBP >= 120) {
+        hypertensionStage = 'Hypertensive Crisis';
+        conditions.push(`🔴 ${hypertensionStage} (${systolicBP}/${diastolicBP})`);
+      } else if (systolicBP >= 140 || diastolicBP >= 90) {
+        hypertensionStage = 'Stage 2 Hypertension';
+        conditions.push(`🟠 ${hypertensionStage} (${systolicBP}/${diastolicBP})`);
+      } else if (systolicBP >= 130 || diastolicBP >= 80) {
+        hypertensionStage = 'Stage 1 Hypertension';
+        conditions.push(`🟡 ${hypertensionStage} (${systolicBP}/${diastolicBP})`);
+      } else if (systolicBP >= 120 && systolicBP < 130 && diastolicBP < 80) {
+        hypertensionStage = 'Elevated BP';
+        conditions.push(`🟡 ${hypertensionStage} (${systolicBP}/${diastolicBP})`);
+      }
+
+      // 2. Heart Rate Abnormalities
+      if (heartRate < 60) {
+        conditions.push(`💙 Bradycardia (${heartRate} bpm)`);
+      } else if (heartRate > 100) {
+        conditions.push(`❤️ Tachycardia (${heartRate} bpm)`);
+      }
+
+      // 3. Hyperlipidemia (High Cholesterol)
+      if (cholesterolTotal >= 240) {
+        conditions.push(`🟣 Severe Hyperlipidemia (Total: ${cholesterolTotal} mg/dL)`);
+      } else if (cholesterolTotal >= 200) {
+        conditions.push(`🟣 Borderline High Cholesterol (${cholesterolTotal} mg/dL)`);
+      }
+
+      if (cholesterolLDL >= 190) {
+        conditions.push(`🟣 Very High LDL (${cholesterolLDL} mg/dL)`);
+      } else if (cholesterolLDL >= 160) {
+        conditions.push(`🟣 High LDL Cholesterol (${cholesterolLDL} mg/dL)`);
+      }
+
+      if (cholesterolHDL < 40) {
+        conditions.push(`🟣 Low HDL (${cholesterolHDL} mg/dL) - CAD risk`);
+      }
+
+      // 4. Coronary Artery Disease Risk
+      if (ascvdRisk >= 20) {
+        conditions.push(`🚨 High CAD Risk (ASCVD ${ascvdRisk.toFixed(1)}%)`);
+      } else if (ascvdRisk >= 7.5) {
+        conditions.push(`⚠️ Moderate CAD Risk (ASCVD ${ascvdRisk.toFixed(1)}%)`);
+      }
+
+      // 5. Metabolic Risk Factors
+      if (smokingStatus === 'current') {
+        conditions.push('🚬 Active Smoking - Endothelial dysfunction');
+      }
+      if (diabetesStatus === 'yes') {
+        conditions.push('💉 Diabetes Mellitus - Microvascular damage');
+      }
+
+      // Determine overall risk color
+      const riskColor = framinghamRisk < 10 ? '#00ff88' :
+                       framinghamRisk < 20 ? '#ffff00' :
+                       framinghamRisk < 30 ? '#ff6600' : '#ff0000';
+
+      const riskEmoji = framinghamRisk < 10 ? '✓' : framinghamRisk < 20 ? '⚠' : '🚨';
+
+      // Build conditions HTML
+      const conditionsHTML = conditions.length > 0
+        ? `
+          <div style="height: 1px; background: rgba(0, 212, 255, 0.3); margin: 8px 0"></div>
+          <div style="margin-bottom: 4px; font-size: 0.75rem; font-weight: bold; color: #ff6600">
+            Detected Conditions:
+          </div>
+          ${conditions.map(c => `<div style="margin-bottom: 3px; font-size: 0.65rem; color: rgba(255,255,255,0.9)">${c}</div>`).join('')}
+        `
+        : '';
+
+      // Update overlay with patient data
+      const overlay = document.getElementById('overlay-content');
+      if (overlay) {
+        overlay.innerHTML = `
+          <div style="margin-bottom: 8px">
+            <strong style="font-size: 0.85rem">${user?.name || 'Unknown Patient'}</strong>
+          </div>
+          <div style="margin-bottom: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.8)">
+            👤 ${age}yo ${gender.toUpperCase()} | 💓 ${heartRate} bpm
+          </div>
+          <div style="margin-bottom: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.8)">
+            🩸 BP: ${systolicBP}/${diastolicBP} mmHg
+          </div>
+          <div style="margin-bottom: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.8)">
+            📊 Chol: ${cholesterolTotal} mg/dL (LDL:${cholesterolLDL} HDL:${cholesterolHDL})
+          </div>
+          <div style="height: 1px; background: rgba(0, 212, 255, 0.3); margin: 8px 0"></div>
+          <div style="margin-bottom: 4px; font-size: 0.75rem">
+            <span style="color: ${riskColor}; font-weight: bold">● Framingham: ${framinghamRisk.toFixed(1)}%</span>
+          </div>
+          <div style="margin-bottom: 4px; font-size: 0.75rem">
+            <span style="color: ${riskColor}; font-weight: bold">● ASCVD: ${ascvdRisk.toFixed(1)}%</span>
+          </div>
+          <div style="margin-top: 8px; padding: 6px; background: ${framinghamRisk < 10 ? 'rgba(0, 255, 136, 0.1)' : framinghamRisk < 20 ? 'rgba(255, 255, 0, 0.1)' : 'rgba(255, 68, 68, 0.1)'}; border-radius: 4px; font-size: 0.65rem; color: ${riskColor}; border: 1px solid ${riskColor}">
+            ${riskEmoji} ${framinghamRisk < 10 ? 'Low cardiovascular risk' : framinghamRisk < 20 ? 'Moderate risk - lifestyle modifications' : 'High risk - medical intervention required'}
+          </div>
+          ${conditionsHTML}
+        `;
+      }
+
+      console.log('✅ Patient data visualized:', {
+        patient: user?.name,
+        age,
+        gender,
+        framinghamRisk,
+        ascvdRisk,
+        conditions,
+        vitals: { systolicBP, diastolicBP, heartRate, cholesterolTotal, cholesterolLDL, cholesterolHDL }
+      });
+
+    } catch (error) {
+      console.error('❌ Error visualizing patient data:', error);
+      alert('Error visualizing patient data. Please check the console for details.');
+    }
+  };
+
   // Function to visualize risk data on 3D heart
   const visualizeRiskOnHeart = () => {
     console.log('🫀 Visualize button clicked');
@@ -109,97 +290,198 @@ export function CIAPage() {
     console.log('Selected Report:', selectedReport);
     console.log('Patient Profile Data:', patientData);
 
-    // ✅ CORRECT PATTERN: Get data from selectedReport (which contains User data)
-    const dataCompleteness = selectedReport?.dataCompleteness;
-    const reportData = selectedReport?.reportData;
+    // Check if heart viewer is initialized
+    if (!heartViewerApiRef.current) {
+      console.error('❌ Heart viewer not initialized yet. Please switch to Diagnostic Viewer tab first.');
+      alert('Please switch to the "Diagnostic Viewer" tab to initialize the 3D heart model first.');
+      return;
+    }
 
-    // Get vitals from report's dataCompleteness or reportData
-    const latestVitals = (reportData as any)?.latestVitals || (dataCompleteness as any)?.latestVitals;
-    const systolicBP = latestVitals?.systolicBP || latestVitals?.bloodPressureSystolic || 140;
+    try {
+      // ✅ CORRECT PATTERN: Get data from selectedReport (which contains User data)
+      const dataCompleteness = selectedReport?.dataCompleteness;
+      const reportData = selectedReport?.reportData;
 
-    // ✅ CORRECT: Get age from User (primary entity)
-    const age = user?.dateOfBirth
-      ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-      : 55;
+      // Get vitals from report's dataCompleteness or reportData
+      const latestVitals = (reportData as any)?.latestVitals || (dataCompleteness as any)?.latestVitals;
+      const systolicBP = latestVitals?.systolicBP || latestVitals?.bloodPressureSystolic || 140;
 
-    // ✅ CORRECT: Get gender from User (primary entity) or Patient profile
-    const gender = (user as any)?.gender === 'Female' || (user as any)?.gender === 'female'
-      ? 'female'
-      : patientData?.gender === 'female'
-      ? 'female'
-      : 'male';
+      // ✅ CORRECT: Get age from User (primary entity)
+      const age = user?.dateOfBirth
+        ? Math.floor((new Date().getTime() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : 55;
 
-    // ✅ CORRECT: Get medications from dataCompleteness (linked to userId)
-    const hasMedications = dataCompleteness?.hasMedications || false;
+      // ✅ CORRECT: Get gender from User (primary entity) or Patient profile
+      const gender = (user as any)?.gender === 'Female' || (user as any)?.gender === 'female'
+        ? 'female'
+        : patientData?.gender === 'female'
+        ? 'female'
+        : 'male';
 
-    // Patient profile extended fields (may not exist)
-    const smokingStatus = patientData?.smokingStatus || 'never';
-    const diabetesStatus = patientData?.diabetesStatus || 'no';
+      // ✅ CORRECT: Get medications from dataCompleteness (linked to userId)
+      const hasMedications = dataCompleteness?.hasMedications || false;
 
-    console.log(`✅ Using User data - Age: ${age}, Gender: ${gender}, BP: ${systolicBP}`);
-    console.log(`✅ Using Report data - Has Meds: ${hasMedications}`);
-    console.log(`✅ Using Patient profile - Smoking: ${smokingStatus}, Diabetes: ${diabetesStatus}`);
+      // Patient profile extended fields (may not exist)
+      const smokingStatus = patientData?.smokingStatus || 'never';
+      const diabetesStatus = patientData?.diabetesStatus || 'no';
 
-    // Calculate risks
-    const framinghamData = calculateFraminghamRisk({
-      age: age,
-      gender: gender,
-      totalCholesterol: 220,
-      hdlCholesterol: 45,
-      systolicBP: systolicBP,
-      onBPMeds: hasMedications,
-      smoking: smokingStatus === 'current',
-      diabetes: diabetesStatus === 'yes',
-    });
+      console.log(`✅ Using User data - Age: ${age}, Gender: ${gender}, BP: ${systolicBP}`);
+      console.log(`✅ Using Report data - Has Meds: ${hasMedications}`);
+      console.log(`✅ Using Patient profile - Smoking: ${smokingStatus}, Diabetes: ${diabetesStatus}`);
 
-    const ascvdData = calculateASCVDRisk({
-      age: age,
-      gender: gender,
-      race: 'other',
-      totalCholesterol: 220,
-      hdlCholesterol: 45,
-      systolicBP: systolicBP,
-      onBPMeds: hasMedications,
-      smoking: smokingStatus === 'current',
-      diabetes: diabetesStatus === 'yes',
-    });
+      // Calculate risks
+      const framinghamData = calculateFraminghamRisk({
+        age: age,
+        gender: gender,
+        totalCholesterol: 220,
+        hdlCholesterol: 45,
+        systolicBP: systolicBP,
+        onBPMeds: hasMedications,
+        smoking: smokingStatus === 'current',
+        diabetes: diabetesStatus === 'yes',
+      });
 
-    console.log('📊 Framingham Risk:', framinghamData);
-    console.log('📊 ASCVD Risk:', ascvdData);
+      const ascvdData = calculateASCVDRisk({
+        age: age,
+        gender: gender,
+        race: 'other',
+        totalCholesterol: 220,
+        hdlCholesterol: 45,
+        systolicBP: systolicBP,
+        onBPMeds: hasMedications,
+        smoking: smokingStatus === 'current',
+        diabetes: diabetesStatus === 'yes',
+      });
 
-    // Create diagnosis JSON for heart viewer
-    const diagnosisJSON = {
-      view: 'internal',
-      coronaryPlaque: [
-        {
-          artery: 'LAD',
-          plaqueParams: {
-            severity: framinghamData.risk10Year / 100,
-            location: 'proximal',
-            type: 'calcified'
+      console.log('📊 Framingham Risk:', framinghamData);
+      console.log('📊 ASCVD Risk:', ascvdData);
+
+      // Validate risk data - note: functions return 'riskPercent', not 'risk10Year'
+      const framinghamRisk = framinghamData?.riskPercent ?? 0;
+      const framinghamCategory = framinghamData?.riskCategory ?? 'Unknown';
+      const ascvdRisk = ascvdData?.riskPercent ?? 0;
+      const ascvdCategory = ascvdData?.riskCategory ?? 'Unknown';
+
+      console.log('📊 Validated risks - Framingham:', framinghamRisk, 'ASCVD:', ascvdRisk);
+
+      // Create diagnosis JSON for heart viewer
+      const diagnosisJSON = {
+        view: 'internal',
+        coronaryPlaque: [
+          {
+            artery: 'LAD',
+            plaqueParams: {
+              severity: framinghamRisk / 100,
+              location: 'proximal',
+              type: 'calcified'
+            }
+          },
+          {
+            artery: 'RCA',
+            plaqueParams: {
+              severity: ascvdRisk / 100,
+              location: 'mid',
+              type: 'mixed'
+            }
           }
-        },
-        {
-          artery: 'RCA',
-          plaqueParams: {
-            severity: ascvdData.risk10Year / 100,
-            location: 'mid',
-            type: 'mixed'
-          }
+        ],
+        tooltips: {
+          'lad': `10-Year CVD Risk: ${framinghamRisk.toFixed(1)}% (${framinghamCategory})`,
+          'rca': `10-Year ASCVD Risk: ${ascvdRisk.toFixed(1)}% (${ascvdCategory})`,
+          'heart': `Systolic BP: ${systolicBP} mmHg`
         }
-      ],
-      tooltips: {
-        'lad': `10-Year CVD Risk: ${framinghamData.risk10Year.toFixed(1)}% (${framinghamData.riskCategory})`,
-        'rca': `10-Year ASCVD Risk: ${ascvdData.risk10Year.toFixed(1)}% (${ascvdData.riskCategory})`,
-        'heart': `Systolic BP: ${systolicBP} mmHg`
+      };
+
+      console.log('📊 Diagnosis JSON:', diagnosisJSON);
+
+      // Render visualization
+      renderDiagnosisVisualization(diagnosisJSON);
+
+      // Enable auto-rotation for better viewing
+      if (heartViewerApiRef.current?.setAutoRotate) {
+        heartViewerApiRef.current.setAutoRotate(true);
+        console.log('✅ Auto-rotation enabled');
       }
-    };
 
-    console.log('📊 Diagnosis JSON:', diagnosisJSON);
+      // Enable blood flow animation
+      if (heartViewerApiRef.current?.setBloodFlow) {
+        heartViewerApiRef.current.setBloodFlow(true);
+        console.log('✅ Blood flow animation enabled');
+      }
 
-    // Render visualization
-    renderDiagnosisVisualization(diagnosisJSON);
-    console.log('✅ Risk visualization applied to 3D heart model');
+      // Enable heartbeat animation
+      if (heartViewerApiRef.current?.setHeartBeat) {
+        heartViewerApiRef.current.setHeartBeat(true);
+        console.log('✅ Heartbeat animation enabled');
+      }
+
+      // Add risk data overlay to the viewer
+      const viewerContainer = heartViewerContainerRef.current;
+      if (viewerContainer) {
+        // Remove existing overlay if present
+        const existingOverlay = viewerContainer.querySelector('.risk-data-overlay');
+        if (existingOverlay) existingOverlay.remove();
+
+        // Create new overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'risk-data-overlay';
+        overlay.style.cssText = `
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: rgba(0, 0, 0, 0.8);
+          border: 1px solid #00d4ff;
+          border-radius: 8px;
+          padding: 15px;
+          color: #00d4ff;
+          font-family: monospace;
+          font-size: 0.85rem;
+          z-index: 1000;
+          pointer-events: none;
+          backdrop-filter: blur(10px);
+        `;
+
+        const riskColor = framinghamRisk < 10 ? '#00ff88' :
+                         framinghamRisk < 20 ? '#ffff00' :
+                         framinghamRisk < 30 ? '#ff6600' : '#ff0000';
+
+        overlay.innerHTML = `
+          <div style="font-weight: bold; margin-bottom: 8px; color: ${riskColor};">
+            🫀 CARDIOVASCULAR RISK ANALYSIS
+          </div>
+          <div style="margin-bottom: 4px;">
+            📊 Framingham Risk: <span style="color: ${riskColor}; font-weight: bold;">${framinghamRisk.toFixed(1)}%</span>
+            <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem;"> (${framinghamCategory})</span>
+          </div>
+          <div style="margin-bottom: 4px;">
+            📊 ASCVD Risk: <span style="color: ${riskColor}; font-weight: bold;">${ascvdRisk.toFixed(1)}%</span>
+            <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem;"> (${ascvdCategory})</span>
+          </div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 212, 255, 0.3); font-size: 0.75rem; color: rgba(255,255,255,0.7);">
+            💓 BP: ${systolicBP} mmHg | 👤 Age: ${age} | ⚧ ${gender}
+          </div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 212, 255, 0.3); font-size: 0.7rem; color: rgba(255,255,255,0.6);">
+            🩸 Anatomical Blood Flow (Systemic • Pulmonary • Coronary)
+          </div>
+          <div style="margin-top: 4px; font-size: 0.7rem; color: rgba(255,255,255,0.6);">
+            💓 Cardiac Cycle: 75 BPM (Atrial + Ventricular Systole)
+          </div>
+          <div style="margin-top: 4px; font-size: 0.7rem; color: rgba(255,255,255,0.6);">
+            🫀 Coronary Arteries: LAD • LCX • RCA
+          </div>
+          <div style="margin-top: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.5);">
+            🖱️ Drag to rotate • Scroll to zoom
+          </div>
+        `;
+
+        viewerContainer.appendChild(overlay);
+      }
+
+      console.log('✅ Risk visualization applied to 3D heart model');
+    } catch (error) {
+      console.error('❌ Error visualizing risk on heart:', error);
+      alert(`Error visualizing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const loadData = async (targetUserId?: number) => {
@@ -1588,8 +1870,10 @@ export function CIAPage() {
                         {/* Anatomy Explorer Tab Content */}
                         {heartViewerTab === 'anatomy' && (
                           <>
-                            <div className="sketchfab-embed-wrapper" style={{ width: '100%', height: '600px' }}>
+                            <div className="sketchfab-embed-wrapper" style={{ width: '100%', height: '600px', position: 'relative' }}>
                               <iframe
+                                ref={sketchfabIframeRef}
+                                id="sketchfab-heart-viewer"
                                 title="3d Animated Realistic Human Heart - V2.0"
                                 frameBorder="0"
                                 allowFullScreen
@@ -1603,7 +1887,67 @@ export function CIAPage() {
                                 src="https://sketchfab.com/models/168b474fba564f688048212e99b4159d/embed"
                                 style={{ width: '100%', height: '100%', borderRadius: '12px' }}
                               />
+
+                              {/* Patient Data Overlay */}
+                              <div id="heart-data-overlay" style={{
+                                position: 'absolute',
+                                top: '10px',
+                                left: '10px',
+                                background: 'rgba(0, 0, 0, 0.8)',
+                                border: '1px solid #00d4ff',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                color: '#00d4ff',
+                                fontFamily: 'monospace',
+                                fontSize: '0.75rem',
+                                maxWidth: '300px',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 1000,
+                                pointerEvents: 'none'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '0.85rem' }}>
+                                  🫀 CARDIAC STATUS
+                                </div>
+                                <div id="overlay-content">
+                                  Click "Visualize Patient Data" to see cardiac analysis
+                                </div>
+                              </div>
                             </div>
+
+                            {/* Patient Data Visualization Button */}
+                            <button
+                              onClick={visualizePatientDataOnHeart}
+                              style={{
+                                width: '100%',
+                                padding: '14px 20px',
+                                marginTop: '16px',
+                                background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)',
+                                border: '2px solid #00d4ff',
+                                borderRadius: '8px',
+                                color: '#00d4ff',
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                fontFamily: 'monospace',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                backdropFilter: 'blur(10px)',
+                                boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+                                letterSpacing: '0.05em'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 100, 255, 0.3) 100%)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.5)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 255, 0.2) 100%)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+                              }}
+                            >
+                              🫀 VISUALIZE PATIENT DATA
+                            </button>
+
                             <p style={{
                               fontSize: '0.75rem',
                               fontWeight: 'normal',
@@ -1682,7 +2026,24 @@ export function CIAPage() {
                                 🫀 VISUALIZE CARDIOVASCULAR RISK
                               </button>
                               <button
-                                onClick={() => clearHighlights()}
+                                onClick={() => {
+                                  clearHighlights();
+                                  // Stop auto-rotation
+                                  if (heartViewerApiRef.current?.setAutoRotate) {
+                                    heartViewerApiRef.current.setAutoRotate(false);
+                                  }
+                                  // Stop blood flow
+                                  if (heartViewerApiRef.current?.setBloodFlow) {
+                                    heartViewerApiRef.current.setBloodFlow(false);
+                                  }
+                                  // Stop heartbeat
+                                  if (heartViewerApiRef.current?.setHeartBeat) {
+                                    heartViewerApiRef.current.setHeartBeat(false);
+                                  }
+                                  // Remove overlay
+                                  const overlay = heartViewerContainerRef.current?.querySelector('.risk-data-overlay');
+                                  if (overlay) overlay.remove();
+                                }}
                                 style={{
                                   background: 'rgba(0, 0, 0, 0.5)',
                                   border: '1px solid rgba(255, 255, 255, 0.3)',
