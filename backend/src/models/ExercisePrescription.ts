@@ -4,6 +4,7 @@ import sequelize from './database';
 interface ExercisePrescriptionAttributes {
   id: number;
   patientId: number;
+  userId: number | null; // User ID (patient) - consistent with other 24 tables
   exerciseId: number;
   prescribedBy: number; // therapist user ID
   startDate: Date;
@@ -25,6 +26,7 @@ interface ExercisePrescriptionCreationAttributes extends Optional<ExercisePrescr
 class ExercisePrescription extends Model<ExercisePrescriptionAttributes, ExercisePrescriptionCreationAttributes> implements ExercisePrescriptionAttributes {
   public id!: number;
   public patientId!: number;
+  public userId!: number | null; // User ID (patient) - consistent with other 24 tables
   public exerciseId!: number;
   public prescribedBy!: number;
   public startDate!: Date;
@@ -55,6 +57,15 @@ class ExercisePrescription extends Model<ExercisePrescriptionAttributes, Exercis
             model: 'patients',
             key: 'id',
           },
+        },
+        userId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'users',
+            key: 'id',
+          },
+          comment: 'User ID (patient) who this prescription is for. Replaces patientId for consistency.',
         },
         exerciseId: {
           type: DataTypes.INTEGER,
@@ -132,6 +143,10 @@ class ExercisePrescription extends Model<ExercisePrescriptionAttributes, Exercis
     ExercisePrescription.belongsTo(models.Patient, {
       foreignKey: 'patientId',
       as: 'patient',
+    });
+    ExercisePrescription.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user',
     });
     ExercisePrescription.belongsTo(models.Exercise, {
       foreignKey: 'exerciseId',

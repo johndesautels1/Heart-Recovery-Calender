@@ -5,6 +5,7 @@ interface ExerciseLogAttributes {
   id: number;
   prescriptionId: number | null;
   patientId: number;
+  userId: number | null; // User ID (patient) - consistent with other 24 tables
   completedAt: Date;
   postSurgeryDay?: number;
   startedAt?: Date;
@@ -69,6 +70,7 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
   public id!: number;
   public prescriptionId!: number | null;
   public patientId!: number;
+  public userId!: number | null; // User ID (patient) - consistent with other 24 tables
   public completedAt!: Date;
   public postSurgeryDay?: number;
   public startedAt?: Date;
@@ -149,6 +151,15 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
             model: 'patients',
             key: 'id',
           },
+        },
+        userId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'users',
+            key: 'id',
+          },
+          comment: 'User ID (patient) who completed this exercise. Replaces patientId for consistency with other tables.',
         },
         completedAt: {
           type: DataTypes.DATE,
@@ -370,6 +381,10 @@ class ExerciseLog extends Model<ExerciseLogAttributes, ExerciseLogCreationAttrib
     ExerciseLog.belongsTo(models.Patient, {
       foreignKey: 'patientId',
       as: 'patient',
+    });
+    ExerciseLog.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user',
     });
     if (models.DeviceConnection) {
       ExerciseLog.belongsTo(models.DeviceConnection, {
