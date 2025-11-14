@@ -31,10 +31,10 @@ export const getExerciseLogs = async (req: Request, res: Response) => {
 
     // If patient role, only show their own logs
     if (userRole === 'patient') {
-      where.patientId = userId;
+      where.userId = userId;
     } else if (queryUserId) {
       // Therapists can query specific patient's logs
-      where.patientId = queryUserId;
+      where.userId = queryUserId;
       targetUserId = queryUserId as string;
     }
 
@@ -113,7 +113,7 @@ export const getExerciseLog = async (req: Request, res: Response) => {
     }
 
     // Authorization: patients can only view their own logs
-    if (userRole === 'patient' && log.patientId !== userId) {
+    if (userRole === 'patient' && log.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -151,14 +151,15 @@ export const createExerciseLog = async (req: Request, res: Response) => {
     // Remove userId and patientId from body to avoid conflicts
     const { userId: bodyUserId, patientId: bodyPatientId, ...restOfBody } = req.body;
 
-    // Build logData with the patient record ID
+    // Build logData with BOTH patientId (backwards compatibility) and userId (new standard)
     const logData = {
       ...restOfBody,
-      patientId: patient.id,
+      patientId: patient.id, // Backwards compatibility
+      userId: targetUserId,   // New standard (consistent with other 24 tables)
       completedAt: req.body.completedAt || new Date(),
     };
 
-    console.log('[EXERCISE-LOGS] Using patient ID:', patient.id, 'for user ID:', targetUserId);
+    console.log('[EXERCISE-LOGS] Using patient ID:', patient.id, 'and user ID:', targetUserId);
 
     // Calculate calories burned if not provided (device data takes priority)
     if (!logData.caloriesBurned && logData.prescriptionId && logData.actualDuration) {
@@ -246,7 +247,7 @@ export const createExerciseLog = async (req: Request, res: Response) => {
       for (const snap of req.body.vitalSnapshots) {
         try {
           await VitalsSample.create({
-            userId: logData.patientId,
+            userId: targetUserId, // VitalsSample uses userId (FK to users), not patientId
             timestamp: new Date(snap.timestamp),
             bloodPressureSystolic: snap.bpSystolic,
             bloodPressureDiastolic: snap.bpDiastolic,
@@ -305,7 +306,7 @@ export const updateExerciseLog = async (req: Request, res: Response) => {
     }
 
     // Authorization: patients can only update their own logs
-    if (userRole === 'patient' && log.patientId !== userId) {
+    if (userRole === 'patient' && log.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -352,7 +353,7 @@ export const deleteExerciseLog = async (req: Request, res: Response) => {
     }
 
     // Authorization: patients can only delete their own logs, therapists can delete any
-    if (userRole === 'patient' && log.patientId !== userId) {
+    if (userRole === 'patient' && log.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -376,9 +377,9 @@ export const getExerciseLogStats = async (req: Request, res: Response) => {
 
     // Determine which user's stats to fetch
     if (userRole === 'patient') {
-      where.patientId = userId;
+      where.userId = userId;
     } else if (queryUserId) {
-      where.patientId = queryUserId;
+      where.userId = queryUserId;
     } else {
       return res.status(400).json({ error: 'userId query parameter required for therapists' });
     }
